@@ -1,50 +1,52 @@
-// ============================================================
-// FitMatch AI - Type Definitions
-// ============================================================
+export const CLOTHING_CATEGORIES = [
+  "shirt",
+  "t-shirt",
+  "hoodie",
+  "jacket",
+  "sweater",
+  "blazer",
+  "pants",
+  "jeans",
+  "shorts",
+  "skirt",
+  "dress",
+  "shoes",
+  "sneakers",
+  "boots",
+  "hat",
+  "bag",
+  "watch",
+  "accessory",
+  "other",
+] as const;
 
-export type ClothingCategory =
-  | "shirt"
-  | "t-shirt"
-  | "hoodie"
-  | "jacket"
-  | "sweater"
-  | "blazer"
-  | "pants"
-  | "jeans"
-  | "shorts"
-  | "skirt"
-  | "dress"
-  | "shoes"
-  | "sneakers"
-  | "boots"
-  | "hat"
-  | "bag"
-  | "watch"
-  | "accessory"
-  | "other";
+export const STYLE_CATEGORIES = [
+  "casual",
+  "streetwear",
+  "minimal",
+  "formal",
+  "sporty",
+  "bohemian",
+  "preppy",
+  "vintage",
+] as const;
 
-export type StyleCategory =
-  | "casual"
-  | "streetwear"
-  | "minimal"
-  | "formal"
-  | "sporty"
-  | "bohemian"
-  | "preppy"
-  | "vintage";
+export const PATTERN_TYPES = [
+  "plain",
+  "striped",
+  "plaid",
+  "graphic",
+  "floral",
+  "polka-dot",
+  "abstract",
+  "camo",
+  "other",
+] as const;
 
-export type PatternType =
-  | "plain"
-  | "striped"
-  | "plaid"
-  | "graphic"
-  | "floral"
-  | "polka-dot"
-  | "abstract"
-  | "camo"
-  | "other";
+export type ClothingCategory = (typeof CLOTHING_CATEGORIES)[number];
+export type StyleCategory = (typeof STYLE_CATEGORIES)[number];
+export type PatternType = (typeof PATTERN_TYPES)[number];
 
-// ---- Image Analysis ----
 export interface ClothingAnalysis {
   type: ClothingCategory;
   primaryColor: string;
@@ -55,9 +57,8 @@ export interface ClothingAnalysis {
   description: string;
 }
 
-// ---- Outfit Suggestions ----
-export interface OutfitItem {
-  category: ClothingCategory;
+export interface OutfitPart {
+  category: string;
   description: string;
   suggestedColor: string;
   notes?: string;
@@ -67,84 +68,76 @@ export interface OutfitSuggestion {
   id: string;
   name: string;
   styleCategory: StyleCategory;
-  items: OutfitItem[];
-  accessories: OutfitItem[];
+  items: OutfitPart[];
+  accessories: OutfitPart[];
   colorExplanation: string;
   styleExplanation: string;
   confidenceScore: number;
   occasion?: string;
 }
 
-// ---- User / Profile ----
 export interface StyleProfile {
   primaryStyle: StyleCategory;
-  secondaryStyle?: StyleCategory;
+  secondaryStyle?: StyleCategory | null;
   favoriteColors: string[];
-  preferredBrands?: string[];
-  bodyType?: string;
   fashionInspirations?: string[];
+  ageRange?: string;
+  genderExpression?: string;
+  preferredOutfits?: string[];
 }
 
 export interface QuizAnswers {
-  age?: string;
-  gender?: string;
+  ageRange: string;
+  genderExpression?: string;
   favoriteColors: string[];
-  preferredStyles: StyleCategory[];
+  preferredOutfits: string[];
   fashionInspirations: string[];
-  budgetRange?: string;
-  lifestyle?: string;
 }
 
-export interface UserProfile {
+export interface WardrobeItemRecord {
   id: string;
-  email: string;
-  displayName?: string;
-  avatarUrl?: string;
-  styleProfile?: StyleProfile;
-  quizAnswers?: QuizAnswers;
-  quizCompleted: boolean;
-  createdAt: string;
-}
-
-// ---- Wardrobe ----
-export interface WardrobeItem {
-  id: string;
-  userId: string;
+  user_id: string;
   name: string;
   category: ClothingCategory;
   color: string;
-  secondaryColor?: string;
+  secondary_color?: string | null;
   style: StyleCategory;
-  pattern?: PatternType;
-  imageUrl?: string;
-  notes?: string;
-  isFavorite: boolean;
-  createdAt: string;
+  pattern?: PatternType | null;
+  material?: string | null;
+  description?: string | null;
+  notes?: string | null;
+  image_path?: string | null;
+  image_url?: string | null;
+  is_favorite?: boolean | null;
+  created_at: string;
+  updated_at?: string | null;
 }
 
-// ---- Uploaded Items ----
-export interface UploadedItem {
+export interface WardrobeItem extends Omit<WardrobeItemRecord, "image_url"> {
+  imageUrl?: string | null;
+}
+
+export interface SavedOutfitRecord {
   id: string;
-  userId: string;
-  imageUrl: string;
-  analysis: ClothingAnalysis;
-  createdAt: string;
+  user_id: string;
+  source_item_id?: string | null;
+  data_json: OutfitSuggestion[];
+  created_at: string;
 }
 
-// ---- Saved Outfits ----
-export interface SavedOutfit {
+export interface UserProfileRecord {
   id: string;
-  userId: string;
-  sourceItemId?: string;
-  outfit: OutfitSuggestion;
-  isSaved: boolean;
-  createdAt: string;
+  email: string;
+  style_profile?: StyleProfile | null;
+  quiz_answers?: QuizAnswers | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
-// ---- API Types ----
 export interface AnalyzeImageRequest {
   imageBase64: string;
-  imageUrl?: string;
+  persist?: boolean;
+  storagePath?: string;
 }
 
 export interface AnalyzeImageResponse {

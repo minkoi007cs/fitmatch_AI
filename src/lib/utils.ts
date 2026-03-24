@@ -4,6 +4,8 @@
 
 import { StyleCategory } from "./types";
 
+export const WARDROBE_BUCKET = "fitmatch-wardrobe";
+
 export const STYLE_COLORS: Record<StyleCategory, { bg: string; text: string; border: string }> = {
   casual: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" },
   streetwear: { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20" },
@@ -70,4 +72,11 @@ export function compressImage(file: File, maxWidth = 1024, quality = 0.8): Promi
 
 export function cn(...classes: (string | undefined | null | false)[]) {
   return classes.filter(Boolean).join(" ");
+}
+
+export function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
 }
