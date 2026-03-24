@@ -89,9 +89,27 @@ export interface StyleProfile {
 export interface QuizAnswers {
   ageRange: string;
   genderExpression?: string;
+  bodyShape?: string;
+  heightRange?: string;
+  fitPriorities?: string[];
+  lifestyle?: string;
+  shoppingGoal?: string;
   favoriteColors: string[];
   preferredOutfits: string[];
   fashionInspirations: string[];
+}
+
+export interface PersonalStyleRecommendation {
+  headline: string;
+  summary: string;
+  flatteringFocus: string[];
+  avoidNotes: string[];
+  outfits: Array<{
+    name: string;
+    occasion: string;
+    whyItFitsYou: string;
+    pieces: string[];
+  }>;
 }
 
 export interface WardrobeItemRecord {

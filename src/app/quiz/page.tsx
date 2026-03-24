@@ -2,10 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import { QuizAnswers } from "@/lib/types";
+import { PersonalStyleRecommendation, QuizAnswers } from "@/lib/types";
 
 const ageOptions = ["13-17", "18-24", "25-34", "35-44", "45+"];
 const genderOptions = ["Feminine", "Masculine", "Androgynous", "Fluid", "Prefer not to say"];
+const bodyShapeOptions = ["Slim", "Athletic", "Curvy", "Broad shoulders", "Petite", "Tall frame", "Prefer not to say"];
+const heightOptions = ["Under 5'4", "5'4 - 5'7", "5'8 - 5'11", "6'0 and above", "Prefer not to say"];
+const lifestyleOptions = ["Office and meetings", "Campus or school", "Creative work and city life", "Mostly casual daily wear", "Active and outdoors"];
+const goalOptions = ["Look taller", "Look more polished", "Look more relaxed", "Highlight shape", "Build easy repeat outfits"];
+const fitPriorityOptions = ["Waist definition", "Longer leg line", "Shoulder balance", "Relaxed comfort", "Layering", "Minimal styling effort"];
 const colorOptions = ["Black", "White", "Cream", "Olive", "Navy", "Brown", "Gray", "Red", "Pink", "Blue"];
 const outfitOptions = [
   "Relaxed denim + tee",
@@ -25,16 +30,26 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<QuizAnswers>({
     ageRange: "25-34",
     genderExpression: "Prefer not to say",
+    bodyShape: "Prefer not to say",
+    heightRange: "Prefer not to say",
+    lifestyle: "Mostly casual daily wear",
+    shoppingGoal: "Build easy repeat outfits",
+    fitPriorities: ["Minimal styling effort"],
     favoriteColors: ["Black", "Cream"],
     preferredOutfits: ["Soft minimalist neutrals"],
     fashionInspirations: ["Quiet luxury"],
   });
   const [loading, setLoading] = useState(false);
   const [savedProfile, setSavedProfile] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<PersonalStyleRecommendation | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const isValid = useMemo(
-    () => answers.favoriteColors.length > 0 && answers.preferredOutfits.length > 0 && answers.fashionInspirations.length > 0,
+    () =>
+      answers.favoriteColors.length > 0 &&
+      answers.preferredOutfits.length > 0 &&
+      answers.fashionInspirations.length > 0 &&
+      (answers.fitPriorities?.length ?? 0) > 0,
     [answers]
   );
 
@@ -58,146 +73,293 @@ export default function QuizPage() {
     }
 
     setSavedProfile(data.profile?.primaryStyle ?? "casual");
+    setRecommendations(data.recommendations ?? null);
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mb-8 max-w-2xl">
+    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="mb-8 max-w-3xl">
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
           <Sparkles className="h-4 w-4 text-accent" />
-          Style onboarding
+          Personal style quiz
         </div>
-        <h1 className="mt-5 text-4xl font-semibold text-foreground">Teach FitMatch what your personal style actually looks like.</h1>
+        <h1 className="mt-5 text-4xl font-semibold text-foreground">Answer a few personal style questions and get outfit ideas that should fit you better.</h1>
         <p className="mt-4 text-sm leading-6 text-muted-foreground">
-          We use these answers to classify your style profile and personalize outfit suggestions across your wardrobe history.
+          FitMatch uses your answers to understand your style, your fit priorities, and the kind of outfits that should work well for your life and body preferences.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-6">
-        <section className="rounded-[2rem] border border-border bg-card p-6">
-          <h2 className="text-lg font-semibold text-foreground">1. About you</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <div>
-              <label htmlFor="ageRange" className="mb-2 block text-sm font-medium text-foreground">
-                Age range
-              </label>
-              <select
-                id="ageRange"
-                value={answers.ageRange}
-                onChange={(event) => setAnswers((current) => ({ ...current, ageRange: event.target.value }))}
-                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-              >
-                {ageOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+      <div className="grid gap-8 xl:grid-cols-[0.95fr_1.05fr]">
+        <form onSubmit={handleSubmit} className="grid gap-6">
+          <section className="rounded-[2rem] border border-border bg-card p-6">
+            <h2 className="text-lg font-semibold text-foreground">1. Personal fit context</h2>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <Field label="Age range">
+                <select
+                  value={answers.ageRange}
+                  onChange={(event) => setAnswers((current) => ({ ...current, ageRange: event.target.value }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
+                >
+                  {ageOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Gender expression">
+                <select
+                  value={answers.genderExpression}
+                  onChange={(event) => setAnswers((current) => ({ ...current, genderExpression: event.target.value }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
+                >
+                  {genderOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Body shape / frame">
+                <select
+                  value={answers.bodyShape}
+                  onChange={(event) => setAnswers((current) => ({ ...current, bodyShape: event.target.value }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
+                >
+                  {bodyShapeOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Height range">
+                <select
+                  value={answers.heightRange}
+                  onChange={(event) => setAnswers((current) => ({ ...current, heightRange: event.target.value }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
+                >
+                  {heightOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
             </div>
-            <div>
-              <label htmlFor="genderExpression" className="mb-2 block text-sm font-medium text-foreground">
-                Gender expression
-              </label>
-              <select
-                id="genderExpression"
-                value={answers.genderExpression}
-                onChange={(event) => setAnswers((current) => ({ ...current, genderExpression: event.target.value }))}
-                className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-              >
-                {genderOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
+          </section>
+
+          <section className="rounded-[2rem] border border-border bg-card p-6">
+            <h2 className="text-lg font-semibold text-foreground">2. Lifestyle and goals</h2>
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <Field label="Your lifestyle">
+                <select
+                  value={answers.lifestyle}
+                  onChange={(event) => setAnswers((current) => ({ ...current, lifestyle: event.target.value }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
+                >
+                  {lifestyleOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Main style goal">
+                <select
+                  value={answers.shoppingGoal}
+                  onChange={(event) => setAnswers((current) => ({ ...current, shoppingGoal: event.target.value }))}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
+                >
+                  {goalOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </Field>
             </div>
-          </div>
-        </section>
 
-        <section className="rounded-[2rem] border border-border bg-card p-6">
-          <h2 className="text-lg font-semibold text-foreground">2. Favorite colors</h2>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {colorOptions.map((option) => {
-              const active = answers.favoriteColors.includes(option);
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setAnswers((current) => ({ ...current, favoriteColors: toggleValue(current.favoriteColors, option) }))}
-                  className={`rounded-full border px-4 py-2 text-sm transition ${
-                    active ? "border-foreground bg-foreground text-background" : "border-border bg-background text-foreground hover:bg-secondary"
-                  }`}
-                >
-                  {option}
-                </button>
-              );
-            })}
-          </div>
-        </section>
+            <div className="mt-5">
+              <div className="mb-3 text-sm font-medium text-foreground">Fit priorities</div>
+              <div className="flex flex-wrap gap-3">
+                {fitPriorityOptions.map((option) => {
+                  const active = answers.fitPriorities?.includes(option);
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() =>
+                        setAnswers((current) => ({
+                          ...current,
+                          fitPriorities: toggleValue(current.fitPriorities ?? [], option),
+                        }))
+                      }
+                      className={`rounded-full border px-4 py-2 text-sm transition ${
+                        active ? "border-foreground bg-foreground text-background" : "border-border bg-background text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
 
-        <section className="rounded-[2rem] border border-border bg-card p-6">
-          <h2 className="text-lg font-semibold text-foreground">3. Preferred outfit direction</h2>
-          <div className="mt-5 grid gap-4 md:grid-cols-2">
-            {outfitOptions.map((option) => {
-              const active = answers.preferredOutfits.includes(option);
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() =>
-                    setAnswers((current) => ({ ...current, preferredOutfits: toggleValue(current.preferredOutfits, option) }))
-                  }
-                  className={`rounded-[1.5rem] border p-5 text-left transition ${
-                    active ? "border-foreground bg-foreground text-background" : "border-border bg-background hover:bg-secondary"
-                  }`}
-                >
-                  <div className="text-sm uppercase tracking-[0.2em] opacity-70">Visual choice</div>
-                  <div className="mt-2 text-base font-medium">{option}</div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+          <section className="rounded-[2rem] border border-border bg-card p-6">
+            <h2 className="text-lg font-semibold text-foreground">3. Color and outfit preferences</h2>
+            <div className="mt-5">
+              <div className="mb-3 text-sm font-medium text-foreground">Favorite colors</div>
+              <div className="flex flex-wrap gap-3">
+                {colorOptions.map((option) => {
+                  const active = answers.favoriteColors.includes(option);
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setAnswers((current) => ({ ...current, favoriteColors: toggleValue(current.favoriteColors, option) }))}
+                      className={`rounded-full border px-4 py-2 text-sm transition ${
+                        active ? "border-foreground bg-foreground text-background" : "border-border bg-background text-foreground hover:bg-secondary"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-        <section className="rounded-[2rem] border border-border bg-card p-6">
-          <h2 className="text-lg font-semibold text-foreground">4. Fashion inspirations</h2>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {inspirationOptions.map((option) => {
-              const active = answers.fashionInspirations.includes(option);
-              return (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() =>
-                    setAnswers((current) => ({
-                      ...current,
-                      fashionInspirations: toggleValue(current.fashionInspirations, option),
-                    }))
-                  }
-                  className={`rounded-full border px-4 py-2 text-sm transition ${
-                    active ? "border-accent bg-accent text-accent-foreground" : "border-border bg-background text-foreground hover:bg-secondary"
-                  }`}
-                >
-                  {option}
-                </button>
-              );
-            })}
-          </div>
-        </section>
+            <div className="mt-6">
+              <div className="mb-3 text-sm font-medium text-foreground">Outfits you are drawn to</div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {outfitOptions.map((option) => {
+                  const active = answers.preferredOutfits.includes(option);
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() =>
+                        setAnswers((current) => ({ ...current, preferredOutfits: toggleValue(current.preferredOutfits, option) }))
+                      }
+                      className={`rounded-[1.5rem] border p-5 text-left transition ${
+                        active ? "border-foreground bg-foreground text-background" : "border-border bg-background hover:bg-secondary"
+                      }`}
+                    >
+                      <div className="text-sm uppercase tracking-[0.2em] opacity-70">Style direction</div>
+                      <div className="mt-2 text-base font-medium">{option}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
 
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <button
-            type="submit"
-            disabled={!isValid || loading}
-            className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition hover:opacity-90 disabled:opacity-60"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            Save style profile
-          </button>
-          {savedProfile ? <div className="text-sm text-muted-foreground">Profile saved. Your primary style is {savedProfile}.</div> : null}
-          {error ? <div className="text-sm text-red-700">{error}</div> : null}
-        </div>
-      </form>
+          <section className="rounded-[2rem] border border-border bg-card p-6">
+            <h2 className="text-lg font-semibold text-foreground">4. Inspirations</h2>
+            <div className="mt-5 flex flex-wrap gap-3">
+              {inspirationOptions.map((option) => {
+                const active = answers.fashionInspirations.includes(option);
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() =>
+                      setAnswers((current) => ({
+                        ...current,
+                        fashionInspirations: toggleValue(current.fashionInspirations, option),
+                      }))
+                    }
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                      active ? "border-accent bg-accent text-accent-foreground" : "border-border bg-background text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <button
+              type="submit"
+              disabled={!isValid || loading}
+              className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition hover:opacity-90 disabled:opacity-60"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              Save profile and recommend outfits
+            </button>
+            {savedProfile ? <div className="text-sm text-muted-foreground">Primary style: {savedProfile}</div> : null}
+            {error ? <div className="text-sm text-red-700">{error}</div> : null}
+          </div>
+        </form>
+
+        <section className="rounded-[2rem] border border-border bg-card p-6 shadow-xl shadow-black/5">
+          <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Personal result</div>
+          <h2 className="mt-2 text-3xl font-semibold text-foreground">What should fit you best</h2>
+          {!recommendations ? (
+            <div className="mt-8 rounded-[1.5rem] border border-dashed border-border bg-background p-8 text-sm text-muted-foreground">
+              Submit the quiz and FitMatch will explain what flatters your answers, what to focus on, and suggest outfit formulas that match your profile.
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-5">
+              <div className="rounded-[1.5rem] bg-background p-5">
+                <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Summary</div>
+                <h3 className="mt-2 text-xl font-semibold text-foreground">{recommendations.headline}</h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">{recommendations.summary}</p>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="rounded-[1.5rem] bg-background p-5">
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Focus on</div>
+                  <div className="mt-3 grid gap-3 text-sm text-muted-foreground">
+                    {recommendations.flatteringFocus.map((item) => (
+                      <div key={item}>{item}</div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-[1.5rem] bg-background p-5">
+                  <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Be careful with</div>
+                  <div className="mt-3 grid gap-3 text-sm text-muted-foreground">
+                    {recommendations.avoidNotes.map((item) => (
+                      <div key={item}>{item}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                {recommendations.outfits.map((outfit) => (
+                  <article key={outfit.name} className="rounded-[1.5rem] border border-border bg-background p-5">
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">{outfit.occasion}</span>
+                    </div>
+                    <h3 className="mt-3 text-xl font-semibold text-foreground">{outfit.name}</h3>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{outfit.whyItFitsYou}</p>
+                    <div className="mt-4 grid gap-2 text-sm text-foreground">
+                      {outfit.pieces.map((piece) => (
+                        <div key={piece} className="rounded-2xl bg-card px-4 py-3">
+                          {piece}
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
     </main>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="grid gap-2 text-sm font-medium text-foreground">
+      <span>{label}</span>
+      {children}
+    </label>
   );
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { classifyStyleFromQuiz } from "@/lib/openai";
-import { QuizAnswers, StyleProfile } from "@/lib/types";
+import { classifyStyleFromQuiz, generatePersonalStyleRecommendations } from "@/lib/openai";
+import { PersonalStyleRecommendation, QuizAnswers, StyleProfile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +51,8 @@ export async function POST(request: Request) {
     };
 
     const styleProfile = body.styleProfile ?? (body.quizAnswers ? await classifyStyleFromQuiz(body.quizAnswers) : undefined);
+    const recommendations: PersonalStyleRecommendation | null =
+      body.quizAnswers && styleProfile ? await generatePersonalStyleRecommendations(body.quizAnswers, styleProfile) : null;
 
     const payload = {
       id: user.id,
@@ -70,6 +72,7 @@ export async function POST(request: Request) {
       success: true,
       profile: data.style_profile,
       quizAnswers: data.quiz_answers,
+      recommendations,
     });
   } catch (error) {
     return NextResponse.json(

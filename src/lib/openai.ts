@@ -1,6 +1,7 @@
 import {
   ClothingAnalysis,
   OutfitSuggestion,
+  PersonalStyleRecommendation,
   QuizAnswers,
   StyleCategory,
   StyleProfile,
@@ -166,6 +167,34 @@ const styleProfileSchema = {
     "genderExpression",
     "preferredOutfits",
   ],
+} satisfies SchemaDefinition;
+
+const recommendationSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    headline: { type: "string" },
+    summary: { type: "string" },
+    flatteringFocus: { type: "array", items: { type: "string" } },
+    avoidNotes: { type: "array", items: { type: "string" } },
+    outfits: {
+      type: "array",
+      minItems: 3,
+      maxItems: 4,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          name: { type: "string" },
+          occasion: { type: "string" },
+          whyItFitsYou: { type: "string" },
+          pieces: { type: "array", items: { type: "string" } },
+        },
+        required: ["name", "occasion", "whyItFitsYou", "pieces"],
+      },
+    },
+  },
+  required: ["headline", "summary", "flatteringFocus", "avoidNotes", "outfits"],
 } satisfies SchemaDefinition;
 
 function normalizeStyleCategory(style: string): StyleCategory {
@@ -402,5 +431,73 @@ export async function classifyStyleFromQuiz(answers: QuizAnswers): Promise<Style
       genderExpression: answers.genderExpression,
       preferredOutfits: answers.preferredOutfits,
     };
+  }
+}
+
+function fallbackRecommendations(
+  answers: QuizAnswers,
+  profile: StyleProfile
+): PersonalStyleRecommendation {
+  const focus = [
+    answers.fitPriorities?.[0] ? `Lean into ${answers.fitPriorities[0].toLowerCase()} when choosing silhouettes.` : "Use clean, balanced proportions.",
+    profile.favoriteColors.length > 0 ? `Build around ${profile.favoriteColors.slice(0, 2).join(" and ")} as your anchor colors.` : "Start with neutral color anchors.",
+    answers.lifestyle ? `Dress for your ${answers.lifestyle.toLowerCase()} routine with comfortable but polished layers.` : "Choose pieces that work across day-to-night transitions.",
+  ];
+
+  return {
+    headline: `${profile.primaryStyle} pieces that should suit you well`,
+    summary:
+      "Your answers suggest you look best in outfits that feel intentional, easy to repeat, and balanced between comfort and structure.",
+    flatteringFocus: focus,
+    avoidNotes: [
+      "Avoid piling on too many competing statement pieces in one look.",
+      "Skip color combinations that fight your preferred palette unless one piece is neutral.",
+    ],
+    outfits: [
+      {
+        name: "Clean everyday base",
+        occasion: "Daily wear",
+        whyItFitsYou: "This keeps the silhouette easy and polished while reflecting your preferred colors and overall style direction.",
+        pieces: ["Relaxed structured overshirt", "Fitted tee or knit top", "Straight-leg trousers or denim", "Minimal sneakers"],
+      },
+      {
+        name: "Smart casual upgrade",
+        occasion: "Dinner, office, or date night",
+        whyItFitsYou: "It adds structure without feeling stiff, which suits a person who wants flattering shape and repeatable outfits.",
+        pieces: ["Tailored blazer or cropped jacket", "Monochrome inner layer", "Clean trousers", "Leather loafers or sleek boots"],
+      },
+      {
+        name: "Weekend personality look",
+        occasion: "Coffee run or social outing",
+        whyItFitsYou: "It gives you a bit more personality while still staying inside the style lane your answers point toward.",
+        pieces: ["Statement outer layer", "Neutral base top", "Relaxed bottoms", "Crossbody bag or watch"],
+      },
+    ],
+  };
+}
+
+export async function generatePersonalStyleRecommendations(
+  answers: QuizAnswers,
+  profile: StyleProfile
+): Promise<PersonalStyleRecommendation> {
+  try {
+    return await fetchStructuredObject<PersonalStyleRecommendation>({
+      model: DEFAULT_TEXT_MODEL,
+      schemaName: "personal_style_recommendations",
+      schema: recommendationSchema,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a personal stylist. Based on quiz answers, explain what styling choices fit this person best and recommend 3 to 4 concrete outfit ideas tailored to them. Be supportive, practical, and personal.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify({ answers, profile }),
+        },
+      ],
+    });
+  } catch {
+    return fallbackRecommendations(answers, profile);
   }
 }
