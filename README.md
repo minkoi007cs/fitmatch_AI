@@ -28,6 +28,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 OPENAI_API_KEY=
 OPENAI_TEXT_MODEL=gpt-4o-mini
 OPENAI_VISION_MODEL=gpt-4o-mini
+OPENAI_IMAGE_MODEL=gpt-image-1
 ```
 
 ## Supabase setup
@@ -66,6 +67,7 @@ npm run build
 
 - `POST /api/analyze-image`
 - `POST /api/generate-outfit`
+- `POST /api/generate-outfit-image`
 - `GET/POST /api/user/profile`
 - `GET/POST /api/wardrobe`
 - `PATCH/DELETE /api/wardrobe/[id]`

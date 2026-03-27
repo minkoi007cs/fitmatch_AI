@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, RefreshCcw, Save, Sparkles, Wand2 } from "lucide-react";
+import { ImageIcon, Loader2, RefreshCcw, Save, Sparkles, Wand2 } from "lucide-react";
 import { ClothingAnalysis, OutfitSuggestion, StyleCategory, StyleProfile, WardrobeItem } from "@/lib/types";
 
 const vibeCycle: StyleCategory[] = ["casual", "streetwear", "minimal", "formal"];
@@ -17,6 +17,8 @@ export default function OutfitsPage() {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [imageLoadingId, setImageLoadingId] = useState<string | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [vibeIndex, setVibeIndex] = useState(0);
 
@@ -152,6 +154,30 @@ export default function OutfitsPage() {
     }
 
     await loadHistory();
+  }
+
+  async function generateOutfitPicture(outfit: OutfitSuggestion) {
+    setImageLoadingId(outfit.id);
+    setError(null);
+
+    const response = await fetch("/api/generate-outfit-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(outfit),
+    });
+
+    const data = await response.json();
+    setImageLoadingId(null);
+
+    if (!response.ok || !data.success) {
+      setError(data.error ?? "Could not generate outfit image.");
+      return;
+    }
+
+    setGeneratedImages((current) => ({
+      ...current,
+      [outfit.id]: data.imageDataUrl,
+    }));
   }
 
   function tryDifferentVibe() {
@@ -301,6 +327,19 @@ export default function OutfitsPage() {
                         {savingId === outfit.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                         Save outfit
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => void generateOutfitPicture(outfit)}
+                        disabled={imageLoadingId === outfit.id}
+                        className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary disabled:opacity-60"
+                      >
+                        {imageLoadingId === outfit.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ImageIcon className="h-4 w-4" />
+                        )}
+                        {generatedImages[outfit.id] ? "Regenerate picture" : "Generate AI picture"}
+                      </button>
                     </div>
                     <div className="mt-5 grid gap-5 lg:grid-cols-2">
                       <div>
@@ -333,6 +372,16 @@ export default function OutfitsPage() {
                         </div>
                       </div>
                     </div>
+                    {generatedImages[outfit.id] ? (
+                      <div className="mt-5 overflow-hidden rounded-[1.5rem] border border-border bg-card">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={generatedImages[outfit.id]}
+                          alt={`${outfit.name} AI generated preview`}
+                          className="h-auto w-full object-cover"
+                        />
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>

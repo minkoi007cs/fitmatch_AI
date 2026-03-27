@@ -501,3 +501,37 @@ export async function generatePersonalStyleRecommendations(
     return fallbackRecommendations(answers, profile);
   }
 }
+
+export async function generateOutfitImage(prompt: string): Promise<string> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Missing OPENAI_API_KEY");
+  }
+
+  const model = process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-1";
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      prompt,
+      size: "1024x1024",
+      quality: "medium",
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+
+  const data = await response.json();
+  const base64 = data.data?.[0]?.b64_json;
+  if (typeof base64 !== "string") {
+    throw new Error("OpenAI image generation did not return image data");
+  }
+
+  return `data:image/png;base64,${base64}`;
+}
