@@ -33,7 +33,7 @@ OPENAI_IMAGE_MODEL=gpt-image-1
 
 ## Supabase setup
 
-1. Run the SQL in [supabase/schema.sql](/Users/khoihoang/Documents/clothes_design_app/supabase/schema.sql) in your Supabase SQL editor.
+1. Run the SQL in [supabase/schema.sql](./supabase/schema.sql) in your Supabase SQL editor.
 2. In Supabase Auth, enable the Microsoft provider. Supabase labels this provider as `azure`.
 3. Add the callback URL:
 
@@ -75,5 +75,5 @@ npm run build
 
 ## Notes
 
-- If `OPENAI_API_KEY` is not set, the app falls back to deterministic placeholder analysis and outfit generation so the UI remains testable.
-- Wardrobe images are stored in a private Supabase bucket and served back with signed URLs.
+- OpenAI API errors (missing key, quota exceeded) are logged and surfaced transparently so developers and users receive clear actionable feedback.
+- Wardrobe and AI lookbook images are securely stored in private Supabase Storage buckets and served via signed URLs.

@@ -1,10 +1,26 @@
 import { NextResponse } from "next/server";
 import { generateOutfitImage } from "@/lib/openai";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { WARDROBE_BUCKET } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    // 1. Authenticate user (Cost & abuse protection - A2)
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Authentication required to generate lookbook imagery." },
+        { status: 401 }
+      );
+    }
+
     const body = (await request.json()) as {
       outfitName?: string;
       styleCategory?: string;
@@ -34,8 +50,43 @@ export async function POST(request: Request) {
       .join(" ");
 
     const imageDataUrl = await generateOutfitImage(prompt);
-    return NextResponse.json({ success: true, imageDataUrl });
+
+    // 2. Persist generated look to Supabase Storage (A4)
+    let storagePath: string | null = null;
+    let signedUrl: string | null = null;
+
+    try {
+      const base64Data = imageDataUrl.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
+      const fileName = `lookbook-${Date.now()}.png`;
+      storagePath = `${user.id}/looks/${fileName}`;
+
+      const admin = createAdminClient();
+      const { error: uploadError } = await admin.storage
+        .from(WARDROBE_BUCKET)
+        .upload(storagePath, buffer, {
+          contentType: "image/png",
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        const { data: signed } = await admin.storage
+          .from(WARDROBE_BUCKET)
+          .createSignedUrl(storagePath, 60 * 60 * 24); // 24-hour signed url
+        signedUrl = signed?.signedUrl ?? null;
+      }
+    } catch (storageErr) {
+      console.warn("Lookbook storage persistence notice:", storageErr);
+    }
+
+    return NextResponse.json({
+      success: true,
+      imageDataUrl,
+      storagePath,
+      signedUrl: signedUrl ?? imageDataUrl,
+    });
   } catch (error) {
+    console.error("Error in generate-outfit-image route:", error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Could not generate image" },
       { status: 500 }

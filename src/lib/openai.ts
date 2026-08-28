@@ -28,7 +28,7 @@ async function fetchStructuredObject<T>({
 }): Promise<T> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("Missing OPENAI_API_KEY");
+    throw new Error("Missing OPENAI_API_KEY environment variable. Please configure your OpenAI API key in .env.local.");
   }
 
   const response = await fetch(OPENAI_API_URL, {
@@ -53,16 +53,23 @@ async function fetchStructuredObject<T>({
   });
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    const errorText = await response.text();
+    console.error(`OpenAI API call failed [${response.status}] for ${schemaName}:`, errorText);
+    throw new Error(`OpenAI error [${response.status}]: ${errorText}`);
   }
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
   if (typeof content !== "string") {
-    throw new Error("OpenAI response did not contain structured JSON content");
+    throw new Error("OpenAI response did not contain valid structured JSON content.");
   }
 
-  return JSON.parse(content) as T;
+  try {
+    return JSON.parse(content) as T;
+  } catch (parseError) {
+    console.error(`Failed to parse structured JSON from OpenAI [${schemaName}]:`, content, parseError);
+    throw new Error("Failed to parse OpenAI structured JSON output.");
+  }
 }
 
 const clothingAnalysisSchema = {
@@ -197,8 +204,8 @@ const recommendationSchema = {
   required: ["headline", "summary", "flatteringFocus", "avoidNotes", "outfits"],
 } satisfies SchemaDefinition;
 
-function normalizeStyleCategory(style: string): StyleCategory {
-  const value = style.toLowerCase() as StyleCategory;
+export function normalizeStyleCategory(style: string): StyleCategory {
+  const value = style.toLowerCase().trim() as StyleCategory;
   if (
     value === "casual" ||
     value === "streetwear" ||
@@ -212,18 +219,6 @@ function normalizeStyleCategory(style: string): StyleCategory {
     return value;
   }
   return "casual";
-}
-
-function fallbackAnalysis(): ClothingAnalysis {
-  return {
-    type: "other",
-    primaryColor: "black",
-    secondaryColor: "white",
-    pattern: "plain",
-    style: "casual",
-    material: "unknown",
-    description: "A versatile wardrobe piece suitable for casual styling.",
-  };
 }
 
 export async function analyzeClothingImage(imageBase64: string): Promise<ClothingAnalysis> {
@@ -263,64 +258,10 @@ export async function analyzeClothingImage(imageBase64: string): Promise<Clothin
       material: analysis.material || undefined,
       style: normalizeStyleCategory(analysis.style),
     };
-  } catch {
-    return fallbackAnalysis();
+  } catch (err) {
+    console.error("OpenAI Error in analyzeClothingImage:", err);
+    throw err;
   }
-}
-
-function fallbackOutfits(
-  analysis: ClothingAnalysis,
-  styleProfile?: StyleProfile,
-  count = 4
-): OutfitSuggestion[] {
-  const styles: StyleCategory[] = ["casual", "streetwear", "minimal", "formal"];
-
-  return styles.slice(0, count).map((style, index) => ({
-    id: `${style}-${index + 1}`,
-    name: `${styleProfile?.primaryStyle ?? style} look ${index + 1}`,
-    styleCategory: style,
-    occasion:
-      style === "formal" ? "Dinner date or office event" : style === "streetwear" ? "Weekend city day" : "Everyday wear",
-    confidenceScore: 82 - index * 3,
-    items: [
-      {
-        category: analysis.type,
-        description: analysis.description,
-        suggestedColor: analysis.primaryColor,
-        notes: "Use the uploaded piece as the anchor item.",
-      },
-      {
-        category: style === "formal" ? "pants" : "jeans",
-        description: style === "formal" ? "Tailored trousers" : "Relaxed straight-leg bottoms",
-        suggestedColor: style === "streetwear" ? "washed charcoal" : "soft stone",
-        notes: "Balance the anchor item with a neutral base.",
-      },
-      {
-        category: "shoes",
-        description: style === "formal" ? "Leather loafers" : "Clean minimalist sneakers",
-        suggestedColor: style === "streetwear" ? "black" : "white",
-        notes: "Keep the silhouette clean and grounded.",
-      },
-    ],
-    accessories: [
-      {
-        category: "watch",
-        description: "Simple metal watch",
-        suggestedColor: "silver",
-        notes: "Adds polish without competing with the outfit.",
-      },
-      {
-        category: "bag",
-        description: style === "streetwear" ? "Crossbody utility bag" : "Structured tote",
-        suggestedColor: "black",
-        notes: "Supports the outfit's overall vibe.",
-      },
-    ],
-    colorExplanation:
-      "The outfit pairs the anchor piece with neutral balancing colors so the palette feels intentional and easy to wear.",
-    styleExplanation:
-      "The look keeps a consistent silhouette and accessory language so the outfit feels coherent instead of mixed at random.",
-  }));
 }
 
 export async function generateOutfitSuggestions(
@@ -371,27 +312,10 @@ export async function generateOutfitSuggestions(
       styleCategory: normalizeStyleCategory(outfit.styleCategory),
       confidenceScore: Math.max(1, Math.min(100, Math.round(outfit.confidenceScore))),
     }));
-  } catch {
-    return fallbackOutfits(analysis, styleProfile, count);
+  } catch (err) {
+    console.error("OpenAI Error in generateOutfitSuggestions:", err);
+    throw err;
   }
-}
-
-function scoreStyle(answers: QuizAnswers): StyleCategory {
-  const joined = [
-    answers.ageRange,
-    answers.genderExpression ?? "",
-    ...answers.favoriteColors,
-    ...answers.preferredOutfits,
-    ...answers.fashionInspirations,
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  if (joined.includes("street")) return "streetwear";
-  if (joined.includes("tailored") || joined.includes("classic")) return "formal";
-  if (joined.includes("neutral") || joined.includes("clean")) return "minimal";
-  if (joined.includes("sport") || joined.includes("comfort")) return "sporty";
-  return "casual";
 }
 
 export async function classifyStyleFromQuiz(answers: QuizAnswers): Promise<StyleProfile> {
@@ -421,59 +345,10 @@ export async function classifyStyleFromQuiz(answers: QuizAnswers): Promise<Style
       genderExpression: profile.genderExpression ?? answers.genderExpression,
       preferredOutfits: profile.preferredOutfits?.length ? profile.preferredOutfits : answers.preferredOutfits,
     };
-  } catch {
-    return {
-      primaryStyle: scoreStyle(answers),
-      secondaryStyle: "minimal",
-      favoriteColors: answers.favoriteColors,
-      fashionInspirations: answers.fashionInspirations,
-      ageRange: answers.ageRange,
-      genderExpression: answers.genderExpression,
-      preferredOutfits: answers.preferredOutfits,
-    };
+  } catch (err) {
+    console.error("OpenAI Error in classifyStyleFromQuiz:", err);
+    throw err;
   }
-}
-
-function fallbackRecommendations(
-  answers: QuizAnswers,
-  profile: StyleProfile
-): PersonalStyleRecommendation {
-  const focus = [
-    answers.fitPriorities?.[0] ? `Lean into ${answers.fitPriorities[0].toLowerCase()} when choosing silhouettes.` : "Use clean, balanced proportions.",
-    profile.favoriteColors.length > 0 ? `Build around ${profile.favoriteColors.slice(0, 2).join(" and ")} as your anchor colors.` : "Start with neutral color anchors.",
-    answers.lifestyle ? `Dress for your ${answers.lifestyle.toLowerCase()} routine with comfortable but polished layers.` : "Choose pieces that work across day-to-night transitions.",
-  ];
-
-  return {
-    headline: `${profile.primaryStyle} pieces that should suit you well`,
-    summary:
-      "Your answers suggest you look best in outfits that feel intentional, easy to repeat, and balanced between comfort and structure.",
-    flatteringFocus: focus,
-    avoidNotes: [
-      "Avoid piling on too many competing statement pieces in one look.",
-      "Skip color combinations that fight your preferred palette unless one piece is neutral.",
-    ],
-    outfits: [
-      {
-        name: "Clean everyday base",
-        occasion: "Daily wear",
-        whyItFitsYou: "This keeps the silhouette easy and polished while reflecting your preferred colors and overall style direction.",
-        pieces: ["Relaxed structured overshirt", "Fitted tee or knit top", "Straight-leg trousers or denim", "Minimal sneakers"],
-      },
-      {
-        name: "Smart casual upgrade",
-        occasion: "Dinner, office, or date night",
-        whyItFitsYou: "It adds structure without feeling stiff, which suits a person who wants flattering shape and repeatable outfits.",
-        pieces: ["Tailored blazer or cropped jacket", "Monochrome inner layer", "Clean trousers", "Leather loafers or sleek boots"],
-      },
-      {
-        name: "Weekend personality look",
-        occasion: "Coffee run or social outing",
-        whyItFitsYou: "It gives you a bit more personality while still staying inside the style lane your answers point toward.",
-        pieces: ["Statement outer layer", "Neutral base top", "Relaxed bottoms", "Crossbody bag or watch"],
-      },
-    ],
-  };
 }
 
 export async function generatePersonalStyleRecommendations(
@@ -497,15 +372,16 @@ export async function generatePersonalStyleRecommendations(
         },
       ],
     });
-  } catch {
-    return fallbackRecommendations(answers, profile);
+  } catch (err) {
+    console.error("OpenAI Error in generatePersonalStyleRecommendations:", err);
+    throw err;
   }
 }
 
 export async function generateOutfitImage(prompt: string): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("Missing OPENAI_API_KEY");
+    throw new Error("Missing OPENAI_API_KEY environment variable. Please configure your OpenAI API key in .env.local.");
   }
 
   const model = process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-1";
@@ -524,13 +400,15 @@ export async function generateOutfitImage(prompt: string): Promise<string> {
   });
 
   if (!response.ok) {
-    throw new Error(await response.text());
+    const errorText = await response.text();
+    console.error(`OpenAI image generation failed [${response.status}]:`, errorText);
+    throw new Error(`OpenAI image error [${response.status}]: ${errorText}`);
   }
 
   const data = await response.json();
   const base64 = data.data?.[0]?.b64_json;
   if (typeof base64 !== "string") {
-    throw new Error("OpenAI image generation did not return image data");
+    throw new Error("OpenAI image generation did not return valid base64 image data.");
   }
 
   return `data:image/png;base64,${base64}`;

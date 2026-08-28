@@ -28,6 +28,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Missing file upload" }, { status: 400 });
     }
 
+    // B4 Server-side file validations: Max 10MB & Image MIME
+    if (!file.type.startsWith("image/")) {
+      return NextResponse.json(
+        { success: false, error: "Invalid file type. Only image files (JPEG, PNG, WEBP) are allowed." },
+        { status: 400 }
+      );
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { success: false, error: "File too large. Maximum allowed image size is 10MB." },
+        { status: 400 }
+      );
+    }
+
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "-")}`;
     const storagePath = `${user.id}/${fileName}`;
     const admin = createAdminClient();
@@ -73,6 +88,7 @@ export async function POST(request: Request) {
       analysis,
     });
   } catch (error) {
+    console.error("Error in upload-item route:", error);
     return NextResponse.json(
       {
         success: false,

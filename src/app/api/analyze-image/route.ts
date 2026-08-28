@@ -7,6 +7,15 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as AnalyzeImageRequest;
 
     if (!body.imageBase64) {
@@ -17,34 +26,28 @@ export async function POST(request: NextRequest) {
     let uploadedItemId: string | null = null;
 
     if (body.persist && body.storagePath) {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data, error } = await supabase
+        .from("uploaded_items")
+        .insert({
+          user_id: user.id,
+          image_path: body.storagePath,
+          detected_type: analysis.type,
+          detected_color: analysis.primaryColor,
+          detected_style: analysis.style,
+          detected_pattern: analysis.pattern,
+          metadata_json: analysis,
+        })
+        .select("id")
+        .single();
 
-      if (user) {
-        const { data, error } = await supabase
-          .from("uploaded_items")
-          .insert({
-            user_id: user.id,
-            image_path: body.storagePath,
-            detected_type: analysis.type,
-            detected_color: analysis.primaryColor,
-            detected_style: analysis.style,
-            detected_pattern: analysis.pattern,
-            metadata_json: analysis,
-          })
-          .select("id")
-          .single();
-
-        if (!error) {
-          uploadedItemId = data.id;
-        }
+      if (!error) {
+        uploadedItemId = data.id;
       }
     }
 
     return NextResponse.json({ success: true, analysis, uploadedItemId });
   } catch (error) {
+    console.error("Error in analyze-image route:", error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Unexpected error" },
       { status: 500 }

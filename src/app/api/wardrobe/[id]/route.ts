@@ -28,21 +28,28 @@ export async function PATCH(request: NextRequest, context: RouteContext<"/api/wa
   const { id } = await context.params;
   const body = await request.json();
 
+  const updatePayload: Record<string, unknown> = {
+    name: body.name,
+    category: body.category,
+    color: body.color,
+    secondary_color: body.secondaryColor ?? null,
+    style: body.style,
+    pattern: body.pattern ?? null,
+    material: body.material ?? null,
+    description: body.description ?? null,
+    notes: body.notes ?? null,
+    is_favorite: body.isFavorite ?? false,
+    updated_at: new Date().toISOString(),
+  };
+
+  // A3 Fix: Save image_path when new photo is uploaded during edit
+  if (body.imagePath !== undefined) {
+    updatePayload.image_path = body.imagePath;
+  }
+
   const { data, error } = await supabase
     .from("wardrobe_items")
-    .update({
-      name: body.name,
-      category: body.category,
-      color: body.color,
-      secondary_color: body.secondaryColor ?? null,
-      style: body.style,
-      pattern: body.pattern ?? null,
-      material: body.material ?? null,
-      description: body.description ?? null,
-      notes: body.notes ?? null,
-      is_favorite: body.isFavorite ?? false,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", id)
     .eq("user_id", user.id)
     .select("*")
