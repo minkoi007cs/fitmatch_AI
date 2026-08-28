@@ -1,8 +1,40 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Pencil, Plus, Trash2, UploadCloud } from "lucide-react";
-import { CLOTHING_CATEGORIES, STYLE_CATEGORIES, WardrobeItem } from "@/lib/types";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  UploadCloud,
+  Search,
+  X,
+  Camera,
+  Check,
+  Filter,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CLOTHING_CATEGORIES,
+  STYLE_CATEGORIES,
+  PATTERN_TYPES,
+  WardrobeItem,
+} from "@/lib/types";
+import {
+  compressImage,
+  validateImageFile,
+  getColorHex,
+} from "@/lib/utils";
+import { IMAGES } from "@/lib/images";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+import { Field } from "@/components/ui/Field";
+import { Chip } from "@/components/ui/Chip";
+import { Drawer } from "@/components/ui/Drawer";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
 
 type DraftItem = {
   name: string;
@@ -32,135 +64,77 @@ const emptyDraft: DraftItem = {
 
 export default function WardrobePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
   const [items, setItems] = useState<WardrobeItem[]>([]);
   const [draft, setDraft] = useState<DraftItem>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
   const [filters, setFilters] = useState({ category: "", color: "", style: "" });
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.category) count++;
+    if (filters.style) count++;
+    if (filters.color) count++;
+    return count;
+  }, [filters]);
 
   const filteredItems = useMemo(
     () =>
       items.filter((item) => {
         const categoryMatch = !filters.category || item.category === filters.category;
         const styleMatch = !filters.style || item.style === filters.style;
-        const colorMatch = !filters.color || item.color.toLowerCase().includes(filters.color.toLowerCase());
+        const colorMatch =
+          !filters.color ||
+          item.color.toLowerCase().includes(filters.color.toLowerCase()) ||
+          (item.secondary_color &&
+            item.secondary_color.toLowerCase().includes(filters.color.toLowerCase()));
         return categoryMatch && styleMatch && colorMatch;
       }),
     [filters, items]
   );
 
+  const loadWardrobe = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/wardrobe", { cache: "no-store" });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        toast(data.error ?? "Could not load wardrobe items.", "error");
+        return;
+      }
+
+      setItems(data.items || []);
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Network error loading wardrobe.", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
   useEffect(() => {
     void loadWardrobe();
-  }, []);
+  }, [loadWardrobe]);
 
-  async function loadWardrobe() {
-    setLoading(true);
-    setError(null);
-    const response = await fetch("/api/wardrobe", { cache: "no-store" });
-    const data = await response.json();
-    setLoading(false);
-
-    if (!response.ok || !data.success) {
-      setError(data.error ?? "Could not load wardrobe.");
-      return;
-    }
-
-    setItems(data.items);
-  }
-
-  function resetDraft() {
+  function openAddDrawer() {
     setDraft(emptyDraft);
     setEditingId(null);
+    setUploadedPreview(null);
+    setIsDrawerOpen(true);
   }
 
-  async function uploadAndAnalyze(file: File) {
-    setUploading(true);
-    setError(null);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const uploadResponse = await fetch("/api/upload-item", {
-        method: "POST",
-        body: formData,
-      });
-
-      const uploadData = await uploadResponse.json();
-      if (!uploadResponse.ok || !uploadData.success) {
-        throw new Error(uploadData.error ?? "Could not upload this image.");
-      }
-
-      setDraft((current) => ({
-        ...current,
-        name: current.name || `${uploadData.analysis.primaryColor} ${uploadData.analysis.type}`,
-        category: uploadData.analysis.type,
-        color: uploadData.analysis.primaryColor,
-        secondaryColor: uploadData.analysis.secondaryColor ?? "",
-        style: uploadData.analysis.style,
-        pattern: uploadData.analysis.pattern,
-        material: uploadData.analysis.material ?? "",
-        description: uploadData.analysis.description,
-        imagePath: uploadData.storagePath,
-      }));
-    } catch (uploadError) {
-      if (uploadError instanceof Error) {
-        setError(uploadError.message);
-      } else {
-        setError(JSON.stringify(uploadError));
-      }
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  }
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true);
-    setError(null);
-
-    const response = await fetch(editingId ? `/api/wardrobe/${editingId}` : "/api/wardrobe", {
-      method: editingId ? "PATCH" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
-    });
-
-    const data = await response.json();
-    setSaving(false);
-
-    if (!response.ok || !data.success) {
-      setError(data.error ?? "Could not save wardrobe item.");
-      return;
-    }
-
-    if (editingId) {
-      setItems((current) => current.map((item) => (item.id === editingId ? data.item : item)));
-    } else {
-      setItems((current) => [data.item, ...current]);
-    }
-
-    resetDraft();
-  }
-
-  async function handleDelete(id: string) {
-    const response = await fetch(`/api/wardrobe/${id}`, { method: "DELETE" });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      setError(data.error ?? "Could not delete wardrobe item.");
-      return;
-    }
-    setItems((current) => current.filter((item) => item.id !== id));
-    if (editingId === id) {
-      resetDraft();
-    }
-  }
-
-  function handleEdit(item: WardrobeItem) {
+  function openEditDrawer(item: WardrobeItem) {
     setEditingId(item.id);
     setDraft({
       name: item.name,
@@ -174,265 +148,633 @@ export default function WardrobePage() {
       notes: item.notes ?? "",
       imagePath: item.image_path ?? "",
     });
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setUploadedPreview(item.imageUrl ?? null);
+    setIsDrawerOpen(true);
+  }
+
+  function closeDrawer() {
+    setIsDrawerOpen(false);
+    setEditingId(null);
+    setUploadedPreview(null);
+  }
+
+  async function handleFileProcess(file: File) {
+    const validationError = validateImageFile(file, 10);
+    if (validationError) {
+      toast(validationError, "error");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Compress client side first
+      const base64Data = await compressImage(file, 1200, 0.82);
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const compressedBlob = new Blob([byteArray], { type: "image/jpeg" });
+      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+        type: "image/jpeg",
+      });
+
+      // Show local preview
+      const previewUrl = URL.createObjectURL(compressedFile);
+      setUploadedPreview(previewUrl);
+
+      const formData = new FormData();
+      formData.append("file", compressedFile);
+
+      const uploadResponse = await fetch("/api/upload-item", {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await uploadResponse.json();
+      if (!uploadResponse.ok || !uploadData.success) {
+        throw new Error(uploadData.error ?? "Could not analyze image.");
+      }
+
+      // Auto-fill metadata into draft
+      setDraft((current) => ({
+        ...current,
+        name: current.name || `${uploadData.analysis.primaryColor} ${uploadData.analysis.type}`,
+        category: uploadData.analysis.type,
+        color: uploadData.analysis.primaryColor,
+        secondaryColor: uploadData.analysis.secondaryColor ?? "",
+        style: uploadData.analysis.style,
+        pattern: uploadData.analysis.pattern,
+        material: uploadData.analysis.material ?? "",
+        description: uploadData.analysis.description,
+        imagePath: uploadData.storagePath,
+      }));
+
+      toast("Garment analyzed and fields auto-filled!", "success");
+    } catch (uploadError) {
+      toast(uploadError instanceof Error ? uploadError.message : "Upload failed.", "error");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+    }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+
+    try {
+      const response = await fetch(editingId ? `/api/wardrobe/${editingId}` : "/api/wardrobe", {
+        method: editingId ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "Could not save wardrobe item.");
+      }
+
+      if (editingId) {
+        setItems((current) => current.map((item) => (item.id === editingId ? data.item : item)));
+        toast("Wardrobe item updated.", "success");
+      } else {
+        setItems((current) => [data.item, ...current]);
+        toast("New item saved to wardrobe.", "success");
+      }
+
+      closeDrawer();
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Error saving wardrobe item.", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      const response = await fetch(`/api/wardrobe/${id}`, { method: "DELETE" });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "Could not delete wardrobe item.");
+      }
+
+      setItems((current) => current.filter((item) => item.id !== id));
+      setDeleteConfirmId(null);
+      toast("Item removed from wardrobe.", "info");
+
+      if (editingId === id) {
+        closeDrawer();
+      }
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "Failed to delete item.", "error");
+    }
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="grid gap-8 xl:grid-cols-[0.95fr_1.05fr]">
-        <section className="rounded-[2rem] border border-border bg-card p-6 shadow-xl shadow-black/5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Wardrobe manager</div>
-              <h1 className="mt-2 text-3xl font-semibold text-foreground">{editingId ? "Edit wardrobe item" : "Add a wardrobe item"}</h1>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Upload a photo to auto-fill the clothing metadata, or enter the details manually.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={resetDraft}
-              className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary"
-            >
-              New item
-            </button>
+    <main className="min-h-[calc(100vh-5rem)] bg-bg text-fg">
+      {/* Sticky Top Header Bar */}
+      <div className="sticky top-20 z-30 border-b border-border bg-bg/90 backdrop-blur-xl px-4 py-5 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+          <div className="flex items-baseline gap-3">
+            <h1 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-fg">
+              Your wardrobe
+            </h1>
+            <span className="font-mono text-xs sm:text-sm font-semibold tabular-nums text-accent-text">
+              ({items.length} {items.length === 1 ? "PIECE" : "PIECES"})
+            </span>
           </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 grid gap-4">
-            <div className="rounded-[1.5rem] border border-dashed border-border bg-background p-5">
-              <input ref={fileInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) {
-                  void uploadAndAnalyze(file);
-                }
-              }} />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background transition hover:opacity-90"
-              >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-                Upload or capture image
-              </button>
-              <p className="mt-3 text-xs text-muted-foreground">Camera capture is enabled on supported mobile browsers.</p>
+          <Button
+            variant="accent"
+            size="md"
+            onClick={openAddDrawer}
+            icon={<Plus className="h-4 w-4" />}
+          >
+            Add item
+          </Button>
+        </div>
+
+        {/* Filter Controls Row */}
+        <div className="mx-auto max-w-7xl mt-4 pt-3 border-t border-border/50 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs text-fg-subtle">
+              <Filter className="h-3.5 w-3.5" />
+              <span className="eyebrow text-[10px]">Filter</span>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Name">
-                <input
-                  value={draft.name}
-                  onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-                  placeholder="Cream zip hoodie"
-                  required
-                />
-              </Field>
-              <Field label="Category">
-                <select
-                  value={draft.category}
-                  onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
+            {/* Category Chips Scroll */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full sm:max-w-md scrollbar-none">
+              <Chip
+                active={!filters.category}
+                onClick={() => setFilters((f) => ({ ...f, category: "" }))}
+              >
+                All Categories
+              </Chip>
+              {CLOTHING_CATEGORIES.map((cat) => (
+                <Chip
+                  key={cat}
+                  active={filters.category === cat}
+                  onClick={() =>
+                    setFilters((f) => ({ ...f, category: f.category === cat ? "" : cat }))
+                  }
                 >
-                  {CLOTHING_CATEGORIES.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Primary color">
-                <input
-                  value={draft.color}
-                  onChange={(event) => setDraft((current) => ({ ...current, color: event.target.value }))}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-                  placeholder="Cream"
-                  required
-                />
-              </Field>
-              <Field label="Secondary color">
-                <input
-                  value={draft.secondaryColor}
-                  onChange={(event) => setDraft((current) => ({ ...current, secondaryColor: event.target.value }))}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-                  placeholder="Heather gray"
-                />
-              </Field>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <Field label="Style">
-                <select
-                  value={draft.style}
-                  onChange={(event) => setDraft((current) => ({ ...current, style: event.target.value }))}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-                >
-                  {STYLE_CATEGORIES.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Pattern">
-                <input
-                  value={draft.pattern}
-                  onChange={(event) => setDraft((current) => ({ ...current, pattern: event.target.value }))}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-                />
-              </Field>
-              <Field label="Material">
-                <input
-                  value={draft.material}
-                  onChange={(event) => setDraft((current) => ({ ...current, material: event.target.value }))}
-                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-                />
-              </Field>
-            </div>
-
-            <Field label="Description">
-              <textarea
-                value={draft.description}
-                onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
-                className="min-h-28 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-              />
-            </Field>
-
-            <Field label="Notes">
-              <textarea
-                value={draft.notes}
-                onChange={(event) => setDraft((current) => ({ ...current, notes: event.target.value }))}
-                className="min-h-24 w-full rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-                placeholder="Fit notes, seasonal notes, or care instructions"
-              />
-            </Field>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition hover:opacity-90 disabled:opacity-60"
-              >
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                {editingId ? "Update item" : "Save item"}
-              </button>
-              {error ? <div className="text-sm text-red-700">{error}</div> : null}
-            </div>
-          </form>
-        </section>
-
-        <section className="rounded-[2rem] border border-border bg-card p-6 shadow-xl shadow-black/5">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Closet overview</div>
-              <h2 className="mt-2 text-3xl font-semibold text-foreground">Your wardrobe</h2>
-            </div>
-            <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-3">
-              <input
-                value={filters.color}
-                onChange={(event) => setFilters((current) => ({ ...current, color: event.target.value }))}
-                className="rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-                placeholder="Filter by color"
-              />
-              <select
-                value={filters.category}
-                onChange={(event) => setFilters((current) => ({ ...current, category: event.target.value }))}
-                className="rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-              >
-                <option value="">All categories</option>
-                {CLOTHING_CATEGORIES.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={filters.style}
-                onChange={(event) => setFilters((current) => ({ ...current, style: event.target.value }))}
-                className="rounded-2xl border border-border bg-background px-4 py-3 text-sm"
-              >
-                <option value="">All styles</option>
-                {STYLE_CATEGORIES.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="flex min-h-96 items-center justify-center">
-              <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
-            </div>
-          ) : filteredItems.length === 0 ? (
-            <div className="mt-8 rounded-[1.5rem] border border-dashed border-border bg-background p-8 text-center text-sm text-muted-foreground">
-              Your wardrobe is empty. Upload your first item to unlock AI outfit suggestions.
-            </div>
-          ) : (
-            <div className="mt-8 grid gap-5 sm:grid-cols-2">
-              {filteredItems.map((item) => (
-                <article key={item.id} className="overflow-hidden rounded-[1.5rem] border border-border bg-background">
-                  <div className="aspect-[4/5] bg-secondary">
-                    {item.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No image</div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="text-lg font-semibold text-foreground">{item.name}</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {item.color}
-                          {item.secondary_color ? ` / ${item.secondary_color}` : ""} · {item.style}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(item)}
-                          className="rounded-full border border-border bg-card p-2 text-foreground transition hover:bg-secondary"
-                          aria-label={`Edit ${item.name}`}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDelete(item.id)}
-                          className="rounded-full border border-border bg-card p-2 text-foreground transition hover:bg-secondary"
-                          aria-label={`Delete ${item.name}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">{item.category}</span>
-                      {item.pattern ? <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">{item.pattern}</span> : null}
-                      {item.material ? <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">{item.material}</span> : null}
-                    </div>
-                    {item.description ? <p className="mt-4 text-sm leading-6 text-muted-foreground">{item.description}</p> : null}
-                  </div>
-                </article>
+                  {cat}
+                </Chip>
               ))}
             </div>
-          )}
-        </section>
-      </div>
-    </main>
-  );
-}
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="grid gap-2 text-sm font-medium text-foreground">
-      <span>{label}</span>
-      {children}
-    </label>
+            {/* Style Chips */}
+            <div className="hidden lg:flex items-center gap-1.5 overflow-x-auto pb-1 max-w-sm scrollbar-none">
+              <Chip
+                active={!filters.style}
+                onClick={() => setFilters((f) => ({ ...f, style: "" }))}
+              >
+                All Styles
+              </Chip>
+              {STYLE_CATEGORIES.map((st) => (
+                <Chip
+                  key={st}
+                  active={filters.style === st}
+                  onClick={() =>
+                    setFilters((f) => ({ ...f, style: f.style === st ? "" : st }))
+                  }
+                >
+                  {st}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {/* Color Search & Clear Active Filters */}
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            <div className="w-48 sm:w-56">
+              <Input
+                placeholder="Search color..."
+                value={filters.color}
+                onChange={(e) => setFilters((f) => ({ ...f, color: e.target.value }))}
+                icon={<Search className="h-3.5 w-3.5" />}
+                className="h-8 text-xs py-1.5"
+              />
+            </div>
+
+            {activeFilterCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setFilters({ category: "", color: "", style: "" })}
+                className="inline-flex items-center gap-1 text-[11px] font-mono text-accent-text hover:underline cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+                Clear ({activeFilterCount})
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Wardrobe Grid / States */}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {loading ? (
+          /* 8-Card Skeleton Loading */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={`skel-${i}`} className="space-y-3">
+                <Skeleton className="aspect-[3/4] w-full rounded-[2px]" />
+                <Skeleton className="h-4 w-3/4 rounded-[2px]" />
+                <Skeleton className="h-3 w-1/2 rounded-[2px]" />
+              </div>
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          /* Empty State */
+          <EmptyState
+            imageSrc={IMAGES.emptyWardrobe.src}
+            imageAlt="Empty Wardrobe"
+            eyebrow="DIGITAL CLOSET"
+            headline="Your wardrobe is empty"
+            body="Add your first piece and FitMatch will start analyzing silhouettes and building outfits around it."
+            action={
+              <Button variant="accent" onClick={openAddDrawer} icon={<Plus className="h-4 w-4" />}>
+                Add Your First Piece
+              </Button>
+            }
+          />
+        ) : filteredItems.length === 0 ? (
+          /* Filter Empty State */
+          <div className="py-20 text-center space-y-3">
+            <p className="font-display text-2xl font-bold text-fg">No items match your filters.</p>
+            <p className="text-xs text-fg-muted">
+              Try clearing color, category, or style filters to see all pieces.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilters({ category: "", color: "", style: "" })}
+            >
+              Reset Filters
+            </Button>
+          </div>
+        ) : (
+          /* Responsive 2 / 3 / 4 / 5 Column Grid */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+            {filteredItems.map((item) => {
+              const swatchColor = getColorHex(item.color);
+              const isConfirmingDelete = deleteConfirmId === item.id;
+
+              return (
+                <article
+                  key={item.id}
+                  className="group relative flex flex-col rounded-[2px] transition-all duration-300"
+                >
+                  {/* Image Container with 3:4 Aspect & Hover Reveal */}
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[2px] border border-border bg-bg-elevated transition-colors group-hover:border-border-strong">
+                    {item.imageUrl ? (
+                      /* Plain <img> for Supabase signed rotating URLs per constraint */
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                      />
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center p-4 text-center text-xs text-fg-subtle bg-bg-raised">
+                        <span className="font-mono text-lg mb-1 opacity-40">∅</span>
+                        <span>No image provided</span>
+                      </div>
+                    )}
+
+                    {/* Gradient Overlay with Chips on Hover */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-bg-elevated/95 via-bg-elevated/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3 pointer-events-none">
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="inline-flex items-center gap-1 rounded-[2px] bg-bg/80 border border-border px-2 py-0.5 text-[10px] font-mono uppercase text-fg">
+                          <span
+                            className="h-2 w-2 rounded-full border border-white/20"
+                            style={{ backgroundColor: swatchColor }}
+                          />
+                          {item.color}
+                        </span>
+                        <span className="rounded-[2px] bg-bg/80 border border-border px-2 py-0.5 text-[10px] font-mono uppercase text-fg-muted">
+                          {item.style}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons Top-Right on Hover */}
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                      <button
+                        type="button"
+                        onClick={() => openEditDrawer(item)}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-border-strong bg-bg-elevated/90 text-fg hover:bg-bg-raised hover:text-accent-text transition cursor-pointer shadow-md"
+                        aria-label={`Edit ${item.name}`}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(item.id)}
+                        className="flex h-7 w-7 items-center justify-center rounded-full border border-border-strong bg-bg-elevated/90 text-fg-muted hover:bg-danger/20 hover:text-danger transition cursor-pointer shadow-md"
+                        aria-label={`Delete ${item.name}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    {/* Delete Confirmation Popover (No browser confirm alert) */}
+                    {isConfirmingDelete && (
+                      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-bg/95 backdrop-blur-sm p-4 text-center space-y-3">
+                        <p className="text-xs font-semibold text-fg">Delete this piece?</p>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            Delete
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteConfirmId(null)}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Compact Two-Line Typography Block Below Image */}
+                  <div className="mt-2.5 space-y-0.5">
+                    <h3 className="font-display text-sm font-bold text-fg truncate">
+                      {item.name}
+                    </h3>
+                    <p className="text-xs text-fg-muted uppercase tracking-wider font-mono text-[11px] truncate">
+                      {item.category}
+                      {item.material ? ` · ${item.material}` : ""}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Right-Side Slide-Over Drawer for Add / Edit Item */}
+      <Drawer
+        isOpen={isDrawerOpen}
+        onClose={closeDrawer}
+        eyebrow="WARDROBE MANAGER"
+        title={editingId ? "Edit Garment" : "Add New Garment"}
+        description="Upload an image to auto-detect category, palette, and styling attributes."
+      >
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Top Drag & Drop Upload Zone + Camera Capture */}
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) void handleFileProcess(file);
+            }}
+            className={`relative flex flex-col items-center justify-center p-6 border border-dashed rounded-[4px] transition-colors duration-150 text-center ${
+              dragOver
+                ? "border-accent-text bg-accent-soft"
+                : "border-border-strong bg-bg-raised/40 hover:border-border-strong hover:bg-bg-raised"
+            }`}
+          >
+            {/* Hidden Inputs for File Browser & Camera Capture */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleFileProcess(file);
+              }}
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleFileProcess(file);
+              }}
+            />
+
+            {uploading ? (
+              <div className="py-6 space-y-3">
+                <div className="h-1 w-36 mx-auto bg-bg-raised rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-accent"
+                    animate={{ x: ["-100%", "100%"] }}
+                    transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                  />
+                </div>
+                <div className="eyebrow text-accent-text animate-pulse">Analyzing your item…</div>
+              </div>
+            ) : uploadedPreview ? (
+              <div className="space-y-3">
+                <div className="relative h-32 w-24 mx-auto overflow-hidden rounded-[2px] border border-border shadow-lg">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={uploadedPreview}
+                    alt="Uploaded garment preview"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Change photo
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-full bg-bg-raised text-fg-muted border border-border">
+                  <UploadCloud className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-fg">
+                    Drop your image here, or{" "}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-accent-text hover:underline font-bold cursor-pointer"
+                    >
+                      browse
+                    </button>
+                  </p>
+                  <p className="text-[11px] text-fg-subtle">
+                    Supports JPEG, PNG, WEBP up to 10MB
+                  </p>
+                </div>
+                <div className="pt-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => cameraInputRef.current?.click()}
+                    icon={<Camera className="h-3.5 w-3.5" />}
+                  >
+                    Take photo
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Form Fields with AI Auto-Fill Animation */}
+          <AnimatePresence>
+            <motion.div
+              key="form-fields"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-4"
+            >
+              <Field label="Piece Name" htmlFor="field-name" required>
+                <Input
+                  id="field-name"
+                  value={draft.name}
+                  onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+                  placeholder="e.g. Oversized Charcoal Wool Blazer"
+                  required
+                />
+              </Field>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Category" htmlFor="field-category">
+                  <Select
+                    id="field-category"
+                    value={draft.category}
+                    onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))}
+                  >
+                    {CLOTHING_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+
+                <Field label="Style Aesthetic" htmlFor="field-style">
+                  <Select
+                    id="field-style"
+                    value={draft.style}
+                    onChange={(e) => setDraft((d) => ({ ...d, style: e.target.value }))}
+                  >
+                    {STYLE_CATEGORIES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Primary Color" htmlFor="field-color" required>
+                  <Input
+                    id="field-color"
+                    value={draft.color}
+                    onChange={(e) => setDraft((d) => ({ ...d, color: e.target.value }))}
+                    placeholder="e.g. Black"
+                    required
+                  />
+                </Field>
+
+                <Field label="Secondary Color" htmlFor="field-sec-color">
+                  <Input
+                    id="field-sec-color"
+                    value={draft.secondaryColor}
+                    onChange={(e) => setDraft((d) => ({ ...d, secondaryColor: e.target.value }))}
+                    placeholder="e.g. Cream"
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Pattern" htmlFor="field-pattern">
+                  <Select
+                    id="field-pattern"
+                    value={draft.pattern}
+                    onChange={(e) => setDraft((d) => ({ ...d, pattern: e.target.value }))}
+                  >
+                    {PATTERN_TYPES.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+
+                <Field label="Material" htmlFor="field-material">
+                  <Input
+                    id="field-material"
+                    value={draft.material}
+                    onChange={(e) => setDraft((d) => ({ ...d, material: e.target.value }))}
+                    placeholder="e.g. 100% Wool"
+                  />
+                </Field>
+              </div>
+
+              <Field label="Visual Description" htmlFor="field-desc">
+                <Textarea
+                  id="field-desc"
+                  value={draft.description}
+                  onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
+                  placeholder="Detailed description of weave, cut, lapels, hardware..."
+                  rows={2}
+                />
+              </Field>
+
+              <Field label="Styling & Fit Notes" htmlFor="field-notes">
+                <Textarea
+                  id="field-notes"
+                  value={draft.notes}
+                  onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+                  placeholder="Care instructions, seasonal preference, sizing notes..."
+                  rows={2}
+                />
+              </Field>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Drawer Actions */}
+          <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={closeDrawer}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="accent"
+              loading={saving}
+              icon={<Check className="h-4 w-4" />}
+            >
+              {editingId ? "Update Garment" : "Save to Wardrobe"}
+            </Button>
+          </div>
+        </form>
+      </Drawer>
+    </main>
   );
 }

@@ -1,61 +1,153 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f5ef;
-  --foreground: #1f1d1a;
-  --card: #fffdf8;
-  --card-foreground: #1f1d1a;
-  --muted: #efe9de;
-  --muted-foreground: #6c645a;
-  --border: rgba(73, 58, 40, 0.12);
-  --primary: #1f1d1a;
-  --primary-foreground: #f7f5ef;
-  --secondary: #ece4d6;
-  --secondary-foreground: #302a23;
-  --accent: #b86a39;
-  --accent-foreground: #fff8f2;
-  --ring: rgba(184, 106, 57, 0.35);
+  /* Dark Luxury Palette */
+  --bg: #0A0A0B;            /* page canvas, near-black with a cool cast */
+  --bg-elevated: #131315;   /* cards, panels */
+  --bg-raised: #1B1B1E;     /* hover, inputs, chips */
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --fg: #F4F2ED;            /* primary text, warm off-white */
+  --fg-muted: #9C978E;      /* secondary text */
+  --fg-subtle: #6A665F;     /* labels, meta, disabled */
+  --accent: #C4622D;        /* terracotta — FILLS ONLY */
+  --accent-hover: #D97035;
+  --accent-text: #E8834D;   /* terracotta as TEXT on dark (7.33:1 AA contrast) */
+  --accent-soft: rgba(196, 98, 45, 0.12);
+  --accent-ring: rgba(196, 98, 45, 0.40);
+  --success: #6FBF8B;
+  --danger: #E5705F;
+
+  /* Backward Compatibility Aliases */
+  --background: var(--bg);
+  --foreground: var(--fg);
+  --card: var(--bg-elevated);
+  --card-foreground: var(--fg);
+  --muted: var(--bg-raised);
+  --muted-foreground: var(--fg-muted);
+  --primary: var(--accent);
+  --primary-foreground: #0A0A0B;
+  --secondary: var(--bg-raised);
+  --secondary-foreground: var(--fg);
+  --ring: var(--accent-ring);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-raised: var(--bg-raised);
   --color-border: var(--border);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
   --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ring: var(--accent-ring);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--bg-elevated);
+  --color-card-foreground: var(--fg);
+  --color-muted: var(--bg-raised);
+  --color-muted-foreground: var(--fg-muted);
+  --color-primary: var(--accent);
+  --color-primary-foreground: #0A0A0B;
+  --color-secondary: var(--bg-raised);
+  --color-secondary-foreground: var(--fg);
+  --color-ring: var(--accent-ring);
+
+  --font-display: var(--font-display), "Archivo", sans-serif;
+  --font-sans: var(--font-geist-sans), "Geist", sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", monospace;
 }
 
 * {
   border-color: var(--border);
+  box-sizing: border-box;
 }
 
 html {
-  background:
-    radial-gradient(circle at top, rgba(184, 106, 57, 0.18), transparent 28rem),
-    linear-gradient(180deg, #fbf9f3 0%, #f4efe5 100%);
+  background-color: var(--bg);
+  color: var(--fg);
+  color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {
   min-height: 100vh;
-  background: transparent;
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), sans-serif;
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  overflow-x: hidden;
 }
 
+/* Typography Rules */
+.font-display {
+  font-family: var(--font-display), "Archivo", sans-serif;
+  font-stretch: 82%;
+  letter-spacing: -0.03em;
+}
+
+.font-mono-tabular {
+  font-family: var(--font-geist-mono), "Geist Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Eyebrow Label Standard */
+.eyebrow {
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--fg-subtle);
+}
+
+/* Form Outlines & Focus Rings */
 button,
 input,
 select,
 textarea {
-  outline-color: var(--ring);
+  outline-color: var(--accent-ring);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+/* Custom Minimal Dark Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-subtle);
+}
+
+/* Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
