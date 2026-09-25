@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       } = await supabase.auth.getUser();
 
       if (user?.email) {
-        await supabase.from("users").upsert({
+        await supabase.from("fm_users").upsert({
           id: user.id,
           email: user.email,
           updated_at: new Date().toISOString(),

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
   const style = request.nextUrl.searchParams.get("style");
 
   let query = supabase
-    .from("wardrobe_items")
+    .from("fm_wardrobe_items")
     .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       is_favorite: body.isFavorite ?? false,
     };
 
-    const { data, error } = await supabase.from("wardrobe_items").insert(payload).select("*").single();
+    const { data, error } = await supabase.from("fm_wardrobe_items").insert(payload).select("*").single();
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }

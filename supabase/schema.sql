@@ -19,7 +19,7 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.users (id, email)
+  insert into public.fm_users (id, email)
   values (new.id, coalesce(new.email, ''))
   on conflict (id) do update
   set email = excluded.email;
@@ -28,7 +28,7 @@ begin
 end;
 $$;
 
-create table if not exists public.users (
+create table if not exists public.fm_users (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null default '',
   style_profile jsonb,
@@ -37,14 +37,14 @@ create table if not exists public.users (
   updated_at timestamptz not null default now()
 );
 
-alter table public.users
+alter table public.fm_users
   add column if not exists email text not null default '',
   add column if not exists style_profile jsonb,
   add column if not exists quiz_answers jsonb,
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
 
-create table if not exists public.wardrobe_items (
+create table if not exists public.fm_wardrobe_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   name text not null,
@@ -63,7 +63,7 @@ create table if not exists public.wardrobe_items (
   updated_at timestamptz not null default now()
 );
 
-alter table public.wardrobe_items
+alter table public.fm_wardrobe_items
   add column if not exists user_id uuid references auth.users (id) on delete cascade,
   add column if not exists name text not null default 'Untitled item',
   add column if not exists category text not null default 'other',
@@ -80,7 +80,7 @@ alter table public.wardrobe_items
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
 
-create table if not exists public.uploaded_items (
+create table if not exists public.fm_uploaded_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   image_path text not null,
@@ -92,7 +92,7 @@ create table if not exists public.uploaded_items (
   created_at timestamptz not null default now()
 );
 
-alter table public.uploaded_items
+alter table public.fm_uploaded_items
   add column if not exists user_id uuid references auth.users (id) on delete cascade,
   add column if not exists image_path text,
   add column if not exists detected_type text,
@@ -102,50 +102,50 @@ alter table public.uploaded_items
   add column if not exists metadata_json jsonb,
   add column if not exists created_at timestamptz not null default now();
 
-create table if not exists public.outfits (
+create table if not exists public.fm_outfits (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  source_item_id uuid references public.wardrobe_items (id) on delete set null,
+  source_item_id uuid references public.fm_wardrobe_items (id) on delete set null,
   data_json jsonb not null,
   created_at timestamptz not null default now()
 );
 
-alter table public.outfits
+alter table public.fm_outfits
   add column if not exists user_id uuid references auth.users (id) on delete cascade,
-  add column if not exists source_item_id uuid references public.wardrobe_items (id) on delete set null,
+  add column if not exists source_item_id uuid references public.fm_wardrobe_items (id) on delete set null,
   add column if not exists data_json jsonb,
   add column if not exists created_at timestamptz not null default now();
 
-update public.users
+update public.fm_users
 set updated_at = coalesce(updated_at, now()),
     created_at = coalesce(created_at, now());
 
-update public.wardrobe_items
+update public.fm_wardrobe_items
 set updated_at = coalesce(updated_at, now()),
     created_at = coalesce(created_at, now());
 
-update public.uploaded_items
+update public.fm_uploaded_items
 set created_at = coalesce(created_at, now());
 
-update public.outfits
+update public.fm_outfits
 set created_at = coalesce(created_at, now());
 
-create index if not exists users_email_idx on public.users (email);
-create index if not exists wardrobe_items_user_id_idx on public.wardrobe_items (user_id);
-create index if not exists wardrobe_items_category_idx on public.wardrobe_items (category);
-create index if not exists wardrobe_items_style_idx on public.wardrobe_items (style);
-create index if not exists uploaded_items_user_id_idx on public.uploaded_items (user_id);
-create index if not exists outfits_user_id_idx on public.outfits (user_id);
+create index if not exists fm_users_email_idx on public.fm_users (email);
+create index if not exists fm_wardrobe_items_user_id_idx on public.fm_wardrobe_items (user_id);
+create index if not exists fm_wardrobe_items_category_idx on public.fm_wardrobe_items (category);
+create index if not exists fm_wardrobe_items_style_idx on public.fm_wardrobe_items (style);
+create index if not exists fm_uploaded_items_user_id_idx on public.fm_uploaded_items (user_id);
+create index if not exists fm_outfits_user_id_idx on public.fm_outfits (user_id);
 
-drop trigger if exists set_users_updated_at on public.users;
-create trigger set_users_updated_at
-before update on public.users
+drop trigger if exists set_fm_users_updated_at on public.fm_users;
+create trigger set_fm_users_updated_at
+before update on public.fm_users
 for each row
 execute function public.set_updated_at();
 
-drop trigger if exists set_wardrobe_items_updated_at on public.wardrobe_items;
-create trigger set_wardrobe_items_updated_at
-before update on public.wardrobe_items
+drop trigger if exists set_fm_wardrobe_items_updated_at on public.fm_wardrobe_items;
+create trigger set_fm_wardrobe_items_updated_at
+before update on public.fm_wardrobe_items
 for each row
 execute function public.set_updated_at();
 
@@ -155,82 +155,82 @@ after insert on auth.users
 for each row
 execute function public.handle_new_user();
 
-alter table public.users enable row level security;
-alter table public.wardrobe_items enable row level security;
-alter table public.uploaded_items enable row level security;
-alter table public.outfits enable row level security;
+alter table public.fm_users enable row level security;
+alter table public.fm_wardrobe_items enable row level security;
+alter table public.fm_uploaded_items enable row level security;
+alter table public.fm_outfits enable row level security;
 
-drop policy if exists "users_select_own" on public.users;
-create policy "users_select_own"
-on public.users
+drop policy if exists "fm_users_select_own" on public.fm_users;
+create policy "fm_users_select_own"
+on public.fm_users
 for select
 using (auth.uid() = id);
 
-drop policy if exists "users_insert_own" on public.users;
-create policy "users_insert_own"
-on public.users
+drop policy if exists "fm_users_insert_own" on public.fm_users;
+create policy "fm_users_insert_own"
+on public.fm_users
 for insert
 with check (auth.uid() = id);
 
-drop policy if exists "users_update_own" on public.users;
-create policy "users_update_own"
-on public.users
+drop policy if exists "fm_users_update_own" on public.fm_users;
+create policy "fm_users_update_own"
+on public.fm_users
 for update
 using (auth.uid() = id)
 with check (auth.uid() = id);
 
-drop policy if exists "wardrobe_select_own" on public.wardrobe_items;
-create policy "wardrobe_select_own"
-on public.wardrobe_items
+drop policy if exists "fm_wardrobe_select_own" on public.fm_wardrobe_items;
+create policy "fm_wardrobe_select_own"
+on public.fm_wardrobe_items
 for select
 using (auth.uid() = user_id);
 
-drop policy if exists "wardrobe_insert_own" on public.wardrobe_items;
-create policy "wardrobe_insert_own"
-on public.wardrobe_items
+drop policy if exists "fm_wardrobe_insert_own" on public.fm_wardrobe_items;
+create policy "fm_wardrobe_insert_own"
+on public.fm_wardrobe_items
 for insert
 with check (auth.uid() = user_id);
 
-drop policy if exists "wardrobe_update_own" on public.wardrobe_items;
-create policy "wardrobe_update_own"
-on public.wardrobe_items
+drop policy if exists "fm_wardrobe_update_own" on public.fm_wardrobe_items;
+create policy "fm_wardrobe_update_own"
+on public.fm_wardrobe_items
 for update
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-drop policy if exists "wardrobe_delete_own" on public.wardrobe_items;
-create policy "wardrobe_delete_own"
-on public.wardrobe_items
+drop policy if exists "fm_wardrobe_delete_own" on public.fm_wardrobe_items;
+create policy "fm_wardrobe_delete_own"
+on public.fm_wardrobe_items
 for delete
 using (auth.uid() = user_id);
 
-drop policy if exists "uploaded_select_own" on public.uploaded_items;
-create policy "uploaded_select_own"
-on public.uploaded_items
+drop policy if exists "fm_uploaded_select_own" on public.fm_uploaded_items;
+create policy "fm_uploaded_select_own"
+on public.fm_uploaded_items
 for select
 using (auth.uid() = user_id);
 
-drop policy if exists "uploaded_insert_own" on public.uploaded_items;
-create policy "uploaded_insert_own"
-on public.uploaded_items
+drop policy if exists "fm_uploaded_insert_own" on public.fm_uploaded_items;
+create policy "fm_uploaded_insert_own"
+on public.fm_uploaded_items
 for insert
 with check (auth.uid() = user_id);
 
-drop policy if exists "outfits_select_own" on public.outfits;
-create policy "outfits_select_own"
-on public.outfits
+drop policy if exists "fm_outfits_select_own" on public.fm_outfits;
+create policy "fm_outfits_select_own"
+on public.fm_outfits
 for select
 using (auth.uid() = user_id);
 
-drop policy if exists "outfits_insert_own" on public.outfits;
-create policy "outfits_insert_own"
-on public.outfits
+drop policy if exists "fm_outfits_insert_own" on public.fm_outfits;
+create policy "fm_outfits_insert_own"
+on public.fm_outfits
 for insert
 with check (auth.uid() = user_id);
 
-drop policy if exists "outfits_delete_own" on public.outfits;
-create policy "outfits_delete_own"
-on public.outfits
+drop policy if exists "fm_outfits_delete_own" on public.fm_outfits;
+create policy "fm_outfits_delete_own"
+on public.fm_outfits
 for delete
 using (auth.uid() = user_id);
 

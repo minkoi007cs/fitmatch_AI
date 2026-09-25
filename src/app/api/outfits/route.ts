@@ -19,7 +19,7 @@ export async function GET() {
   }
 
   const { data, error } = await supabase
-    .from("outfits")
+    .from("fm_outfits")
     .select("*")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { data, error } = await supabase
-      .from("outfits")
+      .from("fm_outfits")
       .insert({
         user_id: user.id,
         source_item_id: body.sourceItemId ?? null,
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { error } = await supabase
-      .from("outfits")
+      .from("fm_outfits")
       .delete()
       .eq("id", id)
       .eq("user_id", user.id);

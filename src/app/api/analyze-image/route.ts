@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     if (body.persist && body.storagePath) {
       const { data, error } = await supabase
-        .from("uploaded_items")
+        .from("fm_uploaded_items")
         .insert({
           user_id: user.id,
           image_path: body.storagePath,

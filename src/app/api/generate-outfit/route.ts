@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     let styleProfile = body.styleProfile as StyleProfile | undefined;
     if (user && !styleProfile) {
       const { data } = await supabase
-        .from("users")
+        .from("fm_users")
         .select("style_profile")
         .eq("id", user.id)
         .single();

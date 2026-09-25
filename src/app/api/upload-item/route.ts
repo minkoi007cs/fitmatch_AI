@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     const analysis = await analyzeClothingImage(toBase64(buffer));
 
     const { data: inserted, error: insertError } = await supabase
-      .from("uploaded_items")
+      .from("fm_uploaded_items")
       .insert({
         user_id: user.id,
         image_path: storagePath,

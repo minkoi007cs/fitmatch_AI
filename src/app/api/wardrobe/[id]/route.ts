@@ -48,7 +48,7 @@ export async function PATCH(request: NextRequest, context: RouteContext<"/api/wa
   }
 
   const { data, error } = await supabase
-    .from("wardrobe_items")
+    .from("fm_wardrobe_items")
     .update(updatePayload)
     .eq("id", id)
     .eq("user_id", user.id)
@@ -75,13 +75,13 @@ export async function DELETE(_request: NextRequest, context: RouteContext<"/api/
 
   const { id } = await context.params;
   const { data: existing } = await supabase
-    .from("wardrobe_items")
+    .from("fm_wardrobe_items")
     .select("image_path")
     .eq("id", id)
     .eq("user_id", user.id)
     .single();
 
-  const { error } = await supabase.from("wardrobe_items").delete().eq("id", id).eq("user_id", user.id);
+  const { error } = await supabase.from("fm_wardrobe_items").delete().eq("id", id).eq("user_id", user.id);
   if (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -92,3 +92,4 @@ export async function DELETE(_request: NextRequest, context: RouteContext<"/api/
 
   return NextResponse.json({ success: true });
 }
+

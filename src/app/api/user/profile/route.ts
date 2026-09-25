@@ -21,7 +21,7 @@ export async function GET() {
   }
 
   const { data, error } = await supabase
-    .from("users")
+    .from("fm_users")
     .select("*")
     .eq("id", user.id)
     .single();
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabase.from("users").upsert(payload).select("*").single();
+    const { data, error } = await supabase.from("fm_users").upsert(payload).select("*").single();
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
