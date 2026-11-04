@@ -39,7 +39,7 @@ FitMatch auth client has been created on the existing hub:
 
 The SDK is a dependency-free local snapshot at `vendor/infra-sdk`; Vercel requires no filesystem path outside this repository. Generated vendor files are excluded from app lint.
 
-## Production rollout — still required
+## Production configuration and rollout checklist
 
 1. Apply `supabase/migrations/20261103_app_system_identity.sql` to **FitMatch's existing Supabase project**, not the smoke/test project. It adds two private tables and two service-only functions; it does not rename/delete/copy wardrobe data. Run after the existing `fm_*` schema is present. Do not replace the existing schema.
 2. Keep the existing `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` and OpenAI settings. The service key is needed only for identity provisioning/mapping, refresh coordination and the pre-existing storage upload functionality.
@@ -60,7 +60,11 @@ Use `FITMATCH_AUTH_PROVIDER=app-system`, hub URL `https://system.minkoi.org`, th
 5. For a Vercel preview, register that exact preview origin first and configure `APP_URL` to the same origin. Never wildcard arbitrary Vercel domains; do not use production's APP_URL for a different preview host. Supabase local verification happens server-to-server; the existing OAuth callback for legacy mode is preserved.
 6. Deploy the branch, connect the existing authenticated account and verify that the original two items remain visible after reload and after sign-out/sign-in. Test a new user and a second user for isolation, then quiz/upload/outfits. A temporary hosted login success is not proof of data persistence or account isolation.
 
-No production migration, Vercel env change, Git push or deployment has been performed in this task. Existing production continues using its previous auth. The remaining live acceptance needs the migration/settings and a real App System sign-in; synthetic integration tests are not labeled live OAuth success.
+Production rollout completed on 2026-11-04. The additive transaction was applied on the existing FitMatch Supabase project through its authenticated SQL Editor, after switching to the correct GitHub Supabase account. All four existing data fingerprints were identical before/after migration and after auth linking. New tables have RLS; browser roles cannot access them or execute refresh RPCs; service_role access and SECURITY INVOKER were verified.
+
+The production-target build was promoted to https://fitmatch.minkoi.org. Live GitHub sign-in through App System, explicit connection to the existing wardrobe, reload, logout and sign-in again all passed. Both original items and their images remained visible; the mapping retained the original local user UUID. Guest wardrobe and generation APIs returned401. No error/fatal runtime logs were found in the checked post-deploy window. These checks do not claim that all providers or AI generation were tested.
+
+Detailed private evidence is in the local Document/fitmatch-audit-2026-11-03/deployment folder. Do not commit account bindings or token-bearing browser URLs into this repository.
 
 ### Rollback
 
