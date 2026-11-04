@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateRequest } from "@/lib/auth/request";
 
 export const dynamic = "force-dynamic";
 
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  return { supabase, user };
-}
-
-export async function GET() {
-  const { supabase, user } = await requireUser();
-  if (!user) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+export async function GET(request: Request) {
+  const auth = await authenticateRequest(request);
+  if (!auth.ok) return auth.response;
+  const { supabase, user } = auth;
 
   const { data, error } = await supabase
     .from("fm_outfits")
@@ -33,13 +24,16 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { supabase, user } = await requireUser();
-  if (!user) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await authenticateRequest(request);
+  if (!auth.ok) return auth.response;
+  const { supabase, user } = auth;
 
   try {
     const body = await request.json();
+    if (body.sourceItemId) {
+      const source = await supabase.from("fm_wardrobe_items").select("id").eq("id", body.sourceItemId).eq("user_id", user.id).maybeSingle();
+      if (source.error || !source.data) return NextResponse.json({ success: false, error: "Source item not found" }, { status: 404 });
+    }
     const { data, error } = await supabase
       .from("fm_outfits")
       .insert({
@@ -64,10 +58,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const { supabase, user } = await requireUser();
-  if (!user) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await authenticateRequest(request);
+  if (!auth.ok) return auth.response;
+  const { supabase, user } = auth;
 
   try {
     const { searchParams } = new URL(request.url);

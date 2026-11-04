@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateRequest } from "@/lib/auth/request";
+import type { createClient } from "@/lib/supabase/server";
 import { WardrobeItemRecord } from "@/lib/types";
+import { ownsImagePath } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-async function requireUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  return { supabase, user };
-}
 
 async function signImageUrl(supabase: Awaited<ReturnType<typeof createClient>>, imagePath?: string | null) {
   if (!imagePath) return null;
@@ -20,10 +14,9 @@ async function signImageUrl(supabase: Awaited<ReturnType<typeof createClient>>, 
 }
 
 export async function GET(request: NextRequest) {
-  const { supabase, user } = await requireUser();
-  if (!user) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await authenticateRequest(request);
+  if (!auth.ok) return auth.response;
+  const { supabase, user } = auth;
 
   const category = request.nextUrl.searchParams.get("category");
   const color = request.nextUrl.searchParams.get("color");
@@ -55,13 +48,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: Request) {
-  const { supabase, user } = await requireUser();
-  if (!user) {
-    return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await authenticateRequest(request);
+  if (!auth.ok) return auth.response;
+  const { supabase, user } = auth;
 
   try {
     const body = await request.json();
+    if (body.imagePath && !ownsImagePath(body.imagePath, user.id)) return NextResponse.json({ success: false, error: "Invalid image owner" }, { status: 400 });
     const payload = {
       user_id: user.id,
       name: body.name,

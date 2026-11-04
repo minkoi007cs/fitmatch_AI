@@ -22,7 +22,10 @@ export async function updateSession(request: NextRequest) {
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              ...(process.env.FITMATCH_AUTH_PROVIDER === "app-system" ? { httpOnly: true } : {}),
+            })
           );
         },
       },
@@ -31,19 +34,9 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
+    error,
   } = await supabase.auth.getUser();
 
-  // Protected routes
-  const protectedPaths = ["/wardrobe", "/outfits", "/profile", "/quiz"];
-  const isProtected = protectedPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
-
-  if (isProtected && !user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
-
-  return supabaseResponse;
+  // The proxy owns redirects; this helper only persists refreshed Supabase cookies.
+  return { response: supabaseResponse, user, error };
 }

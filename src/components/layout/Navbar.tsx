@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Menu, X, Sparkles, LogOut, ChevronDown, User } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
+
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 const navLinks = [
   { href: "/outfits", label: "Outfits" },
@@ -16,8 +17,8 @@ const navLinks = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const { toast } = useToast();
   const isLanding = pathname === "/";
-  const supabase = createClient();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -41,25 +42,13 @@ export function Navbar() {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (mounted) {
-        setEmail(data.user?.email ?? null);
-      }
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user?.email ?? null);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [supabase.auth]);
+    const controller = new AbortController();
+    fetch("/api/auth/session", { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        if (response.ok) setEmail((await response.json()).user?.email ?? null);
+      }).catch(() => undefined);
+    return () => controller.abort();
+  }, [pathname]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -73,8 +62,11 @@ export function Navbar() {
   }, []);
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
-    window.location.href = "/";
+    try {
+      const response = await fetch("/auth/logout", { method: "POST" });
+      if (response.ok) window.location.href = "/";
+      else toast("Could not finish signing out. Please retry.", "error");
+    } catch { toast("Connection interrupted. Please retry signing out.", "error"); }
   }
 
   const userInitial = email ? email.charAt(0).toUpperCase() : "U";

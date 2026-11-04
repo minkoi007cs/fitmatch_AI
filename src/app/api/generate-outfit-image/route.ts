@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateOutfitImage } from "@/lib/openai";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateRequest } from "@/lib/auth/request";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { WARDROBE_BUCKET } from "@/lib/utils";
 
@@ -9,17 +9,10 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   try {
     // 1. Authenticate user (Cost & abuse protection - A2)
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) return auth.response;
+    const { user } = auth;
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Authentication required to generate lookbook imagery." },
-        { status: 401 }
-      );
-    }
 
     const body = (await request.json()) as {
       outfitName?: string;

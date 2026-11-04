@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeClothingImage } from "@/lib/openai";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateRequest } from "@/lib/auth/request";
 import { AnalyzeImageRequest } from "@/lib/types";
+import { ownsImagePath } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) return auth.response;
+    const { supabase, user } = auth;
 
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
 
     const body = (await request.json()) as AnalyzeImageRequest;
+    if (body.storagePath && !ownsImagePath(body.storagePath, user.id)) return NextResponse.json({ success: false, error: "Invalid image owner" }, { status: 400 });
 
     if (!body.imageBase64) {
       return NextResponse.json({ success: false, error: "Missing imageBase64" }, { status: 400 });

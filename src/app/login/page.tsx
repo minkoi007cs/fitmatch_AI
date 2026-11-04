@@ -1,236 +1,46 @@
-"use client";
-
-import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
-import { IMAGES, DARK_BLUR_DATA_URL } from "@/lib/images";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Field } from "@/components/ui/Field";
-import { useToast } from "@/components/ui/Toast";
+import LegacyLogin from "@/components/LegacyLogin";
+import { createClient } from "@/lib/supabase/server";
+import { hubEnabled } from "@/lib/auth/config";
+import { safeNext } from "@/lib/auth/session";
 
-export default function LoginPage() {
-  const supabase = createClient();
-  const { toast } = useToast();
+const messages: Record<string, string> = {
+  state: "This sign-in link expired or belongs to another browser. Please start again.",
+  denied: "Sign-in was cancelled. You can try again when ready.",
+  link_expired: "Sign in to your existing FitMatch account again before connecting App System.",
+  IDENTITY_ALREADY_LINKED: "This App System identity is already connected to a different wardrobe. No accounts were merged.",
+  unavailable: "We could not complete sign-in. Your wardrobe is safe. Please try again.",
+};
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState(false);
-
-  async function handlePasswordAuth(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-
-    try {
-      const result = isSignUp
-        ? await supabase.auth.signUp({ email, password })
-        : await supabase.auth.signInWithPassword({ email, password });
-
-      setLoading(false);
-
-      if (result.error) {
-        toast(result.error.message, "error");
-        return;
-      }
-
-      if (isSignUp) {
-        toast("Account created. Check your email if confirmation is enabled.", "success");
-      } else {
-        toast("Signed in successfully.", "success");
-      }
-
-      if (result.data.session) {
-        window.location.href = "/wardrobe";
-      }
-    } catch (err) {
-      setLoading(false);
-      toast(err instanceof Error ? err.message : "Authentication failed.", "error");
-    }
-  }
-
-  async function handleMicrosoftLogin() {
-    setOauthLoading(true);
-
-    try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "azure",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/wardrobe`,
-        },
-      });
-
-      if (oauthError) {
-        toast(oauthError.message, "error");
-        setOauthLoading(false);
-      }
-    } catch (err) {
-      setOauthLoading(false);
-      toast(err instanceof Error ? err.message : "OAuth connection failed.", "error");
-    }
-  }
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string; legacy?: string }> }) {
+  const params = await searchParams;
+  const next = safeNext(params.next);
+  if (!hubEnabled()) return <LegacyLogin returnTo={next} />;
+  if (params.legacy === "1") return <LegacyLogin hosted returnTo={`/login?next=${encodeURIComponent(next)}`} />;
+  const legacy = await (await createClient()).auth.getUser();
+  const connect = !!legacy.data.user;
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] lg:h-[calc(100vh-5rem)] w-full flex overflow-hidden bg-bg">
-      {/* Left 55%: Full-Bleed Editorial Photo Hero (Desktop Only) */}
-      <div className="hidden lg:relative lg:flex lg:w-[55%] h-full overflow-hidden bg-bg-elevated border-r border-border">
-        <motion.div
-          animate={{ scale: [1, 1.06] }}
-          transition={{ duration: 10, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
-          className="absolute inset-0 z-0"
-        >
-          <Image
-            src={IMAGES.heroLogin.src}
-            alt={IMAGES.heroLogin.alt}
-            fill
-            priority
-            sizes="55vw"
-            placeholder="blur"
-            blurDataURL={DARK_BLUR_DATA_URL}
-            className="object-cover"
-          />
-        </motion.div>
-
-        {/* Gradient Scrim */}
-        <div
-          className="absolute inset-0 z-10 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to top, rgba(10,10,11,0.96) 0%, rgba(10,10,11,0.3) 50%, rgba(10,10,11,0.7) 100%)",
-          }}
-        />
-
-        {/* Brand Overlay */}
-        <div className="relative z-20 flex h-full w-full flex-col justify-between p-12">
-          <div>
-            <Link href="/" className="inline-block select-none">
-              <span className="font-display text-3xl font-extrabold tracking-tight text-fg">
-                FITMATCH<span className="text-accent-text">.AI</span>
-              </span>
-            </Link>
-          </div>
-
-          <div className="space-y-3 max-w-md">
-            <div className="eyebrow text-accent-text">MEMBER ACCESS</div>
-            <h2 className="font-display text-4xl font-extrabold text-fg leading-tight">
-              Personalized curation awaits in your private wardrobe.
-            </h2>
-            <p className="text-xs text-fg-muted leading-relaxed font-normal">
-              Securely store wardrobe pieces with encrypted signed URLs, sync multi-style outfit generations, and calibrate AI personal styling.
-            </p>
-          </div>
+    <main className="min-h-[75vh] px-6 pt-32 pb-16 flex items-start justify-center bg-bg">
+      <section className="w-full max-w-md rounded-lg border border-border bg-bg-elevated p-7 space-y-6">
+        <div className="space-y-3">
+          <p className="text-xs uppercase tracking-widest text-accent-text">FitMatch AI</p>
+          <h1 className="font-display text-3xl font-bold">{connect ? "Connect your wardrobe." : "Welcome to your wardrobe."}</h1>
+          <p className="text-sm leading-relaxed text-fg-muted">
+            {connect ? "You are signed in to FitMatch. Connect App System to keep using this same wardrobe with your central account." : "Sign in with App System using the methods available for your account."}
+          </p>
         </div>
-      </div>
-
-      {/* Right 45%: Auth Form Container */}
-      <div className="flex w-full lg:w-[45%] h-full items-center justify-center px-6 py-12 sm:px-12 bg-bg">
-        <div className="w-full max-w-[400px] space-y-7">
-          <div className="space-y-2">
-            <div className="eyebrow text-accent-text">
-              {isSignUp ? "Create An Account" : "Welcome Back"}
-            </div>
-            <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-fg">
-              {isSignUp ? "Join FitMatch AI." : "Sign into your closet."}
-            </h1>
-            <p className="text-xs text-fg-muted leading-relaxed font-normal">
-              Use Microsoft SSO for institutional access or enter your credentials below.
-            </p>
-          </div>
-
-          {/* Microsoft OAuth Button */}
-          <div>
-            <button
-              type="button"
-              onClick={handleMicrosoftLogin}
-              disabled={oauthLoading || loading}
-              className="w-full h-12 flex items-center justify-center gap-3 rounded-[8px] border border-border-strong bg-bg-raised hover:bg-bg-raised/80 hover:border-accent-ring text-fg text-sm font-medium transition duration-150 cursor-pointer disabled:opacity-50"
-            >
-              {oauthLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-accent-text" />
-              ) : (
-                /* Microsoft 4-square icon */
-                <svg className="h-4 w-4 shrink-0" viewBox="0 0 21 21">
-                  <rect x="1" y="1" width="9" height="9" fill="#f25022" />
-                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
-                  <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
-                  <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
-                </svg>
-              )}
-              <span>Continue with Microsoft</span>
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="relative flex items-center justify-center">
-            <div className="h-px w-full bg-border" />
-            <span className="absolute bg-bg px-3 text-[10px] font-mono uppercase tracking-widest text-fg-subtle">
-              or credentials
-            </span>
-          </div>
-
-          {/* Email / Password Form */}
-          <form onSubmit={handlePasswordAuth} className="space-y-4">
-            <Field label="Email Address" htmlFor="email-input">
-              <Input
-                id="email-input"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="editor@fitmatch.ai"
-                autoComplete="email"
-                required
-              />
-            </Field>
-
-            <Field label="Password" htmlFor="password-input">
-              <div className="relative">
-                <Input
-                  id="password-input"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete={isSignUp ? "new-password" : "current-password"}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg transition p-1"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </Field>
-
-            <Button
-              type="submit"
-              variant="accent"
-              loading={loading}
-              className="w-full h-12 uppercase tracking-wider text-xs font-bold mt-2"
-            >
-              {isSignUp ? "Create Account" : "Sign In"}
-            </Button>
+        {params.error && <p role="alert" className="rounded border border-danger/40 p-3 text-sm text-fg">{messages[params.error] ?? messages.unavailable}</p>}
+        {connect ? (
+          <form action={`/auth/link?next=${encodeURIComponent(next)}`} method="post">
+            <button type="submit" className="w-full rounded-lg bg-accent p-3 font-semibold text-black">Connect App System to this wardrobe</button>
           </form>
-
-          {/* Sign in / Sign up Toggle */}
-          <div className="pt-2 text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignUp((prev) => !prev)}
-              className="text-xs text-fg-muted hover:text-accent-text transition cursor-pointer"
-            >
-              {isSignUp ? "Already have an account? Sign in here." : "Don't have an account yet? Create one."}
-            </button>
-          </div>
-        </div>
-      </div>
+        ) : (
+          <Link href={`/auth/login?next=${encodeURIComponent(next)}`} className="block rounded-lg bg-accent p-3 text-center font-semibold text-black">Continue with App System</Link>
+        )}
+        <p className="text-sm leading-relaxed text-fg-muted">Your outfits and clothing stay private. You return to FitMatch after sign-in.</p>
+        {!connect && <p className="text-sm text-fg-muted">Already have a FitMatch wardrobe? <Link className="text-accent-text underline" href={`/login?legacy=1&next=${encodeURIComponent(next)}`}>Sign in to your existing account first</Link> to connect it.</p>}
+      </section>
     </main>
   );
 }

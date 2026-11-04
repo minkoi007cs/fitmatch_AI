@@ -1,5 +1,7 @@
 # FitMatch AI
 
+App System authentication integration and rollout instructions: [docs/app-system-auth.md](docs/app-system-auth.md).
+
 FitMatch AI is a production-ready Next.js App Router MVP for AI-powered fashion recommendations. Users can:
 
 - sign in with Microsoft via Supabase Auth

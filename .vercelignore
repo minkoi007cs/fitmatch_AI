@@ -1,0 +1,9 @@
+.git
+.env*
+.vercel
+.next
+node_modules
+coverage
+state
+.agentui
+*.tsbuildinfo

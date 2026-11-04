@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { analyzeClothingImage } from "@/lib/openai";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateRequest } from "@/lib/auth/request";
 import { WARDROBE_BUCKET } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -12,14 +12,10 @@ function toBase64(buffer: ArrayBuffer) {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) return auth.response;
+    const { supabase, user } = auth;
 
-    if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
-    }
 
     const formData = await request.formData();
     const file = formData.get("file");

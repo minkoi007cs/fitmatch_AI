@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { authenticateRequest } from "@/lib/auth/request";
 import { generateOutfitSuggestions } from "@/lib/openai";
 import { GenerateOutfitRequest, StyleProfile } from "@/lib/types";
 
@@ -7,15 +7,13 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await authenticateRequest(request);
+    if (!auth.ok) return auth.response;
+    const { supabase, user } = auth;
     const body = (await request.json()) as GenerateOutfitRequest;
     if (!body.analysis) {
       return NextResponse.json({ success: false, error: "Missing analysis payload" }, { status: 400 });
     }
-
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
 
     let styleProfile = body.styleProfile as StyleProfile | undefined;
     if (user && !styleProfile) {
