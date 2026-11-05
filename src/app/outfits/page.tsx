@@ -35,12 +35,13 @@ import { useToast } from "@/components/ui/Toast";
 const vibeCycle: StyleCategory[] = ["casual", "streetwear", "minimal", "formal"];
 
 export default function OutfitsPage() {
+  const uploadVersion = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string>("");
-  const [analysis, setAnalysis] = useState<ClothingAnalysis | null>(null);
+  const [uploadedAnalysis, setAnalysis] = useState<ClothingAnalysis | null>(null);
   const [profile, setProfile] = useState<StyleProfile | null>(null);
   const [outfits, setOutfits] = useState<OutfitSuggestion[]>([]);
   const [history, setHistory] = useState<
@@ -51,6 +52,7 @@ export default function OutfitsPage() {
   const [uploading, setUploading] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [imageLoadingId, setImageLoadingId] = useState<string | null>(null);
+  const [generatedPaths, setGeneratedPaths] = useState<Record<string, string>>({});
   const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
   const [vibeIndex, setVibeIndex] = useState(0);
 
@@ -58,33 +60,6 @@ export default function OutfitsPage() {
     () => wardrobeItems.find((item) => item.id === selectedItemId) ?? null,
     [selectedItemId, wardrobeItems]
   );
-
-  const loadWardrobe = useCallback(async () => {
-    try {
-      const response = await fetch("/api/wardrobe", { cache: "no-store" });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setWardrobeItems(data.items || []);
-        if (data.items?.length > 0 && !selectedItemId) {
-          setSelectedItemId(data.items[0].id);
-        }
-      }
-    } catch (err) {
-      console.error("Wardrobe load error:", err);
-    }
-  }, [selectedItemId]);
-
-  const loadProfile = useCallback(async () => {
-    try {
-      const response = await fetch("/api/user/profile", { cache: "no-store" });
-      const data = await response.json();
-      if (response.ok && data.success) {
-        setProfile(data.profile);
-      }
-    } catch (err) {
-      console.error("Profile load error:", err);
-    }
-  }, []);
 
   const loadHistory = useCallback(async () => {
     try {
@@ -99,23 +74,30 @@ export default function OutfitsPage() {
   }, []);
 
   useEffect(() => {
-    void Promise.all([loadWardrobe(), loadProfile(), loadHistory()]);
-  }, [loadHistory, loadProfile, loadWardrobe]);
+    const controller = new AbortController();
+    const endpoints = ["/api/wardrobe", "/api/user/profile", "/api/outfits"];
+    void Promise.all(endpoints.map(async endpoint => {
+      const response = await fetch(endpoint, { cache: "no-store", signal: controller.signal });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error("Could not load your saved styling data. Please reload.");
+      return data;
+    })).then(([wardrobe, profileData, saved]) => {
+      setWardrobeItems(wardrobe.items ?? []);
+      setProfile(profileData.profile);
+      setHistory(saved.outfits ?? []);
+    }).catch(error => { if (!controller.signal.aborted) toast(error.message, "error"); });
+    return () => controller.abort();
+  }, [toast]);
 
-  // Sync selected wardrobe item into analysis
-  useEffect(() => {
-    if (!selectedItem) return;
-    setAnalysis({
-      type: selectedItem.category,
-      primaryColor: selectedItem.color,
-      secondaryColor: selectedItem.secondary_color ?? undefined,
-      pattern: selectedItem.pattern ?? "plain",
-      style: selectedItem.style,
-      material: selectedItem.material ?? undefined,
-      description:
-        selectedItem.description ?? `${selectedItem.name} in ${selectedItem.color}`,
-    });
-  }, [selectedItem]);
+  const analysis: ClothingAnalysis | null = selectedItem ? {
+    type: selectedItem.category,
+    primaryColor: selectedItem.color,
+    secondaryColor: selectedItem.secondary_color ?? undefined,
+    pattern: selectedItem.pattern ?? "plain",
+    style: selectedItem.style,
+    material: selectedItem.material ?? undefined,
+    description: selectedItem.description ?? `${selectedItem.name} in ${selectedItem.color}`,
+  } : uploadedAnalysis;
 
   async function handleAnalyzeUpload(file: File) {
     const valError = validateImageFile(file, 10);
@@ -124,6 +106,7 @@ export default function OutfitsPage() {
       return;
     }
 
+    const version = ++uploadVersion.current;
     setUploading(true);
     try {
       const base64Data = await compressImage(file, 1200, 0.82);
@@ -151,13 +134,15 @@ export default function OutfitsPage() {
         throw new Error(data.error ?? "Could not analyze image.");
       }
 
+      if (version !== uploadVersion.current) return;
       setSelectedItemId(""); // Unselect wardrobe item since fresh upload is active
       setAnalysis(data.analysis);
       toast("Fresh piece analyzed. Ready to generate looks.", "success");
     } catch (uploadError) {
+      if (version !== uploadVersion.current) return;
       toast(uploadError instanceof Error ? uploadError.message : "Upload failed.", "error");
     } finally {
-      setUploading(false);
+      if (version === uploadVersion.current) setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
@@ -203,7 +188,7 @@ export default function OutfitsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sourceItemId: selectedItemId || null,
-          data: [outfit],
+          data: [{ ...outfit, imagePath: generatedPaths[outfit.id] ?? outfit.imagePath }],
         }),
       });
 
@@ -242,9 +227,10 @@ export default function OutfitsPage() {
 
       setGeneratedImages((current) => ({
         ...current,
-        [outfit.id]: data.imageDataUrl,
+        [outfit.id]: data.signedUrl ?? data.imageDataUrl,
       }));
-      toast("AI lookbook image generated successfully.", "success");
+      if (data.storagePath) setGeneratedPaths(current => ({ ...current, [outfit.id]: data.storagePath }));
+      toast("AI lookbook image generated successfully. Save the look to keep it in your archive.", "success");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Image generation failed.", "error");
     } finally {
@@ -344,7 +330,7 @@ export default function OutfitsPage() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setSelectedItemId(item.id)}
+                  onClick={() => { uploadVersion.current++; setUploading(false); setSelectedItemId(item.id); }}
                   role="radio"
                   aria-checked={isSelected}
                   className={`group relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[4px] border transition-all cursor-pointer ${
@@ -673,6 +659,11 @@ export default function OutfitsPage() {
                       )}
                     </div>
 
+                    {firstOutfit?.imageUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={firstOutfit.imageUrl} alt={firstOutfit.name} className="w-full aspect-square object-cover rounded" />
+                    )}
+                    <Button variant="outline" size="sm" onClick={() => { setOutfits(entry.data_json); setGeneratedImages(Object.fromEntries(entry.data_json.filter(o => o.imageUrl).map(o => [o.id, o.imageUrl!]))); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Open saved look</Button>
                     <h4 className="font-display text-base font-bold text-fg">
                       {firstOutfit?.name ?? "Archived Outfit"}
                     </h4>

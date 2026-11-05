@@ -62,6 +62,7 @@ export async function POST(request: Request) {
           upsert: true,
         });
 
+      if (uploadError) throw uploadError;
       if (!uploadError) {
         const { data: signed } = await admin.storage
           .from(WARDROBE_BUCKET)
@@ -69,7 +70,8 @@ export async function POST(request: Request) {
         signedUrl = signed?.signedUrl ?? null;
       }
     } catch (storageErr) {
-      console.warn("Lookbook storage persistence notice:", storageErr);
+      console.error("Lookbook storage persistence failed:", storageErr);
+      return NextResponse.json({ success: false, error: "The image could not be saved. Please retry later." }, { status: 503 });
     }
 
     return NextResponse.json({

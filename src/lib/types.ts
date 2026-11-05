@@ -65,6 +65,8 @@ export interface OutfitPart {
 }
 
 export interface OutfitSuggestion {
+  imagePath?: string;
+  imageUrl?: string;
   id: string;
   name: string;
   styleCategory: StyleCategory;

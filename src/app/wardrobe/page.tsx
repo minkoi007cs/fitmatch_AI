@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Pencil,
@@ -63,6 +63,7 @@ const emptyDraft: DraftItem = {
 };
 
 export default function WardrobePage() {
+  const uploadVersion = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -77,6 +78,7 @@ export default function WardrobePage() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
+  useEffect(() => () => { if (uploadedPreview?.startsWith("blob:")) URL.revokeObjectURL(uploadedPreview); }, [uploadedPreview]);
   const [dragOver, setDragOver] = useState(false);
 
   const [filters, setFilters] = useState({ category: "", color: "", style: "" });
@@ -104,30 +106,21 @@ export default function WardrobePage() {
     [filters, items]
   );
 
-  const loadWardrobe = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/wardrobe", { cache: "no-store" });
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        toast(data.error ?? "Could not load wardrobe items.", "error");
-        return;
-      }
-
-      setItems(data.items || []);
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Network error loading wardrobe.", "error");
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/wardrobe", { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error("Could not load wardrobe items. Please reload.");
+        setItems(data.items ?? []);
+      }).catch(error => { if (!controller.signal.aborted) toast(error.message, "error"); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [toast]);
 
-  useEffect(() => {
-    void loadWardrobe();
-  }, [loadWardrobe]);
-
   function openAddDrawer() {
+    uploadVersion.current++;
+    setUploading(false);
     setDraft(emptyDraft);
     setEditingId(null);
     setUploadedPreview(null);
@@ -135,6 +128,8 @@ export default function WardrobePage() {
   }
 
   function openEditDrawer(item: WardrobeItem) {
+    uploadVersion.current++;
+    setUploading(false);
     setEditingId(item.id);
     setDraft({
       name: item.name,
@@ -153,6 +148,8 @@ export default function WardrobePage() {
   }
 
   function closeDrawer() {
+    uploadVersion.current++;
+    setUploading(false);
     setIsDrawerOpen(false);
     setEditingId(null);
     setUploadedPreview(null);
@@ -165,6 +162,7 @@ export default function WardrobePage() {
       return;
     }
 
+    const version = ++uploadVersion.current;
     setUploading(true);
     try {
       // Compress client side first
@@ -180,6 +178,7 @@ export default function WardrobePage() {
         type: "image/jpeg",
       });
 
+      if (version !== uploadVersion.current) return;
       // Show local preview
       const previewUrl = URL.createObjectURL(compressedFile);
       setUploadedPreview(previewUrl);
@@ -197,6 +196,7 @@ export default function WardrobePage() {
         throw new Error(uploadData.error ?? "Could not analyze image.");
       }
 
+      if (version !== uploadVersion.current) return;
       // Auto-fill metadata into draft
       setDraft((current) => ({
         ...current,
@@ -213,9 +213,10 @@ export default function WardrobePage() {
 
       toast("Garment analyzed and fields auto-filled!", "success");
     } catch (uploadError) {
+      if (version !== uploadVersion.current) return;
       toast(uploadError instanceof Error ? uploadError.message : "Upload failed.", "error");
     } finally {
-      setUploading(false);
+      if (version === uploadVersion.current) setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
       if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
@@ -223,6 +224,7 @@ export default function WardrobePage() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (uploading) return;
     setSaving(true);
 
     try {
@@ -768,6 +770,7 @@ export default function WardrobePage() {
               type="submit"
               variant="accent"
               loading={saving}
+              disabled={uploading}
               icon={<Check className="h-4 w-4" />}
             >
               {editingId ? "Update Garment" : "Save to Wardrobe"}

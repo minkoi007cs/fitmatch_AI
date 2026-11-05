@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useEffectEvent } from "react";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -28,24 +28,38 @@ export function Drawer({
 }: DrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
 
+  const close = useEffectEvent(onClose);
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab" && isOpen) {
+        const nodes = drawerRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex="0"]');
+        const focusable = Array.from(nodes ?? []).filter(node => node.getClientRects().length > 0);
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (!first) { event.preventDefault(); drawerRef.current?.focus(); }
+        else if (event.shiftKey && (document.activeElement === first || document.activeElement === drawerRef.current)) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
       if (event.key === "Escape" && isOpen) {
-        onClose();
+        close();
       }
     };
 
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
     if (isOpen) {
+      drawerRef.current?.focus();
       document.addEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "hidden";
     }
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "unset";
+      document.body.style.overflow = previousOverflow;
+      if (isOpen) previousFocus?.focus();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const widthClasses = {
     sm: "max-w-md",
@@ -71,6 +85,7 @@ export function Drawer({
           {/* Drawer Panel */}
           <motion.div
             ref={drawerRef}
+            tabIndex={-1}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}

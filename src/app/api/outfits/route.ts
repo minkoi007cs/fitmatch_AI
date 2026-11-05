@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { OutfitSuggestion } from "@/lib/types";
+import { ownsImagePath } from "@/lib/auth/session";
 import { authenticateRequest } from "@/lib/auth/request";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +22,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, outfits: data });
+  const outfits = await Promise.all((data ?? []).map(async entry => ({ ...entry, data_json: await Promise.all((Array.isArray(entry.data_json) ? entry.data_json : []).map(async (outfit: OutfitSuggestion) => {
+    if (!outfit || typeof outfit !== "object") return null;
+    const saved = { ...outfit };
+    delete saved.imageUrl;
+    if (!ownsImagePath(saved.imagePath, user.id)) return saved;
+    const signed = await supabase.storage.from("fitmatch-wardrobe").createSignedUrl(saved.imagePath, 3600);
+    return { ...saved, imageUrl: signed.data?.signedUrl ?? null };
+  })).then(items => items.filter(Boolean)) })));
+  return NextResponse.json({ success: true, outfits });
 }
 
 export async function POST(request: Request) {
@@ -30,6 +40,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
+    if (!Array.isArray(body.data) || body.data.length < 1 || body.data.length > 5 || body.data.some((o: Record<string, unknown>) => !o || typeof o.name !== "string" || !Array.isArray(o.items) || !Array.isArray(o.accessories) || (o.imagePath && !ownsImagePath(o.imagePath, user.id)))) return NextResponse.json({ success: false, error: "Invalid outfit data" }, { status: 400 });
     if (body.sourceItemId) {
       const source = await supabase.from("fm_wardrobe_items").select("id").eq("id", body.sourceItemId).eq("user_id", user.id).maybeSingle();
       if (source.error || !source.data) return NextResponse.json({ success: false, error: "Source item not found" }, { status: 404 });
@@ -39,7 +50,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: user.id,
         source_item_id: body.sourceItemId ?? null,
-        data_json: body.data,
+        data_json: body.data.map((outfit: OutfitSuggestion) => { const saved = { ...outfit }; delete saved.imageUrl; return saved; }),
       })
       .select("*")
       .single();

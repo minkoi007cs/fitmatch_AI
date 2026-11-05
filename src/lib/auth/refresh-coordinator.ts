@@ -11,7 +11,7 @@ export interface RefreshStore {
 export async function coordinatedRefresh(
   store: RefreshStore, key: string, run: () => Promise<RefreshOutcome>,
   codec: { encode(value: RefreshOutcome): string; decode(value: string): RefreshOutcome },
-) {
+): Promise<RefreshOutcome> {
   const owner = randomUUID();
   const claim = await store.claim(key, owner);
   if (claim.result) return codec.decode(claim.result);

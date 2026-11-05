@@ -10,6 +10,7 @@ const base = "http://localhost:3220";
 const fixture = "http://127.0.0.1:3221";
 const users = new Map();
 const mappings = [];
+const savedOutfits = [];
 const refreshRecords = new Map();
 let subject = "hub-a", unavailable = false, exchanges = 0, refreshes = 0;
 const localId = "11111111-1111-4111-a111-111111111111";
@@ -70,7 +71,14 @@ const mock = createServer(async (req, res) => {
     assert.equal(url.searchParams.get("user_id"), `eq.${id}`);
     return send([{ id: "existing-item", user_id: id, name: "Existing wardrobe", category: "shirt", color: "white", style: "minimal" }]);
   }
-  if (url.pathname === "/rest/v1/fm_outfits") return send([]);
+  if (url.pathname === "/rest/v1/fm_outfits") {
+    if (req.method === "POST") {
+      const record = { id: "saved-look", created_at: new Date().toISOString(), ...body };
+      savedOutfits.push(record); return send(record, 201);
+    }
+    return send(savedOutfits.filter(record => record.user_id === bearerId(req)));
+  }
+  if (url.pathname.startsWith("/storage/v1/object/sign/fitmatch-wardrobe/")) return send({ signedURL: "/object/sign/fitmatch-wardrobe/test.png?token=synthetic" });
   return send({ error: `Unexpected synthetic endpoint ${url.pathname}` }, 404);
 });
 await new Promise(resolve => mock.listen(3221, "127.0.0.1", resolve));
@@ -102,7 +110,7 @@ try {
   assert.equal((await request("/api/generate-outfit", { method: "POST", headers: { Origin: "https://evil.invalid" }, body: "{}" })).status, 403);
   console.log("PASS: guest APIs blocked before parsing/AI; cross-origin mutation rejected");
   const gate = await request("/outfits?vibe=formal"); assert.equal(gate.status, 303); assert.equal(new URL(gate.headers.get("location"), base).searchParams.get("next"), "/outfits?vibe=formal");
-  const bad = await request("/auth/callback?code=synthetic-code&state=untrusted"); assert.equal(bad.status, 303); assert.equal(exchanges, 0);
+  const bad = await request("/auth/callback?code=synthetic-code&state=untrusted"); assert.equal(bad.status, 303); assert.equal(bad.headers.get("cache-control"), "no-store"); assert.equal(bad.headers.get("referrer-policy"), "no-referrer"); assert.equal(exchanges, 0);
   const state = await begin(); const wrong = await complete("z".repeat(32)); assert.equal(wrong.status, 303); assert.equal(exchanges, 0);
   const callback = await complete(state); assert.equal(callback.status, 303); assert.equal(new URL(callback.headers.get("location"), base).pathname, "/outfits"); assert.equal(new URL(callback.headers.get("location"), base).search, "?vibe=formal");
   assert.ok(jar.has("fm_hub_session")); assert.equal(mappings.length, 1);
@@ -115,6 +123,19 @@ try {
   subject = "other-hub-user"; assert.equal((await request("/api/wardrobe")).status, 401); subject = "hub-a";
   unavailable = true; const outage = await request("/api/wardrobe"); assert.equal(outage.status, 503); assert.ok(jar.has("fm_hub_session")); unavailable = false;
   console.log("PASS: owner-scoped data, forged owner/image rejection, mismatched identity denied, outage preserves session");
+  const imageOwner = session.user.id;
+  const look = { id: "look-1", name: "Minimal look", items: [], accessories: [], imagePath: `${imageOwner}/looks/test.png`, imageUrl: "https://untrusted.invalid/image" };
+  assert.equal((await request("/api/outfits", { method: "POST", body: JSON.stringify({ data: [look] }) })).status, 200);
+  assert.equal(savedOutfits[0].data_json[0].imageUrl, undefined, "never persist a caller-supplied signed URL");
+  const restored = await (await request("/api/outfits")).json();
+  assert.equal(restored.outfits[0].data_json[0].imagePath, look.imagePath);
+  assert.ok(restored.outfits[0].data_json[0].imageUrl.includes("synthetic"), "reload signs the stored owned image path");
+  assert.equal((await request("/api/outfits", { method: "POST", body: JSON.stringify({ data: [{ ...look, imagePath: "victim/looks/test.png" }] }) })).status, 400);
+  assert.equal((await request("/api/outfits", { method: "POST", body: JSON.stringify({ data: [null] }) })).status, 400);
+  const profileContract = await (await request("/api/user/profile")).json();
+  assert.equal(profileContract.quizAnswers.ageRange, "45+");
+  console.log("PASS: outfit image survives save/reload with new signed URL; foreign image path and invalid archive rejected; quiz contract correct");
+
   const expiring = unseal(decodeURIComponent(jar.get("fm_hub_session")), "sk_synthetic", "session");
   expiring.pair.expiresAt = Date.now() + 50_000;
   const oldJar = new Map(jar); oldJar.set("fm_hub_session", seal(expiring, "sk_synthetic", "session"));

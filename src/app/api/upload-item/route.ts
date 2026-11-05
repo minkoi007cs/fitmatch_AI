@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { analyzeClothingImage } from "@/lib/openai";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -11,6 +12,7 @@ function toBase64(buffer: ArrayBuffer) {
 }
 
 export async function POST(request: Request) {
+  let pendingPath: string | null = null;
   try {
     const auth = await authenticateRequest(request);
     if (!auth.ok) return auth.response;
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
     }
 
     // B4 Server-side file validations: Max 10MB & Image MIME
-    if (!file.type.startsWith("image/")) {
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
       return NextResponse.json(
         { success: false, error: "Invalid file type. Only image files (JPEG, PNG, WEBP) are allowed." },
         { status: 400 }
@@ -39,7 +41,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "-")}`;
+    const fileName = `${randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "-")}`;
     const storagePath = `${user.id}/${fileName}`;
     const admin = createAdminClient();
 
@@ -53,6 +55,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: uploadError.message }, { status: 500 });
     }
 
+    pendingPath = storagePath;
     const buffer = await file.arrayBuffer();
     const analysis = await analyzeClothingImage(toBase64(buffer));
 
@@ -70,9 +73,8 @@ export async function POST(request: Request) {
       .select("id")
       .single();
 
-    if (insertError) {
-      return NextResponse.json({ success: false, error: insertError.message }, { status: 500 });
-    }
+    if (insertError) throw new Error("Could not save uploaded item. Please retry.");
+    pendingPath = null;
 
     const { data: signed } = await admin.storage.from(WARDROBE_BUCKET).createSignedUrl(storagePath, 60 * 60);
 
@@ -84,6 +86,10 @@ export async function POST(request: Request) {
       analysis,
     });
   } catch (error) {
+    if (pendingPath) {
+      try { await createAdminClient().storage.from(WARDROBE_BUCKET).remove([pendingPath]); }
+      catch (cleanupError) { console.error("Upload cleanup failed", cleanupError); }
+    }
     console.error("Error in upload-item route:", error);
     return NextResponse.json(
       {

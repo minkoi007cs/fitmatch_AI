@@ -64,6 +64,8 @@ export function Navbar() {
   async function handleSignOut() {
     try {
       const response = await fetch("/auth/logout", { method: "POST" });
+      // Clear all client route state after revoking both authentication sessions.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       if (response.ok) window.location.href = "/";
       else toast("Could not finish signing out. Please retry.", "error");
     } catch { toast("Connection interrupted. Please retry signing out.", "error"); }

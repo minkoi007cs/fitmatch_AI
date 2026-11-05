@@ -33,6 +33,7 @@ async function fetchStructuredObject<T>({
 
   const response = await fetch(OPENAI_API_URL, {
     method: "POST",
+    signal: AbortSignal.timeout(120_000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
@@ -55,7 +56,7 @@ async function fetchStructuredObject<T>({
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`OpenAI API call failed [${response.status}] for ${schemaName}:`, errorText);
-    throw new Error(`OpenAI error [${response.status}]: ${errorText}`);
+    throw new Error("The styling service is unavailable. Please try again later.");
   }
 
   const data = await response.json();
@@ -387,6 +388,7 @@ export async function generateOutfitImage(prompt: string): Promise<string> {
   const model = process.env.OPENAI_IMAGE_MODEL ?? "gpt-image-1";
   const response = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
+    signal: AbortSignal.timeout(120_000),
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
@@ -402,7 +404,7 @@ export async function generateOutfitImage(prompt: string): Promise<string> {
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`OpenAI image generation failed [${response.status}]:`, errorText);
-    throw new Error(`OpenAI image error [${response.status}]: ${errorText}`);
+    throw new Error("Image generation is unavailable. Please try again later.");
   }
 
   const data = await response.json();

@@ -51,6 +51,8 @@ export async function GET(request: NextRequest) {
     url.searchParams.set("error", reason);
     const response = NextResponse.redirect(url, 303);
     if (name) response.cookies.delete(name);
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("Referrer-Policy", "no-referrer");
     return response;
   }
 }

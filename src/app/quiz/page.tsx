@@ -165,8 +165,8 @@ export default function QuizPage() {
       try {
         const response = await fetch("/api/user/profile", { cache: "no-store" });
         const data = await response.json();
-        if (response.ok && data.success && data.profile?.quiz_answers) {
-          setAnswers(data.profile.quiz_answers);
+        if (response.ok && data.success && data.quizAnswers) {
+          setAnswers({ ...defaultAnswers, ...data.quizAnswers });
         }
       } catch (err) {
         console.error("Could not hydrate existing style profile:", err);
