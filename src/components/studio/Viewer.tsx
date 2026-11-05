@@ -107,7 +107,7 @@ export default function Viewer({ assets, selected }: { assets: ModelAsset[]; sel
     s.camera.position.set(Math.sin(angle) * s.radius * 1.65, s.radius * .12, Math.cos(angle) * s.radius * 1.65);
     s.controls.target.set(0, 0, 0); s.controls.update();
   }
-  return <div className="relative h-full min-h-[520px] rounded-3xl overflow-hidden bg-[#deded8]">
+  return <div className="relative h-[600px] lg:h-[660px] rounded-3xl overflow-hidden bg-[#deded8]">
     <div ref={host} className="absolute inset-0" />
     {message && <div role={failed ? "alert" : "status"} className="absolute inset-0 grid place-items-center p-12 text-center text-neutral-800 bg-[#deded8]/90">{message}</div>}
     <div className="absolute bottom-5 inset-x-0 flex justify-center gap-2">
