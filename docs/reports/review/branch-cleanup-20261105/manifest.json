@@ -1,0 +1,48 @@
+{
+  "date": "2026-11-05",
+  "session": "CX-CLEAN-20261105-03",
+  "scope": "Local branches only; preserve all worktree files and remote refs",
+  "source_head": "1ef8f2549633271d6310dc0701b323e46962413d",
+  "studio_head": "d2a98983391c90c0df0c7decb67bd2b0d8cad9c6",
+  "before_branches": "+ codex/3d-studio-worker                               d2a9898 (/Users/khoihoang/Documents/fitmatch_AI-3d-studio) feat: add private 3D jobs, GPU worker and wardrobe-driven quiz\n+ codex/app-system-auth                                c05551c (/Users/khoihoang/Documents/fitmatch_AI-app-system-auth) docs(auth): record verified production rollout\n+ codex/fix-audit-followup                             824c3fa (/Users/khoihoang/Documents/fitmatch_AI-audit-fixes) fix: preserve user data and harden wardrobe outfit and AI flows\n* main                                                 1ef8f25 fix(backend): address security, error handling, storage persistence and audit items (A1-A4, B4, C2, C5-C6)\n  remotes/origin/codex/app-system-auth                 c05551c docs(auth): record verified production rollout\n  remotes/origin/codex/fitmatch-audit-fixes-2026-11-04 ac26306 fix: repair wardrobe and outfit flows and harden auth responses\n  remotes/origin/development                           ac26306 fix: repair wardrobe and outfit flows and harden auth responses\n  remotes/origin/main                                  ac26306 fix: repair wardrobe and outfit flows and harden auth responses",
+  "before_worktrees": "worktree /Users/khoihoang/Documents/fitmatch_AI\nHEAD 1ef8f2549633271d6310dc0701b323e46962413d\nbranch refs/heads/main\n\nworktree /private/tmp/fitmatch-audit-20261104\nHEAD ac263063ed760dd4455d628dd82bb99df0518317\ndetached\n\nworktree /private/tmp/fitmatch-audit-auth-20261104\nHEAD c05551c68e5621d0e964d9b596f9b52185329408\ndetached\n\nworktree /private/tmp/fitmatch-google-production\nHEAD ac263063ed760dd4455d628dd82bb99df0518317\ndetached\n\nworktree /Users/khoihoang/Documents/fitmatch_AI-3d-studio\nHEAD d2a98983391c90c0df0c7decb67bd2b0d8cad9c6\nbranch refs/heads/codex/3d-studio-worker\n\nworktree /Users/khoihoang/Documents/fitmatch_AI-app-system-auth\nHEAD c05551c68e5621d0e964d9b596f9b52185329408\nbranch refs/heads/codex/app-system-auth\n\nworktree /Users/khoihoang/Documents/fitmatch_AI-audit-fixes\nHEAD 824c3fa5a2ea9ebfc8d1e010490535e0d3a73ba9\nbranch refs/heads/codex/fix-audit-followup",
+  "archived": [
+    {
+      "branch": "codex/app-system-auth",
+      "sha": "c05551c68e5621d0e964d9b596f9b52185329408",
+      "worktree": "/Users/khoihoang/Documents/fitmatch_AI-app-system-auth",
+      "tag": "archive/20261105/app-system-auth",
+      "files_preserved": true,
+      "result": "Local branch removed; original worktree retained detached at archive tag SHA"
+    },
+    {
+      "branch": "codex/fix-audit-followup",
+      "sha": "824c3fa5a2ea9ebfc8d1e010490535e0d3a73ba9",
+      "worktree": "/Users/khoihoang/Documents/fitmatch_AI-audit-fixes",
+      "tag": "archive/20261105/fix-audit-followup",
+      "files_preserved": true,
+      "result": "Local branch removed; original worktree retained detached at archive tag SHA"
+    }
+  ],
+  "bundle": {
+    "path": "/Users/khoihoang/Documents/fitmatch_AI/docs/reports/review/branch-cleanup-20261105/pre-cleanup.bundle",
+    "sha256": "5243949979dd182d9d58b5f5ee46d709271a2d38701f864c17af0c2c77b0a79f",
+    "bytes": 725193
+  },
+  "after_branches": "+ codex/3d-studio-worker                               d2a9898 (/Users/khoihoang/Documents/fitmatch_AI-3d-studio) feat: add private 3D jobs, GPU worker and wardrobe-driven quiz\n* main                                                 1ef8f25 fix(backend): address security, error handling, storage persistence and audit items (A1-A4, B4, C2, C5-C6)\n  remotes/origin/codex/app-system-auth                 c05551c docs(auth): record verified production rollout\n  remotes/origin/codex/fitmatch-audit-fixes-2026-11-04 ac26306 fix: repair wardrobe and outfit flows and harden auth responses\n  remotes/origin/development                           ac26306 fix: repair wardrobe and outfit flows and harden auth responses\n  remotes/origin/main                                  ac26306 fix: repair wardrobe and outfit flows and harden auth responses\n",
+  "after_worktrees": "worktree /Users/khoihoang/Documents/fitmatch_AI\nHEAD 1ef8f2549633271d6310dc0701b323e46962413d\nbranch refs/heads/main\n\nworktree /private/tmp/fitmatch-audit-20261104\nHEAD ac263063ed760dd4455d628dd82bb99df0518317\ndetached\n\nworktree /private/tmp/fitmatch-audit-auth-20261104\nHEAD c05551c68e5621d0e964d9b596f9b52185329408\ndetached\n\nworktree /private/tmp/fitmatch-google-production\nHEAD ac263063ed760dd4455d628dd82bb99df0518317\ndetached\n\nworktree /Users/khoihoang/Documents/fitmatch_AI-3d-studio\nHEAD d2a98983391c90c0df0c7decb67bd2b0d8cad9c6\nbranch refs/heads/codex/3d-studio-worker\n\nworktree /Users/khoihoang/Documents/fitmatch_AI-app-system-auth\nHEAD c05551c68e5621d0e964d9b596f9b52185329408\ndetached\n\nworktree /Users/khoihoang/Documents/fitmatch_AI-audit-fixes\nHEAD 824c3fa5a2ea9ebfc8d1e010490535e0d3a73ba9\ndetached\n\n",
+  "result": "Completed; main and codex/3d-studio-worker retained; remote refs unchanged",
+  "verification": {
+    "branch_names": [
+      "main",
+      "codex/3d-studio-worker"
+    ],
+    "heads_unchanged": true,
+    "studio_clean": true,
+    "archived_worktrees_clean_detached": true,
+    "ignored_auth_env_files_preserved": true,
+    "bundle_checksum_ok": true,
+    "remote_refs_unchanged": true,
+    "config_warning": "git branch deletion warned config.lock exists; branch refs removed successfully; no branch config sections remain; lock was not removed because other sessions may own it."
+  }
+}
