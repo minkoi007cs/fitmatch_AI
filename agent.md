@@ -79,3 +79,8 @@ Xem process PROC-0003. Giữ hai local branches `main` (checkout nguồn/điều
 ## Nguồn đồng bộ GitHub — OPS-02
 
 Chủ dự án đã cho phép publish bộ điều hành/handoff trên nhánh tài liệu `codex/project-operations`. Xem [github-sync.md](./docs/handoffs/github-sync.md) để đọc/clone/pull và gửi report/PR đúng scope. Không dùng ZIP mỗi lần; không merge nhánh tài liệu vào checkpoint code một cách mù. Repo công khai nên chỉ publish tài liệu/report đã loại secrets và dữ liệu cá nhân không cần thiết. Đây là ngoại lệ cho hạn chế push tài liệu cũ trong file này; hạn chế push app/deploy/migration vẫn giữ nguyên. Trạng thái publish thực tế được xác nhận qua remote readback trước bàn giao.
+
+
+## Scoped handoff H-CLAUDE-R1-006
+
+Chủ dự án yêu cầu tiếp tục phân việc sau review. Claude được triển khai FIX-MAC-01/02/03 trên nhánh task/worktree riêng từ d2a9898 theo `docs/handoffs/prompt-claude-recovery-r1.md`, sau receipt scope/revision. Ngoại lệ này thay read-only cũ trong đúng phạm vi R1, không cho sửa chồng worktree Studio gốc, PC adapters hoặc merge/push app/production. Process PROC-0006 là trạng thái giao việc, không bằng chứng agent đang chạy.

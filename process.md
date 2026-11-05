@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0005. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0006. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## 1. Snapshot hiện tại và điểm tiếp nối
 
@@ -224,3 +224,25 @@ Nhận report Claude CL-REVIEW-20261105-01. Scope Codex: đọc/đối chiếu/r
 ### H-REVIEW-005 — việc kế tiếp — PROC-0005
 
 [Kết luận review](./docs/reports/review/claude-review-20261105/review.md), [lệnh owner Mac](./docs/handoffs/prompt-mac-recovery-fixes.md). Owner hiện hữu ưu tiên FIX-MAC-01/02/03 trước live; cache/alpha/privacy và two-owner GPU theo acceptance. Claude review/retest, chỉ sửa implementation sau handoff revision/file scope. PC tiếp tục local toolchain/inference theo pause UAC, không đổi worker live trước chốt protocol. Codex nhận diff/commits/tests/artifacts để review lại; bug repro không có nghĩa sản phẩm PASS.
+
+
+### L-014 — 05/11/2026 — START — CX-PROGRESS-20261105-06
+
+Người dùng yêu cầu đánh giá tiến độ Claude và tiếp tục giao việc. Scope: kiểm report/commit/PR/chat, phân công gói implementation riêng và publish docs, không sửa Studio. Kiểm Studio sạch tại d2a9898, không commit recovery mới, remote docs17b77fe và không open PR. Chat owner Mac đã completed/idle với bàn giao S1, không có receipt FIX-MAC-01…03. Claude external không truy cập live được từ công cụ này; không suy luận đang chạy/dừng từ status Mac. Report hiện có vẫn CL-REVIEW-20261105-01.
+
+
+### L-015 — 05/11/2026 — ASSIGN / END — CX-PROGRESS-20261105-06
+
+Đánh giá: Claude hoàn tất review/repro, chưa có evidence code sửa mới. Studio vẫn d2a9898 clean; không PR mới. Chat owner Mac đã idle/completed ở bàn giao S1, không tự xem là quyền chiếm worktree. Theo yêu cầu mới của chủ dự án, giao Claude implementation giới hạn R1 (FIX-MAC-01/02/03) trên nhánh/worktree riêng từ d2a9898, giữ canonical Studio nguyên trạng; đây là scoped handoff cho nhánh task, chưa quyền merge/push app/live. Receipt phải ghi revision/scope trước code; chưa receipt vẫn Assigned, không In progress. Không rerun các repro cũ trong lượt này vì không source delta. Report [progress](./docs/reports/review/claude-progress-20261105.md), lệnh [Claude R1](./docs/handoffs/prompt-claude-recovery-r1.md).
+
+### H-CLAUDE-R1-006 — hiện hành
+
+Claude nhận gói implementation R1 trên `codex/worker-recovery-r1`/worktree riêng, baseline d2a9898 kiểm lại. Source scope worker transport/control plane/grants và tests, chưa PC adapters hoặc viewer/quiz/cache/animation. Read-only cũ được thay cho đúng nhánh task/phạm vi này; bản canonical vẫn owner cũ giữ tới review. Bước đầu: receipt file `docs/reports/claude/recovery-r1-receipt.md`, sau sửa report/finalSHA/tests. Không tự coi agent đã nhận/running vì prompt có trên GitHub; chưa khởi chạy hoặc gửi vào Claude external từ công cụ này.
+
+| Gói tiếp nối | Bên được giao | Trạng thái | Điều kiện tiếp theo |
+|---|---|---|---|
+| R1A / FIX-MAC-01 | Claude trên nhánh task riêng | Assigned | Receipt + durable upload/complete recovery + tests invocation count |
+| R1B / FIX-MAC-02 | Claude trên nhánh task riêng | Assigned | Safe claim redelivery/crash/race + tests |
+| R1C / FIX-MAC-03 | Claude trên nhánh task riêng | Assigned | Grants/default deny, mismatch/error classification + tests |
+| Review R1 | Codex | Planned | Chờ finalSHA/diff/full suite/recovery artifacts, không duyệt từ proposal |
+| R2 (cache/alpha rồi hostGPU/privacy) | Chưa nhận | Planned | Chỉ giao tiếp sau review R1 |
