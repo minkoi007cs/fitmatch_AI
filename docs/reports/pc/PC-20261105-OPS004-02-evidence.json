@@ -1,0 +1,81 @@
+{
+  "sessionId": "PC-20261105-OPS004-02",
+  "handoffId": "H-PC-OPS004-02",
+  "operationsCommitRead": "942927bbd0a0765f96ab20897384a782e30cd41b",
+  "snapshotId": "RESUME-20261105-002",
+  "snapshotIsLiveRevision": false,
+  "snapshotGitBlobsVerified": [
+    {
+      "path": "docs/worker-api-contract-v1.md",
+      "sha256": "eb91b91e8492f457bacef8961dde81d956ae0bacaff2935a19badf7c00e9931c",
+      "bytes": 6438,
+      "verifiedAgainstPinnedGitBlob": true
+    },
+    {
+      "path": "docs/pc-worker-connect.md",
+      "sha256": "9df15679c26d853421d3220b104b65a7b751d0c20b2bbe14af3a6b150cd8f0fc",
+      "bytes": 6427,
+      "verifiedAgainstPinnedGitBlob": true
+    },
+    {
+      "path": "docs/v2-s1-s2-status.md",
+      "sha256": "97bbe36daa746362775d8e7bdd26e52adcec4b4697e7706b923741aed644ffb5",
+      "bytes": 5930,
+      "verifiedAgainstPinnedGitBlob": true
+    },
+    {
+      "path": "scripts/worker/worker.py",
+      "sha256": "c17109dcb2f7af2377c676dd8c1d51728682a0a27f499995e097c8b5b9a0abcb",
+      "bytes": 9903,
+      "verifiedAgainstPinnedGitBlob": true
+    },
+    {
+      "path": "scripts/worker/config.example.json",
+      "sha256": "d57c927cd7273d372b2abd1edc23c3a6eb6747091f41d0337ffdc652f43e63e5",
+      "bytes": 135,
+      "verifiedAgainstPinnedGitBlob": true
+    },
+    {
+      "path": "src/lib/v2/contracts.ts",
+      "sha256": "13a9f70a75a058e21fbc5c50d7967562086973d65f9ec4bc88e2bc21e33f2d34",
+      "bytes": 3836,
+      "verifiedAgainstPinnedGitBlob": true
+    },
+    {
+      "path": "supabase/migrations/20261105_studio_control_plane.sql",
+      "sha256": "6091c0d6f6d869119451119463f6b231d3ee23e2f0446d28fa398bc5697483ad",
+      "bytes": 13762,
+      "verifiedAgainstPinnedGitBlob": true
+    }
+  ],
+  "gpuStartCommit": "49903844a908f95de1d41866ecbcb32824e9d287",
+  "localImplementationCommit": "29725dac43d0a49710fee63fc3c36a6f3353b2e7",
+  "localCodePushed": false,
+  "checkpoint": "pc-sith-20261105-004",
+  "checkpointUnmodified": true,
+  "msvcPausePreserved": true,
+  "tests": {
+    "type": "synthetic local unit and CLI; not engine self-test",
+    "count": 21,
+    "passed": 21,
+    "failed": 0,
+    "exitCode": 0,
+    "unittestSeconds": 0.358,
+    "logSHA256": "bfcc5f5458c6778a327f251b629735f9af1989308ce9bb0dd326ba65ba1661e3"
+  },
+  "existingDebugArtifact": {
+    "fileLabel": "collision-debug-normalized.glb",
+    "bytes": 451412,
+    "sha256": "eb4bef567ff9d09c544d2362da3b196186a226530531327e2ec41dd50649f48a",
+    "textureRequirementCorrectlyRejected": true,
+    "units": "normalized; not calibrated metres",
+    "isTexturedAvatar": false
+  },
+  "engines": {},
+  "newGPUInference": false,
+  "newFitting": false,
+  "gateStatus": "NOT VERIFIED",
+  "evidenceScope": "Public-safe metadata only. No source/output meshes, images, models, credentials, signed URLs or private filesystem paths.",
+  "operationsRecheckedBeforePublication": "17b77fe021d0ccffe413810dfb786bbf7c0dc532",
+  "processRevisionRechecked": "PROC-0005"
+}
