@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth/request";
 import type { createClient } from "@/lib/supabase/server";
 import { WardrobeItemRecord } from "@/lib/types";
+import { readJson, requestError, wardrobeSchema } from "@/lib/validation";
 import { ownsImagePath } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
   const { supabase, user } = auth;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request, wardrobeSchema);
     if (body.imagePath && !ownsImagePath(body.imagePath, user.id)) return NextResponse.json({ success: false, error: "Invalid image owner" }, { status: 400 });
     const payload = {
       user_id: user.id,
@@ -82,10 +83,5 @@ export async function POST(request: Request) {
     };
 
     return NextResponse.json({ success: true, item });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Unexpected error" },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return requestError(error); }
 }

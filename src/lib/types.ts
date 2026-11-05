@@ -79,6 +79,11 @@ export interface OutfitSuggestion {
 }
 
 export interface StyleProfile {
+  bodyShape?: string;
+  heightRange?: string;
+  lifestyle?: string;
+  shoppingGoal?: string;
+  fitPriorities?: string[];
   primaryStyle: StyleCategory;
   secondaryStyle?: StyleCategory | null;
   favoriteColors: string[];

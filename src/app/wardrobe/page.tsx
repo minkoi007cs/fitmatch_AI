@@ -64,6 +64,7 @@ const emptyDraft: DraftItem = {
 
 export default function WardrobePage() {
   const uploadVersion = useRef(0);
+  const draftVersion = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -119,6 +120,7 @@ export default function WardrobePage() {
   }, [toast]);
 
   function openAddDrawer() {
+    draftVersion.current++;
     uploadVersion.current++;
     setUploading(false);
     setDraft(emptyDraft);
@@ -128,6 +130,7 @@ export default function WardrobePage() {
   }
 
   function openEditDrawer(item: WardrobeItem) {
+    draftVersion.current++;
     uploadVersion.current++;
     setUploading(false);
     setEditingId(item.id);
@@ -148,6 +151,7 @@ export default function WardrobePage() {
   }
 
   function closeDrawer() {
+    draftVersion.current++;
     uploadVersion.current++;
     setUploading(false);
     setIsDrawerOpen(false);
@@ -225,6 +229,8 @@ export default function WardrobePage() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (uploading) return;
+    const version = draftVersion.current;
+    const itemId = editingId;
     setSaving(true);
 
     try {
@@ -239,15 +245,15 @@ export default function WardrobePage() {
         throw new Error(data.error ?? "Could not save wardrobe item.");
       }
 
-      if (editingId) {
-        setItems((current) => current.map((item) => (item.id === editingId ? data.item : item)));
+      if (itemId) {
+        setItems((current) => current.map((item) => (item.id === itemId ? data.item : item)));
         toast("Wardrobe item updated.", "success");
       } else {
         setItems((current) => [data.item, ...current]);
         toast("New item saved to wardrobe.", "success");
       }
 
-      closeDrawer();
+      if (version === draftVersion.current) closeDrawer();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Error saving wardrobe item.", "error");
     } finally {

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { createHmac } from "node:crypto";
+import sharp from "sharp";
 import { createServerClient } from "@supabase/ssr";
 import { seal, unseal } from "../src/lib/auth/session.ts";
 
@@ -12,6 +13,12 @@ const users = new Map();
 const mappings = [];
 const savedOutfits = [];
 const refreshRecords = new Map();
+const profiles = new Map();
+let profileWrites = 0, wardrobePatch = null, quotaAllowed = true, quotaUnavailable = false, quotaCalls = 0, storageDeletes = 0;
+const itemId = "22222222-2222-4222-a222-222222222222";
+const completeProfile = { primaryStyle: "minimal", favoriteColors: ["Black"] };
+const initialWardrobe = id => ({ id: itemId, user_id: id, name: "Existing wardrobe", category: "shirt", color: "white", style: "minimal", notes: "Keep notes", material: "cotton", description: "Keep description", is_favorite: true });
+let wardrobeRows = new Map();
 let subject = "hub-a", unavailable = false, exchanges = 0, refreshes = 0;
 const localId = "11111111-1111-4111-a111-111111111111";
 const user = (id, email = `${id}@fixture.invalid`, metadata = {}) => ({ id, email, aud: "authenticated", role: "authenticated", app_metadata: metadata, user_metadata: {}, created_at: new Date().toISOString() });
@@ -49,8 +56,19 @@ const mock = createServer(async (req, res) => {
     return send(records);
   }
   if (url.pathname === "/rest/v1/fm_users") {
-    if (req.method === "POST") return send(null, 201);
-    return send({ id: bearerId(req), style_profile: { primaryStyle: "minimal" }, quiz_answers: { ageRange: "45+" } });
+    const id = body.id ?? bearerId(req);
+    const existing = profiles.get(id) ?? { id, style_profile: completeProfile, quiz_answers: { ageRange: "45+" } };
+    if (req.method === "POST") {
+      profileWrites++;
+      const updated = req.headers.prefer?.includes("ignore-duplicates") ? existing : { ...existing, ...body };
+      profiles.set(id, updated); return send(updated, 201);
+    }
+    return send(existing);
+  }
+  if (url.pathname === "/rest/v1/rpc/fm_consume_ai_units") {
+    quotaCalls++;
+    if (quotaUnavailable) return send({ message: "Synthetic quota outage" }, 503);
+    return send(quotaAllowed);
   }
   if (url.pathname === "/rest/v1/rpc/fm_begin_auth_refresh") {
     if (!refreshRecords.has(body.p_hash)) refreshRecords.set(body.p_hash, { owner: body.p_owner, sealed_result: null });
@@ -67,23 +85,40 @@ const mock = createServer(async (req, res) => {
   }
   if (url.pathname === "/rest/v1/fm_wardrobe_items") {
     const id = bearerId(req);
-    if (req.method === "POST") { assert.equal(body.user_id, id); return send({ ...body, id: "item-owned", created_at: new Date().toISOString() }); }
+    if (req.method === "POST") { assert.equal(body.user_id, id); return send({ ...body, id: itemId, created_at: new Date().toISOString() }); }
     assert.equal(url.searchParams.get("user_id"), `eq.${id}`);
-    return send([{ id: "existing-item", user_id: id, name: "Existing wardrobe", category: "shirt", color: "white", style: "minimal" }]);
+    const existing = wardrobeRows.get(id) ?? initialWardrobe(id);
+    if (req.method === "PATCH") { wardrobePatch = body; wardrobeRows.set(id, { ...existing, ...body }); return send(wardrobeRows.get(id)); }
+    if (req.method === "DELETE") { wardrobeRows.delete(id); return send(null); }
+    return send(req.headers.accept?.includes("vnd.pgrst.object+json") ? existing : [existing]);
   }
   if (url.pathname === "/rest/v1/fm_outfits") {
     if (req.method === "POST") {
-      const record = { id: "saved-look", created_at: new Date().toISOString(), ...body };
+      const record = { id: "33333333-3333-4333-a333-333333333333", created_at: new Date().toISOString(), ...body };
       savedOutfits.push(record); return send(record, 201);
     }
-    return send(savedOutfits.filter(record => record.user_id === bearerId(req)));
+    if (req.method === "DELETE") {
+      const index = savedOutfits.findIndex(row => row.user_id === bearerId(req) && `eq.${row.id}` === url.searchParams.get("id"));
+      if (index !== -1) savedOutfits.splice(index, 1);
+      return send(null);
+    }
+    let records = savedOutfits.filter(record => record.user_id === bearerId(req));
+    const cursor = url.searchParams.get("or");
+    if (cursor) {
+      const matched = cursor.match(/^\(created_at\.lt\.([^,]+),and\(created_at\.eq\.([^,]+),id\.lt\.([a-f0-9-]+)\)\)$/);
+      assert.ok(matched, "cursor must be constrained to timestamp/uuid");
+      records = records.filter(row => row.created_at < matched[1] || (row.created_at === matched[2] && row.id < matched[3]));
+    }
+    records.sort((a,b) => b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id));
+    return send(records.slice(0, Number(url.searchParams.get("limit") ?? 20)));
   }
+  if (url.pathname === "/storage/v1/object/fitmatch-wardrobe" && req.method === "DELETE") { storageDeletes++; return send([]); }
   if (url.pathname.startsWith("/storage/v1/object/sign/fitmatch-wardrobe/")) return send({ signedURL: "/object/sign/fitmatch-wardrobe/test.png?token=synthetic" });
   return send({ error: `Unexpected synthetic endpoint ${url.pathname}` }, 404);
 });
 await new Promise(resolve => mock.listen(3221, "127.0.0.1", resolve));
 const app = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--port", "3220"], { env: { ...process.env,
-  FITMATCH_AUTH_PROVIDER: "app-system", APP_URL: base, NEXT_PUBLIC_INFRA_URL: fixture,
+  OPENAI_API_KEY: "", FITMATCH_AUTH_PROVIDER: "app-system", APP_URL: base, NEXT_PUBLIC_INFRA_URL: fixture,
   INFRA_APP_ID: "test-fitmatch", NEXT_PUBLIC_INFRA_PUBLISHABLE_KEY: "pk_synthetic", INFRA_SECRET_KEY: "sk_synthetic",
   NEXT_PUBLIC_SUPABASE_URL: fixture, NEXT_PUBLIC_SUPABASE_ANON_KEY: "synthetic-anon", SUPABASE_SERVICE_ROLE_KEY: "synthetic-service",
 }, stdio: ["ignore", "pipe", "pipe"] });
@@ -91,7 +126,9 @@ let output = ""; app.stdout.on("data", part => output += part); app.stderr.on("d
 const jar = new Map();
 function takeCookies(headers, store = jar) { for (const line of headers.getSetCookie()) { const cookie = line.split(";")[0]; const equals = cookie.indexOf("="); const name = cookie.slice(0, equals), value = cookie.slice(equals+1); if (value) store.set(name, value); else store.delete(name); } }
 async function request(path, options = {}, store = jar) {
-  const response = await fetch(base + path, { redirect: "manual", ...options, headers: { Cookie: [...store].map(([k,v])=>`${k}=${v}`).join("; "), ...(options.method && options.method !== "GET" ? { Origin: base, "Content-Type": "application/json" } : {}), ...options.headers } });
+  const requestHeaders = { Cookie: [...store].map(([k,v])=>`${k}=${v}`).join("; "), ...(options.method && options.method !== "GET" ? { Origin: base, ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }) } : {}), ...options.headers };
+  for (const key of Object.keys(requestHeaders)) if (requestHeaders[key] === undefined) delete requestHeaders[key];
+  const response = await fetch(base + path, { redirect: "manual", ...options, headers: requestHeaders });
   takeCookies(response.headers, store); return response;
 }
 async function begin(store = jar, link = false) {
@@ -124,7 +161,7 @@ try {
   unavailable = true; const outage = await request("/api/wardrobe"); assert.equal(outage.status, 503); assert.ok(jar.has("fm_hub_session")); unavailable = false;
   console.log("PASS: owner-scoped data, forged owner/image rejection, mismatched identity denied, outage preserves session");
   const imageOwner = session.user.id;
-  const look = { id: "look-1", name: "Minimal look", items: [], accessories: [], imagePath: `${imageOwner}/looks/test.png`, imageUrl: "https://untrusted.invalid/image" };
+  const look = { id: "look-1", name: "Minimal look", styleCategory: "minimal", confidenceScore: 90, colorExplanation: "Balanced colors", styleExplanation: "Clean styling", items: [{ category: "shirt", description: "Cotton shirt", suggestedColor: "White" }, { category: "pants", description: "Straight trousers", suggestedColor: "Black" }], accessories: [], imagePath: `${imageOwner}/looks/test.png`, imageUrl: "https://untrusted.invalid/image" };
   assert.equal((await request("/api/outfits", { method: "POST", body: JSON.stringify({ data: [look] }) })).status, 200);
   assert.equal(savedOutfits[0].data_json[0].imageUrl, undefined, "never persist a caller-supplied signed URL");
   const restored = await (await request("/api/outfits")).json();
@@ -135,6 +172,71 @@ try {
   const profileContract = await (await request("/api/user/profile")).json();
   assert.equal(profileContract.quizAnswers.ageRange, "45+");
   console.log("PASS: outfit image survives save/reload with new signed URL; foreign image path and invalid archive rejected; quiz contract correct");
+
+  const patch = await request(`/api/wardrobe/${itemId}`, { method: "PATCH", body: JSON.stringify({ name: "Rename only" }) });
+  assert.equal(patch.status, 200); const patched = (await patch.json()).item;
+  assert.equal(patched.notes, "Keep notes"); assert.equal(patched.material, "cotton"); assert.equal(patched.is_favorite, true);
+  assert.deepEqual(Object.keys(wardrobePatch).sort(), ["name", "updated_at"]);
+  const beforeWrites = profileWrites;
+  assert.equal((await request("/api/user/profile", { method: "POST", body: "{}" })).status, 400);
+  assert.equal(profileWrites, beforeWrites);
+  assert.equal((await request("/api/user/profile", { method: "POST", body: JSON.stringify({ styleProfile: completeProfile }) })).status, 200);
+  assert.equal((await (await request("/api/user/profile")).json()).quizAnswers.ageRange, "45+");
+  for (const path of [`/api/wardrobe/${itemId}`, "/api/outfits", "/api/user/profile", "/api/generate-outfit", "/api/analyze-image", "/api/generate-outfit-image"]) {
+    assert.equal((await request(path, { method: path.includes(itemId) ? "PATCH" : "POST", body: "{broken" })).status, 400);
+  }
+  assert.equal((await request("/api/outfits", { method: "POST", body: JSON.stringify({ data: [{ ...look, items: [null] }] }) })).status, 400);
+  const validAnalysis = { type: "shirt", primaryColor: "white", pattern: "plain", style: "minimal", description: "Cotton shirt" };
+  quotaAllowed = false;
+  for (const [path, payload] of [["/api/generate-outfit", { analysis: validAnalysis }], ["/api/analyze-image", { imageBase64: "aGVsbG8=" }], ["/api/generate-outfit-image", { items: look.items }], ["/api/user/profile", { quizAnswers: { ageRange: "25-34", favoriteColors: ["Black"], preferredOutfits: ["Minimal"], fashionInspirations: ["Classic"] } }]]) {
+    const denied = await request(path, { method: "POST", body: JSON.stringify(payload) });
+    assert.equal(denied.status, 429, path); assert.ok(Number(denied.headers.get("retry-after")) > 0);
+  }
+  quotaAllowed = true; quotaUnavailable = true;
+  assert.equal((await request("/api/generate-outfit", { method: "POST", body: JSON.stringify({ analysis: validAnalysis }) })).status, 503);
+  quotaUnavailable = false;
+  const recommendation = { headline:"Your style",summary:"A saved result",flatteringFocus:["Balanced layers"],avoidNotes:[],outfits:[{name:"Office look",occasion:"Office",whyItFitsYou:"Comfort",pieces:["Shirt","Trousers"]}] };
+  profiles.set(imageOwner,{...profiles.get(imageOwner),style_profile:{...completeProfile,recommendations:recommendation}});
+  const beforeReadQuota=quotaCalls;
+  for(let i=0;i<2;i++) assert.deepEqual((await(await request("/api/user/profile")).json()).recommendations,recommendation);
+  assert.equal(quotaCalls,beforeReadQuota,"reloading saved recommendations cannot call AI/quota");
+  const beforeUploadQuota = quotaCalls;
+  const badUpload = new FormData(); badUpload.append("file", new File(["not an image"],"photo.jpg",{type:"image/jpeg"}));
+  assert.equal((await request("/api/upload-item", { method:"POST", headers:{"Content-Type":undefined}, body:badUpload })).status,400);
+  assert.equal(quotaCalls,beforeUploadQuota,"bad image bytes cannot consume quota");
+  const validUpload = new FormData();
+  const tinyImage = await sharp({create:{width:8,height:8,channels:3,background:"white"}}).jpeg().toBuffer();
+  validUpload.append("file",new File([tinyImage],"photo.jpg",{type:"image/jpeg"}));
+  quotaAllowed=false;
+  assert.equal((await request("/api/upload-item",{method:"POST",headers:{"Content-Type":undefined},body:validUpload})).status,429);
+  quotaAllowed=true;
+  const beforeQuota = quotaCalls;
+  assert.equal((await request("/api/generate-outfit", { method: "POST", body: JSON.stringify({ analysis: {}, styleProfile: { favoriteColors: "red" } }) })).status, 400);
+  assert.equal(quotaCalls, beforeQuota, "invalid inputs must not consume quota");
+  savedOutfits.push({ id: "44444444-4444-4444-a444-444444444444", user_id: imageOwner, created_at: new Date().toISOString(), data_json: [{ ...look, items: [null] }] });
+  const legacy = await (await request("/api/outfits")).json(); assert.equal(legacy.invalidCount, 1); assert.ok(legacy.outfits.every(row => row.data_json[0].items[0] !== null));
+  savedOutfits.length = 0;
+  for (let i=0;i<45;i++) savedOutfits.push({ id: `55555555-5555-4555-a555-${String(i).padStart(12,"0")}`, user_id: imageOwner, created_at: "2026-11-04T12:00:00.000Z", data_json: [look] });
+  const ids = []; let cursor = null;
+  do { const page = await (await request(`/api/outfits${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`)).json(); ids.push(...page.outfits.map(row => row.id)); cursor = page.nextCursor; } while(cursor);
+  assert.equal(ids.length,45); assert.equal(new Set(ids).size,45);
+  assert.equal((await request("/api/outfits?cursor=invalid")).status,400);
+  const secondJar=new Map(); subject="hub-second-owner";
+  assert.equal((await complete(await begin(secondJar),secondJar)).status,303);
+  assert.equal((await(await request("/api/outfits",{},secondJar)).json()).outfits.length,0);
+  const beforeDelete=savedOutfits.length;
+  assert.equal((await request(`/api/outfits?id=${savedOutfits[0].id}`,{method:"DELETE"},secondJar)).status,200);
+  assert.equal(savedOutfits.length,beforeDelete,"another user's archive cannot be deleted");
+  subject="hub-a";
+  const ownId=savedOutfits[0].id;
+  assert.equal((await request(`/api/outfits?id=${ownId}`,{method:"DELETE"})).status,200);
+  assert.equal(savedOutfits.length,beforeDelete-1);
+
+  assert.equal((await request(`/api/wardrobe/${itemId}`, { method: "DELETE" })).status,200);
+  assert.equal(storageDeletes,0,"deleting one reference must not remove a shared private object");
+  assert.equal((await request(`/api/outfit-image?path=${encodeURIComponent(`${imageOwner}/looks/test.png`)}`)).status,200);
+  assert.equal((await request("/api/outfit-image?path=victim/photo.png")).status,400);
+  console.log("PASS: non-destructive PATCH/profile, nested validation, quota 429/outage, legacy archive safety, 45-row pagination, shared asset retention and preview ownership");
 
   const expiring = unseal(decodeURIComponent(jar.get("fm_hub_session")), "sk_synthetic", "session");
   expiring.pair.expiresAt = Date.now() + 50_000;
