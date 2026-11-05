@@ -1,0 +1,16 @@
+P4 allowlist
+  OK: declared but not granted -> no claim
+P2 redelivery
+  OK: same instance gets same job
+  OK: same token, same attempt
+  OK: other instance gets nothing
+  OK: no redelivery after progress was reported
+P1 idempotent complete
+  OK: first complete
+  OK: identical replay
+  OK: replay with other asset refused
+  OK: replay with wrong token refused
+  OK: fail after success refused
+compat
+  OK: old 1-arg claim still works
+Summary: 11 ok, 0 failed

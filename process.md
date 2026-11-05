@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0004. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0005. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## 1. Snapshot hiện tại và điểm tiếp nối
 
@@ -32,7 +32,7 @@ OBS-PC/OBS-MAC là mã quan sát nguồn có sẵn, không phải reviewer tự 
 | PC-02 | PC | Planned | Body+áo template riêng/drape chưa có bằng chứng |
 | PC-03 | PC hiện hữu | Blocked | OBS-PC-004; body fitting xong theo report, texture/reconstruction/GLB chờ MSVC/UAC |
 | APP-00 | Mac owner hiện hữu | In progress | OBS-MAC-3D; baseline/schema/docs có code, reconcile contract/revision |
-| APP-01 | Mac owner hiện hữu | In progress | V2 API/SQL/worker code dirty; lost reply/idempotency/scope gaps cần test |
+| APP-01 | Mac owner hiện hữu | Changes requested | V2 API/SQL/worker code dirty; lost reply/idempotency/scope gaps cần test |
 | APP-02 | Mac owner hiện hữu | In progress | Viewer thật/test synthetic có sẵn, cần GLB PC/QA |
 | REV-01 | Codex | Planned | Reconciliation chưa là review gate; chờ report/artifacts/diff cuối |
 | PC-04 | PC | Planned | Áo thun texture/drape sau review body phù hợp |
@@ -211,3 +211,16 @@ Chủ dự án đã cho phép publish bộ điều hành/handoff trên nhánh t�
 ### H-GITHUB-004 — nguồn hiện hành
 
 https://github.com/minkoi007cs/fitmatch_AI/tree/codex/project-operations . Đọc docs/handoffs/github-sync.md để clone/pull checkout tài liệu riêng và gửi report/PR. PC/Mac đọc cùng ref/commit thay chuyển ZIP; process cập nhật có evidence, không overwrite bản cũ. Production app/main không thay đổi. Root local và publication checkout giữ cùng nội dung bộ điều hành ở lần publish này; bản copy trên worktree Studio/PC cần đọc GitHub hoặc fetch riêng, chưa tự chép đè.
+
+
+### L-012 — 05/11/2026 — START — CX-REVIEW-20261105-05 / QA-01A review
+
+Nhận report Claude CL-REVIEW-20261105-01. Scope Codex: đọc/đối chiếu/reproduce độc lập, review proposal, nhập process delta và giao sửa cho owner Mac; không sửa Studio implementation. Đã đọc root rules/roadmap/process, source tại d2a9898 sạch; SHA256 migration/worker khớp report. Test reviewer dùng Docker PostgreSQL16 network-none và loopback worker mock riêng; không Supabase/PC thật. Bắt đầu review, chưa gate PASS.
+
+### L-013 — 05/11/2026 — REVIEW / HANDOFF — CX-REVIEW-20261105-05
+
+Đã nhận delta Claude CL-REVIEW-20261105-01: read-only d2a9898 sạch; report/proposal/repro trong docs/reports/claude/. Codex kiểm hash khớp, chạy lại SQL PostgreSQL16 cô lập:14/14 reproduced, proposal11/11; worker W1/W2 reproduced; Sharp đúng0.35.5 cho PNG alpha nền đen. Không full app suite/Supabase/PC/GPU thật. APP-01 chuyển Changes requested, gate3D NOT VERIFIED. Complete đã commit thì R1 vẫn succeeded; finalize xong nhưng complete chưa commit mới có nguy cơ failed/rerun. Proposal chưa duyệt áp nguyên bản: thiếu persistent recovery, generation readers/race, RPC compatibility, GPU-host locking; scripts cần exit nonzero khi assertion fail. Owner Mac làm FIX-MAC-01…07 theo handoff mới, Claude chưa tự sửa implementation. MSVC pause giữ nguyên. Session Claude và Codex review kết thúc; chưa có receipt sửa code của owner.
+
+### H-REVIEW-005 — việc kế tiếp — PROC-0005
+
+[Kết luận review](./docs/reports/review/claude-review-20261105/review.md), [lệnh owner Mac](./docs/handoffs/prompt-mac-recovery-fixes.md). Owner hiện hữu ưu tiên FIX-MAC-01/02/03 trước live; cache/alpha/privacy và two-owner GPU theo acceptance. Claude review/retest, chỉ sửa implementation sau handoff revision/file scope. PC tiếp tục local toolchain/inference theo pause UAC, không đổi worker live trước chốt protocol. Codex nhận diff/commits/tests/artifacts để review lại; bug repro không có nghĩa sản phẩm PASS.

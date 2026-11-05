@@ -1,0 +1,4 @@
+Job failed: job-1 RuntimeError (details in local adapter log)
+W1 complete reply lost once: server saw -> claim , output-intent , PUT upload , finalize , complete , fail:INFERENCE_FAILED
+Worker connection unavailable: ValueError
+W2 engine revision mismatch: server saw -> claim

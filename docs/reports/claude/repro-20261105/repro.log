@@ -1,0 +1,22 @@
+R1 lost complete reply: replay of the same complete is refused (not idempotent)
+  REPRODUCED: first complete accepted (t)
+  REPRODUCED: identical complete replay returns false -> worker gets HTTP 409 (f)
+  REPRODUCED: job stays succeeded (succeeded)
+R1b complete request never reached server; worker.py then sends fail -> finalized output discarded
+  REPRODUCED: fail accepted although a ready GLB exists for this job (t)
+  REPRODUCED: job failed, model has no output (failed|err=INFERENCE_FAILED|out=null)
+R2 lost claim reply: same worker gets nothing until lease expiry, then a new attempt
+  REPRODUCED: re-claim by same worker returns null (204) ()
+  REPRODUCED: job is running attempt 1 with nobody working on it (running|attempt=1)
+  REPRODUCED: after expiry the same job is re-issued as attempt 2 (2)
+R3 capabilities are whatever the worker declares (no server-side allowlist)
+  REPRODUCED: worker row has no operator-approved capability column (0)
+R4 fitting cache dead end after 3 failed attempts
+  REPRODUCED: retry refused after attempt 3 (f)
+  REPRODUCED: new request with fresh key returns the same dead job (9de9deff-f59b-4c56-9ce0-9bbe7b8e1f39)
+  REPRODUCED: that job is permanently failed (failed)
+R5 two owners, one GPU: two worker identities can both hold running jobs at the same time
+  REPRODUCED: both claims succeed concurrently (yes)
+  REPRODUCED: running jobs at once (2)
+
+Summary: 14 reproduced, 0 not reproduced
