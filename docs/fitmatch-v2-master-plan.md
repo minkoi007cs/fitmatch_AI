@@ -214,3 +214,7 @@ Gợi ý thứ tự ngay: S0 → S1, trong lúc PC hoàn thiện body. Không ư
 - Các repo human/garment và giới hạn đã ghi trong docs/3d-research.md.
 
 Số sao, demo hoặc quảng bá không thay thế quality/capacity/license review. Đến lúc PC sẵn sàng, kỳ vọng là adapter qua contract đã test; vẫn cần integration thật, không hứa chỉ điền một URL là mọi stage tự hoạt động.
+
+## 16. Bản triển khai 05/11/2026
+
+S1 và nền tảng S2 đã có code trong worktree `fitmatch_AI-3d-studio`; chưa deploy hoặc nghiệm thu inference thật. Xem [trạng thái và giới hạn](v2-s1-s2-status.md), [contract đã hiện thực](worker-api-contract-v1.md) và [hướng dẫn nối PC](pc-worker-connect.md). Các state/payload dự kiến ở phần kế hoạch được thay bằng contract đã hiện thực khi nối worker.

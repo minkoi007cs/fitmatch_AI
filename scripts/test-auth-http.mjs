@@ -9,6 +9,7 @@ import { seal, unseal } from "../src/lib/auth/session.ts";
 
 const base = "http://localhost:3220";
 const fixture = "http://127.0.0.1:3221";
+const v2 = process.argv.includes("--v2") ? await (await import("./v2-http-fixture.mjs")).v2Fixture(fixture) : null;
 const users = new Map();
 const mappings = [];
 const savedOutfits = [];
@@ -30,10 +31,12 @@ const jwt = id => {
 };
 const bearerId = req => { try { return JSON.parse(Buffer.from(req.headers.authorization.split(".")[1], "base64url")).sub; } catch { return null; } };
 const mock = createServer(async (req, res) => {
-  let raw = ""; for await (const part of req) raw += part;
-  const body = raw ? JSON.parse(raw) : {};
+  const chunks = []; for await (const part of req) chunks.push(part);
+  const raw = Buffer.concat(chunks);
+  const body = raw.length && req.headers["content-type"]?.includes("application/json") ? JSON.parse(raw.toString()) : {};
   const url = new URL(req.url, fixture);
   const send = (data, status = 200) => { res.writeHead(status, { "Content-Type": "application/json" }); res.end(JSON.stringify(data)); };
+  if (v2) { try { if (await v2.handle(req,res,url,body,raw,send)) return; } catch (e) { console.error("V2 fixture error:",e); return send({message:"fixture failure"},500); } }
   if (url.pathname === "/api/v1/auth/token") { exchanges++; return send({ data: { accessToken: "synthetic-hub-access", refreshToken: "synthetic-hub-refresh", expiresIn: 600 } }); }
   if (url.pathname === "/api/v1/auth/revoke") return send({ data: null });
   if (url.pathname === "/api/v1/auth/refresh") { refreshes++; return send({ data: { accessToken: "synthetic-new-access", refreshToken: "synthetic-new-refresh", expiresIn: 600 } }); }
@@ -84,7 +87,7 @@ const mock = createServer(async (req, res) => {
     return send(refreshRecords.get(url.searchParams.get("refresh_hash").slice(3)));
   }
   if (url.pathname === "/rest/v1/fm_wardrobe_items") {
-    const id = bearerId(req);
+    const id = bearerId(req) ?? (req.headers.authorization === "Bearer synthetic-service" ? url.searchParams.get("user_id")?.slice(3) : null);
     if (req.method === "POST") { assert.equal(body.user_id, id); return send({ ...body, id: itemId, created_at: new Date().toISOString() }); }
     assert.equal(url.searchParams.get("user_id"), `eq.${id}`);
     const existing = wardrobeRows.get(id) ?? initialWardrobe(id);
@@ -155,6 +158,7 @@ try {
   const signedIn = await request("/api/auth/session"); assert.equal(signedIn.status, 200); const session = await signedIn.json(); assert.equal(session.user.email, "owner@fixture.invalid");
   console.log("PASS: PKCE/state verified; callback bridges user-scoped Supabase session and preserves next/vibe");
   assert.equal((await request("/studio")).status, 200);
+  if (v2) { v2.seed(session.user.id,itemId); const {testV2}=await import("./test-v2-http.mjs"); await testV2({base,fixture,request,jar,owner:session.user.id,itemId,v2}); }
   if (process.argv.includes("--studio")) {
     const { testStudio } = await import("./test-studio-browser.mjs");
     await testStudio(base, jar);
@@ -263,4 +267,4 @@ try {
   console.log("PASS: logout clears both sessions; no unnecessary token refresh");
 } catch (error) {
   console.error(output.slice(-3500)); throw error;
-} finally { app.kill("SIGTERM"); await new Promise(resolve => mock.close(resolve)); }
+} finally { app.kill("SIGTERM"); await new Promise(resolve => mock.close(resolve)); v2?.stop(); }

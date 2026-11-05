@@ -1,3 +1,18 @@
+# Tiến độ hiện tại — S1 / Quiz V2 / gợi ý mặc thử
+
+Cập nhật 05/11/2026 (America/New_York). Worktree đang triển khai: `/Users/khoihoang/Documents/fitmatch_AI-3d-studio`, branch `codex/3d-studio-worker`.
+
+Đã có control plane cho ảnh/model/job, private uploads, worker auth/lease/quota, quiz V2, gợi ý từ áo thật, feedback và Studio mở model từ tài khoản. Chưa deploy, áp dụng migration vào Supabase thật hoặc nghiệm thu inference trên PC.
+
+- [Chi tiết đã làm và giới hạn](v2-s1-s2-status.md)
+- [Nối PC và adapter inference](pc-worker-connect.md)
+- [Contract API đang hiện thực](worker-api-contract-v1.md)
+- [Roadmap toàn bộ](fitmatch-v2-master-plan.md)
+
+Phần dưới là nhật ký audit ngày 04/11, giữ để tra cứu lịch sử; không dùng các trạng thái nhánh/deployment trong đó như kiểm tra mới nhất.
+
+---
+
 # FitMatch AI — tiến độ kiểm tra và sửa lỗi
 
 Ngày: 04/11/2026, America/New_York. Nhánh sửa: `codex/fix-audit-followup`.

@@ -20,7 +20,8 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:studio
+      - run: docker pull postgres:16-alpine
+      - run: npm run test:v2
       - run: npm audit --omit=dev
   quota-database:
     runs-on: ubuntu-latest
@@ -32,3 +33,4 @@ jobs:
           node-version: 22
       - run: docker pull postgres:16-alpine
       - run: node scripts/test-quota-db.mjs
+      - run: node scripts/test-v2-db.mjs

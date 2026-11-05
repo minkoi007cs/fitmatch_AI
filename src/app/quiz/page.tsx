@@ -1,755 +1,425 @@
 "use client";
-
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
-import {
-  ArrowRight,
-  ArrowLeft,
-  Check,
-  RotateCcw,
-  Sparkles,
-  CheckCircle2,
-  AlertTriangle,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { PersonalStyleRecommendation, QuizAnswers } from "@/lib/types";
-import { getColorHex } from "@/lib/utils";
-import { IMAGES, DARK_BLUR_DATA_URL } from "@/lib/images";
-import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Select";
-import { Field } from "@/components/ui/Field";
-import { Chip } from "@/components/ui/Chip";
-import { Badge } from "@/components/ui/Badge";
-import { useToast } from "@/components/ui/Toast";
-
-const ageOptions = ["13-17", "18-24", "25-34", "35-44", "45+"];
-const genderOptions = ["Feminine", "Masculine", "Androgynous", "Fluid", "Prefer not to say"];
-const bodyShapeOptions = [
-  "Slim",
-  "Athletic",
-  "Curvy",
-  "Broad shoulders",
-  "Petite",
-  "Tall frame",
-  "Prefer not to say",
-];
-const heightOptions = [
-  "Under 5'4",
-  "5'4 - 5'7",
-  "5'8 - 5'11",
-  "6'0 and above",
-  "Prefer not to say",
-];
-const lifestyleOptions = [
-  "Office and meetings",
-  "Campus or school",
-  "Creative work and city life",
-  "Mostly casual daily wear",
-  "Active and outdoors",
-];
-const goalOptions = [
-  "Look taller",
-  "Look more polished",
-  "Look more relaxed",
-  "Highlight shape",
-  "Build easy repeat outfits",
-];
-const fitPriorityOptions = [
-  "Waist definition",
-  "Longer leg line",
-  "Shoulder balance",
-  "Relaxed comfort",
-  "Layering",
-  "Minimal styling effort",
-];
-const colorOptions = [
-  "Black",
-  "White",
-  "Cream",
-  "Olive",
-  "Navy",
-  "Brown",
-  "Gray",
-  "Red",
-  "Pink",
-  "Blue",
-];
-
-const outfitTileOptions = [
-  {
-    label: "Relaxed denim + tee",
-    detail: "Easy, low-effort everyday uniform with elevated cuts",
-    image: IMAGES.quizDenim,
-  },
-  {
-    label: "Tailored monochrome",
-    detail: "Sharp, clean, and elevated architectural lines",
-    image: IMAGES.quizTailored,
-  },
-  {
-    label: "Oversized streetwear layers",
-    detail: "Bold silhouette with tactile contemporary personality",
-    image: IMAGES.quizStreetwear,
-  },
-  {
-    label: "Sporty athleisure",
-    detail: "Comfort-first technical fabrics with effortless movement",
-    image: IMAGES.quizSporty,
-  },
-  {
-    label: "Soft minimalist neutrals",
-    detail: "Quiet, refined luxury palette with tactile knitwear",
-    image: IMAGES.quizMinimal,
-  },
-  {
-    label: "Classic smart casual",
-    detail: "Balanced and timeless versatility from day to evening",
-    image: IMAGES.quizSmartCasual,
-  },
-];
-
-const inspirationOptions = [
-  "Korean minimal",
-  "Classic tailoring",
-  "Scandi clean",
-  "Sneaker culture",
-  "Quiet luxury",
-  "Vintage prep",
-];
-
-const stepBackgrounds = [
-  IMAGES.quizStep1,
-  IMAGES.quizStep2,
-  IMAGES.quizStep3,
-];
-
-function toggleValue(list: string[], value: string) {
-  return list.includes(value) ? list.filter((item) => item !== value) : [...list, value];
-}
-
-const defaultAnswers: QuizAnswers = {
-  ageRange: "25-34",
-  genderExpression: "Prefer not to say",
-  bodyShape: "Prefer not to say",
-  heightRange: "Prefer not to say",
-  lifestyle: "Mostly casual daily wear",
-  shoppingGoal: "Build easy repeat outfits",
-  fitPriorities: ["Minimal styling effort"],
-  favoriteColors: ["Black", "Cream"],
-  preferredOutfits: ["Soft minimalist neutrals"],
-  fashionInspirations: ["Quiet luxury"],
+import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { WorkspaceNav, panel, button } from "@/components/v2/WorkspaceNav";
+import { api } from "@/lib/v2/client";
+import { styleAnswers, type StyleAnswers } from "@/lib/v2/contracts";
+import { IMAGES } from "@/lib/images";
+const defaults: StyleAnswers = {
+  occasion: "daily",
+  style: "minimal",
+  fit: "regular",
+  favoriteColors: ["black", "white"],
+  avoidPatterns: [],
+  climate: "mild",
 };
-
+const steps = [
+  "Dịp mặc",
+  "Phong cách",
+  "Phom yêu thích",
+  "Bảng màu",
+  "Họa tiết",
+  "Nhịp sống",
+];
+const colors = [
+  ["black", "Đen", "#242424"],
+  ["white", "Trắng", "#efefea"],
+  ["cream", "Kem", "#d4c6ab"],
+  ["blue", "Xanh dương", "#7a9db4"],
+  ["navy", "Navy", "#28354d"],
+  ["brown", "Nâu", "#80634d"],
+  ["gray", "Xám", "#929391"],
+  ["olive", "Olive", "#727b50"],
+  ["red", "Đỏ", "#a73d38"],
+  ["pink", "Hồng", "#cd9da9"],
+] as const;
 export default function QuizPage() {
-  const { toast } = useToast();
-  const answersEdited = useRef(false);
-  const setAnswerDraft: typeof setAnswers = value => { answersEdited.current = true; setAnswers(value); };
-
-  const [currentStep, setCurrentStep] = useState(1);
-  const [answers, setAnswers] = useState<QuizAnswers>(defaultAnswers);
-  const [loading, setLoading] = useState(false);
-  const [recommendations, setRecommendations] = useState<PersonalStyleRecommendation | null>(null);
-
-  // Validation rules
-  const isStep3Valid = useMemo(
-    () =>
-      answers.favoriteColors.length > 0 &&
-      answers.preferredOutfits.length > 0 &&
-      answers.fashionInspirations.length > 0 &&
-      (answers.fitPriorities?.length ?? 0) > 0,
-    [answers]
-  );
-
-  // Prefill profile on mount from server
+  const router = useRouter(),
+    [answers, setAnswers] = useState<StyleAnswers>(defaults),
+    [step, setStep] = useState(0),
+    [busy, setBusy] = useState(true),
+    [error, setError] = useState(""),
+    [saved, setSaved] = useState(false);
+  const [draftKey, setDraftKey] = useState("");
+  const saving = useRef(false);
+  const [version, setVersion] = useState<{
+    fingerprint: string;
+    id: string;
+  } | null>(null);
   useEffect(() => {
     const controller = new AbortController();
-    async function loadSavedProfile() {
-      try {
-        const response = await fetch("/api/user/profile", { cache: "no-store", signal: controller.signal });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error("Could not load your saved profile. Please retry.");
-        if (!controller.signal.aborted && !answersEdited.current) {
-          if (data.quizAnswers) setAnswers({ ...defaultAnswers, ...data.quizAnswers });
-          setRecommendations(data.recommendations ?? null);
+    void Promise.all([
+      api<{ profile: { id: string; answers: unknown } | null }>(
+        "style-profiles",
+      ),
+      fetch("/api/auth/session", {
+        cache: "no-store",
+        signal: controller.signal,
+      }).then(async (r) => {
+        if (!r.ok) throw new Error("Cần đăng nhập lại.");
+        return r.json();
+      }),
+    ])
+      .then(([d, session]) => {
+        if (controller.signal.aborted) return;
+        const parsed = styleAnswers.safeParse(d.profile?.answers);
+        if (parsed.success) {
+          setAnswers(parsed.data);
+          setVersion({
+            id: d.profile!.id,
+            fingerprint: JSON.stringify(parsed.data),
+          });
+          setSaved(true);
         }
-      } catch (err) {
-        if (!controller.signal.aborted) toast(err instanceof Error ? err.message : "Could not load your saved profile.", "error");
-      }
-    }
-    void loadSavedProfile();
-    return () => controller.abort();
-  }, [toast]);
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!isStep3Valid) {
-      toast("Please select at least one choice for each category.", "error");
-      return;
-    }
-
-    answersEdited.current = true;
-    setLoading(true);    try {
-      const response = await fetch("/api/user/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quizAnswers: answers }),
+        if (typeof session.user?.id === "string") {
+          const key = "fitmatch:quiz-v2:" + session.user.id;
+          setDraftKey(key);
+          try {
+            const draft = JSON.parse(sessionStorage.getItem(key) ?? "null");
+            const restored = styleAnswers.safeParse(draft?.answers);
+            if (restored.success && draft.baseId === (d.profile?.id ?? null)) {
+              setAnswers(restored.data);
+              setSaved(false);
+            }
+          } catch {
+            /* Storage may be disabled; cloud profile remains available. */
+          }
+        }
+      })
+      .catch((e) => {
+        if (!controller.signal.aborted) setError(e.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setBusy(false);
       });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error ?? "Could not save your style profile.");
+    return () => controller.abort();
+  }, []);
+  function choose<K extends keyof StyleAnswers>(
+    key: K,
+    value: StyleAnswers[K],
+  ) {
+    const next = { ...answers, [key]: value };
+    setAnswers(next);
+    if (draftKey)
+      try {
+        sessionStorage.setItem(
+          draftKey,
+          JSON.stringify({
+            baseId: version?.id ?? null,
+            answers: next,
+          }),
+        );
+      } catch {
+        /* Draft is optional. */
       }
-
-      setRecommendations(data.recommendations ?? null);
-      toast("Personal style profile analyzed successfully!", "success");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Submission failed.", "error");
+    setSaved(false);
+    setError("");
+  }
+  async function finish() {
+    if (saving.current) return;
+    saving.current = true;
+    setBusy(true);
+    setError("");
+    try {
+      const fingerprint = JSON.stringify(answers);
+      if (version?.fingerprint !== fingerprint) {
+        const d = await api<{ profile: { id: string } }>(
+          "style-profiles",
+          answers,
+        );
+        setVersion({ id: d.profile.id, fingerprint });
+      }
+      setSaved(true);
+      if (draftKey)
+        try {
+          sessionStorage.removeItem(draftKey);
+        } catch {
+          /* Draft is optional. */
+        }
+      await api("recommendations", {});
+      router.push("/looks");
+    } catch (e) {
+      setError((e as Error).message);
     } finally {
-      setLoading(false);
+      saving.current = false;
+      setBusy(false);
     }
   }
-
-  function handleRetake() {
-    answersEdited.current = true;
-    setRecommendations(null);
-    setCurrentStep(1);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  const currentBg = stepBackgrounds[currentStep - 1] || IMAGES.quizStep1;
-
-  // 1. Full-Screen Recommendations Reveal View
-  if (recommendations) {
+  function options<K extends "occasion" | "fit" | "climate">(
+    key: K,
+    values: [StyleAnswers[K], string, string][],
+  ) {
     return (
-      <main className="min-h-screen bg-bg text-fg pb-24">
-        {/* Editorial Hero Header */}
-        <section className="relative h-[60svh] w-full flex items-end justify-start overflow-hidden border-b border-border">
-          <Image
-            src={IMAGES.stepStyle.src}
-            alt="Editorial style lookbook recommendation header"
-            fill
-            priority
-            sizes="100vw"
-            placeholder="blur"
-            blurDataURL={DARK_BLUR_DATA_URL}
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/60 to-bg/30" />
-
-          <div className="relative z-10 mx-auto w-full max-w-5xl px-4 pb-12 sm:px-6 lg:px-8 space-y-4">
-            <div className="eyebrow text-accent-text inline-flex items-center gap-2">
-              <Sparkles className="h-3.5 w-3.5" />
-              YOUR PERSONAL STYLE PROFILE
-            </div>
-            <h1 className="font-display text-4xl sm:text-6xl font-extrabold tracking-tight text-fg leading-tight">
-              {recommendations.headline}
-            </h1>
-            <p className="max-w-2xl text-sm sm:text-base text-fg-muted leading-relaxed font-normal">
-              {recommendations.summary}
-            </p>
-          </div>
-        </section>
-
-        {/* Breakdown & Outfits Section */}
-        <div className="mx-auto max-w-5xl px-4 pt-12 sm:px-6 lg:px-8 space-y-12">
-          {/* Two-Column Guidance Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Flattering Focus */}
-            <div className="rounded-[8px] border border-border bg-bg-elevated p-6 space-y-4">
-              <div className="flex items-center gap-2 text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" />
-                <div className="eyebrow text-emerald-400">Silhouettes to Prioritize</div>
-              </div>
-              <div className="space-y-2.5">
-                {recommendations.flatteringFocus.map((focus, i) => (
-                  <div
-                    key={`focus-${i}`}
-                    className="flex items-start gap-3 text-xs sm:text-sm text-fg leading-relaxed bg-bg-raised/50 p-3 rounded-[4px] border border-border/40"
-                  >
-                    <Check className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>{focus}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Avoid Notes */}
-            <div className="rounded-[8px] border border-border bg-bg-elevated p-6 space-y-4">
-              <div className="flex items-center gap-2 text-accent-text">
-                <AlertTriangle className="h-4 w-4" />
-                <div className="eyebrow text-accent-text">Details to Moderate</div>
-              </div>
-              <div className="space-y-2.5">
-                {recommendations.avoidNotes.map((avoid, i) => (
-                  <div
-                    key={`avoid-${i}`}
-                    className="flex items-start gap-3 text-xs sm:text-sm text-fg-muted leading-relaxed bg-bg-raised/50 p-3 rounded-[4px] border border-border/40"
-                  >
-                    <span className="font-mono text-accent-text font-bold">✕</span>
-                    <span>{avoid}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Recommended Outfits Grid */}
-          <div className="space-y-6">
-            <div className="flex items-baseline justify-between border-b border-border pb-3">
-              <div>
-                <div className="eyebrow text-accent-text">CALIBRATED DIRECTION</div>
-                <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-fg">
-                  Tailored Outfit Formulas
-                </h2>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {recommendations.outfits.map((outfit, index) => (
-                <article
-                  key={`rec-${index}`}
-                  className="rounded-[8px] border border-border bg-bg-elevated p-6 flex flex-col justify-between space-y-6"
-                >
-                  <div className="space-y-3">
-                    <Badge variant="accent">{outfit.occasion}</Badge>
-                    <h3 className="font-display text-xl font-bold text-fg">{outfit.name}</h3>
-                    <p className="text-xs text-fg-muted leading-relaxed font-normal">
-                      {outfit.whyItFitsYou}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 pt-4 border-t border-border/60">
-                    <div className="eyebrow text-[10px] text-fg-subtle">Recommended Pieces</div>
-                    <div className="space-y-1.5">
-                      {outfit.pieces.map((piece, pIdx) => (
-                        <div
-                          key={`piece-${pIdx}`}
-                          className="flex items-center gap-2 text-xs text-fg font-medium py-1"
-                        >
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                          <span>{piece}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom Action Row */}
-          <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-            <Button
-              variant="ghost"
-              size="md"
-              onClick={handleRetake}
-              icon={<RotateCcw className="h-4 w-4" />}
-            >
-              Retake quiz
-            </Button>
-
-            <Link href="/outfits">
-              <Button
-                variant="accent"
-                size="lg"
-                icon={<ArrowRight className="h-4 w-4" />}
-                className="uppercase tracking-wider font-bold text-xs"
-              >
-                Generate outfits from this profile
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </main>
+      <div className="grid sm:grid-cols-2 gap-3">
+        {values.map(([value, title, detail]) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={answers[key] === value}
+            disabled={busy}
+            onClick={() => choose(key, value)}
+            className={`text-left rounded-2xl border p-5 transition ${answers[key] === value ? "border-accent bg-accent-soft" : "border-border hover:bg-bg-raised"}`}
+          >
+            <span className="block font-medium mb-2">{title}</span>
+            <span className="text-xs text-fg-muted leading-5">{detail}</span>
+          </button>
+        ))}
+      </div>
     );
   }
-
-  // 2. 3-Step Wizard View
   return (
-    <main className="relative min-h-[calc(100vh-5rem)] w-full flex flex-col justify-between overflow-hidden bg-bg text-fg">
-      {/* Background Editorial Cross-Fade Photo */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`step-bg-${currentStep}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.25 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            className="absolute inset-0"
-          >
-            <Image
-              src={currentBg.src}
-              alt={currentBg.alt}
-              fill
-              priority
-              sizes="100vw"
-              placeholder="blur"
-              blurDataURL={DARK_BLUR_DATA_URL}
-              className="object-cover"
+    <main className="mx-auto max-w-6xl px-5 pt-28 pb-16">
+      <WorkspaceNav current="/quiz" />
+      <div className="grid lg:grid-cols-[260px_minmax(0,1fr)] gap-8 lg:gap-14">
+        <aside>
+          <p className="text-xs text-accent-text uppercase tracking-[.2em] mb-4">
+            Style, made personal
+          </p>
+          <h1 className="font-display text-4xl leading-tight">
+            Bắt đầu từ
+            <br />
+            gu của bạn.
+          </h1>
+          <p className="mt-5 text-sm text-fg-muted leading-6">
+            Vài lựa chọn để tìm áo phù hợp từ chính tủ đồ. Sau đó, xem chiếc áo
+            ấy trên avatar của bạn.
+          </p>
+          <ol className="mt-8 space-y-3 hidden lg:block">
+            {steps.map((s, i) => (
+              <li
+                key={s}
+                className={`text-sm flex gap-3 ${i === step ? "text-accent-text" : "text-fg-muted"}`}
+              >
+                <span className="font-mono text-xs">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                {s}
+              </li>
+            ))}
+          </ol>
+          {saved && (
+            <p className="text-xs mt-7 text-success">
+              Đã lưu hồ sơ phong cách trên tài khoản.
+            </p>
+          )}
+        </aside>
+        <section className={panel} aria-busy={busy}>
+          <div className="flex justify-between text-xs text-fg-muted mb-4">
+            <span>Gu của bạn / {steps[step]}</span>
+            <span>
+              {step + 1} / {steps.length}
+            </span>
+          </div>
+          <div className="h-1 bg-bg-raised rounded-full mb-8 overflow-hidden">
+            <div
+              className="h-full bg-accent transition-all"
+              style={{ width: `${((step + 1) / steps.length) * 100}%` }}
             />
-          </motion.div>
-        </AnimatePresence>
-        <div className="absolute inset-0 bg-gradient-to-b from-bg via-bg/90 to-bg" />
-      </div>
-
-      {/* Pinned Thin Progress Bar */}
-      <div className="sticky top-20 z-30 w-full bg-bg/80 backdrop-blur-md border-b border-border">
-        <div className="h-[2px] w-full bg-border">
-          <motion.div
-            className="h-full bg-accent"
-            animate={{ width: `${(currentStep / 3) * 100}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3 text-xs font-mono">
-          <span className="text-fg-subtle uppercase tracking-widest">
-            Step {currentStep === 1 ? "Personal Fit" : currentStep === 2 ? "Lifestyle" : "Preferences"}
-          </span>
-          <span className="tabular-nums text-accent-text font-bold">
-            0{currentStep} / 03
-          </span>
-        </div>
-      </div>
-
-      {/* Centered Step Form Container (max 720px) */}
-      <div className="relative z-10 mx-auto w-full max-w-[720px] px-4 py-8 sm:py-12 flex-1">
-        <AnimatePresence mode="wait">
-          {/* STEP 1: Personal Fit */}
-          {currentStep === 1 && (
-            <motion.div
-              key="quiz-step-1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-8"
-            >
-              <div className="space-y-2">
-                <div className="eyebrow text-accent-text">STEP 01 OF 03</div>
-                <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-fg">
-                  Personal fit & proportions.
-                </h1>
-                <p className="text-xs sm:text-sm text-fg-muted font-normal leading-relaxed">
-                  FitMatch calibrates silhouette geometry and drape to match your frame.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Age Range" htmlFor="q-age">
-                  <Select
-                    id="q-age"
-                    value={answers.ageRange}
-                    onChange={(e) => setAnswerDraft((a) => ({ ...a, ageRange: e.target.value }))}
+          </div>
+          <h2 className="font-display text-2xl sm:text-3xl mb-3">
+            {
+              [
+                "Bạn đang chọn áo cho dịp nào?",
+                "Bạn thấy mình trong phong cách nào?",
+                "Bạn thích áo ôm dáng thế nào?",
+                "Màu nào khiến bạn muốn mặc?",
+                "Bạn muốn tránh họa tiết nào?",
+                "Thời tiết nơi bạn mặc thường thế nào?",
+              ][step]
+            }
+          </h2>
+          <p className="text-sm text-fg-muted mb-7 leading-6">
+            {
+              [
+                "Chọn tình huống bạn mặc nhiều nhất.",
+                "Chọn một hướng chính; bạn có thể đổi bất cứ lúc nào.",
+                "Đây là sở thích. Quiz không đo cơ thể hoặc cam kết độ vừa.",
+                "Chọn từ 1 đến 5 màu. Màu và logo của áo thật vẫn được giữ theo ảnh.",
+                "Có thể bỏ qua nếu bạn thích tất cả.",
+                "Lưu để phát triển gợi ý theo chất liệu. Hiện chưa dùng thời tiết và phom để chấm điểm áo.",
+              ][step]
+            }
+          </p>
+          {step === 0 &&
+            options("occasion", [
+              ["daily", "Mỗi ngày", "Dạo phố, cà phê, gặp bạn bè"],
+              ["campus", "Đi học", "Thoải mái cho cả ngày"],
+              ["work", "Đi làm", "Gọn gàng và chỉn chu"],
+              ["evening", "Buổi tối", "Một dịp đặc biệt hơn"],
+            ])}
+          {step === 1 && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {(
+                [
+                  [
+                    "minimal",
+                    "Tối giản",
+                    "Đường nét sạch, màu trung tính",
+                    IMAGES.quizTailored,
+                  ],
+                  [
+                    "casual",
+                    "Tự nhiên",
+                    "Áo thun, denim và sự thoải mái",
+                    IMAGES.quizDenim,
+                  ],
+                  [
+                    "streetwear",
+                    "Streetwear",
+                    "Phom rộng và điểm nhấn",
+                    IMAGES.quizStreetwear,
+                  ],
+                  [
+                    "formal",
+                    "Chỉn chu",
+                    "Sơ mi, đường cắt gọn gàng",
+                    IMAGES.look2,
+                  ],
+                ] as const
+              ).map(([value, title, detail, photo]) => {
+                const image = photo;
+                return (
+                  <button
+                    type="button"
+                    key={value}
+                    disabled={busy}
+                    onClick={() => choose("style", value)}
+                    aria-pressed={answers.style === value}
+                    className={`text-left rounded-2xl overflow-hidden border ${answers.style === value ? "border-accent ring-1 ring-accent" : "border-border"}`}
                   >
-                    {ageOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-
-                <Field label="Gender Expression" htmlFor="q-gender">
-                  <Select
-                    id="q-gender"
-                    value={answers.genderExpression}
-                    onChange={(e) =>
-                      setAnswerDraft((a) => ({ ...a, genderExpression: e.target.value }))
-                    }
-                  >
-                    {genderOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-
-                <Field label="Body Shape / Frame" htmlFor="q-body">
-                  <Select
-                    id="q-body"
-                    value={answers.bodyShape}
-                    onChange={(e) => setAnswerDraft((a) => ({ ...a, bodyShape: e.target.value }))}
-                  >
-                    {bodyShapeOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-
-                <Field label="Height Range" htmlFor="q-height">
-                  <Select
-                    id="q-height"
-                    value={answers.heightRange}
-                    onChange={(e) => setAnswerDraft((a) => ({ ...a, heightRange: e.target.value }))}
-                  >
-                    {heightOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-            </motion.div>
+                    <div className="relative h-44">
+                      <Image
+                        src={image.src}
+                        alt={image.alt}
+                        fill
+                        sizes="(max-width:640px) 90vw, 360px"
+                        className="object-cover"
+                      />
+                      {answers.style === value && (
+                        <span className="absolute top-3 right-3 bg-accent rounded-full p-1">
+                          <Check size={15} />
+                        </span>
+                      )}
+                    </div>
+                    <span className="block px-4 pt-3 text-sm font-medium">
+                      {title}
+                    </span>
+                    <span className="block px-4 py-3 text-xs text-fg-muted">
+                      {detail} · ảnh tham khảo
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           )}
-
-          {/* STEP 2: Lifestyle & Goals */}
-          {currentStep === 2 && (
-            <motion.div
-              key="quiz-step-2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-8"
-            >
-              <div className="space-y-2">
-                <div className="eyebrow text-accent-text">STEP 02 OF 03</div>
-                <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-fg">
-                  Lifestyle & tailoring goals.
-                </h1>
-                <p className="text-xs sm:text-sm text-fg-muted font-normal leading-relaxed">
-                  Helps prioritize looks that fit your real weekly routine, not just a moodboard.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Daily Lifestyle" htmlFor="q-lifestyle">
-                  <Select
-                    id="q-lifestyle"
-                    value={answers.lifestyle}
-                    onChange={(e) => setAnswerDraft((a) => ({ ...a, lifestyle: e.target.value }))}
-                  >
-                    {lifestyleOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-
-                <Field label="Main Style Goal" htmlFor="q-goal">
-                  <Select
-                    id="q-goal"
-                    value={answers.shoppingGoal}
-                    onChange={(e) => setAnswerDraft((a) => ({ ...a, shoppingGoal: e.target.value }))}
-                  >
-                    {goalOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-
-              {/* Fit Priorities Chips */}
-              <div className="space-y-3 pt-2">
-                <div className="eyebrow text-fg-subtle">
-                  Fit Priorities <span className="text-accent-text">*</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {fitPriorityOptions.map((priority) => {
-                    const isSelected = answers.fitPriorities?.includes(priority);
-                    return (
-                      <Chip
-                        key={priority}
-                        active={isSelected}
-                        onClick={() =>
-                          setAnswerDraft((a) => ({
-                            ...a,
-                            fitPriorities: toggleValue(a.fitPriorities ?? [], priority),
-                          }))
-                        }
-                      >
-                        {priority}
-                      </Chip>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
+          {step === 2 &&
+            options("fit", [
+              ["regular", "Vừa người", "Gọn và có khoảng cử động"],
+              ["relaxed", "Thoải mái", "Rộng nhẹ quanh vai và thân"],
+              ["oversized", "Oversize", "Phom rộng là điểm nhấn"],
+            ])}
+          {step === 3 && (
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {colors.map(([value, title, hex]) => (
+                <button
+                  type="button"
+                  key={value}
+                  aria-pressed={answers.favoriteColors.includes(value)}
+                  disabled={
+                    busy ||
+                    (!answers.favoriteColors.includes(value) &&
+                      answers.favoriteColors.length >= 5)
+                  }
+                  onClick={() =>
+                    choose(
+                      "favoriteColors",
+                      answers.favoriteColors.includes(value)
+                        ? answers.favoriteColors.filter((c) => c !== value)
+                        : [...answers.favoriteColors, value],
+                    )
+                  }
+                  className={`rounded-2xl border p-3 text-sm disabled:opacity-40 ${answers.favoriteColors.includes(value) ? "border-accent bg-accent-soft" : "border-border"}`}
+                >
+                  <span
+                    className="block h-14 rounded-xl mb-3 border border-white/10"
+                    style={{ backgroundColor: hex }}
+                  />
+                  {title}
+                </button>
+              ))}
+            </div>
           )}
-
-          {/* STEP 3: Visual Preferences */}
-          {currentStep === 3 && (
-            <motion.div
-              key="quiz-step-3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-8"
-            >
-              <div className="space-y-2">
-                <div className="eyebrow text-accent-text">STEP 03 OF 03</div>
-                <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-fg">
-                  What you naturally like.
-                </h1>
-                <p className="text-xs sm:text-sm text-fg-muted font-normal leading-relaxed">
-                  Select your favorite palettes, aesthetic formulas, and stylistic inspirations.
-                </p>
-              </div>
-
-              {/* Color Swatches */}
-              <div className="space-y-3">
-                <div className="eyebrow text-fg-subtle">
-                  Favorite Color Palettes <span className="text-accent-text">*</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {colorOptions.map((color) => {
-                    const isSelected = answers.favoriteColors.includes(color);
-                    const swatch = getColorHex(color);
-                    return (
-                      <Chip
-                        key={color}
-                        active={isSelected}
-                        colorSwatch={swatch}
-                        onClick={() =>
-                          setAnswerDraft((a) => ({
-                            ...a,
-                            favoriteColors: toggleValue(a.favoriteColors, color),
-                          }))
-                        }
-                      >
-                        {color}
-                      </Chip>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Outfit Direction Visual Image Tiles */}
-              <div className="space-y-3">
-                <div className="eyebrow text-fg-subtle">
-                  Outfit Directions You Like <span className="text-accent-text">*</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {outfitTileOptions.map((tile) => {
-                    const isSelected = answers.preferredOutfits.includes(tile.label);
-                    return (
-                      <button
-                        key={tile.label}
-                        type="button"
-                        onClick={() =>
-                          setAnswerDraft((a) => ({
-                            ...a,
-                            preferredOutfits: toggleValue(a.preferredOutfits, tile.label),
-                          }))
-                        }
-                        className={`group relative h-28 overflow-hidden rounded-[4px] border p-4 flex flex-col justify-end text-left transition-all cursor-pointer ${
-                          isSelected
-                            ? "border-accent-text ring-2 ring-accent-ring shadow-[0_0_16px_rgba(196,98,45,0.2)]"
-                            : "border-border hover:border-border-strong opacity-80 hover:opacity-100"
-                        }`}
-                      >
-                        <Image
-                          src={tile.image.src}
-                          alt={tile.label}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 360px"
-                          placeholder="blur"
-                          blurDataURL={DARK_BLUR_DATA_URL}
-                          className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/70 to-transparent" />
-
-                        {isSelected && (
-                          <div className="absolute top-2.5 right-2.5 h-4 w-4 rounded-full bg-accent text-[#0A0A0B] flex items-center justify-center">
-                            <Check className="h-3 w-3 stroke-[3]" />
-                          </div>
-                        )}
-
-                        <div className="relative z-10">
-                          <div className="font-display text-sm font-bold text-fg group-hover:text-accent-text transition">
-                            {tile.label}
-                          </div>
-                          <div className="text-[11px] text-fg-muted font-normal truncate mt-0.5">
-                            {tile.detail}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Fashion Inspirations Chips */}
-              <div className="space-y-3">
-                <div className="eyebrow text-fg-subtle">
-                  Style Inspirations <span className="text-accent-text">*</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {inspirationOptions.map((insp) => {
-                    const isSelected = answers.fashionInspirations.includes(insp);
-                    return (
-                      <Chip
-                        key={insp}
-                        active={isSelected}
-                        onClick={() =>
-                          setAnswerDraft((a) => ({
-                            ...a,
-                            fashionInspirations: toggleValue(a.fashionInspirations, insp),
-                          }))
-                        }
-                      >
-                        {insp}
-                      </Chip>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
+          {step === 4 && (
+            <div className="grid sm:grid-cols-2 gap-3">
+              {(
+                [
+                  ["graphic", "In hình / logo"],
+                  ["striped", "Kẻ sọc"],
+                  ["plaid", "Ca rô"],
+                  ["floral", "Hoa"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  disabled={busy}
+                  aria-pressed={answers.avoidPatterns.includes(value)}
+                  onClick={() =>
+                    choose(
+                      "avoidPatterns",
+                      answers.avoidPatterns.includes(value)
+                        ? answers.avoidPatterns.filter((p) => p !== value)
+                        : [...answers.avoidPatterns, value],
+                    )
+                  }
+                  className={`${button} ${answers.avoidPatterns.includes(value) ? "border-accent bg-accent-soft" : ""}`}
+                >
+                  {answers.avoidPatterns.includes(value) && <Check size={14} />}
+                  Tránh {label}
+                </button>
+              ))}
+            </div>
           )}
-        </AnimatePresence>
-
-        {/* Wizard Bottom Navigation Row */}
-        <div className="mt-12 pt-6 border-t border-border flex items-center justify-between gap-4">
-          {currentStep > 1 ? (
-            <Button
+          {step === 5 &&
+            options("climate", [
+              ["warm", "Nóng", "Ưu tiên cảm giác nhẹ, thoáng"],
+              ["mild", "Ôn hòa", "Linh hoạt trong ngày"],
+              ["cool", "Se lạnh", "Có thể cần phối lớp"],
+            ])}
+          {error && (
+            <p role="alert" className="mt-6 text-sm text-danger">
+              {error}
+            </p>
+          )}
+          <div className="mt-9 pt-6 border-t border-border flex flex-wrap justify-between gap-3">
+            <button
               type="button"
-              variant="ghost"
-              size="md"
-              onClick={() => setCurrentStep((s) => s - 1)}
-              icon={<ArrowLeft className="h-4 w-4" />}
+              disabled={step === 0 || busy}
+              className={button}
+              onClick={() => setStep((s) => s - 1)}
             >
-              Back
-            </Button>
-          ) : (
-            <div />
-          )}
-
-          {currentStep < 3 ? (
-            <Button
+              <ArrowLeft size={15} />
+              Quay lại
+            </button>
+            <button
+              disabled={busy || (step === 3 && !answers.favoriteColors.length)}
               type="button"
-              variant="accent"
-              size="md"
-              onClick={() => setCurrentStep((s) => s + 1)}
-              icon={<ArrowRight className="h-4 w-4" />}
+              className={`${button} bg-accent text-bg`}
+              onClick={() =>
+                step === 5 ? void finish() : setStep((s) => s + 1)
+              }
             >
-              Continue
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="accent"
-              size="md"
-              onClick={handleSubmit}
-              disabled={!isStep3Valid}
-              loading={loading}
-              icon={<Sparkles className="h-4 w-4" />}
-              className="uppercase tracking-wider font-bold text-xs"
-            >
-              Get my recommendations
-            </Button>
-          )}
-        </div>
+              {busy
+                ? "Đang tải…"
+                : step === 5
+                  ? "Lưu & gợi ý mặc thử"
+                  : "Tiếp theo"}
+              <ArrowRight size={15} />
+            </button>
+          </div>
+        </section>
       </div>
     </main>
   );

@@ -47,3 +47,8 @@ next-env.d.ts
 /.venv*/
 
 /test-results/
+
+# Worker secrets and private source/output images
+/worker-data/
+/scripts/worker/config.local.json
+__pycache__/

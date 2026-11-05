@@ -5,7 +5,7 @@ import { authConfig, hubEnabled } from "@/lib/auth/config";
 import { AuthFailure, verifyHubValue } from "@/lib/auth/hub";
 import { cookieOptions, decodeSession, seal, SESSION_AGE, SESSION_COOKIE, REFRESH_WINDOW } from "@/lib/auth/session";
 
-const protectedPaths = ["/studio", "/wardrobe", "/outfits", "/profile", "/quiz"];
+const protectedPaths = ["/studio", "/wardrobe", "/outfits", "/profile", "/quiz", "/prepare", "/looks"];
 
 function login(request: NextRequest) {
   const url = new URL("/login", request.url);
@@ -21,6 +21,8 @@ function unavailable() {
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  // Machine API verifies its scoped bearer credential in the route, independently of browser sessions.
+  if (path.startsWith("/api/v2/worker/")) return NextResponse.next();
   const protectedPage = protectedPaths.some(prefix => path === prefix || path.startsWith(`${prefix}/`));
   let sessionValue: string | undefined;
   try {

@@ -13,7 +13,7 @@ try {
   execFileSync("docker", ["run", "--rm", "--detach", "--network", "none", "--name", name, "-e", "POSTGRES_HOST_AUTH_METHOD=trust", "postgres:16-alpine"], { stdio: "pipe" });
   let ready = false;
   for (let i = 0; i < 60; i++) {
-    try { execFileSync("docker", ["exec", name, "pg_isready", "-U", "postgres"], { stdio: "pipe" }); ready = true; break; } catch { await new Promise(resolve => setTimeout(resolve, 500)); }
+    try { execFileSync("docker", ["exec", name, "pg_isready", "-h", "127.0.0.1", "-U", "postgres"], { stdio: "pipe" }); ready = true; break; } catch { await new Promise(resolve => setTimeout(resolve, 500)); }
   }
   assert.ok(ready, "isolated database must start");
   sql(`create role anon; create role authenticated; create role service_role bypassrls; create schema auth; create table auth.users(id uuid primary key); insert into auth.users values('${user}'),('${other}');`);

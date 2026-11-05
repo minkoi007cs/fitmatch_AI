@@ -11,9 +11,10 @@ import { useToast } from "@/components/ui/Toast";
 
 const navLinks = [
   { href: "/studio", label: "3D Studio" },
-  { href: "/outfits", label: "Outfits" },
-  { href: "/wardrobe", label: "Wardrobe" },
-  { href: "/quiz", label: "Style Quiz" },
+  { href: "/looks", label: "Gợi ý 3D" },
+  { href: "/prepare", label: "Tạo 3D" },
+  { href: "/wardrobe", label: "Tủ đồ" },
+  { href: "/quiz", label: "Gu của bạn" },
 ];
 
 export function Navbar() {

@@ -91,9 +91,17 @@ function PhotoSlot({
 export default function CaptureDrawer({
   kind,
   onClose,
+  onSend,
+  progress,
 }: {
   kind: CaptureKind;
   onClose: () => void;
+  onSend?: (
+    name: string,
+    height: number | null,
+    photos: Partial<Record<CaptureSlot, File>>,
+  ) => Promise<void>;
+  progress?: string;
 }) {
   const [name, setName] = useState("");
   const [height, setHeight] = useState("");
@@ -147,6 +155,11 @@ export default function CaptureDrawer({
     setBusy(true);
     setError("");
     try {
+      if (onSend) {
+        await onSend(name.trim(), avatar ? Number(height) : null, photos);
+        if (alive.current) setDone(true);
+        return;
+      }
       const zip = await captureArchive(
         kind,
         name,
@@ -174,7 +187,11 @@ export default function CaptureDrawer({
       onClose={onClose}
       title={avatar ? "Tạo avatar của bạn" : "Chuẩn bị áo của bạn"}
       eyebrow="Bước 01 / Chuẩn bị ảnh"
-      description="Ảnh chỉ được xử lý trong trình duyệt. Bạn quyết định khi nào chuyển bộ ảnh sang PC."
+      description={
+        onSend
+          ? "Ảnh được lưu vào kho riêng của tài khoản và gửi đến máy xử lý đã kết nối khi bạn bấm gửi."
+          : "Ảnh chỉ được xử lý trong trình duyệt. Bạn quyết định khi nào chuyển bộ ảnh sang PC."
+      }
       width="lg"
     >
       <form onSubmit={(e) => void submit(e)} className="space-y-6">
@@ -256,21 +273,40 @@ export default function CaptureDrawer({
         )}
         {done && (
           <p role="status" className="text-sm text-success">
-            Đã xuất bộ ảnh ZIP. Chuyển file sang PC để xử lý; chưa có tác vụ GPU
-            được gửi tự động.
+            {onSend
+              ? "Đã đưa vào hàng đợi. Theo dõi tác vụ ở trang Chuẩn bị 3D."
+              : "Đã xuất bộ ảnh ZIP. Chuyển file sang PC để xử lý; chưa có tác vụ GPU được gửi tự động."}
+          </p>
+        )}
+        {busy && progress && (
+          <p role="status" className="text-sm text-fg-muted">
+            {progress}
           </p>
         )}
         <div className="border-t border-border pt-5">
           <p className="text-xs text-fg-muted leading-5 mb-4">
-            Bộ ảnh tải xuống có chứa ảnh cá nhân của bạn. Chỉ gửi đến máy xử lý
-            của bạn. Khi PC trả kết quả, mở bộ 3D trong Studio để mặc thử.
+            {onSend
+              ? "Bấm gửi để lưu ảnh vào kho riêng và cho máy xử lý của tài khoản tải xuống. Nếu máy chưa kết nối, tác vụ sẽ chờ; không tự chuyển sang dịch vụ AI khác."
+              : "Bộ ảnh tải xuống có chứa ảnh cá nhân của bạn. Chỉ gửi đến máy xử lý của bạn. Khi PC trả kết quả, mở bộ 3D trong Studio để mặc thử."}
           </p>
           <button
-            disabled={busy || complete !== requiredSlots(kind).length}
-            className="w-full rounded-full bg-accent p-3 text-sm font-semibold flex justify-center items-center gap-2 disabled:opacity-40"
+            disabled={
+              busy ||
+              (done && !!onSend) ||
+              complete !== requiredSlots(kind).length
+            }
+            className="w-full rounded-full bg-accent text-bg p-3 text-sm font-semibold flex justify-center items-center gap-2 disabled:opacity-40"
           >
             <Download size={16} />
-            {busy ? "Đang đóng gói…" : "Xuất bộ ảnh cho PC"}
+            {busy
+              ? onSend
+                ? "Đang gửi…"
+                : "Đang đóng gói…"
+              : onSend
+                ? done
+                  ? "Đã gửi"
+                  : "Gửi ảnh và tạo 3D"
+                : "Xuất bộ ảnh cho PC"}
           </button>
         </div>
       </form>
