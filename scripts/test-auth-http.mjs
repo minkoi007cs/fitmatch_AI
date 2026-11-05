@@ -109,6 +109,7 @@ try {
   assert.equal((await request("/api/generate-outfit", { method: "POST", body: JSON.stringify({ analysis: {}, styleProfile: { primaryStyle: "minimal" } }) })).status, 401);
   assert.equal((await request("/api/generate-outfit", { method: "POST", headers: { Origin: "https://evil.invalid" }, body: "{}" })).status, 403);
   console.log("PASS: guest APIs blocked before parsing/AI; cross-origin mutation rejected");
+  assert.equal((await request("/studio")).status, 303, "guest Studio is protected");
   const gate = await request("/outfits?vibe=formal"); assert.equal(gate.status, 303); assert.equal(new URL(gate.headers.get("location"), base).searchParams.get("next"), "/outfits?vibe=formal");
   const bad = await request("/auth/callback?code=synthetic-code&state=untrusted"); assert.equal(bad.status, 303); assert.equal(bad.headers.get("cache-control"), "no-store"); assert.equal(bad.headers.get("referrer-policy"), "no-referrer"); assert.equal(exchanges, 0);
   const state = await begin(); const wrong = await complete("z".repeat(32)); assert.equal(wrong.status, 303); assert.equal(exchanges, 0);
@@ -116,6 +117,11 @@ try {
   assert.ok(jar.has("fm_hub_session")); assert.equal(mappings.length, 1);
   const signedIn = await request("/api/auth/session"); assert.equal(signedIn.status, 200); const session = await signedIn.json(); assert.equal(session.user.email, "owner@fixture.invalid");
   console.log("PASS: PKCE/state verified; callback bridges user-scoped Supabase session and preserves next/vibe");
+  assert.equal((await request("/studio")).status, 200);
+  if (process.argv.includes("--studio")) {
+    const { testStudio } = await import("./test-studio-browser.mjs");
+    await testStudio(base, jar);
+  }
   const wardrobe = await request("/api/wardrobe"); assert.equal(wardrobe.status, 200); assert.equal((await wardrobe.json()).items.length, 1);
   assert.equal((await request("/wardrobe")).status, 200, "verified dual session may render a protected page");
   const save = await request("/api/wardrobe", { method: "POST", body: JSON.stringify({ name: "Test shirt", category: "shirt", color: "white", style: "minimal", user_id: "victim" }) }); assert.equal(save.status, 200);

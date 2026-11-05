@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 
 const navLinks = [
+  { href: "/studio", label: "3D Studio" },
   { href: "/outfits", label: "Outfits" },
   { href: "/wardrobe", label: "Wardrobe" },
   { href: "/quiz", label: "Style Quiz" },

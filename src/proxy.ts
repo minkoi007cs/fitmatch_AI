@@ -5,7 +5,7 @@ import { authConfig, hubEnabled } from "@/lib/auth/config";
 import { AuthFailure, verifyHubValue } from "@/lib/auth/hub";
 import { cookieOptions, decodeSession, seal, SESSION_AGE, SESSION_COOKIE, REFRESH_WINDOW } from "@/lib/auth/session";
 
-const protectedPaths = ["/wardrobe", "/outfits", "/profile", "/quiz"];
+const protectedPaths = ["/studio", "/wardrobe", "/outfits", "/profile", "/quiz"];
 
 function login(request: NextRequest) {
   const url = new URL("/login", request.url);

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "avatar": { "id": "person-v1", "name": "Avatar cá nhân", "file": "avatar.glb" },
+  "garments": [
+    { "id": "tee-v1", "name": "Áo thun", "file": "tee.glb", "category": "t-shirt", "avatarId": "person-v1" },
+    { "id": "shirt-v1", "name": "Sơ mi", "file": "shirt.glb", "category": "shirt", "avatarId": "person-v1" }
+  ]
+}

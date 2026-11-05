@@ -1,0 +1,130 @@
+[
+  {
+    "repo": "SII-LiMing/ReWeaver-Code",
+    "url": "https://github.com/SII-LiMing/ReWeaver-Code",
+    "commit": "e5640769f89d9540d118a9cc605ebe2d7404bc02",
+    "tracked_files": 41,
+    "license_files": [],
+    "stars": 30,
+    "last_push": "2026-06-23T06:55:25Z",
+    "archived": false,
+    "license_metadata": null
+  },
+  {
+    "repo": "SiTH-Diffusion/SiTH",
+    "url": "https://github.com/SiTH-Diffusion/SiTH",
+    "commit": "6401549120a4a6246b5cb4a10d8c3e1b2d9e8c7d",
+    "tracked_files": 168,
+    "license_files": [
+      "LICENSE"
+    ],
+    "stars": 219,
+    "last_push": "2025-02-24T12:00:28Z",
+    "archived": false,
+    "license_metadata": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    }
+  },
+  {
+    "repo": "YuliangXiu/ECON",
+    "url": "https://github.com/YuliangXiu/ECON",
+    "commit": "d8f4e8b7171e30868acd94a1d1f6fcc1238e3e32",
+    "tracked_files": 228,
+    "license_files": [
+      "LICENSE"
+    ],
+    "stars": 1213,
+    "last_push": "2024-09-17T21:59:40Z",
+    "archived": false,
+    "license_metadata": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    }
+  },
+  {
+    "repo": "biansy000/ChatGarment",
+    "url": "https://github.com/biansy000/ChatGarment",
+    "commit": "798c34ac04319668aaa0e3a3a02d44284fbd70ec",
+    "tracked_files": 149,
+    "license_files": [
+      "LICENSE"
+    ],
+    "stars": 184,
+    "last_push": "2025-08-07T12:47:28Z",
+    "archived": false,
+    "license_metadata": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    }
+  },
+  {
+    "repo": "fashn-AI/fashn-vton-1.5",
+    "url": "https://github.com/fashn-AI/fashn-vton-1.5",
+    "commit": "7c0f10af3f91ad4048fe9729c470a13ef905d25a",
+    "tracked_files": 30,
+    "license_files": [
+      "LICENSE"
+    ],
+    "stars": 375,
+    "last_push": "2026-02-01T22:30:29Z",
+    "archived": false,
+    "license_metadata": {
+      "key": "other",
+      "name": "Other",
+      "spdx_id": "NOASSERTION",
+      "url": null,
+      "node_id": "MDc6TGljZW5zZTA="
+    }
+  },
+  {
+    "repo": "maria-korosteleva/GarmentCode",
+    "url": "https://github.com/maria-korosteleva/GarmentCode",
+    "commit": "d449629979028123a5c4dc9e732a2ec19b7fce31",
+    "tracked_files": 202,
+    "license_files": [
+      "LICENSE"
+    ],
+    "stars": 493,
+    "last_push": "2025-06-29T12:17:42Z",
+    "archived": false,
+    "license_metadata": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit",
+      "node_id": "MDc6TGljZW5zZTEz"
+    }
+  },
+  {
+    "repo": "sail-sg/sewformer",
+    "url": "https://github.com/sail-sg/sewformer",
+    "commit": "281202a70d36eab81c9c4aca173b7e9461a22372",
+    "tracked_files": 87,
+    "license_files": [],
+    "stars": 220,
+    "last_push": "2023-12-28T09:03:16Z",
+    "archived": false,
+    "license_metadata": null
+  },
+  {
+    "repo": "scnuhealthy/VTON360",
+    "url": "https://github.com/scnuhealthy/VTON360",
+    "commit": "e9e6a661c3c3c8fc799ddf8e92276ca0790b67da",
+    "tracked_files": 599,
+    "license_files": [],
+    "stars": 52,
+    "last_push": "2026-08-04T05:50:50Z",
+    "archived": false,
+    "license_metadata": null
+  }
+]

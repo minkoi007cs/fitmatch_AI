@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local GPU research artifacts
+/research-repos/
+/outputs/
+/workers/windows/reports/
+/.venv*/
+
+/test-results/

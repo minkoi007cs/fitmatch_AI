@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:http": "node --import tsx scripts/test-auth-http.mjs"
+    "test:http": "node --import tsx scripts/test-auth-http.mjs",
+    "test:studio": "node --import tsx scripts/test-auth-http.mjs --studio"
   },
   "dependencies": {
     "@infra/sdk": "file:vendor/infra-sdk",
@@ -19,15 +20,18 @@
     "next": "16.4.5",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "three": "^0.187.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.187.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
+    "playwright": "^1.64.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
