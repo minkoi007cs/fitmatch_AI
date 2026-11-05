@@ -53,8 +53,8 @@ export function formatDate(dateString: string): string {
  * Validates file size (max 10MB) and image MIME type
  */
 export function validateImageFile(file: File, maxMb = 10): string | null {
-  if (!file.type.startsWith("image/")) {
-    return "Please upload an image file (JPEG, PNG, WEBP, HEIC).";
+  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    return "Please upload a JPEG, PNG or WEBP image. Convert HEIC photos to JPEG first.";
   }
   if (file.size > maxMb * 1024 * 1024) {
     return `File is too large. Please upload an image under ${maxMb}MB.`;

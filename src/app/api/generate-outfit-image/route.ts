@@ -1,3 +1,6 @@
+import { reserveAi } from "@/lib/ai-quota";
+import { randomUUID } from "node:crypto";
+import { readJson, requestError, imagePromptSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
 import { generateOutfitImage } from "@/lib/openai";
 import { authenticateRequest } from "@/lib/auth/request";
@@ -14,18 +17,7 @@ export async function POST(request: Request) {
     const { user } = auth;
 
 
-    const body = (await request.json()) as {
-      outfitName?: string;
-      styleCategory?: string;
-      occasion?: string;
-      colorExplanation?: string;
-      items?: Array<{ description: string; suggestedColor: string; category: string }>;
-      accessories?: Array<{ description: string; suggestedColor: string; category: string }>;
-    };
-
-    if (!body.items?.length) {
-      return NextResponse.json({ success: false, error: "Missing outfit items" }, { status: 400 });
-    }
+    const body = await readJson(request, imagePromptSchema);
 
     const prompt = [
       "Create a polished editorial fashion lookbook image of a single outfit on a realistic model.",
@@ -42,6 +34,9 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join(" ");
 
+    const quota = await reserveAi(user.id, 5);
+    if (quota) return quota;
+
     const imageDataUrl = await generateOutfitImage(prompt);
 
     // 2. Persist generated look to Supabase Storage (A4)
@@ -51,7 +46,7 @@ export async function POST(request: Request) {
     try {
       const base64Data = imageDataUrl.replace(/^data:image\/\w+;base64,/, "");
       const buffer = Buffer.from(base64Data, "base64");
-      const fileName = `lookbook-${Date.now()}.png`;
+      const fileName = `lookbook-${randomUUID()}.png`;
       storagePath = `${user.id}/looks/${fileName}`;
 
       const admin = createAdminClient();
@@ -76,15 +71,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      imageDataUrl,
       storagePath,
-      signedUrl: signedUrl ?? imageDataUrl,
+      signedUrl,
+      urlPending: !signedUrl,
     });
-  } catch (error) {
-    console.error("Error in generate-outfit-image route:", error);
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Could not generate image" },
-      { status: 500 }
-    );
-  }
+  } catch (error) { return requestError(error); }
 }

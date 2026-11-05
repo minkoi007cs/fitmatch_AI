@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateRequest } from "@/lib/auth/request";
 import type { createClient } from "@/lib/supabase/server";
 import { WardrobeItemRecord } from "@/lib/types";
+import { readJson, requestError, wardrobePatchSchema, wardrobeUpdate } from "@/lib/validation";
 import { ownsImagePath } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -18,28 +19,11 @@ export async function PATCH(request: NextRequest, context: RouteContext<"/api/wa
   if (!auth.ok) return auth.response;
   const { supabase, user } = auth;
 
+  try {
   const { id } = await context.params;
-  const body = await request.json();
+  const body = await readJson(request, wardrobePatchSchema);
   if (body.imagePath && !ownsImagePath(body.imagePath, user.id)) return NextResponse.json({ success: false, error: "Invalid image owner" }, { status: 400 });
-
-  const updatePayload: Record<string, unknown> = {
-    name: body.name,
-    category: body.category,
-    color: body.color,
-    secondary_color: body.secondaryColor ?? null,
-    style: body.style,
-    pattern: body.pattern ?? null,
-    material: body.material ?? null,
-    description: body.description ?? null,
-    notes: body.notes ?? null,
-    is_favorite: body.isFavorite ?? false,
-    updated_at: new Date().toISOString(),
-  };
-
-  // A3 Fix: Save image_path when new photo is uploaded during edit
-  if (body.imagePath !== undefined) {
-    updatePayload.image_path = body.imagePath;
-  }
+  const updatePayload = { ...wardrobeUpdate(body), updated_at: new Date().toISOString() };
 
   const { data, error } = await supabase
     .from("fm_wardrobe_items")
@@ -59,6 +43,7 @@ export async function PATCH(request: NextRequest, context: RouteContext<"/api/wa
   };
 
   return NextResponse.json({ success: true, item });
+  } catch (error) { return requestError(error); }
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext<"/api/wardrobe/[id]">) {
@@ -67,22 +52,13 @@ export async function DELETE(request: NextRequest, context: RouteContext<"/api/w
   const { supabase, user } = auth;
 
   const { id } = await context.params;
-  const { data: existing } = await supabase
-    .from("fm_wardrobe_items")
-    .select("image_path")
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .single();
-
   const { error } = await supabase.from("fm_wardrobe_items").delete().eq("id", id).eq("user_id", user.id);
   if (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 
-  if (existing?.image_path) {
-    await supabase.storage.from("fitmatch-wardrobe").remove([existing.image_path]);
-  }
-
+  // An owned object may be shared by other wardrobe or archived outfit records.
+  // Retain the private asset until a reference-aware collector is deployed.
   return NextResponse.json({ success: true });
 }
 

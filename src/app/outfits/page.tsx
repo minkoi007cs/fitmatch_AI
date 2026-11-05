@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { STYLE_CATEGORIES } from "@/lib/types";
 import {
   Wand2,
   RefreshCcw,
@@ -11,6 +13,7 @@ import {
   UploadCloud,
   Check,
   Clock,
+  Trash2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -32,9 +35,28 @@ import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 
-const vibeCycle: StyleCategory[] = ["casual", "streetwear", "minimal", "formal"];
+const vibeCycle = STYLE_CATEGORIES;
 
 export default function OutfitsPage() {
+  return <Suspense fallback={<main className="pt-24 px-6">Loading outfits…</main>}><OutfitsRoute /></Suspense>;
+}
+
+function OutfitsRoute() {
+  const params = useSearchParams();
+  const value = params.get("vibe") as StyleCategory;
+  const vibe = vibeCycle.includes(value) ? value : "casual";
+  return <OutfitsContent key={vibe} initialVibe={vibe} />;
+}
+
+function OutfitsContent({ initialVibe }: { initialVibe: StyleCategory }) {
+  const batchVersion = useRef(0);
+  const lifecycle = useRef({ active: true });
+  const [sourceItemId, setSourceItemId] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [deleteEntry, setDeleteEntry] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [loadErrors, setLoadErrors] = useState<string[]>([]);
   const uploadVersion = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -45,7 +67,7 @@ export default function OutfitsPage() {
   const [profile, setProfile] = useState<StyleProfile | null>(null);
   const [outfits, setOutfits] = useState<OutfitSuggestion[]>([]);
   const [history, setHistory] = useState<
-    Array<{ id: string; created_at: string; data_json: OutfitSuggestion[] }>
+    Array<{ id: string; created_at: string; source_item_id?: string | null; data_json: OutfitSuggestion[] }>
   >([]);
 
   const [generating, setGenerating] = useState(false);
@@ -54,40 +76,46 @@ export default function OutfitsPage() {
   const [imageLoadingId, setImageLoadingId] = useState<string | null>(null);
   const [generatedPaths, setGeneratedPaths] = useState<Record<string, string>>({});
   const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({});
-  const [vibeIndex, setVibeIndex] = useState(0);
+  const [vibeIndex, setVibeIndex] = useState(vibeCycle.indexOf(initialVibe));
 
   const selectedItem = useMemo(
     () => wardrobeItems.find((item) => item.id === selectedItemId) ?? null,
     [selectedItemId, wardrobeItems]
   );
 
-  const loadHistory = useCallback(async () => {
+  const loadHistory = useCallback(async (cursor?: string) => {
+    setHistoryLoading(true);
     try {
-      const response = await fetch("/api/outfits", { cache: "no-store" });
+      const response = await fetch(`/api/outfits${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, { cache: "no-store" });
       const data = await response.json();
-      if (response.ok && data.success) {
-        setHistory(data.outfits || []);
-      }
-    } catch (err) {
-      console.error("History load error:", err);
-    }
-  }, []);
+      if (!response.ok || !data.success) throw new Error("Could not load saved looks. Please retry.");
+      setHistory(current => cursor ? [...current, ...(data.outfits ?? [])].filter((entry, index, all) => all.findIndex(other => other.id === entry.id) === index) : data.outfits ?? []);
+      setNextCursor(data.nextCursor ?? null);
+      if (data.invalidCount) toast("Some older looks contain invalid data and could not be displayed.", "info");
+    } catch (error) { toast(error instanceof Error ? error.message : "Could not load archive.", "error"); }
+    finally { setHistoryLoading(false); }
+  }, [toast]);
 
   useEffect(() => {
     const controller = new AbortController();
+    const current = lifecycle.current;
+    current.active = true;
     const endpoints = ["/api/wardrobe", "/api/user/profile", "/api/outfits"];
-    void Promise.all(endpoints.map(async endpoint => {
-      const response = await fetch(endpoint, { cache: "no-store", signal: controller.signal });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error("Could not load your saved styling data. Please reload.");
-      return data;
-    })).then(([wardrobe, profileData, saved]) => {
-      setWardrobeItems(wardrobe.items ?? []);
-      setProfile(profileData.profile);
-      setHistory(saved.outfits ?? []);
-    }).catch(error => { if (!controller.signal.aborted) toast(error.message, "error"); });
-    return () => controller.abort();
-  }, [toast]);
+    endpoints.forEach(async endpoint => {
+      try {
+        const response = await fetch(endpoint, { cache: "no-store", signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error("Could not load saved data.");
+        if (controller.signal.aborted) return;
+        if (endpoint === "/api/wardrobe") setWardrobeItems(data.items ?? []);
+        if (endpoint === "/api/user/profile") setProfile(data.profile);
+        if (endpoint === "/api/outfits") { setHistory(data.outfits ?? []); setNextCursor(data.nextCursor ?? null); }
+      } catch {
+        if (!controller.signal.aborted) setLoadErrors(current => [...current, endpoint]);
+      }
+    });
+    return () => { controller.abort(); current.active = false; };
+  }, []);
 
   const analysis: ClothingAnalysis | null = selectedItem ? {
     type: selectedItem.category,
@@ -153,6 +181,10 @@ export default function OutfitsPage() {
       return;
     }
 
+    if (generating || uploading) return;
+    const version = ++batchVersion.current;
+    const source = selectedItemId || null;
+    const vibe = vibeOverride ?? vibeCycle[vibeIndex];
     setGenerating(true);
     try {
       const response = await fetch("/api/generate-outfit", {
@@ -161,7 +193,7 @@ export default function OutfitsPage() {
         body: JSON.stringify({
           analysis,
           count: 4,
-          vibeOverride,
+          vibeOverride: vibe,
           styleProfile: profile ?? undefined,
         }),
       });
@@ -171,8 +203,12 @@ export default function OutfitsPage() {
         throw new Error(data.error ?? "Could not generate outfit suggestions.");
       }
 
+      if (!lifecycle.current.active || version !== batchVersion.current) return;
       setOutfits(data.outfits || []);
-      toast(`Generated 4 styled outfits (${vibeOverride ?? "Curated"})`, "success");
+      setSourceItemId(source);
+      setGeneratedImages({});
+      setGeneratedPaths({});
+      toast(`Generated ${data.outfits.length} styled outfits (${vibe})`, "success");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Outfit generation failed.", "error");
     } finally {
@@ -187,7 +223,7 @@ export default function OutfitsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sourceItemId: selectedItemId || null,
+          sourceItemId,
           data: [{ ...outfit, imagePath: generatedPaths[outfit.id] ?? outfit.imagePath }],
         }),
       });
@@ -206,12 +242,28 @@ export default function OutfitsPage() {
     }
   }
 
+  async function deleteSavedOutfit(id: string) {
+    setDeleting(true);
+    try {
+      const response = await fetch(`/api/outfits?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error("Could not delete saved look.");
+      setHistory(current => current.filter(entry => entry.id !== id));
+      setDeleteEntry(null);
+      toast("Saved look removed.", "success");
+    } catch (error) { toast(error instanceof Error ? error.message : "Could not delete saved look.", "error"); }
+    finally { setDeleting(false); }
+  }
+
   async function generateOutfitPicture(outfit: OutfitSuggestion) {
+    const version = batchVersion.current;
     setImageLoadingId(outfit.id);
 
     try {
       // Phase 4 fix: Send outfitName explicitly so AI prompt receives proper name
-      const response = await fetch("/api/generate-outfit-image", {
+      const pendingPath = generatedPaths[outfit.id] ?? outfit.imagePath;
+      const retryUrl = pendingPath && !generatedImages[outfit.id];
+      const response = retryUrl ? await fetch(`/api/outfit-image?path=${encodeURIComponent(pendingPath)}`) : await fetch("/api/generate-outfit-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -225,16 +277,18 @@ export default function OutfitsPage() {
         throw new Error(data.error ?? "Could not generate editorial lookbook image.");
       }
 
-      setGeneratedImages((current) => ({
-        ...current,
-        [outfit.id]: data.signedUrl ?? data.imageDataUrl,
-      }));
+      if (!lifecycle.current.active || version !== batchVersion.current) return;
       if (data.storagePath) setGeneratedPaths(current => ({ ...current, [outfit.id]: data.storagePath }));
+      if (!data.signedUrl) {
+        toast("Image saved. Preview is temporarily unavailable; retry the preview without generating again.", "info");
+        return;
+      }
+      setGeneratedImages(current => ({ ...current, [outfit.id]: data.signedUrl }));
       toast("AI lookbook image generated successfully. Save the look to keep it in your archive.", "success");
     } catch (err) {
       toast(err instanceof Error ? err.message : "Image generation failed.", "error");
     } finally {
-      setImageLoadingId(null);
+      if (version === batchVersion.current) setImageLoadingId(null);
     }
   }
 
@@ -247,7 +301,8 @@ export default function OutfitsPage() {
   const currentVibeLabel = vibeCycle[vibeIndex];
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-bg text-fg">
+    <main className="min-h-[calc(100vh-5rem)] pt-20 bg-bg text-fg">
+      {loadErrors.length > 0 && <div role="alert" className="px-6 py-3 text-danger">Some saved data could not be loaded. Other sections remain available. <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Reload</Button></div>}
       {/* 1. Top Source Bar */}
       <section className="border-b border-border bg-bg-elevated/80 backdrop-blur-xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl space-y-6">
@@ -269,6 +324,7 @@ export default function OutfitsPage() {
                 size="md"
                 onClick={() => void generate()}
                 loading={generating}
+                disabled={uploading || imageLoadingId !== null}
                 icon={<Wand2 className="h-4 w-4" />}
                 className="uppercase tracking-wider font-bold text-xs"
               >
@@ -279,7 +335,7 @@ export default function OutfitsPage() {
                 variant="outline"
                 size="md"
                 onClick={tryDifferentVibe}
-                disabled={generating}
+                disabled={generating || uploading || imageLoadingId !== null}
                 icon={<RefreshCcw className="h-3.5 w-3.5" />}
                 className="text-xs"
               >
@@ -392,6 +448,7 @@ export default function OutfitsPage() {
                 variant="accent"
                 onClick={() => void generate()}
                 loading={generating}
+                disabled={uploading || imageLoadingId !== null}
                 icon={<Wand2 className="h-4 w-4" />}
               >
                 Generate 4 Styled Directions
@@ -457,6 +514,7 @@ export default function OutfitsPage() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => void generateOutfitPicture(outfit)}
+                                disabled={imageLoadingId !== null || generating}
                                 className="bg-bg/85 backdrop-blur-md text-xs py-1"
                               >
                                 Re-render
@@ -481,10 +539,11 @@ export default function OutfitsPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => void generateOutfitPicture(outfit)}
+                              disabled={imageLoadingId !== null || generating}
                               icon={<Sparkles className="h-3.5 w-3.5 text-accent-text" />}
                               className="border-accent-ring/60 text-xs"
                             >
-                              Generate AI picture
+                              {generatedPaths[outfit.id] || outfit.imagePath ? "Retry preview" : "Generate AI picture"}
                             </Button>
                           </div>
                         )}
@@ -526,6 +585,7 @@ export default function OutfitsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => void saveOutfit(outfit)}
+                            disabled={savingId !== null || isImageLoading}
                             loading={savingId === outfit.id}
                             icon={<Bookmark className="h-3.5 w-3.5" />}
                           >
@@ -535,10 +595,11 @@ export default function OutfitsPage() {
                             variant="accent"
                             size="sm"
                             onClick={() => void generateOutfitPicture(outfit)}
+                            disabled={imageLoadingId !== null || generating}
                             loading={isImageLoading}
                             icon={<Sparkles className="h-3.5 w-3.5" />}
                           >
-                            {generatedImg ? "Regenerate picture" : "Generate AI picture"}
+                            {generatedImg ? "Regenerate picture" : generatedPaths[outfit.id] || outfit.imagePath ? "Retry preview" : "Generate AI picture"}
                           </Button>
                         </div>
 
@@ -663,7 +724,8 @@ export default function OutfitsPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={firstOutfit.imageUrl} alt={firstOutfit.name} className="w-full aspect-square object-cover rounded" />
                     )}
-                    <Button variant="outline" size="sm" onClick={() => { setOutfits(entry.data_json); setGeneratedImages(Object.fromEntries(entry.data_json.filter(o => o.imageUrl).map(o => [o.id, o.imageUrl!]))); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Open saved look</Button>
+                    <Button variant="outline" size="sm" disabled={generating} onClick={() => { batchVersion.current++; setImageLoadingId(null); setSourceItemId(entry.source_item_id ?? null); setOutfits(entry.data_json); setGeneratedPaths(Object.fromEntries(entry.data_json.filter(o => o.imagePath).map(o => [o.id, o.imagePath!]))); setGeneratedImages(Object.fromEntries(entry.data_json.filter(o => o.imageUrl).map(o => [o.id, o.imageUrl!]))); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Open saved look</Button>
+                    {deleteEntry === entry.id ? <div className="flex gap-2"><Button variant="outline" size="sm" loading={deleting} onClick={() => void deleteSavedOutfit(entry.id)}>Confirm delete</Button><Button variant="ghost" size="sm" disabled={deleting} onClick={() => setDeleteEntry(null)}>Cancel</Button></div> : <Button variant="ghost" size="sm" icon={<Trash2 className="h-3.5 w-3.5" />} onClick={() => setDeleteEntry(entry.id)}>Delete saved look</Button>}
                     <h4 className="font-display text-base font-bold text-fg">
                       {firstOutfit?.name ?? "Archived Outfit"}
                     </h4>
@@ -676,6 +738,7 @@ export default function OutfitsPage() {
               })}
             </div>
           )}
+          {nextCursor && <Button variant="outline" loading={historyLoading} onClick={() => void loadHistory(nextCursor)}>Load more saved looks</Button>}
         </section>
       </div>
     </main>

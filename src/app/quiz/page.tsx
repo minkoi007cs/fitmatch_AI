@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -143,6 +143,8 @@ const defaultAnswers: QuizAnswers = {
 
 export default function QuizPage() {
   const { toast } = useToast();
+  const answersEdited = useRef(false);
+  const setAnswerDraft: typeof setAnswers = value => { answersEdited.current = true; setAnswers(value); };
 
   const [currentStep, setCurrentStep] = useState(1);
   const [answers, setAnswers] = useState<QuizAnswers>(defaultAnswers);
@@ -161,19 +163,23 @@ export default function QuizPage() {
 
   // Prefill profile on mount from server
   useEffect(() => {
+    const controller = new AbortController();
     async function loadSavedProfile() {
       try {
-        const response = await fetch("/api/user/profile", { cache: "no-store" });
+        const response = await fetch("/api/user/profile", { cache: "no-store", signal: controller.signal });
         const data = await response.json();
-        if (response.ok && data.success && data.quizAnswers) {
-          setAnswers({ ...defaultAnswers, ...data.quizAnswers });
+        if (!response.ok || !data.success) throw new Error("Could not load your saved profile. Please retry.");
+        if (!controller.signal.aborted && !answersEdited.current) {
+          if (data.quizAnswers) setAnswers({ ...defaultAnswers, ...data.quizAnswers });
+          setRecommendations(data.recommendations ?? null);
         }
       } catch (err) {
-        console.error("Could not hydrate existing style profile:", err);
+        if (!controller.signal.aborted) toast(err instanceof Error ? err.message : "Could not load your saved profile.", "error");
       }
     }
     void loadSavedProfile();
-  }, []);
+    return () => controller.abort();
+  }, [toast]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -182,8 +188,8 @@ export default function QuizPage() {
       return;
     }
 
-    setLoading(true);
-    try {
+    answersEdited.current = true;
+    setLoading(true);    try {
       const response = await fetch("/api/user/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -206,6 +212,7 @@ export default function QuizPage() {
   }
 
   function handleRetake() {
+    answersEdited.current = true;
     setRecommendations(null);
     setCurrentStep(1);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -435,7 +442,7 @@ export default function QuizPage() {
                   <Select
                     id="q-age"
                     value={answers.ageRange}
-                    onChange={(e) => setAnswers((a) => ({ ...a, ageRange: e.target.value }))}
+                    onChange={(e) => setAnswerDraft((a) => ({ ...a, ageRange: e.target.value }))}
                   >
                     {ageOptions.map((opt) => (
                       <option key={opt} value={opt}>
@@ -450,7 +457,7 @@ export default function QuizPage() {
                     id="q-gender"
                     value={answers.genderExpression}
                     onChange={(e) =>
-                      setAnswers((a) => ({ ...a, genderExpression: e.target.value }))
+                      setAnswerDraft((a) => ({ ...a, genderExpression: e.target.value }))
                     }
                   >
                     {genderOptions.map((opt) => (
@@ -465,7 +472,7 @@ export default function QuizPage() {
                   <Select
                     id="q-body"
                     value={answers.bodyShape}
-                    onChange={(e) => setAnswers((a) => ({ ...a, bodyShape: e.target.value }))}
+                    onChange={(e) => setAnswerDraft((a) => ({ ...a, bodyShape: e.target.value }))}
                   >
                     {bodyShapeOptions.map((opt) => (
                       <option key={opt} value={opt}>
@@ -479,7 +486,7 @@ export default function QuizPage() {
                   <Select
                     id="q-height"
                     value={answers.heightRange}
-                    onChange={(e) => setAnswers((a) => ({ ...a, heightRange: e.target.value }))}
+                    onChange={(e) => setAnswerDraft((a) => ({ ...a, heightRange: e.target.value }))}
                   >
                     {heightOptions.map((opt) => (
                       <option key={opt} value={opt}>
@@ -517,7 +524,7 @@ export default function QuizPage() {
                   <Select
                     id="q-lifestyle"
                     value={answers.lifestyle}
-                    onChange={(e) => setAnswers((a) => ({ ...a, lifestyle: e.target.value }))}
+                    onChange={(e) => setAnswerDraft((a) => ({ ...a, lifestyle: e.target.value }))}
                   >
                     {lifestyleOptions.map((opt) => (
                       <option key={opt} value={opt}>
@@ -531,7 +538,7 @@ export default function QuizPage() {
                   <Select
                     id="q-goal"
                     value={answers.shoppingGoal}
-                    onChange={(e) => setAnswers((a) => ({ ...a, shoppingGoal: e.target.value }))}
+                    onChange={(e) => setAnswerDraft((a) => ({ ...a, shoppingGoal: e.target.value }))}
                   >
                     {goalOptions.map((opt) => (
                       <option key={opt} value={opt}>
@@ -555,7 +562,7 @@ export default function QuizPage() {
                         key={priority}
                         active={isSelected}
                         onClick={() =>
-                          setAnswers((a) => ({
+                          setAnswerDraft((a) => ({
                             ...a,
                             fitPriorities: toggleValue(a.fitPriorities ?? [], priority),
                           }))
@@ -605,7 +612,7 @@ export default function QuizPage() {
                         active={isSelected}
                         colorSwatch={swatch}
                         onClick={() =>
-                          setAnswers((a) => ({
+                          setAnswerDraft((a) => ({
                             ...a,
                             favoriteColors: toggleValue(a.favoriteColors, color),
                           }))
@@ -631,7 +638,7 @@ export default function QuizPage() {
                         key={tile.label}
                         type="button"
                         onClick={() =>
-                          setAnswers((a) => ({
+                          setAnswerDraft((a) => ({
                             ...a,
                             preferredOutfits: toggleValue(a.preferredOutfits, tile.label),
                           }))
@@ -686,7 +693,7 @@ export default function QuizPage() {
                         key={insp}
                         active={isSelected}
                         onClick={() =>
-                          setAnswers((a) => ({
+                          setAnswerDraft((a) => ({
                             ...a,
                             fashionInspirations: toggleValue(a.fashionInspirations, insp),
                           }))

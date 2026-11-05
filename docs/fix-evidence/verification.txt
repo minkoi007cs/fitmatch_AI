@@ -1,0 +1,111 @@
+
+$ npm run lint -- --max-warnings=0
+
+> fitmatch-ai@0.1.0 lint
+> eslint --max-warnings=0
+
+
+$ npm test
+
+> fitmatch-ai@0.1.0 test
+> node --import tsx --test tests/*.test.ts
+
+✔ signed hub session binds both hub identity and local wardrobe owner (0.837917ms)
+✔ tampered local identity cannot select another wardrobe (0.143292ms)
+✔ keys, cookie purpose, malformed encodings and invalid shape are rejected (0.133041ms)
+✔ PKCE flow rejects stale/future attempts and preserves explicit linking proof (0.214583ms)
+✔ return paths preserve intent but reject redirect escapes and auth loops (0.115541ms)
+✔ each parallel sign-in attempt gets a safe independent cookie name (0.1165ms)
+✔ file ownership excludes traversal, encoded traversal, other tenants and absolute URLs (0.08925ms)
+✔ independent instances share one durable refresh and return the same successor (101.664666ms)
+✔ different tokens do not share refresh results (0.174333ms)
+✔ ambiguous refresh transport failure is not retried with a possibly consumed token (0.158083ms)
+✔ revocation verdict is shared rather than rotating again (0.077625ms)
+✔ outfit identities do not depend on duplicate model IDs and preferences reach the prompt (8.361208ms)
+✔ unrecognized vision categories and patterns fall back to editable enum values (0.245916ms)
+✔ partial wardrobe updates preserve omitted values and keep explicit false/null (1.712459ms)
+✔ empty and invalid profiles cannot erase saved data (0.607125ms)
+✔ archive rejects malformed nested parts before persistence (0.563292ms)
+✔ legacy quiz hydration never passes null or malformed arrays into the form (0.119208ms)
+✔ invalid JSON and oversized requests are client errors (9.482ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 167.032416
+
+$ npm run build
+
+> fitmatch-ai@0.1.0 build
+> next build
+
+▲ Next.js 16.4.5 (Turbopack)
+✓ Running next.config.ts took 15ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 545ms
+  Running TypeScript ...
+  Finished TypeScript in 1425ms ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/15) ...
+  Generating static pages using 11 workers (3/15)
+  Generating static pages using 11 workers (7/15)
+  Generating static pages using 11 workers (11/15)
+✓ Generating static pages using 11 workers (15/15) in 160ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/analyze-image
+├ ƒ /api/auth/session
+├ ƒ /api/generate-outfit
+├ ƒ /api/generate-outfit-image
+├ ƒ /api/outfit-image
+├ ƒ /api/outfits
+├ ƒ /api/upload-item
+├ ƒ /api/user/profile
+├ ƒ /api/wardrobe
+├ ƒ /api/wardrobe/[id]
+├ ○ /auth/auth-code-error
+├ ƒ /auth/callback
+├ ƒ /auth/link
+├ ƒ /auth/login
+├ ƒ /auth/logout
+├ ○ /icon.svg
+├ ƒ /login
+├ ○ /outfits
+├ ○ /quiz
+└ ○ /wardrobe
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+$ npm run test:http
+
+> fitmatch-ai@0.1.0 test:http
+> node --import tsx scripts/test-auth-http.mjs
+
+PASS: guest APIs blocked before parsing/AI; cross-origin mutation rejected
+PASS: PKCE/state verified; callback bridges user-scoped Supabase session and preserves next/vibe
+PASS: owner-scoped data, forged owner/image rejection, mismatched identity denied, outage preserves session
+PASS: outfit image survives save/reload with new signed URL; foreign image path and invalid archive rejected; quiz contract correct
+PASS: non-destructive PATCH/profile, nested validation, quota 429/outage, legacy archive safety, 45-row pagination, shared asset retention and preview ownership
+PASS: 10 parallel HTTP requests rotate once; late cookie reuses encrypted successor
+PASS: explicit dual-session linking preserves the original wardrobe user ID
+PASS: logout clears both sessions; no unnecessary token refresh
+
+$ node scripts/test-quota-db.mjs
+PASS: PostgreSQL atomic quota admits 10/20 concurrent requests; users isolated; rejected charges unchanged; browser roles denied; RLS enabled; migration re-runnable
+
+$ npm audit --omit=dev
+found 0 vulnerabilities
+
+$ git -c core.whitespace=cr-at-eol diff --check

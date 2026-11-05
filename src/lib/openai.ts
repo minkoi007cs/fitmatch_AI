@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+import { CLOTHING_CATEGORIES, PATTERN_TYPES } from "./types";
 import {
   ClothingAnalysis,
   OutfitSuggestion,
@@ -255,6 +257,8 @@ export async function analyzeClothingImage(imageBase64: string): Promise<Clothin
 
     return {
       ...analysis,
+      type: CLOTHING_CATEGORIES.includes(analysis.type) ? analysis.type : "other",
+      pattern: PATTERN_TYPES.includes(analysis.pattern) ? analysis.pattern : "other",
       secondaryColor: analysis.secondaryColor || undefined,
       material: analysis.material || undefined,
       style: normalizeStyleCategory(analysis.style),
@@ -301,6 +305,7 @@ export async function generateOutfitSuggestions(
                   ", "
                 )}, inspirations=${styleProfile.fashionInspirations?.join(", ") ?? "none"}`
               : "No style profile available.",
+            styleProfile ? `Fit and lifestyle preferences: ${JSON.stringify({ ageRange: styleProfile.ageRange, genderExpression: styleProfile.genderExpression, bodyShape: styleProfile.bodyShape, heightRange: styleProfile.heightRange, lifestyle: styleProfile.lifestyle, shoppingGoal: styleProfile.shoppingGoal, fitPriorities: styleProfile.fitPriorities })}` : "",
             styleInstruction,
             `Generate ${Math.min(Math.max(count, 3), 5)} complete outfits.`,
           ].join("\n"),
@@ -310,6 +315,7 @@ export async function generateOutfitSuggestions(
 
     return result.outfits.map((outfit) => ({
       ...outfit,
+      id: randomUUID(),
       styleCategory: normalizeStyleCategory(outfit.styleCategory),
       confidenceScore: Math.max(1, Math.min(100, Math.round(outfit.confidenceScore))),
     }));

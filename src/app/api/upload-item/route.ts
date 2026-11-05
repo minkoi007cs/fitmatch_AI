@@ -1,3 +1,6 @@
+import sharp from "sharp";
+import { InputError, readBytes, requestError } from "@/lib/validation";
+import { reserveAi } from "@/lib/ai-quota";
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { analyzeClothingImage } from "@/lib/openai";
@@ -7,10 +10,6 @@ import { WARDROBE_BUCKET } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-function toBase64(buffer: ArrayBuffer) {
-  return Buffer.from(buffer).toString("base64");
-}
-
 export async function POST(request: Request) {
   let pendingPath: string | null = null;
   try {
@@ -19,7 +18,8 @@ export async function POST(request: Request) {
     const { supabase, user } = auth;
 
 
-    const formData = await request.formData();
+    const bytes = await readBytes(request, 4_300_000);
+    const formData = await new Request(request.url, { method: "POST", headers: request.headers, body: new Uint8Array(bytes) }).formData();
     const file = formData.get("file");
 
     if (!(file instanceof File)) {
@@ -34,21 +34,34 @@ export async function POST(request: Request) {
       );
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > 4 * 1024 * 1024) {
       return NextResponse.json(
-        { success: false, error: "File too large. Maximum allowed image size is 10MB." },
+        { success: false, error: "File too large. Maximum compressed upload size is 4MB." },
         { status: 400 }
       );
     }
 
-    const fileName = `${randomUUID()}-${file.name.replace(/[^a-zA-Z0-9.]/g, "-")}`;
+    let normalized: Buffer;
+    try {
+      const input = Buffer.from(await file.arrayBuffer());
+      const image = sharp(input, { limitInputPixels: 24_000_000, failOn: "error" });
+      const metadata = await image.metadata();
+      const format = { "image/jpeg": "jpeg", "image/png": "png", "image/webp": "webp" }[file.type];
+      if (metadata.format !== format || (metadata.pages ?? 1) > 1) throw new Error("Unsupported image");
+      normalized = await image.rotate().resize({ width: 1200, height: 1200, fit: "inside", withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer();
+    } catch { throw new InputError(400, "Invalid or oversized image. Please use a JPEG, PNG or WEBP photo."); }
+
+    const quota = await reserveAi(user.id, 1);
+    if (quota) return quota;
+
+    const fileName = `${randomUUID()}.jpg`;
     const storagePath = `${user.id}/${fileName}`;
     const admin = createAdminClient();
 
-    const { error: uploadError } = await admin.storage.from(WARDROBE_BUCKET).upload(storagePath, file, {
+    const { error: uploadError } = await admin.storage.from(WARDROBE_BUCKET).upload(storagePath, normalized, {
       cacheControl: "3600",
       upsert: false,
-      contentType: file.type || "image/jpeg",
+      contentType: "image/jpeg",
     });
 
     if (uploadError) {
@@ -56,8 +69,7 @@ export async function POST(request: Request) {
     }
 
     pendingPath = storagePath;
-    const buffer = await file.arrayBuffer();
-    const analysis = await analyzeClothingImage(toBase64(buffer));
+    const analysis = await analyzeClothingImage(normalized.toString("base64"));
 
     const { data: inserted, error: insertError } = await supabase
       .from("fm_uploaded_items")
@@ -90,13 +102,6 @@ export async function POST(request: Request) {
       try { await createAdminClient().storage.from(WARDROBE_BUCKET).remove([pendingPath]); }
       catch (cleanupError) { console.error("Upload cleanup failed", cleanupError); }
     }
-    console.error("Error in upload-item route:", error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Upload failed",
-      },
-      { status: 500 }
-    );
+    return requestError(error);
   }
 }
