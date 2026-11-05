@@ -26,7 +26,7 @@ OBS-PC/OBS-MAC là mã quan sát nguồn có sẵn, không phải reviewer tự 
 | DOC-01 | Codex | Done | CX-DOC-20261105-01; docs gốc; thiếu tiến độ ngoài chat được sửa trong DOC-02 |
 | DOC-02 | Codex | Done | CX-RECON-20261105-02; reconciliation/prompts/snapshot/package PROC-0002 |
 | OPS-01 | Codex, được chủ dự án giao | Done | CX-CLEAN-20261105-03; 2 local branches còn lại, tags/bundle verified, report OPS-01 |
-| OPS-02 | Codex, chủ dự án cho phép publish docs | Ready for review | CX-PUBLISH-20261105-04; branch codex/project-operations, kiểm remote readback trước báo hoàn tất |
+| OPS-02 | Codex, chủ dự án cho phép publish docs | Done | CX-PUBLISH-20261105-04; 874f4dc đã push và readback GitHub thành công |
 | PC-00 | PC hiện hữu | Assigned | OBS-PC-004; inventory đã báo GPU/RAM/env, bổ sung delta/local receipt |
 | PC-01 | PC hiện hữu | Assigned | OBS-PC-004; env/SMPL-X đã dùng; giữ weights/junction, kiểm toolchain/license manifest |
 | PC-02 | PC | Planned | Body+áo template riêng/drape chưa có bằng chứng |
@@ -202,3 +202,12 @@ Chủ dự án cho phép đưa bộ điều hành/handoff lên GitHub để PC/M
 ## Nguồn đồng bộ GitHub — OPS-02
 
 Chủ dự án đã cho phép publish bộ điều hành/handoff trên nhánh tài liệu `codex/project-operations`. Xem [github-sync.md](./docs/handoffs/github-sync.md) để đọc/clone/pull và gửi report/PR đúng scope. Không dùng ZIP mỗi lần; không merge nhánh tài liệu vào checkpoint code một cách mù. Repo công khai nên chỉ publish tài liệu/report đã loại secrets và dữ liệu cá nhân không cần thiết. Đây là ngoại lệ cho hạn chế push tài liệu cũ trong file này; hạn chế push app/deploy/migration vẫn giữ nguyên. Trạng thái publish thực tế được xác nhận qua remote readback trước bàn giao.
+
+
+### L-011 — 05/11/2026 — PUBLISHED / HANDOFF — CX-PUBLISH-20261105-04 / OPS-02
+
+Đã push commit874f4dc4c96aff3904dab18625be9fe4ef6cf6ab lên `origin/codex/project-operations`, từ remote mainac26306 trong checkout publish riêng. `git ls-remote` xác nhận remote SHA và GitHub contents API readback agent.md/reassignment thành công. 30 file rules/roadmap/process/docs/snapshot, không ZIP/bundle/env/weights/source app. Kiểm relative links/fences/JSON/task IDs, credential-pattern scan và staged paths. Không merge main/deploy/migrate, không đổi nhánh/công việc đang dở PC/Mac. Nhánh docs mới được chủ dự án cho phép, ngoại lệ chính sách chỉ hai nhánh local sau cleanup. Commit tiếp theo chỉ ghi nhận publication này; chưa có receipt PC/Mac nên không tự cập nhật họ đang làm.
+
+### H-GITHUB-004 — nguồn hiện hành
+
+https://github.com/minkoi007cs/fitmatch_AI/tree/codex/project-operations . Đọc docs/handoffs/github-sync.md để clone/pull checkout tài liệu riêng và gửi report/PR. PC/Mac đọc cùng ref/commit thay chuyển ZIP; process cập nhật có evidence, không overwrite bản cũ. Production app/main không thay đổi. Root local và publication checkout giữ cùng nội dung bộ điều hành ở lần publish này; bản copy trên worktree Studio/PC cần đọc GitHub hoặc fetch riêng, chưa tự chép đè.
