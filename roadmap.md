@@ -1,5 +1,8 @@
 # FitMatch — roadmap sản phẩm và phát triển
 
+> **Lệnh triển khai hiện hành H-EXEC-009 / PROC-0009:** [thực thi full thun+jeans](./docs/handoffs/execution-thun-jeans-20261105.md), [PC setup/model/render](./docs/handoffs/prompt-pc-full-look-setup.md), [Claude code](./docs/handoffs/prompt-claude-full-look-code.md). Chủ dự án đã giao bắt đầu các gói quality/render/model và full-flow code dưới đây; chỉ dẫn “DISC chưa assign/PC chỉ CPU” cũ được thay trong scope này. Setup user-level/download/inference được phép; quyền bấm UAC/cài Admin đang pause vẫn cần chủ dự án thực hiện nếu thiếu compiler. Không paid/deploy/production migration.
+
+
 > **Phạm vi hiện hành sau phỏng vấn — SPEC-01 / PROC-0008:** đọc [27 quyết định sản phẩm và đánh giá hướng đi](./docs/product-requirements-2026-11-05.md). Bản đầu là trọn luồng **avatar cá nhân + áo thun + jeans**, face/body/hair edits bằng thanh kéo và lời, wardrobe nền/mobile capture, AI từ đồ thật và lookbook render3D. Những mục shirt-only cũ bên dưới chỉ là spike kỹ thuật, không đủ nghiệm thu first release. Yêu cầu mới này ưu tiên hơn snapshot/prompt cũ; PC-CONF và Claude R1 tiếp tục trong scope đã giao, chưa tự mở nhiệm vụ DISC hoặc gỡ MSVC pause.
 
 
@@ -241,3 +244,25 @@ Chủ dự án đã cho phép publish bộ điều hành/handoff trên nhánh t�
 APP-FLOW-01 tập hợp full journey upload mobile/desktop→avatar draft→wardrobe prep→top/bottom independent→save. APP-AI-01 là3look từ owned inventory/quiz/occasion; APP-RENDER-01 chụp/render scene đúng bộ và góc/nền. PILOT-01 hai tài khoản riêng truy cập website bất kỳ đâu, PC ở nhà outbound worker. Chi tiết và acceptance tại docs/product-requirements-2026-11-05.md. Các package mới Planned, chưa assign/start implementation từ tài liệu này.
 
 Ảnh/video avatar: user chọn giữ hoặc xóa khi hoàn tất, giữ thì có thể xóa sau. Source và derived assets/looks tách vòng đời. Đồ mới xử lý nền, không có avatar vẫn làm canonical; khi fitting ready chỉ autoapply nếu selection/current avatarVersion còn đúng. Không infer lại mỗi click; không tự chuẩn bị mọi tổ hợp áo×quần.
+
+
+## 16. Execution priority mới — tận dụng R1 + PC checkpoint004
+
+Nguồn [H-EXEC-009](./docs/handoffs/execution-thun-jeans-20261105.md) ưu tiên hơn các dòng chưa assign trong kế hoạch cũ.
+
+| Mốc / ID | Owner | Việc tiếp nối / đầu ra gần nhất |
+|---|---|---|
+| EXEC-01 | Codex | Roadmap/dispatch PC/prompt Claude và review từng mốc |
+| PC-SETUP-02 | PC hiện hữu | Kiểm model/env/toolchain; portable renderer chạy headless smoke, không duplicate weights/env |
+| PC-MODEL-02 | PC hiện hữu | SiTH/checkpoints thiếu thật + GarmentCode/Pants baseline; Qwen3-VL-4B env riêng, download/run JSON smoke, không giữ chung VRAM |
+| DISC-AV-01 | PC hiện hữu | Tiếp checkpoint004 nếu compiler đủ; nếu admin blocked giữ stage phụ thuộc, làm render/garment/VLM độc lập; textured GLB/face QA và benchmark |
+| DISC-DENIM-01 | PC hiện hữu | One top + jeans canonical/fitted riêng cùng body, texture/logo/form, preview thật và shared transform |
+| DISC-EDIT-01 | PC adapter + Claude UI theo scope | Capture/video/frame/face/measure và edit parameters thật, face likeness trước; báo gap thay fake |
+| APP-FLOW-01 | Claude task branch riêng | Tiếp R1afc37ff, mapping PC78JSON/Windows safety; entity/slots/capture mobile/background/save-reopen và schema fixtures |
+| APP-AI-01 | Claude | Quiz+occasion→3owned top+jeans; rules-v1 trước, VLM optional |
+| APP-RENDER-01 | Claude UI/PC renderer | Lookbook từ scene đúng outfit/version, góc/nền; không generative đổi đồ |
+| PILOT-01 | PC + Claude + Codex/user | Remote hai account,1GPU, real full journey/likeness/time/retention; sau code review và môi trường test có quyền |
+
+R1 report đã nộp finalafc37ff và PC-CONF báo completed CPU, không làm lại các gói từ đầu. Renderer/GarmentCode/VLM setup user-level có thể làm trong lúc MSVC admin còn chờ; không tự coi paused compiler là phải dừng toàn PC. VLM chỉ hỗ trợ text/vision/JSON, không thay 3D engine. E0/E1 đưa mẫu kỹ thuật sớm; E2/E3/E4 mới đủ scope first release, không bỏ editor/likeness để gọi scene template là Done.
+
+Nhận task theo actual receipt, giữ source/owner PC vs Claude tách file, không đồng thời tải/chạy nhiều model chiếm12GB. Tất cả download từ nguồn chính thức/pin hash/license và env riêng; account/terms gate chủ dự án tự xử lý. Chưa ngân sách cloud/upgrade/API paid; report output+chi phí để chủ dự án quyết định nếu PC không đạt.

@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0008. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0009. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## 1. Snapshot hiện tại và điểm tiếp nối
 
@@ -291,3 +291,34 @@ Roadmap/rules đã cập nhật scope mới ưu tiên hơn shirt-only snapshot. 
 | APP-AI-01 | Mac/Claude khi được giao | Planned | 3 full look owned top+jeans theo quiz+occasion |
 | APP-RENDER-01 | Mac/Claude khi được giao | Planned | Render avatar/outfit đúng scene/version/góc/nền |
 | PILOT-01 | Hai bên + Codex/user QA | Planned | Hai wardrobe riêng, full journey/likeness/reliability thật |
+
+
+### L-021 — 05/11/2026 — START — CX-REPLAN-20261105-09
+
+Chủ dự án yêu cầu push roadmap/phân công mới để full thun+jeans sớm, giao PC setup render/tải AI model và Claude hỗ trợ code. Đã đọc root docs/SPEC-01, remote refs/PR1 head60949e8, PC conformance report và Claude R1 report remote9c725d4→afc37ff local app bundle. Đây là reported tests, chưa review R1 code. Scope Codex: docs/roadmap/dispatch PC, không sửa app; tiếp tục download/setup user-level được giao mới, admin/UAC vẫn cần người dùng thực hiện nếu yêu cầu trước chưa được gỡ rõ. Không paid/cloud/deploy. PC không bị buộc dừng ở CPU-only cũ khi có phần render/model user-level độc lập có thể làm.
+
+
+### L-022 — 05/11/2026 — REPLAN / ASSIGN — H-EXEC-009
+
+Remote status mới: PR1head60949e8 (4docs) PC-CONF Ready for review:11pass,1symlinkNotrun+2regressions, code37213bc local; exit78MODEL_UNAVAILABLE và exit2JSON/argparse. Claude docs branch9c725d4 báo R1afc37ff/4commits/full suites pass trongcloud, bundle/diff/log thực sự ở claude-handoff-local/worker-recovery-r1; Codex git-bundle-verify okay, chưa source/testretest. Hai bộ không tự compatible: R1error3/4/5/6proposal/tracebackOOM cần đối chiếu PCboundedJSON; Windowskill-on-close chưaPCtest và warning-only làgap. Không choR1Done/livetrước review.
+
+Chủ dự án giao thực thi roadmap mới: PCSETUP/render+models3D hiện hữu và Qwen3-VL-4B env riêng, Claude tiếpR1/fulltop+jeansflow. H-EXEC-009 thay CPU-only/no-DISC-assignment cũ trong đúng scope, user-level setup/download/inference được giao; pauseAdmin/UACvẫn còn khi người dùng chưa gỡ cụ thể, không đổi driver/reboot/paidcloud. Existingweights/fitting/cache/env tái dùng; không thêmhàngloạtmôhình. MốcE0→E1assetthật→E2wardrobe→E3avatar/edit→E4pilot; đưa mẫu sớm, không fakefinaltừtemplate.
+
+### H-EXEC-009 — current assignments
+
+[Execution plan](./docs/handoffs/execution-thun-jeans-20261105.md), [PC prompt](./docs/handoffs/prompt-pc-full-look-setup.md), [Claude prompt](./docs/handoffs/prompt-claude-full-look-code.md). Lệnh mới đã soạn để publish, dispatch PC ghi entry riêng khi gửi; Claude external cần chủ dự án chuyển prompt, không giả running.
+
+| Gói | Owner | Trạng thái cập nhật | Evidence / bước tiếp |
+|---|---|---|---|
+| EXEC-01 | Codex | In progress | Roadmap/prompt/dispatch theo yêu cầu, kiểm remote publication |
+| PC-CONF-01 | PC | Ready for review | PR1head60949e8, reported CPU tests, chưareview source |
+| PC-SETUP-02 | PC hiện hữu | Assigned | Toolchain delta + Blender portable/headless render smoke, runtime log |
+| PC-MODEL-02 | PC hiện hữu | Assigned | Models inventory/reuse/download missing; Qwen4Benvriêng + JSONsmoke; không làmeshgenerator |
+| R1A/B/C | Claude | Ready for review (reported) | afc37ffbundle verified, cần Codex source/retest + PCerror compatibility |
+| DISC-AV-01 | PC hiện hữu | Assigned (compiler admin còn blocker) | Tiếp004, khôngrerun fitting vôcớ; phầnindependenttiếptục |
+| DISC-DENIM-01 | PC hiện hữu | Assigned | Top+jeans riêng,texture/fit/render thật |
+| DISC-EDIT-01 | PC + Claude theo phạm vi | Assigned | PCeditcapability/ClaudeUI; qualitygatechưarun |
+| APP-FLOW-01 | Claude task branch riêng | Assigned | C0R1mapping→C1slot/entity→C2capture/privacy |
+| APP-AI-01 | Claude task branch riêng | Assigned | C3owned3looks, rules-v1 vẫn hữu dụng |
+| APP-RENDER-01 | Claude + PC render adapter | Assigned | Scene render đúngoutfit/version |
+| PILOT-01 | Hai bên + Codex/user | Planned | Chờ artifacts thật/review/code/môitrườngtest có quyền |

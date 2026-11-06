@@ -89,3 +89,8 @@ Chủ dự án yêu cầu tiếp tục phân việc sau review. Claude được 
 ## Product scope sau phỏng vấn SPEC-01
 
 Đọc docs/product-requirements-2026-11-05.md cùng roadmap mới. First release phải full journey với thun+jeans, avatar ưu tiên face likeness và editor slider+lời; shirt-only/SiTH demo/transport tests không đủ product PASS. Snapshot cũ giữ lịch sử, không lấy chúng để cắt scope user vừa chốt. R1/PC-CONF hiện hữu giữ phạm vi; các package quality/editor/denim mới chưa tự khởi động. MSVC/admin pause, chưa paid budget hay public deploy vẫn giữ. Nếu không đạt chất lượng/target15–30phút, đưa mẫu/số đo/chi phí cho chủ dự án quyết định, không tự đổi mục tiêu.
+
+
+## H-EXEC-009 — quyền triển khai mới theo yêu cầu chủ dự án
+
+Đọc execution-thun-jeans-20261105 và hai prompt PC/Claude mới. Chủ dự án đã giao setup/render/tải model/chạyAI trên PC và full-flow code cho Claude: các hạn chế “PC CPU-only, DISC chưa được giao” cũ được thay trong đúng scope E0–E4, giữ owner/file boundaries. User-level env/download/inference có thể làm; thiếu MSVC Admin thì hướng dẫn người dùng làm OS step, chưa tự gỡ pause UAC/bypass/reboot/driver. R1afc37ff chỉ Ready for review theo report, không tự enable live. Code/tài liệu/task mới trên nhánh riêng, không reset canonical/đổi contract unilateral/paid provider/deploy/production migration. Giữ kiểm chứng đời thật và báo partials, không chỉ skeleton mới.
