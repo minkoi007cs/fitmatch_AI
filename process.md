@@ -332,3 +332,8 @@ H-EXEC-009 đã publish598666f và gửi chatPC hiện hữu bằng tool, chưa 
 ### H-PC-SPLIT-010 — assignment trước create
 
 Chủ dự án muốn hai chatPC, hiểu là AIQwen vs model3D. PC-AI-01 Assigned cho chatmới sau create; PC-3D-02 tiếpowner cũ, phầnQwen chuyển ra tránh duplicate. [Hướng dẫn](./docs/handoffs/pc-parallel-ai-3d.md). Remoteproject đãdiscover964121ab… trên hostMin_Koi, khôngrepo, dùng environmentlocal theo đúnghostproject, không tự tạo worktree/cloud. ChatAI chỉ download/setupCPU trướcsharedGPUguard+slot; chat3D giữGPUcoordinator. Chưacreate/chưareceipt lúc ghi entry này; toolresults ghi tiếp khi có.
+
+
+### L-024 — 05/11/2026 — CREATED / DISPATCH — H-PC-SPLIT-010
+
+ĐãpublishEAAD47B splitdocs và gửi chat3D hiệnhữu thu hồi phầnQwen sangchatmới, giữ3Downer/GPUcoordinator. create_thread thànhcông trên remoteproject964121ab…/hostMin_Koi, environmentlocal: chat mới “FitMatch PC — AI model Qwen”, thread01a1aef0-d86e-7410-86f3-3f785f861e38, hostremote-control:env_e_6ae016d7e638832f8c618e42731928c8. Không model override, không subagent, đúngmộtchat user yêucầu. Prompt đã giaoQwen download/env/schemaCPU ngay; GPU smoke chờreceipt/OSsharedlock/slot, không publicport/paid/UAC. Creation không chứngminh model đãtải hoặc GPUready; progresssnapshot được kiểm riêng, artifacts chờreport. Claude codeprompt đầyđủ ở docs/handoffs/prompt-claude-full-look-code.md cho chủdựán chuyển.
