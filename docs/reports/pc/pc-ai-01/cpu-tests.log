@@ -1,0 +1,14 @@
+test_bounded_strict_json (test_contract.ContractTests) ... ok
+test_edit_never_executes (test_contract.ContractTests) ... ok
+test_invented_capability_and_dimensions (test_contract.ContractTests) ... ok
+test_required_fields (test_contract.ContractTests) ... ok
+test_slot_mismatch (test_contract.ContractTests) ... ok
+test_unknown_edit_cannot_claim_proposal (test_contract.ContractTests) ... ok
+test_unobserved_logo_text (test_contract.ContractTests) ... ok
+test_valid_proposal (test_contract.ContractTests) ... ok
+test_valid_tshirt_jeans (test_contract.ContractTests) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.010s
+
+OK

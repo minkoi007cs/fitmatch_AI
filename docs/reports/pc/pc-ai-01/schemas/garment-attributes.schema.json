@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FitMatch local garment observations proposal v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "category",
+    "slot",
+    "colors",
+    "pattern",
+    "logo",
+    "observations",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "pc-ai.garment-observations.v1"
+    },
+    "kind": {
+      "const": "garment_attributes"
+    },
+    "category": {
+      "enum": [
+        "tshirt",
+        "jeans",
+        "unknown"
+      ]
+    },
+    "slot": {
+      "enum": [
+        "top",
+        "bottom",
+        "unknown"
+      ]
+    },
+    "colors": {
+      "type": "array",
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 40
+      }
+    },
+    "pattern": {
+      "enum": [
+        "solid",
+        "striped",
+        "printed",
+        "checked",
+        "other",
+        "unclear"
+      ]
+    },
+    "logo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "visibility",
+        "text"
+      ],
+      "properties": {
+        "visibility": {
+          "enum": [
+            "visible",
+            "not_visible",
+            "unclear"
+          ]
+        },
+        "text": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "visibility": {
+                "enum": [
+                  "not_visible",
+                  "unclear"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "text": {
+                "const": null
+              }
+            }
+          }
+        }
+      ]
+    },
+    "observations": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 5,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "tshirt"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "slot": {
+            "const": "top"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "jeans"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "slot": {
+            "const": "bottom"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "unknown"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "slot": {
+            "const": "unknown"
+          }
+        }
+      }
+    }
+  ]
+}

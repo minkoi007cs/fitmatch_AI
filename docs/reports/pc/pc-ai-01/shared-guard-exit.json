@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "owner": "pc-ai",
+  "label": "qwen-smoke-PC-AI-20261105-01",
+  "guardPid": 29560,
+  "startedAtUtc": "2026-11-06T03:58:09.787096+00:00",
+  "childPid": 14424,
+  "killOnJobClose": true,
+  "jobName": "Global\\FitmatchGPU0Setup-29560-777770000000000",
+  "lock": "<GPU_ROOT>\\coordination\\gpu0.lock",
+  "scope": "internal setup only",
+  "childCreationTime": 134384110897894309,
+  "exitCode": 0,
+  "endedAtUtc": "2026-11-06T03:59:56.174804+00:00",
+  "allJobProcessesExited": true
+}

@@ -1,0 +1,18 @@
+{
+  "session": "PC-AI-20261105-01",
+  "owner": "pc-ai",
+  "recordedAtUtc": "2026-11-06T04:02:38.1391637Z",
+  "status": "Released",
+  "guardPid": 29560,
+  "childPid": 14424,
+  "allJobProcessesExited": true,
+  "childExitCode": 0,
+  "guardEndedAtUtc": "2026-11-05T22:59:56.174804-05:00",
+  "deviceUsedAfterExitMiB": 758,
+  "smoke": "GPUSmokeSchemaPassed",
+  "schemaSamplesPassed": 3,
+  "nextGPUJob": "None scheduled; any new run requires current 3D slot",
+  "coordinatorAction": "PC-3D-02 may reclaim admission slot when ready; AI does not mutate slot ownership",
+  "peakAvailableHostRamBytes": 161599488,
+  "limitations": "Public reference fixtures only; grounding errors observed; 16GB RAM nearly exhausted"
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": "pc-ai.garment-observations.v1",
+  "kind": "garment_attributes",
+  "category": "tshirt",
+  "slot": "top",
+  "colors": [
+    "white"
+  ],
+  "pattern": "solid",
+  "logo": {
+    "visibility": "not_visible",
+    "text": null
+  },
+  "observations": [
+    "Synthetic JSON fixture: short sleeves and round neckline."
+  ],
+  "limitations": [
+    "Fixture only; no image or model was used. Fabric composition, hidden back and dimensions are unknown."
+  ]
+}

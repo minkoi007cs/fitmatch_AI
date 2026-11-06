@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FitMatch local typed edit intent proposal v1; no engine binding",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "status",
+    "operation",
+    "direction",
+    "color",
+    "execution_allowed",
+    "engine_binding",
+    "requires_preview_confirmation",
+    "reason"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "pc-ai.edit-intent.v1"
+    },
+    "kind": {
+      "const": "edit_intent"
+    },
+    "status": {
+      "enum": [
+        "proposal_only",
+        "needs_clarification",
+        "unsupported"
+      ]
+    },
+    "operation": {
+      "enum": [
+        "face_width",
+        "body_build",
+        "hair_color",
+        "skin_tone",
+        "unknown"
+      ]
+    },
+    "direction": {
+      "enum": [
+        "increase",
+        "decrease",
+        "unchanged",
+        "unspecified"
+      ]
+    },
+    "color": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 40
+    },
+    "execution_allowed": {
+      "const": false
+    },
+    "engine_binding": {
+      "const": null
+    },
+    "requires_preview_confirmation": {
+      "const": true
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "enum": [
+              "face_width",
+              "body_build",
+              "unknown"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "color": {
+            "const": null
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "operation": {
+            "const": "unknown"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "enum": [
+              "needs_clarification",
+              "unsupported"
+            ]
+          },
+          "direction": {
+            "const": "unspecified"
+          }
+        }
+      }
+    }
+  ]
+}

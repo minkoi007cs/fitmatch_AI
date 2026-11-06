@@ -1,0 +1,166 @@
+{
+  "session": "PC-AI-20261105-01",
+  "started_at_utc": "2026-11-06T03:58:09.885461+00:00",
+  "status": "GPUSmokeSchemaPassed",
+  "samples": [
+    {
+      "label": "tshirt",
+      "kind": "garment-attributes",
+      "attempts": [
+        {
+          "attempt": 1,
+          "seconds": 16.803,
+          "input_tokens": 534,
+          "output_tokens": 160,
+          "raw_output": "{\n  \"schema_version\": \"pc-ai.garment-observations.v1\",\n  \"kind\": \"garment_attributes\",\n  \"category\": \"tshirt\",\n  \"slot\": \"top\",\n  \"colors\": [\n    \"blue\",\n    \"white\"\n  ],\n  \"pattern\": \"striped\",\n  \"logo\": {\n    \"visibility\": \"visible\",\n    \"text\": \"FON BET\"\n  },\n  \"observations\": [\n    \"T-shirt with horizontal stripes in blue and white.\",\n    \"Three distinct sponsor logos visible on the front.\"\n  ],\n  \"limitations\": [\n    \"No visible collar or sleeve details.\",\n    \"Logo text and brand names are not fully legible or identifiable.\",\n    \"No information on fabric or fit.\"\n  ]\n}",
+          "json": {
+            "schema_version": "pc-ai.garment-observations.v1",
+            "kind": "garment_attributes",
+            "category": "tshirt",
+            "slot": "top",
+            "colors": [
+              "blue",
+              "white"
+            ],
+            "pattern": "striped",
+            "logo": {
+              "visibility": "visible",
+              "text": "FON BET"
+            },
+            "observations": [
+              "T-shirt with horizontal stripes in blue and white.",
+              "Three distinct sponsor logos visible on the front."
+            ],
+            "limitations": [
+              "No visible collar or sleeve details.",
+              "Logo text and brand names are not fully legible or identifiable.",
+              "No information on fabric or fit."
+            ]
+          },
+          "schema_valid": true
+        }
+      ],
+      "schema_valid": true
+    },
+    {
+      "label": "jeans",
+      "kind": "garment-attributes",
+      "attempts": [
+        {
+          "attempt": 1,
+          "seconds": 19.433,
+          "input_tokens": 638,
+          "output_tokens": 179,
+          "raw_output": "{\n  \"schema_version\": \"pc-ai.garment-observations.v1\",\n  \"kind\": \"garment_attributes\",\n  \"category\": \"jeans\",\n  \"slot\": \"bottom\",\n  \"colors\": [\n    \"blue\"\n  ],\n  \"pattern\": \"solid\",\n  \"logo\": {\n    \"visibility\": \"not_visible\",\n    \"text\": null\n  },\n  \"observations\": [\n    \"Denim fabric with visible stitching\",\n    \"Standard five-pocket design\",\n    \"Button closure at waist\",\n    \"Cuffed hems\",\n    \"Straight-leg cut\"\n  ],\n  \"limitations\": [\n    \"No visible brand or logo\",\n    \"No visible size or fit indicators\",\n    \"No visible wear or damage patterns\",\n    \"No visible stitching details beyond general seams\",\n    \"No visible pocket contents or embellishments\"\n  ]\n}",
+          "json": {
+            "schema_version": "pc-ai.garment-observations.v1",
+            "kind": "garment_attributes",
+            "category": "jeans",
+            "slot": "bottom",
+            "colors": [
+              "blue"
+            ],
+            "pattern": "solid",
+            "logo": {
+              "visibility": "not_visible",
+              "text": null
+            },
+            "observations": [
+              "Denim fabric with visible stitching",
+              "Standard five-pocket design",
+              "Button closure at waist",
+              "Cuffed hems",
+              "Straight-leg cut"
+            ],
+            "limitations": [
+              "No visible brand or logo",
+              "No visible size or fit indicators",
+              "No visible wear or damage patterns",
+              "No visible stitching details beyond general seams",
+              "No visible pocket contents or embellishments"
+            ]
+          },
+          "schema_valid": true
+        }
+      ],
+      "schema_valid": true
+    },
+    {
+      "label": "text-edit",
+      "kind": "edit-intent",
+      "attempts": [
+        {
+          "attempt": 1,
+          "seconds": 7.415,
+          "input_tokens": 334,
+          "output_tokens": 95,
+          "raw_output": "{\n  \"schema_version\": \"pc-ai.edit-intent.v1\",\n  \"kind\": \"edit_intent\",\n  \"status\": \"proposal_only\",\n  \"operation\": \"face_width\",\n  \"direction\": \"decrease\",\n  \"color\": null,\n  \"execution_allowed\": false,\n  \"engine_binding\": null,\n  \"requires_preview_confirmation\": true,\n  \"reason\": \"Làm khuôn mặt tôi hẹp hơn một chút.\"\n}",
+          "json": {
+            "schema_version": "pc-ai.edit-intent.v1",
+            "kind": "edit_intent",
+            "status": "proposal_only",
+            "operation": "face_width",
+            "direction": "decrease",
+            "color": null,
+            "execution_allowed": false,
+            "engine_binding": null,
+            "requires_preview_confirmation": true,
+            "reason": "Làm khuôn mặt tôi hẹp hơn một chút."
+          },
+          "schema_valid": true
+        }
+      ],
+      "schema_valid": true
+    }
+  ],
+  "input_kind": "public licensed reference fixtures, not personal garments",
+  "quantization": "original BF16 safetensors quantized on load to bitsandbytes NF4 double quantization",
+  "offload": false,
+  "remote_code": false,
+  "max_schema_retries": 1,
+  "max_new_tokens": 384,
+  "admission": {
+    "slot": {
+      "owner": "pc-ai",
+      "issuedAtUtc": "2026-11-06T03:53:27.340738+00:00",
+      "admitUntilUnix": 1793939007.3407383,
+      "policy": "Admission only; never preempt a held OS lock or running child"
+    },
+    "guard": {
+      "status": "running",
+      "owner": "pc-ai",
+      "label": "qwen-smoke-PC-AI-20261105-01",
+      "guardPid": 29560,
+      "startedAtUtc": "2026-11-06T03:58:09.787096+00:00",
+      "childPid": 14424,
+      "killOnJobClose": true,
+      "jobName": "Global\\FitmatchGPU0Setup-29560-777770000000000",
+      "lock": "<GPU_ROOT>\\coordination\\gpu0.lock",
+      "scope": "internal setup only",
+      "childCreationTime": 134384110897894309
+    },
+    "receipt_sha256": "f813f5671fbe6f5de9c67fef7e853ca87ec70f68c31a381661dbc45741c3083a"
+  },
+  "gpu_device": "NVIDIA GeForce RTX 3060",
+  "gpu_total_bytes": 12884377600,
+  "gpu_free_before_bytes": 11796480000,
+  "host_ram_available_before_load_bytes": 2539438080,
+  "load_seconds": 51.795,
+  "model_memory_footprint_bytes": 2809095488,
+  "hf_device_map": {
+    "": "cuda:0"
+  },
+  "quantized_4bit_modules": 356,
+  "torch_peak_allocated_bytes": 4437815808,
+  "torch_peak_reserved_bytes": 4601151488,
+  "torch_allocated_after_cleanup_bytes": 9569280,
+  "torch_reserved_after_cleanup_bytes": 4443865088,
+  "process_peak_working_set_bytes": 4209344512,
+  "sample_count_metrics": 169,
+  "sampled_process_peak_rss_bytes": 4150222848,
+  "sampled_host_min_available_ram_bytes": 161599488,
+  "sampled_whole_device_peak_mib": 5284,
+  "seconds": 103.245,
+  "ended_at_utc": "2026-11-06T03:59:53.130745+00:00",
+  "unload": "references deleted and CUDA cache cleared; shared guard must verify whole child tree exit"
+}

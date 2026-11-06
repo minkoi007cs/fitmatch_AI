@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "scope": "CPU process tests only",
+  "gpuModelLoaded": false,
+  "tests": [
+    {
+      "test": "OS-lock-exclusive-across-processes",
+      "passed": true,
+      "contenderExit": 75,
+      "contenderChildNotLaunched": true
+    },
+    {
+      "test": "release-after-all-children-exit",
+      "passed": true
+    },
+    {
+      "test": "kill-on-close-owned-child-and-grandchild",
+      "passed": true,
+      "foreignProcessKilled": false
+    },
+    {
+      "test": "named-job-receipt-recovery",
+      "passed": true
+    }
+  ]
+}
