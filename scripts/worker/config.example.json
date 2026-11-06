@@ -1,5 +1,10 @@
 {
   "appUrl": "https://your-fitmatch-app.example",
   "workDir": "C:/Users/johnn/Documents/Fitmatch-GPU/worker-data",
+  "heartbeatSeconds": 20,
+  "pollSeconds": 8,
+  "requestTimeoutSeconds": 30,
+  "lockWaitSeconds": 0,
+  "retry": { "attempts": 6, "baseSeconds": 2, "maxSeconds": 30 },
   "engines": {}
 }
