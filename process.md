@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0009. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0010. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## 1. Snapshot hiện tại và điểm tiếp nối
 
@@ -322,3 +322,13 @@ Chủ dự án giao thực thi roadmap mới: PCSETUP/render+models3D hiện h�
 | APP-AI-01 | Claude task branch riêng | Assigned | C3owned3looks, rules-v1 vẫn hữu dụng |
 | APP-RENDER-01 | Claude + PC render adapter | Assigned | Scene render đúngoutfit/version |
 | PILOT-01 | Hai bên + Codex/user | Planned | Chờ artifacts thật/review/code/môitrườngtest có quyền |
+
+
+### L-023 — 05/11/2026 — DISPATCH / SPLIT START — CX-SPLIT-20261105-10
+
+H-EXEC-009 đã publish598666f và gửi chatPC hiện hữu bằng tool, chưa kết luận model đã tải/render đạt. Người dùng vừa yêu cầu mở thêm một chat PC để chia song song AI model và model3D; hiểu là AItext/visionQwen vsavatar/garment/render. Scope mới: tạo một chat user-owned trên đúng remotePC project đã discover, chat cũ giữ3D/render/toolchain/checkpoint, chatmới giữQwen/env/cache riêng và downloadsetupCPU. Không spawn subagent, không tạo chatClaude. GPUshared12GB phải serialize; không cho hai chat smoke/inference GPU đồng thời khi chưa có shared lock+ack. Ghi docs/split/ownership và dispatch sau publish, giữUAC boundary.
+
+
+### H-PC-SPLIT-010 — assignment trước create
+
+Chủ dự án muốn hai chatPC, hiểu là AIQwen vs model3D. PC-AI-01 Assigned cho chatmới sau create; PC-3D-02 tiếpowner cũ, phầnQwen chuyển ra tránh duplicate. [Hướng dẫn](./docs/handoffs/pc-parallel-ai-3d.md). Remoteproject đãdiscover964121ab… trên hostMin_Koi, khôngrepo, dùng environmentlocal theo đúnghostproject, không tự tạo worktree/cloud. ChatAI chỉ download/setupCPU trướcsharedGPUguard+slot; chat3D giữGPUcoordinator. Chưacreate/chưareceipt lúc ghi entry này; toolresults ghi tiếp khi có.

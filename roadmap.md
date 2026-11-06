@@ -1,5 +1,8 @@
 # FitMatch — roadmap sản phẩm và phát triển
 
+> **Chia PC thành hai chat theo yêu cầu mới — H-PC-SPLIT-010:** đọc [ownership và GPU coordination](./docs/handoffs/pc-parallel-ai-3d.md). Chat PC cũ giữ avatar/garment/render; chat mới giữ QwenAI/env/cache riêng. Tải/setupCPU song song, GPU12GB chỉ một tác vụ, AI không loadGPU trước sharedlock+receipt từ chat3D. Phần Qwen trong H-EXEC-009 được chuyển khỏi chat cũ, không giao trùng.
+
+
 > **Lệnh triển khai hiện hành H-EXEC-009 / PROC-0009:** [thực thi full thun+jeans](./docs/handoffs/execution-thun-jeans-20261105.md), [PC setup/model/render](./docs/handoffs/prompt-pc-full-look-setup.md), [Claude code](./docs/handoffs/prompt-claude-full-look-code.md). Chủ dự án đã giao bắt đầu các gói quality/render/model và full-flow code dưới đây; chỉ dẫn “DISC chưa assign/PC chỉ CPU” cũ được thay trong scope này. Setup user-level/download/inference được phép; quyền bấm UAC/cài Admin đang pause vẫn cần chủ dự án thực hiện nếu thiếu compiler. Không paid/deploy/production migration.
 
 
@@ -266,3 +269,13 @@ Nguồn [H-EXEC-009](./docs/handoffs/execution-thun-jeans-20261105.md) ưu tiên
 R1 report đã nộp finalafc37ff và PC-CONF báo completed CPU, không làm lại các gói từ đầu. Renderer/GarmentCode/VLM setup user-level có thể làm trong lúc MSVC admin còn chờ; không tự coi paused compiler là phải dừng toàn PC. VLM chỉ hỗ trợ text/vision/JSON, không thay 3D engine. E0/E1 đưa mẫu kỹ thuật sớm; E2/E3/E4 mới đủ scope first release, không bỏ editor/likeness để gọi scene template là Done.
 
 Nhận task theo actual receipt, giữ source/owner PC vs Claude tách file, không đồng thời tải/chạy nhiều model chiếm12GB. Tất cả download từ nguồn chính thức/pin hash/license và env riêng; account/terms gate chủ dự án tự xử lý. Chưa ngân sách cloud/upgrade/API paid; report output+chi phí để chủ dự án quyết định nếu PC không đạt.
+
+
+## 17. Hai luồng PC theo yêu cầu mở thêm chat
+
+| Task | Owner | Đầu ra |
+|---|---|---|
+| PC-AI-01 | Chat PC mới được chủ dự án yêu cầu | Qwen4B model download/runtime/schema smoke, report; GPUSmoke chỉ sau lock+slot |
+| PC-3D-02 | Chat PC hiện hữu | SiTH/GarmentCode/top+jeans/Blender, sharedGPUguard và asset/render thật |
+
+Cả hai dùng runtime/cache riêng, không sửa chung repoindex hoặc app files. Claude giữ code integration, Codex review. User authorization là đúng một chatPC thêm, không tự mở nhiều chat hơn. Không tự giả Codex đã có GPU scheduler; quy tắc/guard phải được implement/check trênPC trước tảiGPU đồng thời.

@@ -94,3 +94,8 @@ Chủ dự án yêu cầu tiếp tục phân việc sau review. Claude được 
 ## H-EXEC-009 — quyền triển khai mới theo yêu cầu chủ dự án
 
 Đọc execution-thun-jeans-20261105 và hai prompt PC/Claude mới. Chủ dự án đã giao setup/render/tải model/chạyAI trên PC và full-flow code cho Claude: các hạn chế “PC CPU-only, DISC chưa được giao” cũ được thay trong đúng scope E0–E4, giữ owner/file boundaries. User-level env/download/inference có thể làm; thiếu MSVC Admin thì hướng dẫn người dùng làm OS step, chưa tự gỡ pause UAC/bypass/reboot/driver. R1afc37ff chỉ Ready for review theo report, không tự enable live. Code/tài liệu/task mới trên nhánh riêng, không reset canonical/đổi contract unilateral/paid provider/deploy/production migration. Giữ kiểm chứng đời thật và báo partials, không chỉ skeleton mới.
+
+
+## H-PC-SPLIT-010 — một chat PC mới được chủ dự án yêu cầu
+
+Cho phép tạo đúng một chat user-owned trên host PC cho AIQwen, song song chat3D hiện hữu. Không phải quyền tự spawn thêm. Đọc docs/handoffs/pc-parallel-ai-3d.md; ownershipQwen chuyển khỏi chat cũ, env/cache/files riêng. GPU nặng không chạy song song; chatAI chỉCPU/download tới khi receipt+sharedOSlock/slot được chat3D cấp. Không xóa lock/kill process bênkia, không đổiMSVC/UAC boundaries.
