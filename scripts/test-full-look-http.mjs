@@ -199,10 +199,18 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
 
     // Reopen: same outfit and camera, no new job, no inference.
     const jobsAtSave = v2.sql(`select count(*) from fm_v2_jobs where user_id='${owner}';`);
+    // CL-URL-01: every signed download URL (avatar, tee, jeans) is refused once as expired; the
+    // Studio re-reads the same model version once each and still opens the look, with no new job.
     await page.goto(`${base}/looks`);
+    v2.faults.expiredObjects.clear();
+    v2.faults.readExpire = 3;
+    const readsBefore = v2.faults.reads;
     await page.getByRole("link", { name: /Cuối tuần thun \+ jeans/ }).click();
     await ready();
     await waitShown({ top: "Tee đỏ (fixture)", bottom: "Jeans đen (fixture)" });
+    assert.equal(v2.faults.readExpire, 0, "all three expired URLs were hit");
+    assert.equal(v2.faults.expiredObjects.size, 3, "avatar, tee and jeans each expired once");
+    assert.equal(v2.faults.reads - readsBefore, 6, "exactly one re-signed download per model");
     JSON.parse(await page.getByTestId("viewer-canvas").getAttribute("data-camera")).forEach((v, i) =>
       assert.ok(Math.abs(v - savedCamera[i]) < 0.002, "camera restored from the look"),
     );
@@ -210,6 +218,20 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
     assert.equal((await worker("claim", {})).status, 204, "nothing queued after reopen");
     await page.getByRole("button", { name: "Trước", exact: true }).click();
     await page.screenshot({ path: "test-results/c1-full-look-reopened.png" });
+    // LOOK-01: a look whose avatar snapshot differs from the avatar now served is refused, not
+    // silently shown on another avatar version.
+    const tampered = v2.sql(`insert into fm_v2_looks(id,user_id,name,avatar_id,fitting_id,top_fitting_id,bottom_fitting_id,camera,snapshot)
+      select gen_random_uuid(),user_id,'Snapshot lệch (test)',avatar_id,fitting_id,top_fitting_id,bottom_fitting_id,camera,
+        jsonb_set(snapshot,'{avatar,sha256}',to_jsonb(repeat('0',64))) from fm_v2_looks where id='${look.id}' returning id;`);
+    const readsTampered = v2.faults.reads;
+    await page.goto(`${base}/studio?avatar=${avatar.modelId}&look=${tampered}`);
+    await page.getByText("Avatar đã khác phiên bản lưu trong look này", { exact: false }).waitFor();
+    assert.equal(v2.faults.reads, readsTampered, "nothing downloaded for a mismatching snapshot");
+    v2.sql(`delete from fm_v2_looks where id='${tampered}';`);
+    await page.goto(`${base}/looks`);
+    await page.getByRole("link", { name: /Cuối tuần thun \+ jeans/ }).click();
+    await ready();
+    await waitShown({ top: "Tee đỏ (fixture)", bottom: "Jeans đen (fixture)" });
     // Lookbook: rendered from the same scene, chosen angle and background, no generator.
     await page.getByLabel("Góc máy lookbook").selectOption("back");
     await page.getByLabel("Nền lookbook").selectOption("white");
@@ -241,6 +263,6 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
   assert.equal(v2.sql(`select count(*) from fm_v2_models where avatar_id='${generationAvatar}' and superseded_by is null;`),'1');
   assert.equal((await request(`/api/v2/jobs/${exhausted.jobId}/retry`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).status,409);
   console.log(
-    "PASS C1 full look (real routes + PostgreSQL + browser): jeans enqueue→bottom.reconstruct/bottom.drape with slot/category/shared frame validated against schemas/v1-r2, per-item fittings (one job for jeans B, no outfit combinations), two independent slots, A→B→A with late result not applied, pending auto-apply only while selected, auto-orbit toggle, whole outfit + camera + asset sha saved, reopen restores outfit and camera with no new job. Synthetic box geometry only.",
+    "PASS C1 full look (real routes + PostgreSQL + browser): jeans enqueue→bottom.reconstruct/bottom.drape with slot/category/shared frame validated against schemas/v1-r2, per-item fittings (one job for jeans B, no outfit combinations), two independent slots, A→B→A with late result not applied, pending auto-apply only while selected, auto-orbit toggle, whole outfit + camera + asset sha saved, reopen restores outfit and camera with no new job, also when all three signed URLs expired (one same-version re-sign each), avatar snapshot mismatch refused before download. Synthetic box geometry only.",
   );
 }

@@ -94,7 +94,7 @@ type CloudLook = {
   top_fitting_id: string | null;
   bottom_fitting_id: string | null;
   camera: CameraState | null;
-  snapshot: Record<string, { sha256: string; fittingId?: string }> | null;
+  snapshot: Record<string, { sha256: string; fittingId?: string; garmentId?: string; modelId?: string }> | null;
 };
 const SLOT_LABEL: Record<Slot, string> = { top: "Áo", bottom: "Quần" };
 const STATUS_LABEL: Record<StudioItem["status"], string> = {
@@ -110,6 +110,8 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
   const generation = useRef(0);
   const sceneKey = useRef("");
   const fetching = useRef(new Set<string>());
+  const sceneAbort = useRef(new AbortController());
+  const openAbort = useRef(new AbortController());
   const viewer = useRef<ViewerControl | null>(null);
   const expectedSha = useRef(new Map<string, string>());
   const [owner, setOwner] = useState("");
@@ -151,6 +153,9 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
 
   /** Replaces the whole scene. Only the newest generation may commit. */
   function commitScene(next: SceneInfo, nextItems: StudioItem[], nextAssets: ModelAsset[], start: Outfit, camera: CameraState | null) {
+    // Downloads started for the previous scene are abandoned, not just ignored when they finish.
+    sceneAbort.current.abort();
+    sceneAbort.current = new AbortController();
     sceneKey.current = next.key;
     fetching.current = new Set();
     setScene(next);
@@ -184,8 +189,10 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
   async function fetchItem(item: StudioItem, key: string, avatarModelId: string) {
     if (!item.fittingId || fetching.current.has(item.id)) return;
     fetching.current.add(item.id);
+    const signal = sceneAbort.current.signal;
     try {
       const record = await api<ModelResponse>(`models/${item.fittingId}`);
+      if (sceneKey.current !== key) return;
       if (
         record.model.kind !== "fitting" ||
         record.model.avatar_id !== avatarModelId ||
@@ -199,7 +206,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       const used = state.current.assets.reduce((n, a) => n + a.bytes.byteLength, state.current.scene?.avatar.bytes.byteLength ?? 0);
       if (record.asset && used + record.asset.bytes > SESSION_BYTES)
         throw new Error("Phiên đã tải gần 120 MB mô hình. Mở lại avatar để giải phóng bộ nhớ rồi chọn tiếp.");
-      const bytes = await modelBytes(record);
+      const bytes = await modelBytes(record, { signal, expectedSha256: expected });
       if (sceneKey.current !== key) return;
       setAssets((prev) => (prev.some((a) => a.id === item.id) ? prev : [...prev, { id: item.id, name: item.name, bytes }]));
     } catch (e) {
@@ -269,6 +276,9 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
 
   async function openCloud(avatarId: string, req: StudioRequest = {}) {
     const version = ++generation.current;
+    openAbort.current.abort();
+    const opening = new AbortController();
+    openAbort.current = opening;
     setBusy(false);
     setCloudBusy(true);
     setCloudError("");
@@ -280,23 +290,31 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
         req.look ? api<{ looks: CloudLook[] }>("looks") : Promise.resolve({ looks: [] as CloudLook[] }),
       ]);
       if (avatar.model.kind !== "avatar") throw new Error("Hãy chọn model avatar.");
-      const bytes = await modelBytes(avatar);
+      const look = req.look ? savedLooks.looks.find((l) => l.id === req.look) : undefined;
+      if (req.look && (!look || look.avatar_id !== avatarId)) throw new Error("Không tìm thấy look này cho avatar đã chọn.");
+      // LOOK-01: a saved look pins the avatar version too, not only the garments.
+      const pinnedAvatar = look?.snapshot?.avatar;
+      if (pinnedAvatar && ((pinnedAvatar.modelId && pinnedAvatar.modelId !== avatarId) || pinnedAvatar.sha256 !== avatar.asset?.sha256))
+        throw new Error("Avatar đã khác phiên bản lưu trong look này. Look không được mở với avatar khác.");
+      const bytes = await modelBytes(avatar, { signal: opening.signal, expectedSha256: pinnedAvatar?.sha256 });
       if (version !== generation.current) return;
-      const list = cloudItems(rows.models, rows.jobs, avatarId);
+      let list = cloudItems(rows.models, rows.jobs, avatarId);
       const garmentOfFitting = (fittingId: string | null | undefined) =>
         rows.models.find((m: ModelRow) => m.id === fittingId && m.kind === "fitting" && m.avatar_id === avatarId);
       let start: Outfit = { ...EMPTY };
       let camera: CameraState | null = null;
       expectedSha.current = new Map();
-      if (req.look) {
-        const look = savedLooks.looks.find((l) => l.id === req.look);
-        if (!look || look.avatar_id !== avatarId) throw new Error("Không tìm thấy look này cho avatar đã chọn.");
+      if (look) {
         const top = garmentOfFitting(look.top_fitting_id ?? look.fitting_id);
         const bottom = garmentOfFitting(look.bottom_fitting_id);
         if ((look.top_fitting_id ?? look.fitting_id) && !top) throw new Error("Áo trong look không còn trên tài khoản.");
         if (look.bottom_fitting_id && !bottom) throw new Error("Quần trong look không còn trên tài khoản.");
         start = { top: top?.garment_id ?? null, bottom: bottom?.garment_id ?? null };
         for (const v of Object.values(look.snapshot ?? {})) if (v.fittingId) expectedSha.current.set(v.fittingId, v.sha256);
+        // Reopen exactly the fittings that were saved, by id, even if a newer generation exists.
+        const pins = new Map<string, string>();
+        for (const f of [top, bottom]) if (f?.garment_id && f.output_asset_id) pins.set(f.garment_id, f.id);
+        list = list.map((i) => (pins.has(i.id) ? { ...i, fittingId: pins.get(i.id), status: "ready" as const } : i));
         camera = look.camera;
       } else if (req.fitting) {
         const fit = garmentOfFitting(req.fitting);

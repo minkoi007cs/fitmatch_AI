@@ -41,7 +41,7 @@ export async function v2Fixture() {
     uploadPaths = new Map(),
     readPaths = new Map(),
     // Fault injection for storage transport tests (counts are consumed per request).
-    faults = { uploadDropAfterStore: 0, uploadExpire: 0, uploads: 0, removeFail: 0, removeCalls: 0, readExpire: 0, reads: 0 };
+    faults = { uploadDropAfterStore: 0, uploadExpire: 0, uploads: 0, removeFail: 0, removeCalls: 0, readExpire: 0, reads: 0, expiredObjects: new Set() };
   const sql = (s) =>
     execFileSync(
       "docker",
@@ -172,9 +172,12 @@ export async function v2Fixture() {
         }
         if (objectPath.startsWith("/fixture-read/")) {
           faults.reads++;
-          if (faults.readExpire > 0 && readPaths.has(objectPath)) {
-            // What Supabase Storage answers for an expired signed download URL.
+          const target = readPaths.get(objectPath);
+          if (faults.readExpire > 0 && target && !faults.expiredObjects.has(target)) {
+            // The first signed URL of each object is refused the way Supabase Storage refuses an
+            // expired download URL; a freshly signed URL for the same object then works.
             faults.readExpire--;
+            faults.expiredObjects.add(target);
             readPaths.delete(objectPath);
             send({ statusCode: "400", error: "InvalidJWT", message: '"exp" claim timestamp check failed' }, 400);
             return true;

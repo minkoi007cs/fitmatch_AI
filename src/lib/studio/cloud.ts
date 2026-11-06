@@ -21,27 +21,60 @@ export type StudioItem = {
 };
 export const SESSION_BYTES = 120 * 1024 * 1024;
 
-/** Downloads a verified GLB with a byte cap; hash and size must match the server record. */
-export async function modelBytes(record: ModelResponse, signal?: AbortSignal) {
-  if (!record.asset) throw new Error("Model chưa sẵn sàng. Theo dõi ở trang Chuẩn bị 3D.");
-  if (record.asset.bytes > MAX_GLB_BYTES) throw new Error("Model vượt giới hạn 40 MB.");
-  const response = await fetch(record.asset.url, { signal });
-  if (!response.ok) throw new Error("Không tải được model. Hãy mở lại để lấy liên kết mới.");
+/** Why a cloud model could not be shown. Only "expired" may be retried, once, with a new URL. */
+export type DownloadFailure = "expired" | "missing" | "network" | "integrity" | "changed" | "unavailable";
+export class ModelDownloadError extends Error {
+  constructor(
+    message: string,
+    readonly reason: DownloadFailure,
+  ) {
+    super(message);
+    this.name = "ModelDownloadError";
+  }
+}
+type Fetch = (url: string, init?: RequestInit) => Promise<Response>;
+export type ModelBytesOptions = {
+  signal?: AbortSignal;
+  /** Re-reads the same model through the authenticated route to get a freshly signed URL. */
+  refresh?: () => Promise<ModelResponse>;
+  /** Hash the caller pinned (e.g. a saved look snapshot); checked before any download. */
+  expectedSha256?: string;
+  fetch?: Fetch;
+};
+
+/** Signed download URLs are short-lived; Supabase answers an expired one with 400/401/403. */
+const EXPIRED_STATUS = new Set([400, 401, 403]);
+
+async function download(url: string, expected: { sha256: string; bytes: number }, signal: AbortSignal | undefined, doFetch: Fetch) {
+  let response: Response;
+  try {
+    response = await doFetch(url, { signal });
+  } catch (e) {
+    if (signal?.aborted) throw e;
+    throw new ModelDownloadError("Mất kết nối khi tải model. Kiểm tra mạng rồi mở lại.", "network");
+  }
+  if (!response.ok) {
+    await response.body?.cancel().catch(() => undefined);
+    if (EXPIRED_STATUS.has(response.status))
+      throw new ModelDownloadError("Liên kết tải model đã hết hạn. Hãy mở lại để lấy liên kết mới.", "expired");
+    if (response.status === 404) throw new ModelDownloadError("Không tìm thấy tệp model trên máy chủ.", "missing");
+    throw new ModelDownloadError("Không tải được model. Hãy thử lại sau.", "network");
+  }
   const reader = response.body?.getReader();
-  if (!reader) throw new Error("Kết quả 3D không có dữ liệu.");
+  if (!reader) throw new ModelDownloadError("Kết quả 3D không có dữ liệu.", "integrity");
   const chunks: Uint8Array[] = [];
   let size = 0;
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > MAX_GLB_BYTES) {
+    if (size > MAX_GLB_BYTES || size > expected.bytes) {
       await reader.cancel();
-      throw new Error("Model vượt giới hạn 40 MB.");
+      throw new ModelDownloadError(size > MAX_GLB_BYTES ? "Model vượt giới hạn 40 MB." : "Kích thước model không khớp. Hãy tải lại.", "integrity");
     }
     chunks.push(value);
   }
-  if (size !== record.asset.bytes) throw new Error("Kích thước model không khớp. Hãy tải lại.");
+  if (size !== expected.bytes) throw new ModelDownloadError("Kích thước model không khớp. Hãy tải lại.", "integrity");
   const buffer = new Uint8Array(size);
   let offset = 0;
   for (const chunk of chunks) {
@@ -51,9 +84,53 @@ export async function modelBytes(record: ModelResponse, signal?: AbortSignal) {
   const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", buffer)))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  if (hash !== record.asset.sha256) throw new Error("Model không khớp bản đã xác minh.");
-  validateGlb(buffer.buffer);
+  if (hash !== expected.sha256) throw new ModelDownloadError("Model không khớp bản đã xác minh.", "integrity");
+  try {
+    validateGlb(buffer.buffer);
+  } catch (e) {
+    throw new ModelDownloadError((e as Error).message, "integrity");
+  }
   return buffer.buffer;
+}
+
+/**
+ * Downloads a verified GLB with a byte cap; hash and size must match the server record.
+ * CL-URL-01: if the signed URL was refused as expired, the same model is re-read once through the
+ * authenticated route and downloaded again only if it is still the identical asset (model id,
+ * output asset id, sha256, bytes). Missing objects, network failures and integrity failures are
+ * never retried here; nothing is inferred again and no job is created.
+ */
+export async function modelBytes(record: ModelResponse, options: ModelBytesOptions | AbortSignal = {}) {
+  const opts: ModelBytesOptions = options instanceof AbortSignal ? { signal: options } : options;
+  const doFetch: Fetch = opts.fetch ?? ((url, init) => fetch(url, init));
+  if (!record.asset) throw new ModelDownloadError("Model chưa sẵn sàng. Theo dõi ở trang Chuẩn bị 3D.", "unavailable");
+  if (record.asset.bytes > MAX_GLB_BYTES) throw new ModelDownloadError("Model vượt giới hạn 40 MB.", "integrity");
+  if (opts.expectedSha256 && record.asset.sha256 !== opts.expectedSha256)
+    throw new ModelDownloadError("Phiên bản 3D đã khác bản đã lưu.", "changed");
+  const identity = { modelId: record.model.id, outputAssetId: record.model.output_asset_id, sha256: record.asset.sha256, bytes: record.asset.bytes };
+  try {
+    return await download(record.asset.url, identity, opts.signal, doFetch);
+  } catch (e) {
+    if (!(e instanceof ModelDownloadError) || e.reason !== "expired") throw e;
+    const refresh = opts.refresh ?? (() => api<ModelResponse>(`models/${encodeURIComponent(identity.modelId)}`));
+    let fresh: ModelResponse;
+    try {
+      fresh = await refresh();
+    } catch (r) {
+      if (opts.signal?.aborted) throw r;
+      throw new ModelDownloadError((r as Error).message || "Không lấy lại được liên kết tải model.", "unavailable");
+    }
+    opts.signal?.throwIfAborted();
+    if (
+      !fresh.asset ||
+      fresh.model.id !== identity.modelId ||
+      fresh.model.output_asset_id !== identity.outputAssetId ||
+      fresh.asset.sha256 !== identity.sha256 ||
+      fresh.asset.bytes !== identity.bytes
+    )
+      throw new ModelDownloadError("Model đã đổi phiên bản trong lúc tải. Hãy mở lại.", "changed");
+    return await download(fresh.asset.url, identity, opts.signal, doFetch);
+  }
 }
 
 export function categoryOf(model: ModelRow): GarmentCategory | null {
