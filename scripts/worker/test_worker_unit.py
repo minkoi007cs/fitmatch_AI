@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import struct
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -141,7 +143,10 @@ class GpuLockTests(unittest.TestCase):
         self.assertTrue(a.acquire(0), 're-entrant for the holder')
         self.assertFalse(b.acquire(0), 'second worker (other owner/workDir) must wait')
         self.assertIsNone(b.handle, 'failed acquisition closes its descriptor')
-        self.assertNotEqual(a.fds(), (), 'adapter inherits the GPU lock on POSIX')
+        if os.name == 'nt':
+            self.assertEqual(a.fds(), (), 'Windows uses containment instead of pass_fds')
+        else:
+            self.assertNotEqual(a.fds(), (), 'adapter inherits the GPU lock on POSIX')
         a.release()
         self.assertEqual(a.fds(), ())
         self.assertTrue(b.acquire(0))
@@ -150,6 +155,48 @@ class GpuLockTests(unittest.TestCase):
         self.assertIsNone(b.handle)
         self.assertTrue(a.acquire(0), 'released lock can be reopened')
         a.release()
+
+
+    def test_independent_process_exclusion_and_crash_release(self):
+        # No GPU/model/server required; OS releases this test child's lock on death.
+        child_code = """
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location('worker', sys.argv[1])
+w = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(w)
+lock = w.FileLock(sys.argv[2])
+if not lock.acquire(0):
+    raise SystemExit(4)
+print('LOCKED', flush=True)
+sys.stdin.read()
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'gpu.lock'
+            marker = Path(directory) / 'ready.txt'
+            with marker.open('w') as output:
+                child = subprocess.Popen(
+                    [sys.executable, '-I', '-c', child_code,
+                     str(Path(__file__).with_name('worker.py').resolve()), str(path)],
+                    stdin=subprocess.PIPE, stdout=output, stderr=subprocess.DEVNULL)
+                probe = worker.FileLock(path)
+                try:
+                    import time
+                    deadline = time.monotonic() + 10
+                    while marker.read_text().strip() != 'LOCKED':
+                        self.assertIsNone(child.poll(), 'lock-holder child failed')
+                        self.assertLess(time.monotonic(), deadline, 'child readiness timeout')
+                        time.sleep(0.02)
+                    self.assertFalse(probe.acquire(0), 'another process must be excluded')
+                    self.assertIsNone(probe.handle)
+                    child.kill()  # only this test-owned child; simulate abrupt worker death
+                    child.wait(timeout=10)
+                    self.assertTrue(probe.acquire(0), 'OS releases lock after process death')
+                finally:
+                    probe.release()
+                    if child.poll() is None:
+                        child.kill()
+                    child.wait(timeout=10)
+                    child.stdin.close()
 
 
 class ContainmentTests(unittest.TestCase):
