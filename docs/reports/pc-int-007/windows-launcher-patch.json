@@ -1,0 +1,38 @@
+{
+  "schema": "fitmatch.patch-proposal.v1",
+  "task": "PC-INT-007",
+  "session": "PC-20261106-INT007",
+  "baseCommit": "7be869c989bc8c2b13d8b9ce621c9f70d487e57c",
+  "targetFile": "scripts/worker/test_worker_unit.py",
+  "baseGitBlob": "4ddfebeea02a28d529dd1bf75676fc50cfa2b999",
+  "baseCanonicalBytesSHA256": "755f8c9d5b9504ae5ba2673bea50cb1ec6224d177a97cb92a846986bbc13f7e2",
+  "patchSHA256": "aa8c8b04616253963083fbd3962803bf5c9da81aed0d103b8a51f76c3a71944a",
+  "proposedFileSHA256": "c9a66930fce7dd6e54c2dbc6acaede24fb6325c13642fda7f3e003ae208c51a8",
+  "applyCheck": {
+    "actual": true,
+    "exit": 0,
+    "sourceEdited": false
+  },
+  "tests": {
+    "upstream": {
+      "passed": 17,
+      "errors": 1,
+      "exit": 1
+    },
+    "disposablePatchedCopy": {
+      "passed": 18,
+      "errors": 0,
+      "exit": 0,
+      "seconds": 0.197
+    },
+    "nativeActualInterpreterProbe": {
+      "passed": 4,
+      "targetCreationTimeChecked": true,
+      "childAndGrandchildExited": true
+    }
+  },
+  "changes": "Windows stdlib-only lock test launches base interpreter so abrupt termination targets the holder rather than a venv redirector",
+  "isTransportImplementationChange": false,
+  "appliedToApp": false,
+  "liveEnginesEnabled": false
+}
