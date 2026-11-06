@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0010. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0011. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## 1. Snapshot hiện tại và điểm tiếp nối
 
@@ -337,3 +337,15 @@ Chủ dự án muốn hai chatPC, hiểu là AIQwen vs model3D. PC-AI-01 Assigne
 ### L-024 — 05/11/2026 — CREATED / DISPATCH — H-PC-SPLIT-010
 
 ĐãpublishEAAD47B splitdocs và gửi chat3D hiệnhữu thu hồi phầnQwen sangchatmới, giữ3Downer/GPUcoordinator. create_thread thànhcông trên remoteproject964121ab…/hostMin_Koi, environmentlocal: chat mới “FitMatch PC — AI model Qwen”, thread01a1aef0-d86e-7410-86f3-3f785f861e38, hostremote-control:env_e_6ae016d7e638832f8c618e42731928c8. Không model override, không subagent, đúngmộtchat user yêucầu. Prompt đã giaoQwen download/env/schemaCPU ngay; GPU smoke chờreceipt/OSsharedlock/slot, không publicport/paid/UAC. Creation không chứngminh model đãtải hoặc GPUready; progresssnapshot được kiểm riêng, artifacts chờreport. Claude codeprompt đầyđủ ở docs/handoffs/prompt-claude-full-look-code.md cho chủdựán chuyển.
+
+
+### L-025 — 05/11/2026 — START — CX-PARALLEL-QA-20261105-11 / QA-PACK-01
+
+Chủ dự án yêu cầu Codex chủ động phát triển song song Claude. Đọc rootdocs và kiểm remote: R1docPR2 cập nhật a3d051a, bundle local ref/hashkhớp; full-lookreceipt branch757e108 báo codex/full-look-c1/cloud baselinea3d051a, C0Windowsfailclosed+C1slots đang nhận. Chưa có full-lookfinalreport/codebundle. Claim riêng tools/acceptance/ và docs/reports/review/parallel-qa-20261105/: standalone handoff evidence verifier+negative tests, không sửa src/worker/migrations/testsapp Claude. Reviewer extractR1 riêng và chạyPythonunit để đi trước review; không merge/live. PCremote snapshot unavailable lúc kiểm, không báodừng hayDone.
+
+
+### L-026 — 05/11/2026 — HANDOFF — CX-PARALLEL-QA-20261105-11 / QA-PACK-01
+
+QA-PACK-01 implementation Done: standalone evidence-integrity CLI +13negative/CLItests PASS, [usage](./tools/acceptance/README.md), [review and findings](./docs/reports/review/parallel-qa-20261105/progress-and-findings.md). Tool không đổi worker protocol/appschema, không kết luận GLB/likeness/productPASS. Codex giữ tools/acceptance/ và report review; Claude tiếp C0/C1 trong app/transport/SQL, PC giữ engine/export/render. Không sửa code đang Claude giữ hoặc Studio gốc.
+
+R1 baseline cập nhật a3d051a/5commits: bundleverified, reviewer chạy riêng10Pythonunit PASS; full app/DB/API suites vẫn implementer-reported, chưa independentfullPASS. C1 receipt CL-FULLLOOK-20261105-01 đã có trên docsbranch757e108, sourcebranch codex/full-look-c1 từa3d051a; chưa nhận finalcodebundle nên khôngDone. Finding gửi qua report: R1 thêm protocolRevision nhưng PC báo strict10fields/noextras, cần exact producer→PC conformance case trước live; đây là static source/report mismatch, chưa tái hiện trên PC. Windows kill-on-close warning-only đang được Claude nhận sửa failclosed C0. Hai chat PC snapshot unavailable lúc kiểm, không suy stopped/completed. Publication commit được ghi bằng Git history, không giả đãpush trước toolresult.

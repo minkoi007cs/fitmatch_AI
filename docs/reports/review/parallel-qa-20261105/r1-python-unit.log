@@ -1,0 +1,17 @@
+test_garbage_checkpoint_is_set_aside_not_deleted (__main__.CheckpointTests) ... Checkpoint set aside: unreadable or unrecognized checkpoint
+ok
+test_job_id_must_be_uuid (__main__.CheckpointTests) ... ok
+test_other_engine_revision_is_refused (__main__.CheckpointTests) ... ok
+test_path_outside_job_dir_is_refused (__main__.CheckpointTests) ... ok
+test_tampered_output_is_refused (__main__.CheckpointTests) ... ok
+test_unknown_version_is_set_aside (__main__.CheckpointTests) ... Checkpoint set aside: unreadable or unrecognized checkpoint
+ok
+test_valid_output_is_reused (__main__.CheckpointTests) ... ok
+test_adapter_environment_drops_secrets (__main__.ClassificationTests) ... ok
+test_exit_codes_follow_structured_adapter_contract (__main__.ClassificationTests) ... ok
+test_job_failure_unknown_code_maps_to_inference_failed (__main__.ClassificationTests) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.007s
+
+OK

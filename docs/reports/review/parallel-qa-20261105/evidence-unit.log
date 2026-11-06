@@ -1,0 +1,18 @@
+test_approval_requires_record_and_still_not_product_pass (test_check_handoff.EvidenceTests) ... ok
+test_cli_exit_status_and_no_private_path_on_failure (test_check_handoff.EvidenceTests) ... ok
+test_duplicate_keys_and_nonfinite_json (test_check_handoff.EvidenceTests) ... ok
+test_duplicate_role (test_check_handoff.EvidenceTests) ... ok
+test_fixture_cannot_claim_personal_pilot (test_check_handoff.EvidenceTests) ... ok
+test_invalid_metrics (test_check_handoff.EvidenceTests) ... ok
+test_path_escape_absolute_and_windows_paths (test_check_handoff.EvidenceTests) ... ok
+test_same_size_tampering (test_check_handoff.EvidenceTests) ... ok
+test_symlink (test_check_handoff.EvidenceTests) ... ok
+test_technical_pack_never_proves_product_quality (test_check_handoff.EvidenceTests) ... ok
+test_top_does_not_substitute_bottom (test_check_handoff.EvidenceTests) ... ok
+test_transform_binding_mismatch (test_check_handoff.EvidenceTests) ... ok
+test_wrong_avatar_or_owner (test_check_handoff.EvidenceTests) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.069s
+
+OK

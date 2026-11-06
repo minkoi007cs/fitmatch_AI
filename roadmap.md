@@ -11,6 +11,10 @@
 
 Cập nhật: 05/11/2026, America/New_York. Trạng thái: yêu cầu đã được phỏng vấn lại và chốt trong SPEC-01; pipeline full real avatar/top/jeans/edit chưa nghiệm thu. Tiến độ chỉ đọc process mới nhất, không suy từ ngày kế hoạch.
 
+## Phát triển song song — QA-PACK-01 / PROC-0011
+
+Theo yêu cầu chủ dự án, Codex nhận riêng `tools/acceptance/` và báo cáo review; không sửa các file app/worker/SQL Claude đang giữ. [Công cụ kiểm tra bàn giao](./tools/acceptance/README.md) đã có13testsPASS, chuẩn bị kiểm evidence avatar/body/top/jeans/render khi PC xuất mẫu; không thay nghiệm thu chất lượng. [Đánh giá Claude và lỗi contract cần đối chiếu](./docs/reports/review/parallel-qa-20261105/progress-and-findings.md): R1a3d051a đang review, C0/C1 có receipt chưa có finalbundle; ưu tiên schema producer→adapter và Windowsfailclosed trước tích hợp PC. Chi tiết tiến độ giữ trong process.
+
 ## 0. Cách đọc và nguồn sự thật
 
 Đây là roadmap hiện hành tại thư mục gốc, tập hợp kế hoạch đã chốt và hướng phát triển. Đọc [agent.md](./agent.md) → toàn bộ file này → toàn bộ [process.md](./process.md) trước khi nhận/sửa việc. `process.md` giữ trạng thái, người đang làm và lịch sử; không suy ra tiến độ từ checklist roadmap. `agent.md` giữ quy tắc và phạm vi sở hữu.
