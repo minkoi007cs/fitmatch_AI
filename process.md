@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0006. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0007. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## 1. Snapshot hiện tại và điểm tiếp nối
 
@@ -246,3 +246,16 @@ Claude nhận gói implementation R1 trên `codex/worker-recovery-r1`/worktree r
 | R1C / FIX-MAC-03 | Claude trên nhánh task riêng | Assigned | Grants/default deny, mismatch/error classification + tests |
 | Review R1 | Codex | Planned | Chờ finalSHA/diff/full suite/recovery artifacts, không duyệt từ proposal |
 | R2 (cache/alpha rồi hostGPU/privacy) | Chưa nhận | Planned | Chỉ giao tiếp sau review R1 |
+
+
+### L-016 — 05/11/2026 — START — CX-ASSIGN-20261105-07
+
+Người dùng yêu cầu giao PC và Claude chạy tiếp trước khi tiếp tục phỏng vấn sản phẩm; cung cấp report PC OPS004-02 và draftPR1. Đã đọc root docs và PR1 head4ee404d, ba file report/delta/evidence, chưa merge. 21 CPU tests là báo cáo PC, source adapter local chưa reviewer mở/rerun; không gate PASS. Scope lượt này: giao CPU conformance/docs cho PC giữ MSVC pause, Claude tiếp R1, publish docs và dispatch PC hiện hữu khi có tool/host xác nhận. Không mở rộng tính năng trong lúc phỏng vấn chưa chốt.
+
+### L-017 — 05/11/2026 — ASSIGN — H-PAIR-007
+
+Đã đọc draftPR1 head4ee404d gồm ba PC docs, ghi nhận receipt checkpoint004/adapter disabled và reported21CPU tests, chưa merge hay xem source GPU local. PC-00 Ready for review phần receipt/inventory; PC-01 tiếp tục, PC-03 vẫn Blocked UAC, PC-05 chỉ skeleton scope Ready for review, full task chưa đạt. Giao PC-CONF-01 CPU-only contract/error mapping/fixture coverage/report và sửa encoding PR; Claude tiếp R1 implementation riêng, nhận mapping theo thực tế exit78 thay đoán. Phỏng vấn sản phẩm vẫn đang chờ trả lời câu đầu; hai gói này chỉ kiểm chứng/recovery kỹ thuật, không mở feature scope.
+
+### H-PAIR-007 — việc chạy độc lập
+
+[Lệnh PC + Claude](./docs/handoffs/pc-claude-next-20261105.md). PC-CONF-01 Assigned trước receipt mới;21 tests là report chứ chưa reviewer rerun. Claude R1 vẫn Assigned trước receipt. DraftPR1 giữ draft/unmerged; PC code/weights/fitting local và engines rỗng. MSVC pause chưa gỡ; G0/G1/real integration vẫn NOT VERIFIED. Dispatch/receipt ghi riêng bên dưới khi có kết quả tool, không tự gọi cả hai đang chạy.
