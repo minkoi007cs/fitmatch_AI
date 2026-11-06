@@ -1,0 +1,35 @@
+{"repository": "Qwen/Qwen3-VL-4B-Instruct", "revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17", "license": "apache-2.0", "status": "MetadataPinned", "total_expected_bytes": 8887291213}
+DOWNLOAD README.md
+VERIFIED README.md
+DOWNLOAD chat_template.json
+VERIFIED chat_template.json
+DOWNLOAD config.json
+VERIFIED config.json
+DOWNLOAD generation_config.json
+VERIFIED generation_config.json
+DOWNLOAD merges.txt
+VERIFIED merges.txt
+DOWNLOAD model-00001-of-00002.safetensors
+PROGRESS model-00001-of-00002.safetensors 1560281088/4967229296
+PROGRESS model-00001-of-00002.safetensors 2390753280/4967229296
+PROGRESS model-00001-of-00002.safetensors 4085252096/4967229296
+PROGRESS model-00001-of-00002.safetensors 4890558464/4967229296
+VERIFIED model-00001-of-00002.safetensors
+DOWNLOAD model-00002-of-00002.safetensors
+PROGRESS model-00002-of-00002.safetensors 1937768448/3908490048
+PROGRESS model-00002-of-00002.safetensors 2063597568/3908490048
+PROGRESS model-00002-of-00002.safetensors 2516582400/3908490048
+VERIFIED model-00002-of-00002.safetensors
+DOWNLOAD model.safetensors.index.json
+VERIFIED model.safetensors.index.json
+DOWNLOAD preprocessor_config.json
+VERIFIED preprocessor_config.json
+DOWNLOAD tokenizer.json
+VERIFIED tokenizer.json
+DOWNLOAD tokenizer_config.json
+VERIFIED tokenizer_config.json
+DOWNLOAD video_preprocessor_config.json
+VERIFIED video_preprocessor_config.json
+DOWNLOAD vocab.json
+VERIFIED vocab.json
+{"status": "DownloadedAndHashVerified", "bytes": 8887291213}

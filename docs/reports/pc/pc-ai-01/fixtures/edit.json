@@ -1,0 +1,12 @@
+{
+  "schema_version": "pc-ai.edit-intent.v1",
+  "kind": "edit_intent",
+  "status": "proposal_only",
+  "operation": "face_width",
+  "direction": "decrease",
+  "color": null,
+  "execution_allowed": false,
+  "engine_binding": null,
+  "requires_preview_confirmation": true,
+  "reason": "Synthetic fixture for the request 'make my face slightly narrower'; engine support is unverified."
+}

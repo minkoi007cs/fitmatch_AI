@@ -1,0 +1,42 @@
+{
+  "session": "PC-AI-20261105-01",
+  "task": "PC-AI-01",
+  "handoff": "H-PC-SPLIT-010",
+  "thread": "01a1aef0-d86e-7410-86f3-3f785f861e38",
+  "recordedAtUtc": "2026-11-06T03:41:45.5679859Z",
+  "machine": "MIN_KOI",
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "docsSha": "47f521f83e024062ad0b041b878d0460932dc892",
+  "docsBranch": "docs/pc-ai-01-20261105",
+  "processSource": "PROC-0010",
+  "workspace": "Fitmatch-GPU/ai-service",
+  "env": "Fitmatch-GPU/envs/qwen-vl",
+  "model": "Fitmatch-GPU/models/qwen3-vl-4b",
+  "cache": "Fitmatch-GPU/ai-service/cache",
+  "reports": "Fitmatch-GPU/reports/ai",
+  "initialPathState": [
+    {
+      "path": "ai-service",
+      "exists": false
+    },
+    {
+      "path": "reports\\ai",
+      "exists": false
+    },
+    {
+      "path": "models\\qwen3-vl-4b",
+      "exists": false
+    },
+    {
+      "path": "envs\\qwen-vl",
+      "exists": false
+    }
+  ],
+  "existingQwen": "No Qwen directory or named Qwen artifact found in Fitmatch-GPU or default HF hub",
+  "downloadStatus": "Not started",
+  "gpuAck": "Absent: no 3D handoff receipt, shared exclusive guard or explicit slot observed",
+  "gpuSmoke": "Not run",
+  "scope": "CPU/download/env/schema/readiness; no app/transport/3D/env modifications",
+  "freeDiskBytes": 392363905024,
+  "gpuObserved": "RTX3060;driver610.88;12288MiB;794MiBused;read-only nvidia-smi"
+}
