@@ -1,0 +1,326 @@
+{
+  "schema": "fitmatch.pc-capability-input-license-evidence.v1",
+  "task": "PC-INT-007",
+  "reviewOnly": true,
+  "protocolRoute": "/api/v2/worker",
+  "payloadVersion": 1,
+  "advertisableCapabilities": {},
+  "engines": {},
+  "capabilities": {
+    "avatar.reconstruct": {
+      "advertisable": false,
+      "executionAvailable": false,
+      "reason": "disabled metadata boundary only"
+    },
+    "garment.reconstruct": {
+      "advertisable": false,
+      "executionAvailable": false,
+      "reason": "no real adapter/output self-test"
+    },
+    "garment.drape": {
+      "advertisable": false,
+      "executionAvailable": false,
+      "reason": "no real adapter/output self-test"
+    },
+    "bottom.reconstruct": {
+      "advertisable": false,
+      "executionAvailable": false,
+      "reason": "no real adapter/output self-test"
+    },
+    "bottom.drape": {
+      "advertisable": false,
+      "executionAvailable": false,
+      "reason": "no real adapter/output self-test"
+    }
+  },
+  "adapter": {
+    "supportedManifestModes": [
+      "legacy snapshot disabled",
+      "explicit v1-r2 disabled3JPEG"
+    ],
+    "acceptedKind": "avatar.reconstruct",
+    "roles": [
+      "front",
+      "side",
+      "back"
+    ],
+    "mediaTypes": [
+      "image/jpeg"
+    ],
+    "paramsValidatedNotConsumed": [
+      "heightCm",
+      "roles",
+      "optional bounded measurements"
+    ],
+    "plannedSiTHImageConsumed": [
+      "front"
+    ],
+    "inferenceCurrentlyConsumed": [],
+    "unsupported": [
+      "video",
+      "face-image fusion",
+      "top/bottom engine commands",
+      "editor",
+      "automatic source deletion"
+    ],
+    "normalExit": 78,
+    "inspectionExit": 0,
+    "inspectionIsReadiness": false
+  },
+  "stages": [
+    {
+      "id": "rgba-centralize",
+      "status": "cpu-tool-available; no new run",
+      "input": "already segmented RGBA PNG",
+      "actual": "tools/centralize_rgba.py reads alpha; no foreground segmentation itself",
+      "compilerRequired": false,
+      "gap": "App normalized JPEG has no alpha; private mask/preprocessing path not implemented",
+      "source": "sources/SiTH/tools/centralize_rgba.py"
+    },
+    {
+      "id": "keypoints-and-mask",
+      "status": "needs_input / not configured for new personal capture",
+      "input": "COCO25 body/hand/face keypoints and RGBA mask aligned to image",
+      "compilerRequired": "external OpenPose build/runtime may require compiler; not installed by this task",
+      "gap": "No actual video decoder, frame selector, face-photo fusion, local mask/keypoint extraction E2E proven",
+      "source": "sources/SiTH/fit.py"
+    },
+    {
+      "id": "smplx-body-fit",
+      "status": "historical demo passed003; personal needs_input",
+      "input": "normalized square RGBA PNG + corresponding OpenPose JSON + SMPLer-X/SMPL-X weights",
+      "compilerRequired": false,
+      "actual": "Existing prebuilt Kaolin CUDA path ran200iterations53.607s; not rerun",
+      "gap": "Local fit.py selects male SMPL-X; normalized [-1,1] output is not calibrated personal metres or identity/clean-skin proof",
+      "source": "sources/SiTH/fit.py"
+    },
+    {
+      "id": "body-collision",
+      "status": "historical collision/debug mesh exists; personal calibration unverified",
+      "input": "fitted parametric body",
+      "compilerRequired": false,
+      "actual": "Separate estimated body can be a collider after shared scale/pose calibration",
+      "gap": "Clothed silhouette may bias shape; under-clothing skin/texture unknown; reference mean_all is not the fitted person",
+      "source": "fitmatch_AI/workers/windows/build_smplx_collider.py"
+    },
+    {
+      "id": "back-hallucination",
+      "status": "blocked-compiler; no denoising output",
+      "input": "front RGBA + aligned fitted SMPL-X; model predicts unseen back",
+      "compilerRequired": true,
+      "actual": "Dataset imports tinyobjloader and instantiates RasterizeCudaContext; prior load-only skips dataset",
+      "gap": "nvdiffrast JIT + tinyobjloader build missingMSVC; load-only26.938s is not inference or12GB feasibility proof",
+      "source": "sources/SiTH/diffusion/lib/test_diffusion_dataset.py"
+    },
+    {
+      "id": "textured-human-reconstruction",
+      "status": "blocked-compiler and missing back image",
+      "input": "front/back RGBA + fitted normalized body + recon checkpoint",
+      "compilerRequired": true,
+      "actual": "recon test dataset instantiates CUDA rasterizer; evaluator predicts clothed geometry/appearance",
+      "gap": "Clothed mesh is not separated replaceable clothing or clean personal body appearance",
+      "source": "sources/SiTH/recon/datasets/test_dataset.py"
+    },
+    {
+      "id": "uv-and-embedded-export",
+      "status": "template export demonstrated; actual SiTH textured GLB not run",
+      "input": "actual reconstructed mesh/texture and one calibrated shared transform",
+      "compilerRequired": "SiTH UV bake uses nvdiffrast; standalone Blender exporter does not",
+      "actual": "xatlas parametrization + CUDA texture raster/bake in evaluator; GLB exporter proven on templates only",
+      "gap": "Installing xatlas alone does not unblock upstream UV baking; no actual avatar texture output",
+      "source": "sources/SiTH/recon/models/evaluator.py"
+    },
+    {
+      "id": "garment-canonical",
+      "status": "template patterns/PNG projection demonstrated; real photos needs_input",
+      "input": "GarmentCode design + reference body measurements; own synthetic images",
+      "compilerRequired": false,
+      "actual": "Fixed tee/Pants templates and source pixel-preserving texture storage; no pattern_fitter resizing",
+      "gap": "No arbitrary front/back photos->true garment structure/dimensions or geometric jeans pockets engine",
+      "source": "fitmatch_AI/workers/windows/garmentcode_pants.py"
+    },
+    {
+      "id": "garment-drape",
+      "status": "experimental CPU template route; native fork blocked",
+      "input": "unchanged canonical garment + body in common metres/pose",
+      "compilerRequired": "native Warp fork yes; Blender CPU/local QA no",
+      "actual": "005/006 physically separate template garments;006hard seam weld has high local strain",
+      "gap": "No personal-fit adapter self-test/material/size acceptance; native fork not built",
+      "source": "fitmatch_AI/workers/windows/template_drape.py"
+    },
+    {
+      "id": "face-video-editor",
+      "status": "not implemented in actual engine; personal needs_input",
+      "input": "future authorized video/face/height inputs",
+      "compilerRequired": "not sufficient to solve this stage",
+      "actual": "SMPL-X face keypoint/expression terms are not separate face-image fusion or face-likeness editor",
+      "gap": "App capture acceptance/edit-intent schema do not imply any working PC video/face/edit capability",
+      "source": "fitmatch_AI/workers/windows/adapters/sith_avatar.py"
+    }
+  ],
+  "licenses": [
+    {
+      "component": "SiTH root code",
+      "declared": "MIT",
+      "scope": "root code, not blanket model/data permission",
+      "evidence": {
+        "path": "sources/SiTH/LICENSE",
+        "exists": true,
+        "sha256": "2025bdf19a0a3af81a6dd4a23f64da32d69555d27a59cf7ad72e40a45a61a4cf"
+      }
+    },
+    {
+      "component": "SMPLer-X fitting code",
+      "declared": "S-Lab License1.0; non-commercial purpose",
+      "scope": "fitting subdirectory; checkpoint-specific terms not independently established by root license",
+      "evidence": {
+        "path": "sources/SiTH/fitting/LICENSE",
+        "exists": true,
+        "sha256": "1afbbf30a7b920e19b9eff7fabf69600663004b20909a0d03dba7601d14ec03c"
+      }
+    },
+    {
+      "component": "OpenPose-derived fitting utilities",
+      "declared": "academic/non-profit noncommercial research license text",
+      "scope": "fitting/utils; do not assume it is rootMIT",
+      "evidence": {
+        "path": "sources/SiTH/fitting/utils/LICENSE",
+        "exists": true,
+        "sha256": "6a3086600f96c3b2ccc84049d30cfc2a887b6500027c6e4a5b9080f927538286"
+      }
+    },
+    {
+      "component": "NVIDIA-derived OBJ loader",
+      "declared": "file contains NVIDIA proprietary/express-license header",
+      "scope": "nested source provenance requires specific terms review",
+      "evidence": {
+        "path": "sources/SiTH/diffusion/lib/load_obj.py",
+        "exists": true,
+        "sha256": "dbe2ab3b56ca7ea1951fcb0b4ecd8f20b226d73d0ef80fb959151248b5e7d0db"
+      }
+    },
+    {
+      "component": "SiTH diffusion weights",
+      "declared": "local pinned model-card license cc-by-nc-4.0",
+      "revision": "33f91da96ac9caffbd037964048316b4ba8fcfaa",
+      "scope": "model card tag; embedded base components/training data not separately cleared in this audit",
+      "evidence": {
+        "path": "models/sith/diffusion/README.md",
+        "exists": true,
+        "sha256": "044d607fc7f4b51a82e2466d462f9d61121ee5dacb879815fdea1643896d0cfc"
+      }
+    },
+    {
+      "component": "SMPL-X six model files",
+      "declared": "separate owner-provided model terms; prior acceptance/transfer record retained",
+      "scope": "No weights distribution/commercial permission inferred; local version marker says1.0, not1.1; no replacement download",
+      "evidence": {
+        "path": "models/smplx/version.txt",
+        "exists": true,
+        "sha256": "3ec3553966b75184f42e4d6b987280ca159bc8284cd7f70b0964b92fa7d619da"
+      }
+    },
+    {
+      "component": "save_smplerx/recon checkpoints",
+      "declared": "previous verified publisher transfers retained; checkpoint-specific license text not separately present in payload",
+      "scope": "root code MIT is not checkpoint/data clearance",
+      "weightsReadOrDownloadedThisTask": false
+    },
+    {
+      "component": "GarmentCode",
+      "declared": "MIT root code",
+      "scope": "body assets/solver and any future input photos reviewed separately",
+      "evidence": {
+        "path": "sources/GarmentCode/LICENSE",
+        "exists": true,
+        "sha256": "7344f3debf5b5788aa6ae9f44baf29037ea8b0c994750cf278cdd3593e4454aa"
+      }
+    },
+    {
+      "component": "mean_all reference body",
+      "declared": "non-SMPL-named body attribution to GarmentMeasurements",
+      "scope": "Attribution exists; linked codeGPL3 is not automatically a verified license for every underlying body/data asset. Keep current artifact transfer private",
+      "evidence": {
+        "path": "sources/GarmentCode/assets/bodies/Readme.md",
+        "exists": true,
+        "sha256": "f953305267a563fbd65b022f08390cd3ed6fbdcf59910aed3120fc883a85af63"
+      }
+    },
+    {
+      "component": "NvidiaWarp-GarmentCode fork",
+      "declared": "NVIDIA Source Code License;3.3non-commercial research/evaluation limitation",
+      "scope": "native solver not built; no upstreamWarp substitution or license inference",
+      "evidence": {
+        "path": "sources/NvidiaWarp-GarmentCode/LICENSE.md",
+        "exists": true,
+        "sha256": "fa88ff6b33cb556ae4bef4c35e3b4c4a2013ab1d7c2a90e69b05ec1a6a4f4844"
+      }
+    },
+    {
+      "component": "Blender4.5.3LTS portable",
+      "declared": "GPL2-or-later with bundled component notices; verified official archive in005",
+      "scope": "Local runtime, not redistributed in docs or code bundle; artifact source rights remain separate"
+    },
+    {
+      "component": "Own synthetic texture fixtures",
+      "declared": "created by project script, no external/personal photo source",
+      "scope": "No font binary redistributed; this is not real garment-data permission",
+      "evidence": {
+        "path": "diagnostics/synthetic-garment-images-002/provenance.json",
+        "exists": true,
+        "sha256": "1c56d59c821581ea44f0f386cac80a9ecc8d81e970a69a4eb47c460c0826f188"
+      }
+    },
+    {
+      "component": "nvdiffrast0.3.3",
+      "declared": "Nvidia Source Code License (1-Way Commercial)",
+      "scope": "Native dependency code, not body/checkpoint/data rights",
+      "evidence": {
+        "path": "sources/nvdiffrast/LICENSE.txt",
+        "exists": true,
+        "sha256": "6c291f4744a986c0f38dc04023b2fe955ef80b0d962d1d537a0e26e54dbd0c75"
+      }
+    },
+    {
+      "component": "tinyobjloader source",
+      "declared": "MIT source license; no Windows binding built",
+      "scope": "Native dependency code, not body/checkpoint/data rights",
+      "evidence": {
+        "path": "sources/tinyobjloader/LICENSE",
+        "exists": true,
+        "sha256": "cf16657caf9dc1b0e82a6562e924a82b3bdb191ed319e0d0c571dfdfa4ce3c9b"
+      }
+    },
+    {
+      "component": "kaolin==0.15.0",
+      "declaredMetadata": "Apache License 2.0",
+      "scope": "Installed distribution metadata only; not complete bundled dependency/data clearance"
+    },
+    {
+      "component": "xatlas==0.0.9",
+      "declaredMetadata": "MIT License\n\nCopyright (c) 2021 Markus Worchel\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated doc",
+      "scope": "Installed distribution metadata only; not complete bundled dependency/data clearance"
+    },
+    {
+      "component": "torch==2.1.0+cu121",
+      "declaredMetadata": "BSD-3",
+      "scope": "Installed distribution metadata only; not complete bundled dependency/data clearance"
+    }
+  ],
+  "sourceRevisions": {
+    "SiTH": "6401549120a4a6246b5cb4a10d8c3e1b2d9e8c7d",
+    "GarmentCode": "d449629979028123a5c4dc9e732a2ec19b7fce31",
+    "app": "7be869c989bc8c2b13d8b9ce621c9f70d487e57c"
+  },
+  "allLicenseScopesCleared": false,
+  "licenseInterpretation": "Observed local documents and gaps, not a blanket redistribution or commercial-use approval",
+  "personalInputs": "needs_input",
+  "compilerAdminPause": true,
+  "newModelDownload": false,
+  "newFitting": false,
+  "nativeAdmissionGap": {
+    "observed": "CPU fault injection leaves actual adapter interpreter alive after stop_process sees dead launcher; isolated lock can be reacquired",
+    "actualWorkerCrashTeardown": "previous native probe passes",
+    "perJobQuiescence": "needs transport owner review; not accepted for live/source cleanup"
+  }
+}
