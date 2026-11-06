@@ -58,7 +58,7 @@ export async function modelBytes(record: ModelResponse, signal?: AbortSignal) {
 
 export function categoryOf(model: ModelRow): GarmentCategory | null {
   const c = model.params?.category;
-  return typeof c === "string" && c in CATEGORY_SLOT ? (c as GarmentCategory) : null;
+  return typeof c === "string" && Object.hasOwn(CATEGORY_SLOT, c) ? (c as GarmentCategory) : null;
 }
 
 /** Wardrobe items for one avatar version. Fittings are per (avatar version, item version). */
@@ -74,6 +74,8 @@ export function cloudItems(models: ModelRow[], jobs: JobRow[], avatarId: string)
       const j = jobOf(g.id);
       if (j && ["queued", "running"].includes(j.state))
         items.push({ id: g.id, name: g.name, category, slot, preset: false, status: "garment-pending" });
+      else if (j && ["failed", "canceled"].includes(j.state))
+        items.push({ id: g.id, name: g.name, category, slot, preset: false, status: "failed" });
       continue;
     }
     const fit = models.find((m) => m.kind === "fitting" && m.avatar_id === avatarId && m.garment_id === g.id);

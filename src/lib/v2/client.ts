@@ -6,6 +6,9 @@ export type Library = {
   connected: boolean;
 };
 const messages: Record<string, string> = {
+  SOURCE_DELETED: "Ảnh/video nguồn đã được xóa. Hãy tạo phiên bản mới bằng bộ ảnh mới.",
+  FITTING_NOT_READY: "Món đồ chưa sẵn sàng để lưu vào bộ phối. Hãy chờ xử lý xong.",
+  LOOK_NOT_FOUND: "Không tìm thấy bộ phối này. Hãy làm mới danh sách bộ đã lưu.",
   QUIZ_REQUIRED: "Hãy hoàn thành quiz trước khi gợi ý.",
   MODEL_NOT_READY: "Avatar và áo cần xử lý xong trước khi mặc thử.",
   QUOTA_EXCEEDED:
