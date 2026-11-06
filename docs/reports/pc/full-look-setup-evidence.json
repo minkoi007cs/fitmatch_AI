@@ -1,0 +1,466 @@
+{
+  "sessionId": "PC-20261105-FULLLOOK-04",
+  "taskIds": [
+    "PC-SETUP-02",
+    "PC-3D-02",
+    "DISC-DENIM-01"
+  ],
+  "docsCommit": "a72686a72732d55198413f2d456033e9034a8811",
+  "docsRecheckedBeforePublication": "a32f6fbf7a1ba7c744930a3f8b872dd801aab206",
+  "codeBaseline": "7314cba0329104a20128d1d7e8018e2109e448fd",
+  "codeRevision": "820e34ceb3d705950b159747d715d3c5fe95a63f",
+  "codePushed": false,
+  "engineCapabilities": {},
+  "personalInputs": "needs_input",
+  "msvcUacPaused": true,
+  "checkpoint004SHA256": "52d0f666ed0284aad1c2eb809e7d534349d4b52729de4244d486093855648a2b",
+  "artifacts": {
+    "status": "format-and-shared-frame-passed",
+    "fixture": true,
+    "productAcceptance": false,
+    "capabilitiesEnabled": [],
+    "files": [
+      {
+        "file": "avatar.glb",
+        "bytes": 856176,
+        "sha256": "02e4b658d6ff1569cd9634bd75cabdcc8568b2264bd3fb015c0864fad6e66821",
+        "meshes": 1,
+        "embeddedImages": 0,
+        "sourceFaces": 47500,
+        "exportedFaces": 47500,
+        "boundsMetres": [
+          [
+            -0.6561799645423889,
+            0.0,
+            -0.14752833545207977
+          ],
+          [
+            0.6518733501434326,
+            1.719901442527771,
+            0.1526433527469635
+          ]
+        ],
+        "sharedFrameBoundsMaxErrorMetres": 2.2372228958289497e-08
+      },
+      {
+        "file": "tee.glb",
+        "bytes": 347480,
+        "sha256": "fc81b95fa1f2fd0b44496446e53c5129fff6e333e7f7ddb56fccad71940ed59b",
+        "meshes": 1,
+        "embeddedImages": 2,
+        "sourceFaces": 14082,
+        "exportedFaces": 14082,
+        "boundsMetres": [
+          [
+            -0.342789888381958,
+            1.0008360147476196,
+            -0.13901887834072113
+          ],
+          [
+            0.34362950921058655,
+            1.4563748836517334,
+            0.1755390614271164
+          ]
+        ],
+        "sharedFrameBoundsMaxErrorMetres": 3.4826652672848013e-10
+      },
+      {
+        "file": "jeans.glb",
+        "bytes": 941960,
+        "sha256": "a1ce4b9ec13896092966daf64af8023cbaa96ad9894234b5745a9cf8292df157",
+        "meshes": 1,
+        "embeddedImages": 2,
+        "sourceFaces": 29038,
+        "exportedFaces": 29038,
+        "boundsMetres": [
+          [
+            -0.23319439589977264,
+            0.08757728338241577,
+            -0.15035973489284515
+          ],
+          [
+            0.22958149015903473,
+            1.0978552103042603,
+            0.14239756762981415
+          ]
+        ],
+        "sharedFrameBoundsMaxErrorMetres": 5.430426019970014e-08
+      }
+    ],
+    "glbTotalBytes": 2145616,
+    "notVerified": [
+      "personal likeness",
+      "real garment reconstruction",
+      "cloth quality",
+      "triangle-level intersections",
+      "live top/bottom contract agreement"
+    ]
+  },
+  "collision": {
+    "scope": "Blender CPU BVH triangle overlap, epsilon0; not exact-arithmetic proof",
+    "positiveAndNegativeControls": "passed",
+    "pairs": {
+      "tee-body": {
+        "trianglePairCount": 0,
+        "first20Pairs": []
+      },
+      "pants-body": {
+        "trianglePairCount": 0,
+        "first20Pairs": []
+      },
+      "tee-pants": {
+        "trianglePairCount": 0,
+        "first20Pairs": []
+      }
+    },
+    "selfIntersections": {
+      "tee": {
+        "nonAdjacentTrianglePairCount": 0,
+        "rawIndexNonAdjacentCount": 212,
+        "sewnAdjacencyExcluded": 212,
+        "first20Pairs": []
+      },
+      "pants": {
+        "nonAdjacentTrianglePairCount": 0,
+        "rawIndexNonAdjacentCount": 0,
+        "sewnAdjacencyExcluded": 0,
+        "first20Pairs": []
+      }
+    },
+    "wallSeconds": 0.26754279993474483
+  },
+  "strainAndSeams": {
+    "kind": "unsewn-panel-metric-comparison",
+    "restFrom": "unchanged canonical panel triangles",
+    "edgeCount": 21577,
+    "absoluteRelativeEdgeStrainP50": 0.0058946291423886965,
+    "absoluteRelativeEdgeStrainP95": 0.05753724415223327,
+    "absoluteRelativeEdgeStrainMax": 0.464511552399433,
+    "edgesOver20PercentStrain": 50,
+    "seamGapP95Metres": 0.004321970217704413,
+    "seamGapMaxMetres": 0.022094958732356555,
+    "seamsOver5mm": 11,
+    "patternResized": false,
+    "materialCalibration": false,
+    "qualityAcceptance": false
+  },
+  "adapterRepro": {
+    "scope": "offline actual producer/local CLI, synthetic JPEG inputs; no API or GPU",
+    "workerSourceSHA256": "690d90930b66b0d0891533e0c61339b334795e75dd349aea5c659efa5221a206",
+    "status": "failed",
+    "tests": [
+      {
+        "case": "exact-reviewed-worker-producer-through-PC-CLI",
+        "expected": "MODEL_UNAVAILABLE",
+        "actual": "INVALID_INPUT",
+        "passed": false,
+        "outputCreated": false
+      },
+      {
+        "case": "explicit-inspection-stays-disabled",
+        "expected": "inspection-only",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": false
+      },
+      {
+        "case": "unknown-revision-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unknown-top-field-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "roles-order-mismatch-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "wrong-shared-origin-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "measurement-boolean-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unimplemented-video-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unimplemented-bottom-kind-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unknown-asset-field-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      }
+    ],
+    "capabilitiesEnabled": [],
+    "liveProtocolACK": false
+  },
+  "adapterFinal": {
+    "scope": "offline actual producer/local CLI, synthetic JPEG inputs; no API or GPU",
+    "python": "3.10.22 (main, Oct  9 2026, 15:18:58) [MSC v.1944 64 bit (AMD64)]",
+    "adapterSHA256": "000df1514746b5998eebfe632b36a771812eaf53066ff754d7d7339beab0b6a9",
+    "workerSourceSHA256": "690d90930b66b0d0891533e0c61339b334795e75dd349aea5c659efa5221a206",
+    "status": "passed",
+    "tests": [
+      {
+        "case": "exact-reviewed-worker-producer-through-PC-CLI",
+        "expected": "MODEL_UNAVAILABLE",
+        "actual": "MODEL_UNAVAILABLE",
+        "passed": true,
+        "outputCreated": false
+      },
+      {
+        "case": "explicit-inspection-stays-disabled",
+        "expected": "inspection-only",
+        "actual": "inspection-only",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "case": "unknown-revision-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unknown-top-field-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "roles-order-mismatch-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "wrong-shared-origin-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "measurement-boolean-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unimplemented-video-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unimplemented-bottom-kind-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unknown-asset-field-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      }
+    ],
+    "capabilitiesEnabled": [],
+    "liveProtocolACK": false
+  },
+  "legacyAdapterRegressions": {
+    "passed": 8,
+    "unittestSeconds": 0.318,
+    "evidence": "actual CLI console; no archived raw log claimed"
+  },
+  "nativeWorkerProbes": {
+    "status": "passed",
+    "scope": "native Windows CPU process/lock probes, no server or GPU",
+    "workerRevision": "48f66f97c1157b561436af0d4baa3b59fe78b430",
+    "tests": [
+      {
+        "test": "binder-refusal-fails-closed",
+        "passed": true,
+        "evidence": "injected binder refusal, not an OS failure"
+      },
+      {
+        "test": "native-worker-lock-vs-msvcrt-byte0",
+        "passed": true,
+        "scope": "isolated CPU lock fixture"
+      },
+      {
+        "test": "native-worker-crash-kills-own-child-grandchild",
+        "passed": true,
+        "foreignProcessKilled": false,
+        "gpuLoaded": false
+      },
+      {
+        "test": "native-release-reacquire-closes-descriptor",
+        "passed": true
+      }
+    ],
+    "liveReadiness": false,
+    "gaps": [
+      "Live transport config must use the same coordination/gpu0.lock",
+      "Setup slot admission is not enforced by worker FileLock; do not run live workers during setup slots",
+      "No live claim/lease/cancellation or GPU stress tested"
+    ]
+  },
+  "setupGuardTests": {
+    "status": "passed",
+    "scope": "CPU process tests only",
+    "gpuModelLoaded": false,
+    "tests": [
+      {
+        "test": "OS-lock-exclusive-across-processes",
+        "passed": true,
+        "contenderExit": 75,
+        "contenderChildNotLaunched": true
+      },
+      {
+        "test": "release-after-all-children-exit",
+        "passed": true
+      },
+      {
+        "test": "kill-on-close-owned-child-and-grandchild",
+        "passed": true,
+        "foreignProcessKilled": false
+      },
+      {
+        "test": "named-job-receipt-recovery",
+        "passed": true
+      }
+    ]
+  },
+  "benchmarks": [
+    {
+      "stage": "blender-tiny-optix",
+      "status": "passed",
+      "wallSeconds": 16.576864999951795,
+      "peakProcessTreeRssBytes": 621142016,
+      "peakDeviceUsedMiB": 1569,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    },
+    {
+      "stage": "pants-template-mesh",
+      "status": "passed",
+      "wallSeconds": 7.26783540006727,
+      "peakProcessTreeRssBytes": 155963392,
+      "peakDeviceUsedMiB": 808,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    },
+    {
+      "stage": "tee-cpu-template-drape",
+      "status": "passed",
+      "wallSeconds": 48.85768120002467,
+      "peakProcessTreeRssBytes": 84242432,
+      "peakDeviceUsedMiB": 755,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    },
+    {
+      "stage": "tee-cpu-template-drape-r2",
+      "status": "passed",
+      "wallSeconds": 65.55208299995866,
+      "peakProcessTreeRssBytes": 88637440,
+      "peakDeviceUsedMiB": 755,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    },
+    {
+      "stage": "tee-cpu-template-drape-r3",
+      "status": "passed",
+      "wallSeconds": 76.60658959997818,
+      "peakProcessTreeRssBytes": 90677248,
+      "peakDeviceUsedMiB": 777,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    },
+    {
+      "stage": "pants-cpu-template-drape",
+      "status": "passed",
+      "wallSeconds": 86.73553429997992,
+      "peakProcessTreeRssBytes": 98844672,
+      "peakDeviceUsedMiB": 5285,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    },
+    {
+      "stage": "tee-blender-sewing-cpu",
+      "status": "passed",
+      "wallSeconds": 150.44875740003772,
+      "peakProcessTreeRssBytes": 309657600,
+      "peakDeviceUsedMiB": 777,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    },
+    {
+      "stage": "reference-full-look-export-render-optix",
+      "status": "passed",
+      "wallSeconds": 25.546752299997024,
+      "peakProcessTreeRssBytes": 931835904,
+      "peakDeviceUsedMiB": 1576,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    },
+    {
+      "stage": "reference-full-look-blender-sewing-render-cpu-r2",
+      "status": "passed",
+      "wallSeconds": 58.73395859997254,
+      "peakProcessTreeRssBytes": 633360384,
+      "peakDeviceUsedMiB": 771,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    }
+  ],
+  "productGate": "NOT_VERIFIED",
+  "humanReview": "pending",
+  "resourceScope": "Sampled tree RSS/whole-device VRAM; pants CPU peak includes AI job, not cloth VRAM. Final005 render CPU; full003 OptiX only."
+}
