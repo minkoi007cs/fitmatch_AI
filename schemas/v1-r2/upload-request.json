@@ -1,0 +1,53 @@
+{
+  "$id": "https://fitmatch.local/schemas/v1-r2/upload-request.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "photo"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12582912
+        }
+      },
+      "required": [
+        "kind",
+        "bytes"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "video"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 157286400
+        },
+        "contentType": {
+          "type": "string",
+          "enum": [
+            "video/mp4",
+            "video/webm",
+            "video/quicktime"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "bytes",
+        "contentType"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

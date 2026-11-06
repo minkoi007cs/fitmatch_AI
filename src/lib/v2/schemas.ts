@@ -1,12 +1,17 @@
 /**
  * Machine-readable contract for protocol v1-r2 (exported to schemas/v1-r2/*.json by
- * scripts/export-schemas.mjs). The PC side validates its adapter output and job handling against
+ * scripts/export-contract.mjs). The PC side validates its adapter output and job handling against
  * these files; the app validates requests with the same zod objects.
  */
 import { z } from "zod";
 import {
   id,
   modelRequest,
+  avatarRequest,
+  avatarEditIntent,
+  measurements,
+  retentionRequest,
+  uploadRequest,
   lookRequest,
   cameraState,
   workerHeartbeat,
@@ -53,10 +58,12 @@ export const jobEnvelope = z
       assets: z.array(
         z.object({
           assetId: id,
-          role: z.enum(["front", "side", "back", "detail", "body", "garment"]),
+          role: z.enum(["front", "side", "back", "detail", "face", "video", "body", "garment"]),
           url: z.string(),
           sha256: sha256.nullable(),
           bytes: z.number().int().nullable(),
+          /** v1-r2: image/jpeg, model/gltf-binary, video/mp4|webm|quicktime */
+          mediaType: z.string().optional(),
         }),
       ),
     }),
@@ -110,6 +117,11 @@ export const assetManifest = z
 
 export const exportedSchemas = {
   "model-request": modelRequest,
+  "avatar-request": avatarRequest,
+  "avatar-measurements": measurements,
+  "avatar-edit-intent": avatarEditIntent,
+  "upload-request": uploadRequest,
+  "source-retention-request": retentionRequest,
   "look-request": lookRequest,
   "camera-state": cameraState,
   "worker-heartbeat": workerHeartbeat,

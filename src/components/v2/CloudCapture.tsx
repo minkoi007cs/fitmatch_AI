@@ -1,10 +1,11 @@
 "use client";
 import { useRef, useState } from "react";
-import CaptureDrawer from "@/components/studio/CaptureDrawer";
+import CaptureDrawer, { type CaptureExtras } from "@/components/studio/CaptureDrawer";
 import { api } from "@/lib/v2/client";
 import {
   requiredSlots,
   inspectPhoto,
+  inspectVideo,
   type CaptureKind,
   type CaptureSlot,
 } from "@/lib/studio/capture";
@@ -29,32 +30,35 @@ export default function CloudCapture({
     name: string,
     height: number | null,
     photos: Partial<Record<CaptureSlot, File>>,
+    extras: CaptureExtras,
   ) {
-    const slots = [
-      ...requiredSlots(kind),
-      ...(photos.detail ? ["detail" as const] : []),
+    const avatar = kind === "avatar";
+    // Body photos are optional for an avatar only when a video is given.
+    const body = requiredSlots(kind).filter((s) => photos[s]);
+    const slots: CaptureSlot[] = [
+      ...body,
+      ...(photos.detail && !avatar ? ["detail" as const] : []),
+      ...(photos.face && avatar ? ["face" as const] : []),
     ];
     for (const slot of slots) await inspectPhoto(photos[slot]!);
+    const videoType = extras.video ? inspectVideo(extras.video) : null;
+    const files = [...slots.map((s) => [s, photos[s]!] as const), ...(extras.video ? [["video", extras.video] as const] : [])];
     const fingerprint = JSON.stringify([
       name,
       height,
       wardrobeItemId,
-      ...slots.map((s) => [
-        s,
-        photos[s]!.name,
-        photos[s]!.size,
-        photos[s]!.lastModified,
-      ]),
+      extras.measurements ?? null,
+      ...files.map(([s, f]) => [s, f.name, f.size, f.lastModified]),
     ]);
     if (request.current.fingerprint !== fingerprint)
       request.current = { key: crypto.randomUUID(), assetIds: [], fingerprint };
     const attempt = request.current;
-    for (let i = attempt.assetIds.length; i < slots.length; i++) {
-      const file = photos[slots[i]]!;
-      setProgress(`Đang gửi ảnh ${i + 1}/${slots.length}…`);
+    for (let i = attempt.assetIds.length; i < files.length; i++) {
+      const [slot, file] = files[i];
+      setProgress(slot === "video" ? "Đang gửi video…" : `Đang gửi ảnh ${i + 1}/${files.length}…`);
       const intent = await api<{ assetId: string; uploadUrl: string }>(
         "assets/upload-intent",
-        { kind: "photo", bytes: file.size },
+        slot === "video" ? { kind: "video", bytes: file.size, contentType: videoType } : { kind: "photo", bytes: file.size },
       );
       const upload = await fetch(intent.uploadUrl, {
         method: "PUT",
@@ -62,19 +66,23 @@ export default function CloudCapture({
         body: file,
       });
       if (!upload.ok)
-        throw new Error("Không tải được ảnh. Hãy kiểm tra kết nối và thử lại.");
+        throw new Error(slot === "video" ? "Không tải được video. Hãy kiểm tra kết nối và thử lại." : "Không tải được ảnh. Hãy kiểm tra kết nối và thử lại.");
       await api(`assets/${intent.assetId}/finalize`, {});
       attempt.assetIds.push(intent.assetId);
     }
+    const idOf = (slot: string) => attempt.assetIds[files.findIndex(([s]) => s === slot)];
     setProgress("Đang tạo tác vụ…");
     await api(
       "models",
-      kind === "avatar"
+      avatar
         ? {
             kind: "avatar",
             name,
-            inputAssetIds: attempt.assetIds,
             heightCm: height,
+            inputAssetIds: body.map(idOf),
+            ...(photos.face ? { faceAssetIds: [idOf("face")] } : {}),
+            ...(extras.video ? { videoAssetId: idOf("video") } : {}),
+            ...(extras.measurements ? { measurements: extras.measurements } : {}),
           }
         : {
             kind: "garment",

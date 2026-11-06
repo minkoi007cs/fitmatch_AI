@@ -32,6 +32,16 @@ import uuid
 PROTOCOL_REVISION = 'v1-r2'
 KINDS = {'avatar.reconstruct', 'garment.reconstruct', 'garment.drape', 'bottom.reconstruct', 'bottom.drape'}
 MAX_BYTES = 40 * 1024 * 1024
+MAX_VIDEO_BYTES = 150 * 1024 * 1024
+MEDIA_EXT = {'image/jpeg': '.jpg', 'model/gltf-binary': '.glb', 'video/mp4': '.mp4', 'video/webm': '.webm', 'video/quicktime': '.mov'}
+
+
+def input_name(index, asset):
+    """Local file name for an input; v1-r2 servers send mediaType, older ones are inferred from the role."""
+    ext = MEDIA_EXT.get(asset.get('mediaType')) or (
+        '.jpg' if asset['role'] in ('front', 'side', 'back', 'detail', 'face') else '.bin' if asset['role'] == 'video' else '.glb')
+    return 'input-' + str(index) + ext
+
 CHECKPOINT_VERSION = 1
 FAIL_CODES = {'OOM', 'INVALID_INPUT', 'MODEL_UNAVAILABLE', 'INFERENCE_FAILED', 'EXPORT_FAILED', 'TIMEOUT'}
 # Adapter exit contract (provisional, from PC-CONF-01 / draft PR1, adapter revision 37213bc): a failure is
@@ -124,7 +134,7 @@ class Client:
                     if not part:
                         break
                     size += len(part)
-                    if size > MAX_BYTES:
+                    if size > (MAX_VIDEO_BYTES if asset.get('role') == 'video' else MAX_BYTES):
                         raise JobFailure('INVALID_INPUT')
                     digest.update(part)
                     target.write(part)
@@ -555,7 +565,7 @@ class Worker:
             for index, asset in enumerate(job['input']['assets']):
                 if lost.is_set():
                     raise LeaseLost('lease lost')
-                local = attempt_dir / ('input-' + str(index) + ('.jpg' if asset['role'] in ('front', 'side', 'back', 'detail') else '.glb'))
+                local = attempt_dir / input_name(index, asset)
 
                 def fetch(asset=asset, local=local):
                     try:
@@ -564,7 +574,8 @@ class Worker:
                         renewed = self.client.api(prefix + 'input-url', {**lease, 'assetId': asset['assetId']})
                         self.client.download({**asset, **renewed}, local)
                 self.retry.run(fetch)
-                assets.append({'role': asset['role'], 'assetId': asset['assetId'], 'localPath': str(local)})
+                assets.append({'role': asset['role'], 'assetId': asset['assetId'], 'localPath': str(local),
+                               **({'mediaType': asset['mediaType']} if asset.get('mediaType') else {})})
             output = attempt_dir / 'output.glb'
             manifest = attempt_dir / 'input.json'
             manifest.write_text(json.dumps({'protocolVersion': 1, 'protocolRevision': PROTOCOL_REVISION, 'jobId': job_id, 'kind': job['kind'],

@@ -553,6 +553,57 @@ try {
     "PASS C1 PostgreSQL: migration on populated DB backfills legacy garments/fittings to top and keeps legacy looks; slot/kind constraint; jeans→bottom with bottom.* kinds; pants/foreign refused; top-only worker never claims jeans; per-item fitting cache with inherited slot; save_look checks readiness/slot/avatar/owner and snapshots camera + asset sha256; browser roles denied.",
   );
   }
+  {
+    // ---------------- C2 capture + retention (CL-FULLLOOK-20261105-01) ----------------
+    sql(readFileSync(new URL("../supabase/migrations/20261106042143_capture_retention_c2.sql", import.meta.url), "utf8"));
+    assert.equal(sql("select file_size_limit from storage.buckets where id='fitmatch-v2';"), "157286400");
+    const cv = "ffffffff-1111-4111-a111-111111111111";
+    sql(`insert into auth.users values('${cv}');`);
+    const vid = photo(51), face = photo(52), body3 = [53, 54, 55].map(photo);
+    sql(`insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes) values('${vid}','${cv}','video','ready','v.mp4','vs',100000000),('${face}','${cv}','photo','ready','f','fs',100)` +
+      body3.map((id, i) => `,('${id}','${cv}','photo','ready','b${i}','bs${i}',100)`).join("") + ";");
+    assert.throws(() => sql(`insert into fm_v2_assets(id,user_id,kind,path,source_path,expected_bytes) values(gen_random_uuid(),'${cv}','video','big','bigs',157286401);`), /expected_bytes/);
+    assert.throws(() => sql(`insert into fm_v2_assets(id,user_id,kind,path,source_path,expected_bytes) values(gen_random_uuid(),'${cv}','photo','p41','s41',41943041);`), /expected_bytes/, "photos keep the 40 MB cap");
+    const avq = (key, inputs, roles) =>
+      JSON.parse(service(`select fm_v2_enqueue('${cv}','${key}','${key}','avatar','Video avatar',array[${inputs.map((x) => `'${x}'`)}]::uuid[],'${JSON.stringify({ heightCm: 170, roles })}');`));
+    const va = avq("c2-video-01", [face, vid], ["face", "video"]);
+    assert.equal(service(`select params->'roles'->>1 from fm_v2_models where id='${va.modelId}';`), "video");
+    assert.throws(() => avq("c2-video-only", [vid], ["video"]), /INVALID_INPUT/, "video alone needs a face/body photo");
+    assert.throws(() => avq("c2-two-photos", body3.slice(0, 2), ["front", "side"]), /INVALID_INPUT/);
+    assert.throws(() => avq("c2-roles-bad", [face, vid], ["face"]), /INVALID_INPUT/, "roles must align with inputs");
+    assert.throws(() => service(`select fm_v2_enqueue('${cv}','c2-garment-vid','h','garment','G',array['${body3[0]}','${vid}']::uuid[],'{}');`), /INVALID_ASSET/, "videos only for avatars");
+    const vb = avq("c2-photos-01", [...body3, face], ["front", "side", "back", "face"]);
+    // A second model reads the same face photo; deleting the first avatar's source cancels both unfinished jobs.
+    const wc = "ffffffff-2222-4222-a222-222222222222";
+    sql(`insert into fm_v2_workers(id,user_id,token_hash,name,last_seen,capabilities,allowed_capabilities) values('${wc}','${cv}','hC','C',now(),'{"avatar.reconstruct":{"model":"m","revision":"r"}}','{avatar.reconstruct}');`);
+    const running = claimR1(wc, null);
+    assert.equal(running.id, va.jobId);
+    assert.throws(() => service(`select fm_v2_source_retention('${other}','${va.modelId}','delete');`), /MODEL_NOT_FOUND/, "foreign owner");
+    const del = JSON.parse(service(`select fm_v2_source_retention('${cv}','${va.modelId}','delete');`));
+    assert.equal(del.retention, "deleted");
+    assert.equal(del.canceledJobs, 2, "the running video job and the queued photo job that reads the same face photo");
+    assert.equal(del.paths.length, 2);
+    assert.equal(service(`select string_agg(state,',' order by id) from fm_v2_assets where id in ('${vid}','${face}');`), "deleted,deleted");
+    assert.equal(service(`select state from fm_v2_assets where id='${body3[0]}';`), "ready", "other sources untouched");
+    // Late completion of the canceled job cannot publish; retry cannot revive it; re-enqueue cannot reuse the tombstone.
+    assert.throws(() => intent(wc, running.id, running.lease_token, "c".repeat(64)), /LEASE_LOST/, "no output intent after cancel");
+    assert.equal(tr(wc, running.id, running.lease_token, "complete", null, photo(53)), "f");
+    assert.equal(service(`select fm_v2_job_action('${cv}','${va.jobId}','retry');`), "f", "retry refused: source deleted");
+    assert.equal(service(`select fm_v2_job_action('${cv}','${vb.jobId}','retry');`), "f", "dependent job also refused");
+    assert.throws(() => avq("c2-reuse-del", [face, vid], ["face", "video"]), /INVALID_ASSET/);
+    assert.throws(() => service(`select fm_v2_source_retention('${cv}','${va.modelId}','keep');`), /SOURCE_ALREADY_DELETED/);
+    const again = JSON.parse(service(`select fm_v2_source_retention('${cv}','${va.modelId}','delete');`));
+    assert.equal(again.paths.length, 0, "idempotent delete");
+    // Keep on another avatar; accepted_at column for drafts.
+    const vk = avq("c2-photos-02", body3, ["front", "side", "back"]);
+    assert.equal(JSON.parse(service(`select fm_v2_source_retention('${cv}','${vk.modelId}','keep');`)).retention, "keep");
+    assert.equal(service(`select source_retention from fm_v2_models where id='${vk.modelId}';`), "keep");
+    for (const role of ["anon", "authenticated"])
+      assert.throws(() => sql(`set role ${role};select fm_v2_source_retention('${cv}','${vk.modelId}','delete');`));
+    console.log(
+      "PASS C2 PostgreSQL: video asset kind with 150 MB cap (photos stay 40 MB), avatar inputs photos or video+photo with aligned roles, video only for avatars; source delete tombstones inputs, cancels every unfinished job that reads them, blocks late output/complete, retry and re-enqueue; keep choice; owner-only; browser roles denied.",
+    );
+  }
   console.log(
     "PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.",
   );

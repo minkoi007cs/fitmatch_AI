@@ -4,10 +4,12 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Camera, Check, Download, ImagePlus, X } from "lucide-react";
 import { Drawer } from "@/components/ui/Drawer";
+import type { Measurements } from "@/lib/v2/contracts";
 import {
   captureArchive,
   downloadBlob,
   inspectPhoto,
+  inspectVideo,
   requiredSlots,
   type CaptureKind,
   type CaptureSlot,
@@ -17,7 +19,14 @@ const labels: Record<CaptureSlot, string> = {
   side: "Mặt bên",
   back: "Mặt sau",
   detail: "Chi tiết / logo",
+  face: "Ảnh mặt (cận)",
 };
+export type CaptureExtras = { video?: File; measurements?: Measurements };
+const MEASURES: Array<[keyof Measurements, string]> = [
+  ["chestCm", "Vòng ngực (cm)"],
+  ["waistCm", "Vòng eo (cm)"],
+  ["hipCm", "Vòng mông (cm)"],
+];
 function PhotoSlot({
   slot,
   file,
@@ -100,9 +109,12 @@ export default function CaptureDrawer({
     name: string,
     height: number | null,
     photos: Partial<Record<CaptureSlot, File>>,
+    extras: CaptureExtras,
   ) => Promise<void>;
   progress?: string;
 }) {
+  const [video, setVideo] = useState<File | undefined>();
+  const [measures, setMeasures] = useState<Partial<Record<keyof Measurements, string>>>({});
   const [name, setName] = useState("");
   const [height, setHeight] = useState("");
   const [photos, setPhotos] = useState<Partial<Record<CaptureSlot, File>>>({});
@@ -124,6 +136,12 @@ export default function CaptureDrawer({
     ...(avatar ? [] : ["detail" as const]),
   ];
   const complete = requiredSlots(kind).filter((s) => photos[s]).length;
+  // Cloud avatars may use a video instead of the three body photos; then a face photo is required.
+  // Partial body sets are refused so a photo is never sent under the wrong view role.
+  const extended = avatar && !!onSend;
+  const ready =
+    complete === requiredSlots(kind).length ||
+    (extended && !!video && !!photos.face && complete === 0);
   async function select(slot: CaptureSlot, file?: File) {
     const version = (versions.current[slot] ?? 0) + 1;
     versions.current[slot] = version;
@@ -156,7 +174,16 @@ export default function CaptureDrawer({
     setError("");
     try {
       if (onSend) {
-        await onSend(name.trim(), avatar ? Number(height) : null, photos);
+        const m = Object.fromEntries(
+          Object.entries(measures)
+            .filter(([, v]) => v && v.trim())
+            .map(([k, v]) => [k, Number(v)]),
+        ) as Measurements;
+        if (Object.values(m).some((v) => !Number.isFinite(v))) throw new Error("Số đo phải là số.");
+        await onSend(name.trim(), avatar ? Number(height) : null, photos, {
+          video,
+          measurements: Object.keys(m).length ? m : undefined,
+        });
         if (alive.current) setDone(true);
         return;
       }
@@ -268,6 +295,59 @@ export default function CaptureDrawer({
             {!avatar && " · ảnh chi tiết không bắt buộc"}
           </p>
         </div>
+        {extended && (
+          <fieldset className="space-y-4 rounded-2xl border border-border p-4">
+            <legend className="text-sm px-1">Thêm để giống hơn (không bắt buộc)</legend>
+            <p className="text-xs text-fg-muted leading-5">
+              Video quay chậm một vòng quanh người có thể thay ba ảnh cơ thể: khi đó bỏ trống ba ảnh trên và thêm ảnh mặt. Máy xử lý sẽ báo những khung hình nào thực sự được dùng.
+            </p>
+            <PhotoSlot slot="face" file={photos.face} disabled={busy} onChange={(file) => void select("face", file)} />
+            <label className="block text-sm">
+              Video quanh người (MP4 / WebM / MOV, tối đa 150 MB)
+              <input
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime"
+                aria-label="Video quanh người"
+                disabled={busy}
+                className="mt-2 block w-full text-xs"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  try {
+                    if (f) inspectVideo(f);
+                    setVideo(f);
+                    setError("");
+                    setDone(false);
+                  } catch (err) {
+                    setVideo(undefined);
+                    setError((err as Error).message);
+                    e.target.value = "";
+                  }
+                }}
+              />
+            </label>
+            {video && <p className="text-xs text-success">Đã chọn video · {(video.size / 1024 / 1024).toFixed(1)} MB</p>}
+            <div className="grid grid-cols-3 gap-2">
+              {MEASURES.map(([key, label]) => (
+                <label key={key} className="text-xs text-fg-muted">
+                  {label}
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={40}
+                    max={180}
+                    value={measures[key] ?? ""}
+                    disabled={busy}
+                    onChange={(e) => {
+                      setMeasures((m) => ({ ...m, [key]: e.target.value }));
+                      setDone(false);
+                    }}
+                    className="mt-1 w-full rounded-xl border border-border bg-bg p-2 text-fg"
+                  />
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        )}
         {error && (
           <p role="alert" className="text-sm text-danger">
             {error}
@@ -295,7 +375,7 @@ export default function CaptureDrawer({
             disabled={
               busy ||
               (done && !!onSend) ||
-              complete !== requiredSlots(kind).length
+              !ready
             }
             className="w-full rounded-full bg-accent text-bg p-3 text-sm font-semibold flex justify-center items-center gap-2 disabled:opacity-40"
           >

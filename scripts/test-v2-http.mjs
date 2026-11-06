@@ -471,6 +471,8 @@ export async function testV2({ base, request, jar, owner, itemId, v2 }) {
     await testWorkerRecovery({ base, request, owner, v2 });
     const { testFullLook } = await import("./test-full-look-http.mjs");
     await testFullLook({ base, request, jar, owner, v2 });
+    const { testCaptureRetention } = await import("./test-capture-retention-http.mjs");
+    await testCaptureRetention({ base, request, jar, owner, v2 });
     assert.equal(
       (await worker("heartbeat", { capabilities: caps })).status,
       401,

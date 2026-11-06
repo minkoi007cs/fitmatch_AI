@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Camera, Shirt, RefreshCw, ArrowUpRight } from "lucide-react";
 import CloudCapture from "@/components/v2/CloudCapture";
+import AvatarDraft from "@/components/v2/AvatarDraft";
 import {
   WorkspaceNav,
   panel,
@@ -252,9 +253,20 @@ export default function PreparePage() {
                         MODEL_UNAVAILABLE:
                           "Máy xử lý chưa sẵn sàng cho loại model này.",
                         LEASE_EXPIRED: "Mất kết nối máy xử lý.",
+                        SOURCE_DELETED: "Đã hủy vì ảnh/video gốc đã bị xóa.",
                       } as Record<string, string>
                     )[j.error_code] ?? "Tác vụ chưa tạo được kết quả hợp lệ."}
                   </p>
+                )}
+                {m.kind === "avatar" && m.output_asset_id && (
+                  <AvatarDraft
+                    model={m}
+                    onChanged={(message) => {
+                      setNotice(message);
+                      void refresh();
+                    }}
+                    onRecapture={() => setCapture("avatar")}
+                  />
                 )}
                 <div className="mt-5 flex flex-wrap gap-2">
                   {m.output_asset_id && m.kind !== "garment" && (
@@ -276,6 +288,7 @@ export default function PreparePage() {
                   )}
                   {j &&
                     ["failed", "canceled"].includes(j.state) &&
+                    j.error_code !== "SOURCE_DELETED" &&
                     j.attempt < 3 && (
                       <button
                         disabled={busy}

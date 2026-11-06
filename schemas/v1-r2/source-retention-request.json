@@ -1,0 +1,18 @@
+{
+  "$id": "https://fitmatch.local/schemas/v1-r2/source-retention-request.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "keep",
+        "delete"
+      ]
+    }
+  },
+  "required": [
+    "action"
+  ],
+  "additionalProperties": false
+}

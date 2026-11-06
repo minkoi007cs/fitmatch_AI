@@ -120,6 +120,7 @@ export async function v2Fixture() {
       "20261105_studio_control_plane.sql",
       "20261106025506_worker_recovery_r1.sql",
       "20261106035951_full_look_c1.sql",
+      "20261106042143_capture_retention_c2.sql",
     ])
       sql(
         readFileSync(
@@ -131,6 +132,8 @@ export async function v2Fixture() {
       stop,
       sql,
       faults,
+      /** path relative to the bucket, as stored in fm_v2_assets */
+      hasObject: (path) => objects.has("fitmatch-v2/" + path),
       async handle(req, res, url, body, raw, send) {
         const objectPath = url.pathname.replace(/^\/storage\/v1/, "");
         res.setHeader("Access-Control-Allow-Origin", "http://localhost:3220");
@@ -173,6 +176,13 @@ export async function v2Fixture() {
           }
           res.writeHead(200, { "Content-Type": "application/octet-stream" });
           res.end(bytes);
+          return true;
+        }
+        if (url.pathname === "/storage/v1/object/fitmatch-v2" && req.method === "DELETE") {
+          if (req.headers.authorization !== "Bearer synthetic-service")
+            throw new Error("Storage admin credential expected");
+          const removed = (body.prefixes ?? []).filter((path) => objects.delete("fitmatch-v2/" + path));
+          send(removed.map((name) => ({ name })));
           return true;
         }
         if (
@@ -300,7 +310,7 @@ export async function v2Fixture() {
             throw new Error("Service role RPC expected");
           const fn = table.slice(4);
           if (
-            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look)$/.test(
+            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look|source_retention)$/.test(
               fn,
             )
           )

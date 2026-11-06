@@ -124,6 +124,15 @@ class ClassificationTests(unittest.TestCase):
         self.assertEqual(worker.JobFailure('TIMEOUT').code, 'TIMEOUT')
 
 
+class InputNameTests(unittest.TestCase):
+    def test_media_type_wins_and_legacy_roles_still_work(self):
+        self.assertEqual(worker.input_name(0, {'role': 'video', 'mediaType': 'video/webm'}), 'input-0.webm')
+        self.assertEqual(worker.input_name(1, {'role': 'face', 'mediaType': 'image/jpeg'}), 'input-1.jpg')
+        self.assertEqual(worker.input_name(2, {'role': 'front'}), 'input-2.jpg')
+        self.assertEqual(worker.input_name(3, {'role': 'garment'}), 'input-3.glb')
+        self.assertEqual(worker.input_name(4, {'role': 'video', 'mediaType': 'text/html'}), 'input-4.bin')
+
+
 class ContainmentTests(unittest.TestCase):
     def failing(self):
         raise OSError(5, 'access denied')

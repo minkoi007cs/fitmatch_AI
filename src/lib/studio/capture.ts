@@ -1,7 +1,15 @@
 export type CaptureKind = "avatar" | "t-shirt" | "shirt" | "jeans";
-export type CaptureSlot = "front" | "side" | "back" | "detail";
+export type CaptureSlot = "front" | "side" | "back" | "detail" | "face";
 export function requiredSlots(kind: CaptureKind): CaptureSlot[] {
   return kind === "avatar" ? ["front", "side", "back"] : ["front", "back"];
+}
+export const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"] as const;
+export type VideoType = (typeof VIDEO_TYPES)[number];
+/** Container/size check only; the PC adapter decodes and rejects unusable footage. */
+export function inspectVideo(file: File): VideoType {
+  if (!(VIDEO_TYPES as readonly string[]).includes(file.type) || file.size === 0 || file.size > 150 * 1024 * 1024)
+    throw new Error("Chọn video MP4, WebM hoặc MOV không quá 150 MB.");
+  return file.type as VideoType;
 }
 export async function inspectPhoto(file: File): Promise<void> {
   if (

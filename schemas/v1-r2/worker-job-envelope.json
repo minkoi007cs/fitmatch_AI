@@ -149,6 +149,8 @@
                   "side",
                   "back",
                   "detail",
+                  "face",
+                  "video",
                   "body",
                   "garment"
                 ]
@@ -178,6 +180,9 @@
                     "type": "null"
                   }
                 ]
+              },
+              "mediaType": {
+                "type": "string"
               }
             },
             "required": [

@@ -17,6 +17,8 @@ import {
   failureRequest,
   styleAnswers,
   lookRequest,
+  avatarRoles,
+  retentionRequest,
   type ModelRow,
   type JobRow,
   type WorkerRow,
@@ -32,6 +34,7 @@ import {
   outputIntent,
   finalizeAsset,
   signedAsset,
+  bucket,
 } from "@/lib/v2/server";
 import { recommend, type Candidate } from "@/lib/v2/recommend";
 export const runtime = "nodejs";
@@ -83,11 +86,13 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
         .eq("user_id", w.user_id)
         .single(),
     ) as ModelRow;
+    const roles = Array.isArray(model.params.roles) ? (model.params.roles as string[]) : null;
     const inputs = await Promise.all(
       model.input_assets.map(async (assetId) => ({
         ...(await signedAsset(w.user_id, assetId)),
-        role:
-          model.input_assets.indexOf(assetId) === 0
+        role: roles
+          ? roles[model.input_assets.indexOf(assetId)]
+          : model.input_assets.indexOf(assetId) === 0
             ? "front"
             : model.kind === "avatar" &&
                 model.input_assets.indexOf(assetId) === 1
@@ -291,7 +296,10 @@ async function handle(
     const method = request.method;
     if (path.join("/") === "assets/upload-intent" && method === "POST") {
       const body = await readJson(request, uploadRequest);
-      return reply(await assetIntent(owner, "photo", body.bytes), 201);
+      return reply(
+        await assetIntent(owner, body.kind, body.bytes, null, body.kind === "video" ? body.contentType : undefined),
+        201,
+      );
     }
     if (
       path[0] === "assets" &&
@@ -317,16 +325,21 @@ async function handle(
         const key = request.headers.get("idempotency-key");
         if (!key || !/^[A-Za-z0-9_-]{8,100}$/.test(key))
           throw new InputError(400, "IDEMPOTENCY_KEY_REQUIRED");
+        const avatarInputs = body.kind === "avatar" ? avatarRoles(body) : null;
         const payload = {
           p_user: owner,
           p_key: key,
           p_hash: digest(JSON.stringify(body)),
           p_kind: body.kind,
           p_name: body.name,
-          p_inputs: "inputAssetIds" in body ? body.inputAssetIds : [],
+          p_inputs: avatarInputs ? avatarInputs.inputs : "inputAssetIds" in body ? body.inputAssetIds : [],
           p_params:
             body.kind === "avatar"
-              ? { heightCm: body.heightCm }
+              ? {
+                  heightCm: body.heightCm,
+                  roles: avatarInputs!.roles,
+                  ...(body.measurements ? { measurements: body.measurements } : {}),
+                }
               : body.kind === "garment"
                 ? { preserveSource: true }
                 : { pose: "a-pose-v1" },
@@ -336,6 +349,32 @@ async function handle(
         };
         return reply(result(await db.rpc("fm_v2_enqueue", payload)), 202);
       }
+    }
+    if (path[0] === "models" && path.length === 3 && method === "POST" && path[2] === "accept") {
+      // Draft decision: the user keeps this avatar version as the one to use for now.
+      const updated = result(
+        await db
+          .from("fm_v2_models")
+          .update({ accepted_at: new Date().toISOString() })
+          .eq("id", uuid(path[1]))
+          .eq("user_id", owner)
+          .eq("kind", "avatar")
+          .not("output_asset_id", "is", null)
+          .select("id,accepted_at"),
+      ) as { id: string }[];
+      if (!updated.length) throw new InputError(409, "MODEL_NOT_READY");
+      return reply({ model: updated[0] });
+    }
+    if (path[0] === "models" && path.length === 3 && method === "POST" && path[2] === "source") {
+      const body = await readJson(request, retentionRequest);
+      const r = required(
+        await db.rpc("fm_v2_source_retention", { p_user: owner, p_model: uuid(path[1]), p_action: body.action }),
+      ) as { retention: string; paths: [string, string][]; canceledJobs: number };
+      // The tombstone is committed first; object removal is best effort and idempotent.
+      const objects = r.paths.flat();
+      let removed = true;
+      if (objects.length) removed = !(await db.storage.from(bucket).remove(objects)).error;
+      return reply({ retention: r.retention, removedObjects: removed ? objects.length : 0, canceledJobs: r.canceledJobs, storageCleanupPending: !removed });
     }
     if (path[0] === "models" && path.length === 2 && method === "GET") {
       const row = result(

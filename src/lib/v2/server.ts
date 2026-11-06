@@ -21,12 +21,14 @@ export function result<T>(r: {
       "MODEL_NOT_READY",
       "FITTING_NOT_READY",
       "LOOK_NOT_FOUND",
+      "MODEL_NOT_FOUND",
+      "SOURCE_ALREADY_DELETED",
       "INVALID_INPUT",
       "LEASE_LOST",
     ].find((c) => r.error!.message.includes(c));
     if (known)
       throw new InputError(
-        known === "QUOTA_EXCEEDED" ? 429 : known === "LOOK_NOT_FOUND" ? 404 : 409,
+        known === "QUOTA_EXCEEDED" ? 429 : known === "LOOK_NOT_FOUND" || known === "MODEL_NOT_FOUND" ? 404 : 409,
         known,
       );
     throw new InputError(503, "DATA_UNAVAILABLE");
@@ -87,16 +89,20 @@ export async function ownedJob(
     throw new InputError(409, "LEASE_LOST");
   return job;
 }
+const VIDEO_EXT: Record<string, string> = { "video/mp4": "mp4", "video/webm": "webm", "video/quicktime": "mov" };
 export async function assetIntent(
   userId: string,
-  kind: "photo" | "glb",
+  kind: "photo" | "glb" | "video",
   bytes: number,
   jobId: string | null = null,
+  contentType?: string,
 ) {
   const db = createAdminClient();
   const assetId = randomUUID();
   const sourcePath = `${userId}/staging/${assetId}`;
-  const path = `${userId}/verified/${assetId}.${kind === "photo" ? "jpg" : "glb"}`;
+  const ext = kind === "photo" ? "jpg" : kind === "glb" ? "glb" : VIDEO_EXT[contentType ?? ""];
+  if (!ext) throw new InputError(400, "INVALID_INPUT");
+  const path = `${userId}/verified/${assetId}.${ext}`;
   result(
     await db.rpc("fm_v2_asset_intent", {
       p_id: assetId,
@@ -133,6 +139,7 @@ export async function finalizeAsset(
     throw new InputError(404, "ASSET_NOT_FOUND");
   if (row.state === "ready") return { assetId: row.id, sha256: row.sha256 };
   if (row.state === "rejected") throw new InputError(400, "ASSET_REJECTED");
+  if (row.state === "deleted") throw new InputError(410, "ASSET_DELETED");
   // A job output that fails verification is marked rejected so the worker's next
   // output-intent creates a fresh logical asset instead of reusing bad staging bytes.
   const reject = async (code: string): Promise<never> => {
@@ -189,6 +196,13 @@ export async function finalizeAsset(
     } catch {
       throw new InputError(400, "INVALID_IMAGE");
     }
+  } else if (row.kind === "video") {
+    // Container signature only; the server never decodes video. Duration/codec is checked by the adapter.
+    const ext = row.path.split(".").pop();
+    const iso = bytes.length > 12 && bytes.toString("latin1", 4, 8) === "ftyp";
+    const webm = bytes.length > 4 && bytes.readUInt32BE(0) === 0x1a45dfa3;
+    if (!((ext === "mp4" || ext === "mov") ? iso : ext === "webm" ? webm : false))
+      throw new InputError(400, "INVALID_VIDEO");
   } else {
     try {
       validateOutputGlb(Uint8Array.from(bytes).buffer);
@@ -200,7 +214,12 @@ export async function finalizeAsset(
   if (row.expected_sha256 && row.expected_sha256 !== hash)
     await reject("ASSET_HASH_MISMATCH");
   const upload = await db.storage.from(bucket).upload(row.path, bytes, {
-    contentType: row.kind === "photo" ? "image/jpeg" : "model/gltf-binary",
+    contentType:
+      row.kind === "photo"
+        ? "image/jpeg"
+        : row.kind === "video"
+          ? ({ mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime" } as Record<string, string>)[row.path.split(".").pop()!]
+          : "model/gltf-binary",
     upsert: false,
   });
   if (upload.error) {
@@ -253,6 +272,11 @@ export async function outputIntent(
   );
   return { assetId: r.assetId, state: r.state, uploadUrl: signed.signedUrl, created: r.created };
 }
+export function mediaType(row: Pick<AssetRow, "kind" | "path">) {
+  if (row.kind === "photo") return "image/jpeg";
+  if (row.kind === "glb") return "model/gltf-binary";
+  return ({ mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime" } as Record<string, string>)[row.path.split(".").pop() ?? ""] ?? "application/octet-stream";
+}
 export async function signedAsset(userId: string, assetId: string) {
   const db = createAdminClient();
   const row = result(
@@ -273,5 +297,6 @@ export async function signedAsset(userId: string, assetId: string) {
     url: signed.signedUrl,
     sha256: row.sha256,
     bytes: row.bytes,
+    mediaType: mediaType(row),
   };
 }

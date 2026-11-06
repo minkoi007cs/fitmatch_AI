@@ -1,4 +1,4 @@
-# Worker protocol v1 — implemented S1, revision v1-r1
+# Worker protocol v1 — implemented S1, revision v1-r2
 
 Revision **v1-r1** (R1, 05/11/2026, migration `20261106025506_worker_recovery_r1.sql`) is backward compatible on the wire: old workers keep working once the operator grants capabilities. Changes are listed in [R1 changes](#r1-changes-v1-r1) at the end.
 
@@ -91,3 +91,17 @@ Limits:50newjobs/dayUTC,20queued/running perowner,100asset intents/rolling24h in
 - The adapter environment drops variables whose name looks secret (TOKEN, SECRET, PASSW, CREDENTIAL, API_KEY, PRIVATE_KEY, SERVICE_ROLE, …), every `FITMATCH_WORKER*` variable and any value containing the worker token.
 
 **Rollback.** Redeploy the previous app; keep the additive schema (no data deleted). The old app calls `fm_v2_claim(uuid)`, which keeps working but enforces grants, so keep grants in place. Old `worker.py` keeps working against the new server (no sha256 → legacy output-intent; duplicate complete now returns 200 instead of 409).
+
+## v1-r2 changes (full look C1/C2, additive) — proposal until PC confirms
+
+Machine-readable schemas: `schemas/v1-r2/*.json` (generated from `src/lib/v2/contracts.ts` and `src/lib/v2/schemas.ts` by `node --import tsx scripts/export-contract.mjs`; `--check` fails on drift). Fixture: `fixtures/full-look/{body,top,bottom}.glb` + `manifest.json`, synthetic boxes in one shared frame.
+
+- **Kinds.** Tops keep `garment.reconstruct` / `garment.drape`. Jeans use **`bottom.reconstruct` / `bottom.drape`**, granted separately (default deny), so a top-only adapter never receives a bottom. Categories: `t-shirt`, `shirt` → slot `top`; `jeans` → slot `bottom`. Trousers/shorts are not opened.
+- **Envelope.** `input.slot` (`top`/`bottom`, `null` for avatars), `input.category`, `assets[].mediaType` (`image/jpeg`, `model/gltf-binary`, `video/mp4|webm|quicktime`), roles `front|side|back|detail|face|video|body|garment`. Avatar roles come from `params.roles`, aligned with the input list. Optional `params.measurements` (cm/kg). `outputContract.content` ∈ `avatar`, `top-canonical`, `bottom-canonical`, `top-only-aligned-to-avatar`, `bottom-only-aligned-to-avatar`; `outputContract.sharedFrame` = meters, +Y up, +Z front, origin on the floor between the feet, pose `a-pose-v1`. Body, top and bottom must share this frame; never normalize one item on its own.
+- **Fittings** are cached per (avatar version, item version), never per outfit combination. If top/bottom collide and need a combined stage, that is a new proposal with a benchmark.
+- **Avatar inputs.** Three body photos, or one video + at least one face photo; at most 6 inputs. Video ≤ 150 MB, container signature checked at finalize (MP4/MOV `ftyp`, WebM EBML); the server never decodes video. The adapter must say which frames/views it actually used (no multi-view claim from a single frame). Worker video cap 150 MB; other inputs 40 MB.
+- **Source retention.** `POST /api/v2/models/:avatarId/source {action: keep|delete}`. Delete marks the source assets `deleted` (tombstone), cancels every unfinished job that reads them (`error_code SOURCE_DELETED`), refuses retry/re-enqueue, then removes the storage objects. Derived avatar/fittings/looks stay. PC: delete the job folder for canceled jobs (retention on the PC is still open).
+- **Draft.** `POST /api/v2/models/:avatarId/accept` records "use this version for now"; it is not a likeness approval.
+- **Edit.** `schemas/v1-r2/avatar-edit-intent.json` is published for a future engine; no kind accepts edits yet, the UI shows editing as unavailable.
+- **Looks.** `fm_v2_save_look` stores top + bottom fitting, camera `{position,target,autoOrbit}` and the sha256 of each asset; reopening verifies versions and runs no job.
+- **Windows.** The worker exits 3 and claims nothing if it cannot bind a kill-on-close job object, unless the operator sets `"processContainment": "unsafe-disabled"`.
