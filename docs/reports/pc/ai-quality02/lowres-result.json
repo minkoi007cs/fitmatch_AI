@@ -1,0 +1,261 @@
+{
+  "session": "PC-AI-QUALITY-20261106-02",
+  "status": "QualityRunCompleted",
+  "phase": "cleanup",
+  "samples": [
+    {
+      "id": "tshirt",
+      "attempts": [
+        {
+          "attempt": 1,
+          "seconds": 9.629,
+          "visual_tokens": 25,
+          "input_tokens": 406,
+          "output_tokens": 129,
+          "raw_output": "{\n  \"schema_version\": \"pc-ai.grounded-attributes.v2\",\n  \"category\": \"tshirt\",\n  \"dominant_colors\": [\n    \"blue\",\n    \"white\"\n  ],\n  \"pattern\": \"striped\",\n  \"logo_presence\": \"visible\",\n  \"logo_texts\": [\n    \"FOM BET\",\n    \"DEL\",\n    \"RUSCON\"\n  ],\n  \"neckline\": \"crew\",\n  \"sleeves\": \"short\",\n  \"material_composition\": \"unknown\",\n  \"back_pocket_count\": \"unknown\",\n  \"pockets_total\": \"unknown\"\n}",
+          "json": {
+            "schema_version": "pc-ai.grounded-attributes.v2",
+            "category": "tshirt",
+            "dominant_colors": [
+              "blue",
+              "white"
+            ],
+            "pattern": "striped",
+            "logo_presence": "visible",
+            "logo_texts": [
+              "FOM BET",
+              "DEL",
+              "RUSCON"
+            ],
+            "neckline": "crew",
+            "sleeves": "short",
+            "material_composition": "unknown",
+            "back_pocket_count": "unknown",
+            "pockets_total": "unknown"
+          },
+          "schema_and_consistency_passed": true,
+          "evaluation": {
+            "fields": {
+              "category": {
+                "actual": "tshirt",
+                "expected": "tshirt",
+                "verdict": "correct"
+              },
+              "dominant_colors": {
+                "actual": [
+                  "blue",
+                  "white"
+                ],
+                "expected": [
+                  "blue",
+                  "white"
+                ],
+                "verdict": "correct"
+              },
+              "pattern": {
+                "actual": "striped",
+                "expected": "striped",
+                "verdict": "correct"
+              },
+              "logo_presence": {
+                "actual": "visible",
+                "expected": "visible",
+                "verdict": "correct"
+              },
+              "neckline": {
+                "actual": "crew",
+                "expected": "crew",
+                "verdict": "correct"
+              },
+              "sleeves": {
+                "actual": "short",
+                "expected": "short",
+                "verdict": "correct"
+              },
+              "material_composition": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              },
+              "back_pocket_count": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              },
+              "pockets_total": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              }
+            },
+            "known_field_errors": 0,
+            "abstained_fields": 0,
+            "logos": {
+              "matched": [
+                "RUSCON"
+              ],
+              "false_texts": [
+                "DEL",
+                "FOMBET"
+              ],
+              "missed_texts": [
+                "DELO",
+                "FONBET"
+              ],
+              "precision": 0.3333333333333333,
+              "recall": 0.3333333333333333
+            },
+            "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."
+          }
+        }
+      ],
+      "input_kind": "small illustration, not a garment photograph"
+    },
+    {
+      "id": "jeans",
+      "attempts": [
+        {
+          "attempt": 1,
+          "seconds": 8.916,
+          "visual_tokens": 70,
+          "input_tokens": 451,
+          "output_tokens": 111,
+          "raw_output": "{\n  \"schema_version\": \"pc-ai.grounded-attributes.v2\",\n  \"category\": \"jeans\",\n  \"dominant_colors\": [\n    \"blue\"\n  ],\n  \"pattern\": \"solid\",\n  \"logo_presence\": \"not_visible\",\n  \"logo_texts\": [],\n  \"neckline\": \"not_applicable\",\n  \"sleeves\": \"not_applicable\",\n  \"material_composition\": \"unknown\",\n  \"back_pocket_count\": \"unknown\",\n  \"pockets_total\": \"unknown\"\n}",
+          "json": {
+            "schema_version": "pc-ai.grounded-attributes.v2",
+            "category": "jeans",
+            "dominant_colors": [
+              "blue"
+            ],
+            "pattern": "solid",
+            "logo_presence": "not_visible",
+            "logo_texts": [],
+            "neckline": "not_applicable",
+            "sleeves": "not_applicable",
+            "material_composition": "unknown",
+            "back_pocket_count": "unknown",
+            "pockets_total": "unknown"
+          },
+          "schema_and_consistency_passed": true,
+          "evaluation": {
+            "fields": {
+              "category": {
+                "actual": "jeans",
+                "expected": "jeans",
+                "verdict": "correct"
+              },
+              "dominant_colors": {
+                "actual": [
+                  "blue"
+                ],
+                "expected": [
+                  "blue"
+                ],
+                "verdict": "correct"
+              },
+              "pattern": {
+                "actual": "solid",
+                "expected": "solid",
+                "verdict": "correct"
+              },
+              "logo_presence": {
+                "actual": "not_visible",
+                "expected": "not_visible",
+                "verdict": "correct"
+              },
+              "neckline": {
+                "actual": "not_applicable",
+                "expected": "not_applicable",
+                "verdict": "correct"
+              },
+              "sleeves": {
+                "actual": "not_applicable",
+                "expected": "not_applicable",
+                "verdict": "correct"
+              },
+              "material_composition": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              },
+              "back_pocket_count": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              },
+              "pockets_total": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              }
+            },
+            "known_field_errors": 0,
+            "abstained_fields": 0,
+            "logos": {
+              "matched": [],
+              "false_texts": [],
+              "missed_texts": [],
+              "precision": null,
+              "recall": null
+            },
+            "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."
+          }
+        }
+      ],
+      "input_kind": "public-domain photograph, front view"
+    }
+  ],
+  "started_at_utc": "2026-11-06T05:43:48.884863+00:00",
+  "max_new_tokens": 192,
+  "max_schema_retries": 1,
+  "image_max_edge": 320,
+  "min_pixels": 4096,
+  "max_pixels": 98304,
+  "model": "same BF16 tensors locally resharded; NF4 on load",
+  "offload": false,
+  "min_host_ram_before_load_bytes": 4294967296,
+  "sustained_host_ram_abort_bytes": 1073741824,
+  "admission": {
+    "slot": {
+      "owner": "pc-ai",
+      "issuedAtUtc": "2026-11-06T05:25:03.600020+00:00",
+      "admitUntilUnix": 1793944503.6000204,
+      "policy": "Admission only; never preempt a held OS lock or running child"
+    },
+    "guard": {
+      "status": "running",
+      "owner": "pc-ai",
+      "label": "qwen-quality-PC-AI-20261106-02",
+      "guardPid": 5316,
+      "startedAtUtc": "2026-11-06T05:43:48.691358+00:00",
+      "childPid": 9392,
+      "killOnJobClose": true,
+      "jobName": "Global\\FitmatchGPU0Setup-5316-784108906000000",
+      "lock": "<GPU_ROOT>\\coordination\\gpu0.lock",
+      "scope": "internal setup only",
+      "childCreationTime": 134384174286940319
+    },
+    "receipt_sha256": "f813f5671fbe6f5de9c67fef7e853ca87ec70f68c31a381661dbc45741c3083a"
+  },
+  "derived_shard_count": 17,
+  "derived_max_shard_bytes": 777912472,
+  "ram_available_before_load_bytes": 4843933696,
+  "gpu_free_before_bytes": 11796480000,
+  "load_seconds": 32.809,
+  "quantized_4bit_modules": 356,
+  "torch_peak_allocated_bytes": 4437815808,
+  "torch_peak_reserved_bytes": 4605345792,
+  "allocated_after_cleanup_bytes": 9569280,
+  "reserved_after_cleanup_bytes": 4443865088,
+  "process_peak_working_set_bytes": 1909944320,
+  "seconds": 81.966,
+  "ended_at_utc": "2026-11-06T05:45:10.851039+00:00",
+  "host_min_available_bytes": 3433734144,
+  "whole_device_peak_mib": 5288,
+  "rss_peak_by_phase": {
+    "load": 1479278592,
+    "generation": 1909903360
+  },
+  "raw_local_result_sha256": "ed6f19bd89cee30fc71cfd53535c754407f6e979743158ed3c65a522613ad1f9",
+  "memory_samples_csv": "lowres-memory.csv"
+}

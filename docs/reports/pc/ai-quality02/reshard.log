@@ -1,0 +1,18 @@
+VERIFIED model-00001-of-00017.safetensors bytes=777912320
+VERIFIED model-00002-of-00017.safetensors bytes=503343104
+VERIFIED model-00003-of-00017.safetensors bytes=505970176
+VERIFIED model-00004-of-00017.safetensors bytes=503337984
+VERIFIED model-00005-of-00017.safetensors bytes=505970176
+VERIFIED model-00006-of-00017.safetensors bytes=503337984
+VERIFIED model-00007-of-00017.safetensors bytes=505970176
+VERIFIED model-00008-of-00017.safetensors bytes=529558016
+VERIFIED model-00009-of-00017.safetensors bytes=529557504
+VERIFIED model-00010-of-00017.safetensors bytes=529558016
+VERIFIED model-00011-of-00017.safetensors bytes=529557504
+VERIFIED model-00012-of-00017.safetensors bytes=505970176
+VERIFIED model-00013-of-00017.safetensors bytes=503337984
+VERIFIED model-00014-of-00017.safetensors bytes=505970176
+VERIFIED model-00015-of-00017.safetensors bytes=503337984
+VERIFIED model-00016-of-00017.safetensors bytes=532623872
+VERIFIED model-00017-of-00017.safetensors bytes=400318464
+{"status": "ReshardedAndTensorVerified", "source_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17", "artifact": "BF16 byte-preserving local reshard; not quantized", "downloaded_bytes": 0, "target_budget_bytes": 536870912, "ram_available_before_bytes": 4994752512, "min_ram_available_bytes": 4872355840, "tensor_count": 713, "shard_count": 17, "total_tensor_bytes": 8875631616, "seconds": 144.788, "peak_process_working_set_bytes": 44994560, "max_target_shard_bytes": 777912472}

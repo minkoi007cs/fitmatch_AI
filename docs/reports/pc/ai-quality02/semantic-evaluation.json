@@ -1,0 +1,305 @@
+{
+  "lowres-tshirt": {
+    "decision": "needs_review",
+    "evaluation": {
+      "fields": {
+        "category": {
+          "actual": "tshirt",
+          "expected": "tshirt",
+          "verdict": "correct"
+        },
+        "dominant_colors": {
+          "actual": [
+            "blue",
+            "white"
+          ],
+          "expected": [
+            "blue",
+            "white"
+          ],
+          "verdict": "correct"
+        },
+        "pattern": {
+          "actual": "striped",
+          "expected": "striped",
+          "verdict": "correct"
+        },
+        "logo_presence": {
+          "actual": "visible",
+          "expected": "visible",
+          "verdict": "correct"
+        },
+        "neckline": {
+          "actual": "crew",
+          "expected": "crew",
+          "verdict": "correct"
+        },
+        "sleeves": {
+          "actual": "short",
+          "expected": "short",
+          "verdict": "correct"
+        },
+        "material_composition": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        },
+        "back_pocket_count": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        },
+        "pockets_total": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        }
+      },
+      "known_field_errors": 0,
+      "abstained_fields": 0,
+      "policy_forced_unknown_fields": [
+        "material_composition",
+        "back_pocket_count",
+        "pockets_total"
+      ],
+      "logos": {
+        "matched": [
+          "RUSCON"
+        ],
+        "false_texts": [
+          "DEL",
+          "FOMBET"
+        ],
+        "missed_texts": [
+          "DELO",
+          "FONBET"
+        ],
+        "precision": 0.3333333333333333,
+        "recall": 0.3333333333333333
+      },
+      "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."
+    }
+  },
+  "lowres-jeans": {
+    "decision": "fixture_pass",
+    "evaluation": {
+      "fields": {
+        "category": {
+          "actual": "jeans",
+          "expected": "jeans",
+          "verdict": "correct"
+        },
+        "dominant_colors": {
+          "actual": [
+            "blue"
+          ],
+          "expected": [
+            "blue"
+          ],
+          "verdict": "correct"
+        },
+        "pattern": {
+          "actual": "solid",
+          "expected": "solid",
+          "verdict": "correct"
+        },
+        "logo_presence": {
+          "actual": "not_visible",
+          "expected": "not_visible",
+          "verdict": "correct"
+        },
+        "neckline": {
+          "actual": "not_applicable",
+          "expected": "not_applicable",
+          "verdict": "correct"
+        },
+        "sleeves": {
+          "actual": "not_applicable",
+          "expected": "not_applicable",
+          "verdict": "correct"
+        },
+        "material_composition": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        },
+        "back_pocket_count": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        },
+        "pockets_total": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        }
+      },
+      "known_field_errors": 0,
+      "abstained_fields": 0,
+      "policy_forced_unknown_fields": [
+        "material_composition",
+        "back_pocket_count",
+        "pockets_total"
+      ],
+      "logos": {
+        "matched": [],
+        "false_texts": [],
+        "missed_texts": [],
+        "precision": null,
+        "recall": null
+      },
+      "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."
+    }
+  },
+  "detail-tshirt": {
+    "decision": "needs_review",
+    "evaluation": {
+      "fields": {
+        "category": {
+          "actual": "tshirt",
+          "expected": "tshirt",
+          "verdict": "correct"
+        },
+        "dominant_colors": {
+          "actual": [
+            "blue",
+            "white"
+          ],
+          "expected": [
+            "blue",
+            "white"
+          ],
+          "verdict": "correct"
+        },
+        "pattern": {
+          "actual": "striped",
+          "expected": "striped",
+          "verdict": "correct"
+        },
+        "logo_presence": {
+          "actual": "visible",
+          "expected": "visible",
+          "verdict": "correct"
+        },
+        "neckline": {
+          "actual": "crew",
+          "expected": "crew",
+          "verdict": "correct"
+        },
+        "sleeves": {
+          "actual": "short",
+          "expected": "short",
+          "verdict": "correct"
+        },
+        "material_composition": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        },
+        "back_pocket_count": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        },
+        "pockets_total": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        }
+      },
+      "known_field_errors": 0,
+      "abstained_fields": 0,
+      "policy_forced_unknown_fields": [
+        "material_composition",
+        "back_pocket_count",
+        "pockets_total"
+      ],
+      "logos": {
+        "matched": [
+          "FONBET",
+          "RUSCON"
+        ],
+        "false_texts": [
+          "DEL"
+        ],
+        "missed_texts": [
+          "DELO"
+        ],
+        "precision": 0.6666666666666666,
+        "recall": 0.6666666666666666
+      },
+      "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."
+    }
+  },
+  "detail-jeans": {
+    "decision": "fixture_pass",
+    "evaluation": {
+      "fields": {
+        "category": {
+          "actual": "jeans",
+          "expected": "jeans",
+          "verdict": "correct"
+        },
+        "dominant_colors": {
+          "actual": [
+            "blue"
+          ],
+          "expected": [
+            "blue"
+          ],
+          "verdict": "correct"
+        },
+        "pattern": {
+          "actual": "solid",
+          "expected": "solid",
+          "verdict": "correct"
+        },
+        "logo_presence": {
+          "actual": "not_visible",
+          "expected": "not_visible",
+          "verdict": "correct"
+        },
+        "neckline": {
+          "actual": "not_applicable",
+          "expected": "not_applicable",
+          "verdict": "correct"
+        },
+        "sleeves": {
+          "actual": "not_applicable",
+          "expected": "not_applicable",
+          "verdict": "correct"
+        },
+        "material_composition": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        },
+        "back_pocket_count": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        },
+        "pockets_total": {
+          "actual": "unknown",
+          "expected": "unknown",
+          "verdict": "correct"
+        }
+      },
+      "known_field_errors": 0,
+      "abstained_fields": 0,
+      "policy_forced_unknown_fields": [
+        "material_composition",
+        "back_pocket_count",
+        "pockets_total"
+      ],
+      "logos": {
+        "matched": [],
+        "false_texts": [],
+        "missed_texts": [],
+        "precision": null,
+        "recall": null
+      },
+      "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."
+    }
+  }
+}

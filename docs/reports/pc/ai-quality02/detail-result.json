@@ -1,0 +1,276 @@
+{
+  "session": "PC-AI-QUALITY-20261106-02",
+  "status": "QualityRunCompleted",
+  "phase": "cleanup",
+  "samples": [
+    {
+      "id": "tshirt",
+      "attempts": [
+        {
+          "attempt": 1,
+          "seconds": 11.687,
+          "visual_tokens": 72,
+          "input_tokens": 453,
+          "output_tokens": 129,
+          "raw_output": "{\n  \"schema_version\": \"pc-ai.grounded-attributes.v2\",\n  \"category\": \"tshirt\",\n  \"dominant_colors\": [\n    \"blue\",\n    \"white\"\n  ],\n  \"pattern\": \"striped\",\n  \"logo_presence\": \"visible\",\n  \"logo_texts\": [\n    \"FON BET\",\n    \"DEL\",\n    \"RUSCON\"\n  ],\n  \"neckline\": \"crew\",\n  \"sleeves\": \"short\",\n  \"material_composition\": \"unknown\",\n  \"back_pocket_count\": \"unknown\",\n  \"pockets_total\": \"unknown\"\n}",
+          "json": {
+            "schema_version": "pc-ai.grounded-attributes.v2",
+            "category": "tshirt",
+            "dominant_colors": [
+              "blue",
+              "white"
+            ],
+            "pattern": "striped",
+            "logo_presence": "visible",
+            "logo_texts": [
+              "FON BET",
+              "DEL",
+              "RUSCON"
+            ],
+            "neckline": "crew",
+            "sleeves": "short",
+            "material_composition": "unknown",
+            "back_pocket_count": "unknown",
+            "pockets_total": "unknown"
+          },
+          "schema_and_consistency_passed": true,
+          "evaluation": {
+            "fields": {
+              "category": {
+                "actual": "tshirt",
+                "expected": "tshirt",
+                "verdict": "correct"
+              },
+              "dominant_colors": {
+                "actual": [
+                  "blue",
+                  "white"
+                ],
+                "expected": [
+                  "blue",
+                  "white"
+                ],
+                "verdict": "correct"
+              },
+              "pattern": {
+                "actual": "striped",
+                "expected": "striped",
+                "verdict": "correct"
+              },
+              "logo_presence": {
+                "actual": "visible",
+                "expected": "visible",
+                "verdict": "correct"
+              },
+              "neckline": {
+                "actual": "crew",
+                "expected": "crew",
+                "verdict": "correct"
+              },
+              "sleeves": {
+                "actual": "short",
+                "expected": "short",
+                "verdict": "correct"
+              },
+              "material_composition": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              },
+              "back_pocket_count": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              },
+              "pockets_total": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              }
+            },
+            "known_field_errors": 0,
+            "abstained_fields": 0,
+            "policy_forced_unknown_fields": [
+              "material_composition",
+              "back_pocket_count",
+              "pockets_total"
+            ],
+            "logos": {
+              "matched": [
+                "FONBET",
+                "RUSCON"
+              ],
+              "false_texts": [
+                "DEL"
+              ],
+              "missed_texts": [
+                "DELO"
+              ],
+              "precision": 0.6666666666666666,
+              "recall": 0.6666666666666666
+            },
+            "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."
+          },
+          "semantic_decision": "needs_review"
+        }
+      ],
+      "input_kind": "small illustration, not a garment photograph"
+    },
+    {
+      "id": "jeans",
+      "attempts": [
+        {
+          "attempt": 1,
+          "seconds": 9.378,
+          "visual_tokens": 70,
+          "input_tokens": 451,
+          "output_tokens": 111,
+          "raw_output": "{\n  \"schema_version\": \"pc-ai.grounded-attributes.v2\",\n  \"category\": \"jeans\",\n  \"dominant_colors\": [\n    \"blue\"\n  ],\n  \"pattern\": \"solid\",\n  \"logo_presence\": \"not_visible\",\n  \"logo_texts\": [],\n  \"neckline\": \"not_applicable\",\n  \"sleeves\": \"not_applicable\",\n  \"material_composition\": \"unknown\",\n  \"back_pocket_count\": \"unknown\",\n  \"pockets_total\": \"unknown\"\n}",
+          "json": {
+            "schema_version": "pc-ai.grounded-attributes.v2",
+            "category": "jeans",
+            "dominant_colors": [
+              "blue"
+            ],
+            "pattern": "solid",
+            "logo_presence": "not_visible",
+            "logo_texts": [],
+            "neckline": "not_applicable",
+            "sleeves": "not_applicable",
+            "material_composition": "unknown",
+            "back_pocket_count": "unknown",
+            "pockets_total": "unknown"
+          },
+          "schema_and_consistency_passed": true,
+          "evaluation": {
+            "fields": {
+              "category": {
+                "actual": "jeans",
+                "expected": "jeans",
+                "verdict": "correct"
+              },
+              "dominant_colors": {
+                "actual": [
+                  "blue"
+                ],
+                "expected": [
+                  "blue"
+                ],
+                "verdict": "correct"
+              },
+              "pattern": {
+                "actual": "solid",
+                "expected": "solid",
+                "verdict": "correct"
+              },
+              "logo_presence": {
+                "actual": "not_visible",
+                "expected": "not_visible",
+                "verdict": "correct"
+              },
+              "neckline": {
+                "actual": "not_applicable",
+                "expected": "not_applicable",
+                "verdict": "correct"
+              },
+              "sleeves": {
+                "actual": "not_applicable",
+                "expected": "not_applicable",
+                "verdict": "correct"
+              },
+              "material_composition": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              },
+              "back_pocket_count": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              },
+              "pockets_total": {
+                "actual": "unknown",
+                "expected": "unknown",
+                "verdict": "correct"
+              }
+            },
+            "known_field_errors": 0,
+            "abstained_fields": 0,
+            "policy_forced_unknown_fields": [
+              "material_composition",
+              "back_pocket_count",
+              "pockets_total"
+            ],
+            "logos": {
+              "matched": [],
+              "false_texts": [],
+              "missed_texts": [],
+              "precision": null,
+              "recall": null
+            },
+            "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."
+          },
+          "semantic_decision": "fixture_pass"
+        }
+      ],
+      "input_kind": "public-domain photograph, front view"
+    }
+  ],
+  "started_at_utc": "2026-11-06T05:46:53.486990+00:00",
+  "max_new_tokens": 192,
+  "max_schema_retries": 1,
+  "image_max_edge": 320,
+  "min_pixels": 65536,
+  "max_pixels": 98304,
+  "model": "same BF16 tensors locally resharded; NF4 on load",
+  "offload": false,
+  "min_host_ram_before_load_bytes": 4294967296,
+  "sustained_host_ram_abort_bytes": 1073741824,
+  "admission": {
+    "slot": {
+      "owner": "pc-ai",
+      "issuedAtUtc": "2026-11-06T05:25:03.600020+00:00",
+      "admitUntilUnix": 1793944503.6000204,
+      "policy": "Admission only; never preempt a held OS lock or running child"
+    },
+    "guard": {
+      "status": "running",
+      "owner": "pc-ai",
+      "label": "qwen-quality-detail-PC-AI-20261106-02",
+      "guardPid": 16272,
+      "startedAtUtc": "2026-11-06T05:46:53.296717+00:00",
+      "childPid": 15528,
+      "killOnJobClose": true,
+      "jobName": "Global\\FitmatchGPU0Setup-16272-784293515000000",
+      "lock": "<GPU_ROOT>\\coordination\\gpu0.lock",
+      "scope": "internal setup only",
+      "childCreationTime": 134384176132988579
+    },
+    "receipt_sha256": "f813f5671fbe6f5de9c67fef7e853ca87ec70f68c31a381661dbc45741c3083a"
+  },
+  "derived_shard_count": 17,
+  "derived_max_shard_bytes": 777912472,
+  "ram_available_before_load_bytes": 4701528064,
+  "gpu_free_before_bytes": 11796480000,
+  "load_seconds": 32.66,
+  "quantized_4bit_modules": 356,
+  "semantic_decisions": {
+    "tshirt": "needs_review",
+    "jeans": "fixture_pass"
+  },
+  "torch_peak_allocated_bytes": 4437815808,
+  "torch_peak_reserved_bytes": 4607442944,
+  "allocated_after_cleanup_bytes": 9569280,
+  "reserved_after_cleanup_bytes": 4443865088,
+  "process_peak_working_set_bytes": 1874857984,
+  "seconds": 58.191,
+  "ended_at_utc": "2026-11-06T05:47:51.677745+00:00",
+  "host_min_available_bytes": 3354718208,
+  "whole_device_peak_mib": 5292,
+  "rss_peak_by_phase": {
+    "load": 1569079296,
+    "generation": 1874477056
+  },
+  "raw_local_result_sha256": "c043d608ecf1e8aea5379a274a95fa3277d6670dad8b8d52b051233306227a5e",
+  "memory_samples_csv": "detail-memory.csv"
+}

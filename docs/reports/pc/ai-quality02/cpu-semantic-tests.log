@@ -1,0 +1,19 @@
+test_closed_fields_no_prose_execution (test_semantic.SemanticTests) ... ok
+test_correct_references (test_semantic.SemanticTests) ... ok
+test_decision_does_not_count_unknown_as_pass (test_semantic.SemanticTests) ... ok
+test_decision_rejects_valid_json_bad_logo (test_semantic.SemanticTests) ... ok
+test_invented_brand_detected (test_semantic.SemanticTests) ... ok
+test_logo_without_visibility (test_semantic.SemanticTests) ... ok
+test_no_hidden_pocket_or_material_claim (test_semantic.SemanticTests) ... ok
+test_no_uncertain_topology_guess (test_semantic.SemanticTests) ... ok
+test_normalized_duplicate_logo (test_semantic.SemanticTests) ... ok
+test_proposal_never_promotes_ocr_candidates (test_semantic.SemanticTests) ... ok
+test_strict_json (test_semantic.SemanticTests) ... ok
+test_unknown_is_abstention_not_correct (test_semantic.SemanticTests) ... ok
+test_unknown_not_mixed (test_semantic.SemanticTests) ... ok
+test_valid_json_wrong_image_is_not_truth (test_semantic.SemanticTests) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.002s
+
+OK

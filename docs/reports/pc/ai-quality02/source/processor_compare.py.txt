@@ -1,0 +1,26 @@
+"""CPU-only comparison of actual processor image tokens, no model weights."""
+import os
+os.environ.update(CUDA_VISIBLE_DEVICES='-1',HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1',HF_HUB_DISABLE_IMPLICIT_TOKEN='1')
+import json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parent
+GPU=ROOT.parents[1]
+from transformers import AutoProcessor
+from PIL import Image
+import torch
+
+report={'scope':'CPU-only processor shapes, no model weights','profiles':[]}
+for name,edge,kwargs in [('baseline',512,{}),('quality02',320,{'min_pixels':4096,'max_pixels':98304})]:
+    processor=AutoProcessor.from_pretrained(GPU/'models'/'qwen3-vl-4b',local_files_only=True,trust_remote_code=False,**kwargs)
+    values=[]
+    for file in ['tshirt.png','jeans.jpg']:
+        with Image.open(ROOT.parent/'inputs'/'public-reference'/file) as source:
+            rgba=source.convert('RGBA');white=Image.new('RGBA',rgba.size,'white');white.alpha_composite(rgba);image=white.convert('RGB');image.thumbnail((edge,edge))
+        inputs=processor.apply_chat_template([{'role':'user','content':[{'type':'image','image':image},{'type':'text','text':'Inspect visible garment attributes.'}]}],tokenize=True,add_generation_prompt=True,return_dict=True,return_tensors='pt')
+        values.append({'file':file,'input_image_size':list(image.size),'visual_tokens':int((inputs['input_ids']==151655).sum()),
+                       'grid_thw':inputs['image_grid_thw'].tolist(),'total_tokens_for_identical_prompt':int(inputs['input_ids'].shape[-1])})
+    report['profiles'].append({'profile':name,'edge':edge,'processor_size':dict(processor.image_processor.size),'samples':values})
+report['cuda_initialized']=torch.cuda.is_initialized()
+if report['cuda_initialized']:raise RuntimeError('Unexpected CUDA init')
+(GPU/'reports'/'ai'/'quality02'/'processor-comparison.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
+print(json.dumps(report,indent=2))

@@ -1,0 +1,27 @@
+ADMITTED; original shared guard held
+Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
+It can be downloaded at https://aka.ms/vs/17/release/vc_redist.x64.exe
+LOAD byte-identical 17-shard BF16 to NF4
+
+Loading checkpoint shards:   0%|          | 0/17 [00:00<?, ?it/s]
+Loading checkpoint shards:   6%|5         | 1/17 [00:02<00:35,  2.24s/it]
+Loading checkpoint shards:  12%|#1        | 2/17 [00:03<00:28,  1.87s/it]
+Loading checkpoint shards:  18%|#7        | 3/17 [00:05<00:25,  1.79s/it]
+Loading checkpoint shards:  24%|##3       | 4/17 [00:07<00:23,  1.78s/it]
+Loading checkpoint shards:  29%|##9       | 5/17 [00:09<00:21,  1.76s/it]
+Loading checkpoint shards:  35%|###5      | 6/17 [00:10<00:19,  1.74s/it]
+Loading checkpoint shards:  41%|####1     | 7/17 [00:12<00:17,  1.76s/it]
+Loading checkpoint shards:  47%|####7     | 8/17 [00:14<00:16,  1.78s/it]
+Loading checkpoint shards:  53%|#####2    | 9/17 [00:16<00:14,  1.85s/it]
+Loading checkpoint shards:  59%|#####8    | 10/17 [00:18<00:13,  1.86s/it]
+Loading checkpoint shards:  65%|######4   | 11/17 [00:20<00:11,  1.85s/it]
+Loading checkpoint shards:  71%|#######   | 12/17 [00:21<00:09,  1.84s/it]
+Loading checkpoint shards:  76%|#######6  | 13/17 [00:23<00:07,  1.83s/it]
+Loading checkpoint shards:  82%|########2 | 14/17 [00:25<00:05,  1.81s/it]
+Loading checkpoint shards:  88%|########8 | 15/17 [00:27<00:03,  1.84s/it]
+Loading checkpoint shards:  94%|#########4| 16/17 [00:29<00:01,  1.91s/it]
+Loading checkpoint shards: 100%|##########| 17/17 [00:30<00:00,  1.79s/it]
+Loading checkpoint shards: 100%|##########| 17/17 [00:30<00:00,  1.82s/it]
+The following generation flags are not valid and may be ignored: ['temperature', 'top_p', 'top_k']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+{"sample": "tshirt", "valid": true, "seconds": 11.687, "visual_tokens": 72, "evaluation": {"fields": {"category": {"actual": "tshirt", "expected": "tshirt", "verdict": "correct"}, "dominant_colors": {"actual": ["blue", "white"], "expected": ["blue", "white"], "verdict": "correct"}, "pattern": {"actual": "striped", "expected": "striped", "verdict": "correct"}, "logo_presence": {"actual": "visible", "expected": "visible", "verdict": "correct"}, "neckline": {"actual": "crew", "expected": "crew", "verdict": "correct"}, "sleeves": {"actual": "short", "expected": "short", "verdict": "correct"}, "material_composition": {"actual": "unknown", "expected": "unknown", "verdict": "correct"}, "back_pocket_count": {"actual": "unknown", "expected": "unknown", "verdict": "correct"}, "pockets_total": {"actual": "unknown", "expected": "unknown", "verdict": "correct"}}, "known_field_errors": 0, "abstained_fields": 0, "policy_forced_unknown_fields": ["material_composition", "back_pocket_count", "pockets_total"], "logos": {"matched": ["FONBET", "RUSCON"], "false_texts": ["DEL"], "missed_texts": ["DELO"], "precision": 0.6666666666666666, "recall": 0.6666666666666666}, "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."}}
+{"sample": "jeans", "valid": true, "seconds": 9.378, "visual_tokens": 70, "evaluation": {"fields": {"category": {"actual": "jeans", "expected": "jeans", "verdict": "correct"}, "dominant_colors": {"actual": ["blue"], "expected": ["blue"], "verdict": "correct"}, "pattern": {"actual": "solid", "expected": "solid", "verdict": "correct"}, "logo_presence": {"actual": "not_visible", "expected": "not_visible", "verdict": "correct"}, "neckline": {"actual": "not_applicable", "expected": "not_applicable", "verdict": "correct"}, "sleeves": {"actual": "not_applicable", "expected": "not_applicable", "verdict": "correct"}, "material_composition": {"actual": "unknown", "expected": "unknown", "verdict": "correct"}, "back_pocket_count": {"actual": "unknown", "expected": "unknown", "verdict": "correct"}, "pockets_total": {"actual": "unknown", "expected": "unknown", "verdict": "correct"}}, "known_field_errors": 0, "abstained_fields": 0, "policy_forced_unknown_fields": ["material_composition", "back_pocket_count", "pockets_total"], "logos": {"matched": [], "false_texts": [], "missed_texts": [], "precision": null, "recall": null}, "note": "Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images."}}
