@@ -1,8 +1,12 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0012. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 06/11/2026, America/New_York. Revision: PROC-0013. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
-## 1. Snapshot hiện tại và điểm tiếp nối
+## Trạng thái tiếp nối hiện hành — PROC-0013
+
+App hiện hành trên `codex/full-look-reviewed`, đã nhận C0–C3 từ Claude b4e7527 và bổ sung review. Bản33eff4b đã independently PASS44unit, lint/build, DB5blocks, HTTP/browser13blocks; fixture không chứng minh chất lượng AI. Lượt tiếp INT-01A bổ sung kiểm khóa giữa hai process và sửa assertion POSIX-only:18Python tests PASS trên Mac, npm44PASS. Native Windows/adapter v1-r2/GLB cá nhân vẫn NOT VERIFIED. Hai chatPC remote unavailable khi kiểm06/11, không suy stopped/completed; PR1head60949e8 chưa đổi. Đọc [PC native preflight](https://github.com/minkoi007cs/fitmatch_AI/blob/codex/full-look-reviewed/docs/pc-native-preflight.md). Các snapshot và task boards cũ dưới đây giữ làm lịch sử, dùng entry mới nhất cho trạng thái thực tế.
+
+## 1. Snapshot lịch sử và điểm tiếp nối
 
 PROC-0001 bỏ sót công việc ở chat/worktree khác. Các dòng “chưa chạy gì” trong nhật ký cũ là quan sát thiếu của chat này, không còn là trạng thái toàn dự án. [H-RESUME-002](./docs/handoffs/reassignment-2026-11-05.md) thay chỉ dẫn bắt đầu từ đầu.
 
@@ -358,3 +362,12 @@ Chủ dự án giao review, hoàn thiện và push app. Nhận final bundle b4e7
 ### L-028 — HANDOFF — CX-FULLLOOK-REVIEW-12
 
 Nhận Claude final b4e7527, gồm C0–C3, vượt checkpoint c471e74 user gửi. APP-FLOW/AI/RENDER Ready for review code/fixture; editor engine và real avatar/jeans chưa đạt. Codex sửa close file descriptor khi nhả/lấy GPU lock thất bại, bổ sung regression và ghi contract PC strict validator chưa compatible. Independent npm44tests, Python17tests, lint/build, DB5blocks và schema20files PASS. Final HTTP/browser result xem report trên nhánh codex/full-look-reviewed. User cho phép push app review branch; không main merge/deploy/production migration. Canonical d2a9898 giữ nguyên. PC cần ACK v1-r2, native Windows lock/containment và assets thật trước live. Report: docs/reports/review/full-look-integration/review.md trên app review branch.
+
+
+### L-029 — 06/11/2026 — START — CX-PC-PREFLIGHT-13 / INT-01A
+Tiếp yêu cầu hoàn thiện/push. Baseline app33eff4b sạch; PC remote unavailable, PR1 chưa đổi60949e8. Claim scripts/worker/test_worker_unit.py và docs/pc-native-preflight.md trên nhánh review; kiểm khóa OS giữa process và sửa assertion POSIX-only để chạy Windows. Không sửa PC adapters/engine hoặc bật live.
+
+
+### L-030 — 06/11/2026 — HANDOFF — CX-PC-PREFLIGHT-13 / INT-01A
+
+Bổ sung kiểm thử cross-process exclusion + abrupt-exit lock recovery, sửa test descriptor phù hợp Windows/POSIX. Python18 và npm44 PASS trên Mac. Native Windows NOT RUN; containment unit mock không là Job Object integration. Runbook docs/pc-native-preflight.md trên appbranch yêu cầu app/adapterSHA, native binding + disposable-child teardown, shared absolute GPUlock ACK của3D/Qwen, exact worker-manifest→PC conformance. Không đổi wire/adapter hoặc bật live. Tiếp nhận reportPC khi host sẵn; không gửi thành công giả khi host unavailable. Scope code vẫn codex/full-look-reviewed; không sửa canonical Studio.
