@@ -467,6 +467,8 @@ export async function testV2({ base, request, jar, owner, itemId, v2 }) {
         .output_asset_id,
     );
     v2.sql(`update fm_v2_workers set enabled=false where id='${workerId}';`);
+    const { testWorkerRecovery } = await import("./test-worker-recovery.mjs");
+    await testWorkerRecovery({ base, request, owner, v2 });
     assert.equal(
       (await worker("heartbeat", { capabilities: caps })).status,
       401,
