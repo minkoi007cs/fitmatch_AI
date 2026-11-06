@@ -33,6 +33,21 @@ export default function AvatarDraft({
     }
   };
   const retention = model.source_retention ?? null;
+  const cleanup = model.source_cleanup ?? null;
+  // CL-PRIV-01: "deleted" is only claimed once storage confirmed removal; otherwise the request is
+  // recorded (it survives reload) and can be retried.
+  const remove = async () => {
+    const r = await api<{ canceledJobs: number; affectedModels: number; storageCleanupPending: boolean }>(
+      `models/${model.id}/source`,
+      { action: "delete" },
+    );
+    const extra = `${r.canceledJobs ? ` Đã hủy ${r.canceledJobs} tác vụ đang dùng chúng.` : ""}${
+      r.affectedModels ? ` ${r.affectedModels} phiên bản khác dùng chung ảnh này cũng không dựng lại được từ nguồn này.` : ""
+    }`;
+    return r.storageCleanupPending
+      ? `Đã ghi nhận yêu cầu xóa nhưng chưa xóa xong tệp khỏi bộ nhớ lưu trữ. Bấm "Thử xóa lại" sau ít phút.${extra}`
+      : `Đã xóa ảnh/video gốc khỏi bộ nhớ lưu trữ.${extra}`;
+  };
   return (
     <div className="mt-4 border-t border-border pt-4 space-y-3 text-xs">
       {model.accepted_at ? (
@@ -64,7 +79,21 @@ export default function AvatarDraft({
       <div>
         <p className="text-fg-muted mb-2">Ảnh/video gốc</p>
         {retention === "deleted" ? (
-          <p className="text-fg-muted leading-5">Đã xóa. Avatar, đồ đã mặc thử và look vẫn giữ; không thể dựng lại từ nguồn này.</p>
+          cleanup === "pending" || cleanup === "failed" ? (
+            <div role="status" aria-label="Trạng thái xóa ảnh gốc" className="space-y-2">
+              <p className="leading-5 text-accent-text">
+                {cleanup === "failed"
+                  ? "Chưa xóa xong: bộ nhớ lưu trữ chưa xóa được tệp sau nhiều lần thử."
+                  : "Đang xóa: đã ghi nhận yêu cầu, tệp gốc chưa được xóa xong khỏi bộ nhớ lưu trữ."}{" "}
+                Ảnh/video này đã không còn dùng được để dựng lại.
+              </p>
+              <button disabled={busy} className={button} onClick={() => void run(remove)}>
+                Thử xóa lại
+              </button>
+            </div>
+          ) : (
+            <p className="text-fg-muted leading-5">Đã xóa khỏi bộ nhớ lưu trữ. Avatar, đồ đã mặc thử và look vẫn giữ; không thể dựng lại từ nguồn này.</p>
+          )
         ) : confirm ? (
           <div role="group" aria-label="Xác nhận xóa ảnh gốc" className="space-y-2">
             <p className="leading-5">
@@ -74,12 +103,7 @@ export default function AvatarDraft({
               <button
                 disabled={busy}
                 className={`${button} border-danger text-danger`}
-                onClick={() =>
-                  void run(async () => {
-                    const r = await api<{ canceledJobs: number; storageCleanupPending: boolean }>(`models/${model.id}/source`, { action: "delete" });
-                    return `Đã xóa ảnh/video gốc${r.canceledJobs ? `, hủy ${r.canceledJobs} tác vụ đang dùng chúng` : ""}.${r.storageCleanupPending ? " Một số tệp sẽ được dọn lại sau." : ""}`;
-                  })
-                }
+                onClick={() => void run(remove)}
               >
                 Xác nhận xóa
               </button>
@@ -90,6 +114,11 @@ export default function AvatarDraft({
           </div>
         ) : (
           <div className="flex flex-wrap gap-2 items-center">
+            {cleanup && (
+              <p className="w-full text-fg-muted leading-5">
+                Một số ảnh dùng chung với avatar khác đã bị xóa{cleanup === "completed" ? "" : " (đang dọn khỏi bộ nhớ)"}; không thể dựng lại đầy đủ từ nguồn này.
+              </p>
+            )}
             {retention === "keep" ? (
               <span className="text-fg-muted">Đang giữ.</span>
             ) : (

@@ -10,6 +10,8 @@ import sharp from "sharp";
 import { chromium } from "playwright";
 import { fullLookFixture } from "../tests/fixtures/full-look.mjs";
 import { jobEnvelope } from "../src/lib/v2/schemas.ts";
+import { createClient } from "@supabase/supabase-js";
+import { collectSourceCleanup } from "./source-cleanup.mjs";
 
 const fakeMp4 = () => {
   const b = Buffer.alloc(4096);
@@ -18,7 +20,7 @@ const fakeMp4 = () => {
   return b;
 };
 
-export async function testCaptureRetention({ base, request, jar, owner, v2 }) {
+export async function testCaptureRetention({ base, fixture, request, jar, owner, v2 }) {
   v2.sql(`update fm_v2_jobs set state='canceled' where user_id='${owner}' and state in ('queued','running');`);
   v2.sql(`update fm_v2_workers set enabled=false where user_id='${owner}';`);
   const { token } = v2.worker(owner, ["avatar.reconstruct"]);
@@ -109,9 +111,47 @@ export async function testCaptureRetention({ base, request, jar, owner, v2 }) {
     await card.getByRole("button", { name: "Xóa ảnh gốc" }).click();
     await card.getByRole("group", { name: "Xác nhận xóa ảnh gốc" }).waitFor();
     await page.screenshot({ path: "test-results/c2-retention-confirm.png" });
+    // CL-PRIV-01 failure injection: storage refuses the first removal. The request is recorded,
+    // the UI must not claim the files are gone, and the state survives a reload.
+    v2.faults.removeFail = 1;
+    const removeCallsBefore = v2.faults.removeCalls;
     await card.getByRole("button", { name: "Xác nhận xóa" }).click();
-    await page.getByRole("status").filter({ hasText: "Đã xóa ảnh/video gốc" }).waitFor();
-    await card.getByText("Đã xóa.", { exact: false }).waitFor();
+    await page.getByRole("status").filter({ hasText: "Đã ghi nhận yêu cầu xóa nhưng chưa xóa xong" }).waitFor();
+    assert.equal(v2.faults.removeCalls, removeCallsBefore + 1);
+    assert.equal(v2.sql(`select string_agg(distinct state, ',') from fm_v2_assets where id in (${sources.map(([id]) => `'${id}'`)});`), "deleted", "tombstoned even though storage failed");
+    assert.ok(sources.every(([, path, source]) => v2.hasObject(path) && v2.hasObject(source)), "objects really still stored");
+    assert.equal(v2.sql(`select source_cleanup from fm_v2_models where id='${job.modelId}';`), "pending");
+    assert.equal(v2.sql(`select string_agg(distinct state||':'||attempts||':'||last_error, ',') from fm_v2_source_cleanup where requested_by_model='${job.modelId}';`), "pending:1:STORAGE_503");
+    assert.equal(v2.sql(`select state||':'||error_code from fm_v2_jobs where id='${secondJob}';`), "canceled:SOURCE_DELETED");
+    // Operator collector (service role, against the same fixture): dry run touches nothing; an
+    // execute pass during a second outage records the failure and keeps the intent pending.
+    const admin = createClient(fixture, "synthetic-service", { auth: { persistSession: false } });
+    v2.sql(`update fm_v2_source_cleanup set next_attempt_at=now() where requested_by_model='${job.modelId}';`);
+    const dry = await collectSourceCleanup(admin, { execute: false });
+    assert.equal(dry.dryRun, true);
+    assert.ok(dry.due >= 4, JSON.stringify(dry));
+    assert.equal(v2.faults.removeCalls, removeCallsBefore + 1, "dry run does not call storage");
+    v2.faults.removeFail = 1;
+    const pass = await collectSourceCleanup(admin, { execute: true });
+    assert.ok(pass.failed >= 4 && pass.removed === 0, JSON.stringify(pass));
+    assert.equal(v2.sql(`select string_agg(distinct state||':'||attempts, ',') from fm_v2_source_cleanup where requested_by_model='${job.modelId}';`), "pending:2");
+    assert.ok(sources.every(([, path]) => v2.hasObject(path)));
+    await page.reload();
+    const status = card.getByRole("status", { name: "Trạng thái xóa ảnh gốc" });
+    await status.getByText("Đang xóa", { exact: false }).waitFor();
+    assert.equal(await card.getByText("Đã xóa khỏi bộ nhớ lưu trữ", { exact: false }).count(), 0, "no false 'deleted' after reload");
+    await page.screenshot({ path: "test-results/priv01-cleanup-pending.png" });
+    await status.getByRole("button", { name: "Thử xóa lại" }).click();
+    await page.getByRole("status").filter({ hasText: "Đã xóa ảnh/video gốc khỏi bộ nhớ lưu trữ" }).waitFor();
+    await card.getByText("Đã xóa khỏi bộ nhớ lưu trữ", { exact: false }).waitFor();
+    assert.equal(v2.sql(`select source_cleanup from fm_v2_models where id='${job.modelId}';`), "completed");
+    assert.equal(v2.sql(`select string_agg(distinct state, ',') from fm_v2_source_cleanup where requested_by_model='${job.modelId}';`), "completed");
+    // A further request is a no-op: nothing outstanding, no storage call.
+    const callsAfter = v2.faults.removeCalls;
+    const repeat = await (await post(`models/${job.modelId}/source`, { action: "delete" })).json();
+    assert.equal(repeat.storageCleanupPending, false);
+    assert.equal(repeat.removedObjects, 0);
+    assert.equal(v2.faults.removeCalls, callsAfter, "no storage call when nothing is outstanding");
     assert.equal(v2.sql(`select string_agg(distinct state, ',') from fm_v2_assets where id in (${sources.map(([id]) => `'${id}'`)});`), "deleted");
     for (const [, path, source] of sources) {
       assert.equal(v2.hasObject(path), false, "verified object removed");
@@ -133,6 +173,6 @@ export async function testCaptureRetention({ base, request, jar, owner, v2 }) {
     await browser.close();
   }
   console.log(
-    "PASS C2 capture + retention (real routes + PostgreSQL + browser): video intent limits and container check, avatar from video + face photo + measurements through the capture drawer, envelope roles/mediaType validated against schemas/v1-r2, draft use-for-now, keep then delete source (objects removed, dependent queued job canceled, retry and re-enqueue refused, derived avatar kept), editor shown as unavailable. Synthetic bytes only.",
+    "PASS C2 capture + retention (real routes + PostgreSQL + browser): video intent limits and container check, avatar from video + face photo + measurements through the capture drawer, envelope roles/mediaType validated against schemas/v1-r2, draft use-for-now, keep then delete source with injected storage failure (pending survives reload, no false 'deleted', retry removes objects; dependent queued job canceled, retry and re-enqueue refused, derived avatar kept), editor shown as unavailable. Synthetic bytes only.",
   );
 }

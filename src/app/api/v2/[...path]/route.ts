@@ -39,6 +39,13 @@ import {
 import { recommend, type Candidate } from "@/lib/v2/recommend";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+type SourceCleanup = "pending" | "completed" | "failed";
+/** Storage errors are recorded without their message (it can echo object paths). */
+function storageErrorCode(error: unknown) {
+  const e = error as { status?: unknown; statusCode?: unknown } | null;
+  const status = Number(e?.status ?? e?.statusCode);
+  return Number.isInteger(status) && status >= 100 && status < 600 ? `STORAGE_${status}` : "STORAGE_ERROR";
+}
 const safeJobFields =
   "id,model_id,kind,state,attempt,error_code,stage,created_at,updated_at";
 function uuid(value: string | undefined) {
@@ -369,12 +376,48 @@ async function handle(
       const body = await readJson(request, retentionRequest);
       const r = required(
         await db.rpc("fm_v2_source_retention", { p_user: owner, p_model: uuid(path[1]), p_action: body.action }),
-      ) as { retention: string; paths: [string, string][]; canceledJobs: number };
-      // The tombstone is committed first; object removal is best effort and idempotent.
-      const objects = r.paths.flat();
-      let removed = true;
-      if (objects.length) removed = !(await db.storage.from(bucket).remove(objects)).error;
-      return reply({ retention: r.retention, removedObjects: removed ? objects.length : 0, canceledJobs: r.canceledJobs, storageCleanupPending: !removed });
+      ) as {
+        retention: "keep" | "deleted";
+        paths: string[];
+        canceledJobs: number;
+        affectedModels: string[];
+        cleanup: SourceCleanup | null;
+      };
+      // CL-PRIV-01: the tombstone and one cleanup intent per object are committed first. Every
+      // delete request (first or repeated) attempts the objects still outstanding and records the
+      // outcome, so a storage failure is retried instead of forgotten.
+      let cleanup = r.cleanup;
+      let removedObjects = 0;
+      if (r.retention === "deleted" && r.paths.length) {
+        const { error } = await db.storage.from(bucket).remove(r.paths);
+        result(
+          await db.rpc("fm_v2_source_cleanup_report", {
+            p_user: owner,
+            p_paths: r.paths,
+            p_ok: !error,
+            p_error: error ? storageErrorCode(error) : null,
+          }),
+        );
+        if (!error) removedObjects = r.paths.length;
+        cleanup = (
+          required(
+            await db
+              .from("fm_v2_models")
+              .select("source_cleanup")
+              .eq("id", uuid(path[1]))
+              .eq("user_id", owner)
+              .single(),
+          ) as { source_cleanup: SourceCleanup | null }
+        ).source_cleanup;
+      }
+      return reply({
+        retention: r.retention,
+        canceledJobs: r.canceledJobs,
+        affectedModels: r.affectedModels.length,
+        removedObjects,
+        cleanup,
+        storageCleanupPending: r.retention === "deleted" && cleanup !== null && cleanup !== "completed",
+      });
     }
     if (path[0] === "models" && path.length === 2 && method === "GET") {
       const row = result(

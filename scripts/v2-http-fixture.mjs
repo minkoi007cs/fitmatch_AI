@@ -41,7 +41,7 @@ export async function v2Fixture() {
     uploadPaths = new Map(),
     readPaths = new Map(),
     // Fault injection for storage transport tests (counts are consumed per request).
-    faults = { uploadDropAfterStore: 0, uploadExpire: 0, uploads: 0 };
+    faults = { uploadDropAfterStore: 0, uploadExpire: 0, uploads: 0, removeFail: 0, removeCalls: 0, readExpire: 0, reads: 0 };
   const sql = (s) =>
     execFileSync(
       "docker",
@@ -123,6 +123,7 @@ export async function v2Fixture() {
       "20261106042143_capture_retention_c2.sql",
       "20261106044040_gc_dry_run_c3.sql",
       "20261106053812_fitting_generations.sql",
+      "20261106150000_source_cleanup_priv01.sql",
     ])
       sql(
         readFileSync(
@@ -170,6 +171,14 @@ export async function v2Fixture() {
           return true;
         }
         if (objectPath.startsWith("/fixture-read/")) {
+          faults.reads++;
+          if (faults.readExpire > 0 && readPaths.has(objectPath)) {
+            // What Supabase Storage answers for an expired signed download URL.
+            faults.readExpire--;
+            readPaths.delete(objectPath);
+            send({ statusCode: "400", error: "InvalidJWT", message: '"exp" claim timestamp check failed' }, 400);
+            return true;
+          }
           const path = readPaths.get(objectPath),
             bytes = objects.get(path);
           if (!bytes) {
@@ -183,6 +192,13 @@ export async function v2Fixture() {
         if (url.pathname === "/storage/v1/object/fitmatch-v2" && req.method === "DELETE") {
           if (req.headers.authorization !== "Bearer synthetic-service")
             throw new Error("Storage admin credential expected");
+          faults.removeCalls++;
+          if (faults.removeFail > 0) {
+            // Storage outage: nothing removed, the client gets an error.
+            faults.removeFail--;
+            send({ statusCode: "503", error: "Service Unavailable", message: "synthetic storage outage" }, 503);
+            return true;
+          }
           const removed = (body.prefixes ?? []).filter((path) => objects.delete("fitmatch-v2/" + path));
           send(removed.map((name) => ({ name })));
           return true;
@@ -312,14 +328,14 @@ export async function v2Fixture() {
             throw new Error("Service role RPC expected");
           const fn = table.slice(4);
           if (
-            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look|source_retention)$/.test(
+            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look|source_retention|source_cleanup_report|source_cleanup_due)$/.test(
               fn,
             )
           )
             return false;
           const args = Object.entries(body).map(
             ([k, v]) =>
-              `${ident(k)} => ${k === "p_inputs" ? `array[${v.map(quote)}]::uuid[]` : v !== null && typeof v === "object" ? `${quote(JSON.stringify(v))}::jsonb` : quote(v)}`,
+              `${ident(k)} => ${k === "p_inputs" ? `array[${v.map(quote)}]::uuid[]` : k === "p_paths" ? `array[${v.map(quote)}]::text[]` : v !== null && typeof v === "object" ? `${quote(JSON.stringify(v))}::jsonb` : quote(v)}`,
           );
           try {
             const value = await query(

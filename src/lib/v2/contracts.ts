@@ -235,6 +235,8 @@ export type ModelRow = {
   slot?: Slot | null;
   accepted_at?: string | null;
   source_retention?: "keep" | "deleted" | null;
+  /** CL-PRIV-01: physical removal of deleted source objects (null = no deletion touched them). */
+  source_cleanup?: "pending" | "completed" | "failed" | null;
   wardrobe_item_id: string | null;
   avatar_id: string | null;
   garment_id: string | null;

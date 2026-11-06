@@ -649,6 +649,78 @@ try {
   assert.equal(service(`select superseded_by is null from fm_v2_models where id='${successor}';`),"t","quota refusal leaves current generation intact");
   for(const role of ['anon','authenticated']) assert.throws(()=>sql(`set role ${role};${act(owner,broken.jobId,'regenerate')}`));
   console.log('PASS fitting generations: eight concurrent requests create one successor; owner/source/active guards; old retry denied; new cache and saved look pinning.');
+  {
+    // ---------------- CL-PRIV-01 durable source cleanup ----------------
+    // Reproduction on the C2 schema (already exercised above): the second delete of va returned
+    // paths=[] although nothing recorded that its objects were removed. The migration must turn
+    // those tombstones into outstanding intents instead of forgetting them.
+    const cv = "ffffffff-1111-4111-a111-111111111111";
+    const modelOf = (key) => service(`select model_id from fm_v2_jobs where user_id='${cv}' and idempotency_key='${key}';`);
+    const va = modelOf("c2-video-01"), vb = modelOf("c2-photos-01");
+    const sourceCount = service("select count(*) from fm_v2_assets where state='deleted';");
+    assert.equal(JSON.parse(service(`select fm_v2_source_retention('${cv}','${va}','delete');`)).paths.length, 0, "C2 bug reproduced: retry returns no paths");
+    const derivedBefore = service("select string_agg(id::text||':'||state, ',' order by id) from fm_v2_assets where kind='glb';");
+    sql(readFileSync(new URL("../supabase/migrations/20261106150000_source_cleanup_priv01.sql", import.meta.url), "utf8"));
+    const outstanding = (user, model) => JSON.parse(service(`select fm_v2_source_retention('${user}','${model}','delete');`));
+    const report = (user, paths, ok, err = null) =>
+      JSON.parse(service(`select fm_v2_source_cleanup_report('${user}',array[${paths.map((p) => `'${p}'`)}]::text[],${ok},${err ? `'${err}'` : "null"});`)).updated;
+    const cleanup = (model) => service(`select coalesce(source_cleanup,'none') from fm_v2_models where id='${model}';`);
+    assert.equal(service("select count(*) from fm_v2_source_cleanup where state='pending';"), String(sourceCount * 2), "backfill: every tombstoned verified+staging object pending");
+    assert.equal(cleanup(va), "pending");
+    assert.equal(cleanup(vb), "pending", "shared face photo: the other avatar sees outstanding cleanup too");
+    let r = outstanding(cv, va);
+    assert.deepEqual(r.paths, ["f", "fs", "v.mp4", "vs"], "retry after migration returns every outstanding path");
+    assert.ok(r.affectedModels.includes(vb), "shared-source consumers reported");
+    assert.equal(r.canceledJobs, 0, "repeat delete cancels nothing new");
+    // Failed removal: stays pending with backoff, nothing lost on reload/repeat.
+    assert.equal(report(cv, r.paths, false, "storage 503"), 4);
+    assert.equal(service(`select string_agg(distinct state||':'||attempts,',') from fm_v2_source_cleanup where path in ('f','fs','v.mp4','vs');`), "pending:1");
+    assert.equal(service("select count(*) from jsonb_array_elements(fm_v2_source_cleanup_due(500)) e where e->>'path' in ('f','fs','v.mp4','vs');"), "0", "backoff respected");
+    sql("update fm_v2_source_cleanup set next_attempt_at=now() where path in ('f','fs','v.mp4','vs');");
+    assert.equal(service("select count(*) from jsonb_array_elements(fm_v2_source_cleanup_due(500)) e where e->>'path' in ('f','fs','v.mp4','vs');"), "4");
+    assert.deepEqual(outstanding(cv, va).paths, ["f", "fs", "v.mp4", "vs"], "repeated request keeps the paths");
+    // Foreign owner cannot report on, or read, someone else's intents.
+    assert.equal(report(other, ["f", "fs"], true), 0, "foreign report ignored");
+    assert.throws(() => service(`select fm_v2_source_retention('${other}','${va}','delete');`), /MODEL_NOT_FOUND/);
+    // Success for part; a racing late failure for the same paths cannot reopen them.
+    assert.equal(report(cv, ["v.mp4", "vs"], true), 2);
+    assert.equal(report(cv, ["v.mp4", "vs"], false, "late"), 0, "completed is final");
+    assert.deepEqual(outstanding(cv, va).paths, ["f", "fs"]);
+    assert.equal(cleanup(va), "pending");
+    // Bounded automatic attempts -> failed; the user's explicit retry still covers failed intents.
+    for (let i = 0; i < 4; i++) report(cv, ["f", "fs"], false, "storage 500");
+    assert.equal(service("select string_agg(distinct state||':'||attempts,',') from fm_v2_source_cleanup where path in ('f','fs');"), "failed:5");
+    assert.equal(cleanup(va), "failed");
+    assert.equal(cleanup(vb), "failed");
+    sql("update fm_v2_source_cleanup set next_attempt_at=now() - interval '1 day' where path in ('f','fs');");
+    assert.equal(service("select count(*) from jsonb_array_elements(fm_v2_source_cleanup_due(500)) e where e->>'path' in ('f','fs');"), "0", "collector stops after 5 attempts");
+    assert.deepEqual(outstanding(cv, va).paths, ["f", "fs"], "user retry still sees failed paths");
+    assert.equal(report(cv, ["f", "fs"], true), 2);
+    assert.equal(cleanup(va), "completed");
+    assert.deepEqual(outstanding(cv, va).paths, [], "nothing outstanding once every object is removed");
+    // vb shares the (now removed) face photo; deleting its own sources records only new objects.
+    assert.equal(cleanup(vb), "completed", "vb's only tombstoned input was the shared face");
+    r = outstanding(cv, vb);
+    assert.deepEqual(r.paths, ["b0", "b1", "b2", "bs0", "bs1", "bs2"], "new intents for vb's own body photos, face already done");
+    assert.ok(r.affectedModels.length >= 1, "other versions using the same body photos are listed");
+    assert.equal(cleanup(vb), "pending");
+    assert.throws(() => service(`select fm_v2_enqueue('${cv}','priv-reuse','h','avatar','Again',array['${photo(53)}','${photo(54)}','${photo(55)}']::uuid[],'{}');`), /INVALID_ASSET/, "tombstone still blocks re-enqueue");
+    assert.equal(service("select string_agg(id::text||':'||state, ',' order by id) from fm_v2_assets where kind='glb';"), derivedBefore, "derived outputs untouched");
+    for (const role of ["anon", "authenticated"]) {
+      assert.throws(() => sql(`set role ${role};select * from fm_v2_source_cleanup;`));
+      assert.throws(() => sql(`set role ${role};select fm_v2_source_cleanup_report('${cv}',array['b0'],true,null);`));
+      assert.throws(() => sql(`set role ${role};select fm_v2_source_cleanup_due(1);`));
+    }
+    // Concurrent repeated deletes of a fresh avatar record each object exactly once.
+    const p8 = [61, 62, 63].map(photo);
+    sql(`insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes) values` + p8.map((id, i) => `('${id}','${cv}','photo','ready','c${i}','cs${i}',100)`).join(",") + ";");
+    const vc = JSON.parse(service(`select fm_v2_enqueue('${cv}','priv-c','priv-c','avatar','Concurrent',array[${p8.map((x) => `'${x}'`)}]::uuid[],'{}');`)).modelId;
+    const runs = await parallel(Array.from({ length: 6 }, () => `select fm_v2_source_retention('${cv}','${vc}','delete');`));
+    assert.ok(runs.every((x) => x.ok), JSON.stringify(runs));
+    assert.equal(service(`select count(*) from fm_v2_source_cleanup where asset_id = any(array[${p8.map((x) => `'${x}'`)}]::uuid[]);`), "6");
+    assert.equal(service(`select state||':'||error_code from fm_v2_jobs where model_id='${vc}';`), "canceled:SOURCE_DELETED");
+    console.log("PASS CL-PRIV-01 PostgreSQL: C2 retry-loses-paths reproduced then fixed; backfill of earlier tombstones; durable pending/failed/completed intents with backoff and 5-attempt collector bound; failed paths survive repeat requests; completed never reopened by late failures; per-model status for shared sources; foreign owner/browser roles denied; derived GLBs untouched; 6 concurrent deletes record each object once.");
+  }
   console.log(
     "PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.",
   );
