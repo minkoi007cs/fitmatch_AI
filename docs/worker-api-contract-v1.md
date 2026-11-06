@@ -108,3 +108,8 @@ Machine-readable schemas: `schemas/v1-r2/*.json` (generated from `src/lib/v2/con
 - **Host GPU lock (C3).** Every worker process takes an exclusive OS file lock before it claims (default `%PROGRAMDATA%\fitmatch\gpu-0.lock` on Windows, `<tmp>/fitmatch/gpu-0.lock` elsewhere; config `gpuLock` = path, or `null` to disable with a warning). It holds the lock for the whole job and the adapter inherits it on POSIX, so two owners' workers — and any other GPU tool on the PC that takes the same lock (flock / msvcrt byte 0) — never run heavy GPU work at the same time. A worker that cannot get the lock claims nothing, so no lease expires while waiting.
 - **Photos (C3).** Transparent pixels are flattened onto white before JPEG (was black).
 - **GC (C3).** `fm_v2_gc_candidates(grace)` + `scripts/gc-dry-run.mjs` list removable objects (stale pending, rejected, tombstoned source objects, unpublished outputs, staging copies). Dry run only; nothing deletes yet.
+
+
+### Integration review correction
+
+The local adapter JSON now includes `protocolRevision`, and nested assets/contracts have v1-r2 additions. The PC conformance report describes an exact ten-field schema that rejects extras. Therefore backward compatibility with that adapter is **not established**; do not assume it ignores added fields. Keep live capabilities disabled until the PC accepts the exact producer manifest in a conformance test. Agree explicit schema/version support rather than silently removing unknown fields. Windows containment and GPU locking also require native PC verification.

@@ -140,11 +140,16 @@ class GpuLockTests(unittest.TestCase):
         self.assertTrue(a.acquire(0))
         self.assertTrue(a.acquire(0), 're-entrant for the holder')
         self.assertFalse(b.acquire(0), 'second worker (other owner/workDir) must wait')
+        self.assertIsNone(b.handle, 'failed acquisition closes its descriptor')
         self.assertNotEqual(a.fds(), (), 'adapter inherits the GPU lock on POSIX')
         a.release()
         self.assertEqual(a.fds(), ())
         self.assertTrue(b.acquire(0))
         b.release()
+        self.assertIsNone(a.handle)
+        self.assertIsNone(b.handle)
+        self.assertTrue(a.acquire(0), 'released lock can be reopened')
+        a.release()
 
 
 class ContainmentTests(unittest.TestCase):

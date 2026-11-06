@@ -325,6 +325,8 @@ class FileLock:
                 return True
             except OSError:
                 if time.monotonic() >= deadline:
+                    self.handle.close()
+                    self.handle = None
                     return False
                 time.sleep(1)
 
@@ -339,6 +341,8 @@ class FileLock:
             import fcntl
             fcntl.flock(self.handle.fileno(), fcntl.LOCK_UN)
         self.held = False
+        self.handle.close()
+        self.handle = None
 
     def fds(self):
         return (self.handle.fileno(),) if self.handle and self.held and os.name != 'nt' else ()
