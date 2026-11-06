@@ -167,25 +167,33 @@ spec.loader.exec_module(w)
 lock = w.FileLock(sys.argv[2])
 if not lock.acquire(0):
     raise SystemExit(4)
-print('LOCKED', flush=True)
+import os
+print('LOCKED', os.getpid(), flush=True)
 sys.stdin.read()
 """
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'gpu.lock'
             marker = Path(directory) / 'ready.txt'
             with marker.open('w') as output:
+                # Test-only (CL-WINTEST-01): a Windows venv python.exe is a launcher that spawns the
+                # base interpreter, so Popen.pid would be the launcher and kill() would leave the
+                # real lock holder alive. This child is stdlib-only, so start the base interpreter
+                # directly and assert below that the PID we kill is the one holding the lock.
+                interpreter = getattr(sys, '_base_executable', None) or sys.executable
                 child = subprocess.Popen(
-                    [sys.executable, '-I', '-c', child_code,
+                    [interpreter, '-I', '-c', child_code,
                      str(Path(__file__).with_name('worker.py').resolve()), str(path)],
                     stdin=subprocess.PIPE, stdout=output, stderr=subprocess.DEVNULL)
                 probe = worker.FileLock(path)
                 try:
                     import time
                     deadline = time.monotonic() + 10
-                    while marker.read_text().strip() != 'LOCKED':
+                    while not marker.read_text().startswith('LOCKED '):
                         self.assertIsNone(child.poll(), 'lock-holder child failed')
                         self.assertLess(time.monotonic(), deadline, 'child readiness timeout')
                         time.sleep(0.02)
+                    holder = int(marker.read_text().split()[1])
+                    self.assertEqual(holder, child.pid, 'the process we kill must be the lock holder, not a launcher')
                     self.assertFalse(probe.acquire(0), 'another process must be excluded')
                     self.assertIsNone(probe.handle)
                     child.kill()  # only this test-owned child; simulate abrupt worker death
@@ -193,10 +201,11 @@ sys.stdin.read()
                     self.assertTrue(probe.acquire(0), 'OS releases lock after process death')
                 finally:
                     probe.release()
+                    # EOF first: any process still reading stdin exits even if kill() missed it.
+                    child.stdin.close()
                     if child.poll() is None:
                         child.kill()
                     child.wait(timeout=10)
-                    child.stdin.close()
 
 
 class ContainmentTests(unittest.TestCase):
