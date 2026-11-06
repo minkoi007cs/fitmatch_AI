@@ -288,3 +288,8 @@ Cả hai dùng runtime/cache riêng, không sửa chung repoindex hoặc app fil
 ## 18. Mac completion while awaiting PC — PROC-0014
 
 [Execution backlog MAC-14A–H](https://github.com/minkoi007cs/fitmatch_AI/blob/codex/full-look-reviewed/docs/mac-completion-plan.md): recovery presentation, fitting generations/cache revision, signed URL recovery, privacy audit, capture/offline UX, adapter fixtures and pilot runbook. Codex integration owns this continuation on app review branch following user request; future Claude parallel scope needs a receipt before overlapping edits. MAC-14A implemented/tested; remaining packages stay Planned and do not depend entirely on PC. Real assets, native Windows and editor engine remain release gates.
+
+
+## 19. Audit và tiếp quản — H-AUDIT-016 / PROC-0016
+
+[Audit và weightedestimate](./docs/reports/review/project-audit-20261106/audit.md), [Claude continuation](./docs/handoffs/prompt-claude-post-audit-20261106.md), [PC continuation](./docs/handoffs/pc-post-audit-20261106.md). Firstrelease chưa nghiệmthu;46% là estimate pháttriển theo6workstreams, không sửa gate. Codex bàn giao app từ7be869c choClaude trên taskbranch riêng; ưu tiên privacy deletionretry, signedURLrefresh, nativeWindows testproposal. PC tiếp actualcapability/retention/strain và groundedQwen. Existing code không làm lại; không animation/latercategories trước realstaticgate.

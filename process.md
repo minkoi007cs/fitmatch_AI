@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 06/11/2026, America/New_York. Revision: PROC-0015. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 06/11/2026, America/New_York. Revision: PROC-0016. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Trạng thái tiếp nối hiện hành — PROC-0013
 
@@ -398,3 +398,14 @@ MAC-14B implementation: additive superseded_by + partialunique activepair; expli
 
 ### L-036 — END — CX-FITTING-GENERATIONS-15
 MAC-14B Ready for review: npm48,lint/build,DB6blocks,export20schemas PASS; isolated final HTTP/browser13blocks PASS including4parallel regenerate route requests and oldretry409. Migration only local Docker, not production. Report/logs docs/reports/review/fitting-generations on appbranch. PCdispatch bothconfirmed and bothactive; no waiting for Mac reply.
+
+
+### L-037 — 06/11/2026 — START — CX-PROJECT-AUDIT-16
+User yêu cầu nghiệmthu/audit/toànproject% và dispatchPC/Claude. Scope docs audit/evidence/weighted estimate, source read-only7be869c, PR4df8087a/PR590184b1 reportreview; dependency audit snapshot. Không giả full securitypentest/realartifactinspection. Chuẩn bị scoped Claudehandoff từ7be, PCcontinuation khôngrestart existingtasks.
+
+
+### L-038 — 06/11/2026 — AUDIT / ASSIGN — CX-PROJECT-AUDIT-16
+
+App7be869c source/logs, PR4df8087a/PR590184b1 reports reviewed, PC snapshots completed. Development estimate45.75→46% (range40–50), declared weighted planningrubric, not measured productPASS. Firstrelease NEEDS CHANGES, personalG1–G3 NOT VERIFIED. No fresh full app rerun because source unchanged since independentlytested7be. Npmaudit8moderate/0highcritical toolingtree; not fullpentest. Findings: physicalsourcecleanupretrygap static→Claude reproduce/fix; signedURLrefresh absent; enginecachepolicy/editor/likeness/remote24x7 unverified; templatemaxstrain72.491% and QwenOCRwrong. See audit/report and dependency summary.
+
+Scoped app handoff to Claude CL-POSTAUDIT-01 from7be on branch/worktree riêng: reviewCodexdeltas92c79b6..7be, CL-PRIV-01,CL-URL-01,CL-WINTEST-01 then cachepolicyproposal/pilotrunbook. Codex now read-only app to avoid overlap. Claude external not directly dispatched; fullprompt available for user. PC-INT-007 / AI-QUALITY-03 assigned continuation after006/quality02 per pc-post-audit-20261106; dispatchresult ghi entry tiếp. Không rollback tiến độ/merge/deploy/livegrant.

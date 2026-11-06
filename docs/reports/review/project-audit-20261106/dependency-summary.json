@@ -1,0 +1,87 @@
+{
+  "appRevision": "7be869c989bc8c2b13d8b9ce621c9f70d487e57c",
+  "auditDate": "2026-11-06",
+  "counts": {
+    "info": 0,
+    "low": 0,
+    "moderate": 8,
+    "high": 0,
+    "critical": 0,
+    "total": 8
+  },
+  "packages": [
+    {
+      "name": "@typescript-eslint/eslint-plugin",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": true
+    },
+    {
+      "name": "@typescript-eslint/parser",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "eslint-config-next",
+        "version": "15.5.29",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "name": "@typescript-eslint/type-utils",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": true
+    },
+    {
+      "name": "@typescript-eslint/typescript-estree",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "eslint-config-next",
+        "version": "15.5.29",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "name": "@typescript-eslint/utils",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "eslint-config-next",
+        "version": "15.5.29",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "name": "eslint-config-next",
+      "severity": "moderate",
+      "direct": true,
+      "fixAvailable": {
+        "name": "eslint-config-next",
+        "version": "15.5.29",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "name": "minimatch",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "eslint-config-next",
+        "version": "15.5.29",
+        "isSemVerMajor": true
+      }
+    },
+    {
+      "name": "typescript-eslint",
+      "severity": "moderate",
+      "direct": false,
+      "fixAvailable": {
+        "name": "eslint-config-next",
+        "version": "15.5.29",
+        "isSemVerMajor": true
+      }
+    }
+  ],
+  "scope": "npm advisory snapshot; no force fix applied; not a penetration test"
+}
