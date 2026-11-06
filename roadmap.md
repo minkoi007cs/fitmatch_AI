@@ -283,3 +283,8 @@ Nhận task theo actual receipt, giữ source/owner PC vs Claude tách file, kh�
 | PC-3D-02 | Chat PC hiện hữu | SiTH/GarmentCode/top+jeans/Blender, sharedGPUguard và asset/render thật |
 
 Cả hai dùng runtime/cache riêng, không sửa chung repoindex hoặc app files. Claude giữ code integration, Codex review. User authorization là đúng một chatPC thêm, không tự mở nhiều chat hơn. Không tự giả Codex đã có GPU scheduler; quy tắc/guard phải được implement/check trênPC trước tảiGPU đồng thời.
+
+
+## 18. Mac completion while awaiting PC — PROC-0014
+
+[Execution backlog MAC-14A–H](https://github.com/minkoi007cs/fitmatch_AI/blob/codex/full-look-reviewed/docs/mac-completion-plan.md): recovery presentation, fitting generations/cache revision, signed URL recovery, privacy audit, capture/offline UX, adapter fixtures and pilot runbook. Codex integration owns this continuation on app review branch following user request; future Claude parallel scope needs a receipt before overlapping edits. MAC-14A implemented/tested; remaining packages stay Planned and do not depend entirely on PC. Real assets, native Windows and editor engine remain release gates.

@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 06/11/2026, America/New_York. Revision: PROC-0013. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 06/11/2026, America/New_York. Revision: PROC-0014. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Trạng thái tiếp nối hiện hành — PROC-0013
 
@@ -371,3 +371,12 @@ Tiếp yêu cầu hoàn thiện/push. Baseline app33eff4b sạch; PC remote unav
 ### L-030 — 06/11/2026 — HANDOFF — CX-PC-PREFLIGHT-13 / INT-01A
 
 Bổ sung kiểm thử cross-process exclusion + abrupt-exit lock recovery, sửa test descriptor phù hợp Windows/POSIX. Python18 và npm44 PASS trên Mac. Native Windows NOT RUN; containment unit mock không là Job Object integration. Runbook docs/pc-native-preflight.md trên appbranch yêu cầu app/adapterSHA, native binding + disposable-child teardown, shared absolute GPUlock ACK của3D/Qwen, exact worker-manifest→PC conformance. Không đổi wire/adapter hoặc bật live. Tiếp nhận reportPC khi host sẵn; không gửi thành công giả khi host unavailable. Scope code vẫn codex/full-look-reviewed; không sửa canonical Studio.
+
+
+### L-031 — 06/11/2026 — START — CX-MAC-COMPLETION-14
+User giao tiếp tục kế hoạch/hoàn thiện lúc chờPC. Claim Mac backlog + Studio item/error presentation trên app review branch48f66f9; kiểm tests/build. Ưu tiên món dựng lỗi không biến mất khỏi Studio; audit cache/version thành kế hoạch cụ thể trước migration. Không chiếm enginePC.
+
+
+### L-032 — 06/11/2026 — HANDOFF — CX-MAC-COMPLETION-14
+
+MAC-14A implemented: failed/canceled garment reconstruction remains visible in Studio, category own-key validation, source-deleted/fitting-not-ready/look-not-found UI messages. npm47tests + lint/build PASS; initial test fixture type error corrected with full ModelRow fields then rebuilt successfully. No DB/wire changes; full DB/browser suite not rerun this increment. Plan MAC-14A–H: docs/mac-completion-plan.md on appbranch. Cache investigation confirms fixed pair idempotency plus unique fitting and attempt cap; proper regeneration requires additive generation lifecycle preserving saved looks/stale fencing, remains Planned. SignedURL recovery/privacy/captureUX/test deployment runbook also Planned; no claim all completed. NativePC/assets/editor/likeness gates unchanged. User-authorized app/docs push follows; canonical unchanged.
