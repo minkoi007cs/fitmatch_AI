@@ -1,0 +1,66 @@
+"""Separate schema, internal consistency and fixture-truth checks; never execute edits."""
+import json
+import copy
+from pathlib import Path
+import re
+from jsonschema import Draft202012Validator
+
+ROOT=Path(__file__).resolve().parent
+SCHEMA=json.loads((ROOT/'attributes.schema.json').read_text(encoding='utf-8'))
+
+def parse(text):
+    if len(text.encode('utf-8'))>8192:raise ValueError('Response too large')
+    def pairs(values):
+        result={}
+        for key,value in values:
+            if key in result:raise ValueError('Duplicate key')
+            result[key]=value
+        return result
+    value=json.loads(text,object_pairs_hook=pairs,parse_constant=lambda _:(_ for _ in ()).throw(ValueError('Non-finite')))
+    Draft202012Validator(SCHEMA).validate(value)
+    failures=[]
+    if value['category']=='jeans' and (value['neckline']!='not_applicable' or value['sleeves']!='not_applicable'):
+        failures.append('jeans_has_top_only_fields')
+    if value['category']=='tshirt' and (value['neckline']=='not_applicable' or value['sleeves']=='not_applicable'):
+        failures.append('tshirt_top_fields_not_applicable')
+    if value['category']=='unknown' and (value['neckline']!='unknown' or value['sleeves']!='unknown'):
+        failures.append('unknown_category_has_specific_structure')
+    if value['logo_presence']!='visible' and value['logo_texts']:failures.append('text_without_visible_logo')
+    if 'unknown' in value['dominant_colors'] and len(value['dominant_colors'])!=1:failures.append('unknown_color_mixed_with_claim')
+    normalized=[normalize(x) for x in value['logo_texts']]
+    if len(set(normalized))!=len(normalized):failures.append('duplicate_logo_after_normalization')
+    if failures:raise ValueError(','.join(failures))
+    return value
+
+def normalize(text):return re.sub('[^A-Z0-9]','',text.upper())
+
+def decision(evaluation):
+    if evaluation['known_field_errors'] or evaluation['logos']['false_texts']:return 'needs_review'
+    if evaluation['abstained_fields'] or evaluation['logos']['missed_texts']:return 'partial_unknown'
+    return 'fixture_pass'
+
+def review_proposal(value):
+    # This policy never reads fixture truth or silently corrects OCR spelling.
+    attributes=copy.deepcopy(value)
+    candidates=attributes['logo_texts']
+    attributes['logo_texts']=[]
+    return {'schema_version':'pc-ai.attribute-review.v1','status':'requires_review','approved_for_auto_apply':False,
+            'attributes':attributes,'ocr_status':'unverified' if value['logo_presence']=='visible' else 'not_extracted',
+            'candidate_logo_texts':candidates,'note':'Candidate OCR is not verified logo text; no normalization can establish pixel truth.'}
+
+def evaluate(value,label):
+    comparisons={}
+    for key,expected in label['expected'].items():
+        actual=value[key]
+        unknown=actual=='unknown' or actual==['unknown']
+        match=set(actual)==set(expected) if isinstance(expected,list) else actual==expected
+        comparisons[key]={'actual':actual,'expected':expected,'verdict':'correct' if match else 'abstained' if unknown else 'incorrect'}
+    expected={normalize(x) for x in label['legible_logo_texts']}
+    actual={normalize(x) for x in value['logo_texts']}
+    return {'fields':comparisons,'known_field_errors':sum(x['verdict']=='incorrect' for x in comparisons.values()),
+            'abstained_fields':sum(x['verdict']=='abstained' for x in comparisons.values()),
+            'policy_forced_unknown_fields':['material_composition','back_pocket_count','pockets_total'],
+            'logos':{'matched':sorted(actual&expected),'false_texts':sorted(actual-expected),'missed_texts':sorted(expected-actual),
+                     'precision':len(actual&expected)/len(actual) if actual else None,
+                     'recall':len(actual&expected)/len(expected) if expected else None},
+            'note':'Fixture-specific checks; semantic consistency cannot establish image truth for unlabeled images.'}

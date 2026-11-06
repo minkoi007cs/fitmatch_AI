@@ -1,0 +1,15 @@
+--- a/workers/windows/gpu_guard.py
++++ b/workers/windows/gpu_guard.py
+@@ -11,0 +12 @@
++import math
+@@ -152,2 +153,8 @@
+-    if slot['owner'] == 'pc-ai' and time.time() > slot.get('admitUntilUnix', 0):
+-        return 'pc-3d'
++    if not isinstance(slot, dict) or slot.get('owner') not in ('pc-3d', 'pc-ai'):
++        raise ValueError('Invalid GPU admission metadata')
++    if slot['owner'] == 'pc-ai':
++        expiry = slot.get('admitUntilUnix')
++        if type(expiry) not in (int, float) or not math.isfinite(expiry):
++            raise ValueError('Invalid GPU admission expiry')
++        if time.time() > expiry:
++            return 'pc-3d'

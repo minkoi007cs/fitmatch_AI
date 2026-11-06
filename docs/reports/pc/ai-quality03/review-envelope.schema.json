@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "result_id",
+    "binding",
+    "model_revision",
+    "policy_revision",
+    "raw_output_sha256",
+    "attributes",
+    "candidate_logo_texts",
+    "ocr_status",
+    "status",
+    "approved_for_auto_apply",
+    "envelope_digest"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "pc-ai.review-envelope.v2"
+    },
+    "result_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner_id",
+        "job_id",
+        "item_id",
+        "source_revision",
+        "image_sha256"
+      ],
+      "properties": {
+        "owner_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "job_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "item_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source_revision": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "image_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "model_revision": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "policy_revision": {
+      "const": "quality03.1"
+    },
+    "raw_output_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "attributes": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "category",
+        "dominant_colors",
+        "pattern",
+        "logo_presence",
+        "logo_texts",
+        "neckline",
+        "sleeves",
+        "material_composition",
+        "back_pocket_count",
+        "pockets_total"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "pc-ai.grounded-attributes.v2"
+        },
+        "category": {
+          "enum": [
+            "tshirt",
+            "jeans",
+            "unknown"
+          ]
+        },
+        "dominant_colors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "blue",
+              "white",
+              "black",
+              "gray",
+              "red",
+              "green",
+              "yellow",
+              "brown",
+              "other",
+              "unknown"
+            ]
+          }
+        },
+        "pattern": {
+          "enum": [
+            "striped",
+            "solid",
+            "printed",
+            "checked",
+            "other",
+            "unknown"
+          ]
+        },
+        "logo_presence": {
+          "enum": [
+            "visible",
+            "not_visible",
+            "unknown"
+          ]
+        },
+        "logo_texts": {
+          "type": "array",
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          }
+        },
+        "neckline": {
+          "enum": [
+            "crew",
+            "v_neck",
+            "other",
+            "not_applicable",
+            "unknown"
+          ]
+        },
+        "sleeves": {
+          "enum": [
+            "short",
+            "long",
+            "sleeveless",
+            "not_applicable",
+            "unknown"
+          ]
+        },
+        "material_composition": {
+          "const": "unknown"
+        },
+        "back_pocket_count": {
+          "const": "unknown"
+        },
+        "pockets_total": {
+          "const": "unknown"
+        }
+      }
+    },
+    "candidate_logo_texts": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 32
+      }
+    },
+    "ocr_status": {
+      "enum": [
+        "unverified",
+        "not_extracted"
+      ]
+    },
+    "status": {
+      "const": "requires_human_review"
+    },
+    "approved_for_auto_apply": {
+      "const": false
+    },
+    "envelope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

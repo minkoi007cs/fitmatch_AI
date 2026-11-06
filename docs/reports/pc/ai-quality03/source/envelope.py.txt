@@ -1,0 +1,85 @@
+"""Versioned local proposal; trusted identity and tombstones must come from app owner."""
+import copy
+import hashlib
+import json
+from pathlib import Path
+import re
+import sys
+import uuid
+from jsonschema import Draft202012Validator
+
+ROOT=Path(__file__).resolve().parent
+sys.path.insert(0,str(ROOT.parent/'quality02'))
+from semantic import parse as parse_attributes,SCHEMA as ATTRIBUTE_SCHEMA
+
+VERSION='pc-ai.review-envelope.v2'
+CONFIRM_VERSION='pc-ai.human-confirmation.v1'
+ALLOWED_FIELDS=set(ATTRIBUTE_SCHEMA['properties'])-{'schema_version','material_composition','back_pocket_count','pockets_total'}
+HASH={'type':'string','pattern':'^[0-9a-f]{64}$'}
+UUID={'type':'string','format':'uuid'}
+BINDING_SCHEMA={'type':'object','additionalProperties':False,'required':['owner_id','job_id','item_id','source_revision','image_sha256'],
+                'properties':{'owner_id':UUID,'job_id':UUID,'item_id':UUID,'source_revision':UUID,'image_sha256':HASH}}
+ENVELOPE_SCHEMA={'$schema':'https://json-schema.org/draft/2020-12/schema','type':'object','additionalProperties':False,
+    'required':['contract_version','result_id','binding','model_revision','policy_revision','raw_output_sha256','attributes','candidate_logo_texts',
+                'ocr_status','status','approved_for_auto_apply','envelope_digest'],
+    'properties':{'contract_version':{'const':VERSION},'result_id':UUID,'binding':BINDING_SCHEMA,
+        'model_revision':{'type':'string','pattern':'^[0-9a-f]{40}$'},'policy_revision':{'const':'quality03.1'},'raw_output_sha256':HASH,
+        'attributes':ATTRIBUTE_SCHEMA,'candidate_logo_texts':{'type':'array','maxItems':4,'items':{'type':'string','minLength':1,'maxLength':32}},
+        'ocr_status':{'enum':['unverified','not_extracted']},'status':{'const':'requires_human_review'},
+        'approved_for_auto_apply':{'const':False},'envelope_digest':HASH}}
+
+def canonical(value):return json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode('utf-8')
+def digest(value):return hashlib.sha256(canonical(value)).hexdigest()
+def binding(value):
+    Draft202012Validator(BINDING_SCHEMA).validate(value)
+    for key in ['owner_id','job_id','item_id','source_revision']:
+        if str(uuid.UUID(value[key]))!=value[key]:raise ValueError('Noncanonical binding UUID')
+    return copy.deepcopy(value)
+
+def build(raw,*,trusted_binding,result_id,model_revision):
+    parsed=parse_attributes(raw)
+    record={'contract_version':VERSION,'result_id':str(uuid.UUID(result_id)),'binding':binding(trusted_binding),
+            'model_revision':model_revision,'policy_revision':'quality03.1',
+            'raw_output_sha256':hashlib.sha256(raw.encode('utf-8')).hexdigest(),'attributes':copy.deepcopy(parsed),
+            'candidate_logo_texts':parsed['logo_texts'][:],
+            'ocr_status':'unverified' if parsed['logo_presence']=='visible' else 'not_extracted',
+            'status':'requires_human_review','approved_for_auto_apply':False}
+    record['attributes']['logo_texts']=[]
+    record['envelope_digest']=digest(record)
+    validate(record);return record
+
+def validate(record):
+    Draft202012Validator(ENVELOPE_SCHEMA).validate(record);binding(record['binding'])
+    if str(uuid.UUID(record['result_id']))!=record['result_id']:raise ValueError('Noncanonical result UUID')
+    if record['attributes']['logo_texts']:raise ValueError('OCR candidates cannot become approved text')
+    parse_attributes(json.dumps(record['attributes']))
+    payload={k:v for k,v in record.items() if k!='envelope_digest'}
+    if record['envelope_digest']!=digest(payload):raise ValueError('Envelope altered')
+
+CONFIRM_SCHEMA={'$schema':'https://json-schema.org/draft/2020-12/schema','type':'object','additionalProperties':False,
+    'required':['contract_version','confirmation_id','result_id','expected_envelope_digest','binding','decision','approved_fields'],
+    'properties':{'contract_version':{'const':CONFIRM_VERSION},'confirmation_id':UUID,'result_id':UUID,'expected_envelope_digest':HASH,
+        'binding':BINDING_SCHEMA,'decision':{'enum':['approve_fields','reject','needs_input']},
+        'approved_fields':{'type':'object','additionalProperties':False,
+                           'properties':{k:copy.deepcopy(ATTRIBUTE_SCHEMA['properties'][k]) for k in sorted(ALLOWED_FIELDS)}}}}
+
+def confirm(record,request,*,authenticated_owner_id,current_binding,source_tombstoned=False,job_canceled=False):
+    """No auth is implemented here: authenticated_owner_id must be supplied by trusted server context."""
+    validate(record);Draft202012Validator(CONFIRM_SCHEMA).validate(request)
+    for key in ['confirmation_id','result_id']:
+        if str(uuid.UUID(request[key]))!=request[key]:raise ValueError('Noncanonical confirmation UUID')
+    if source_tombstoned or job_canceled:raise ValueError('Source/job no longer eligible')
+    current=binding(current_binding)
+    if authenticated_owner_id!=current['owner_id']:raise ValueError('Authenticated owner mismatch')
+    if request['binding']!=current or record['binding']!=current:raise ValueError('Stale/foreign source binding')
+    if request['result_id']!=record['result_id'] or request['expected_envelope_digest']!=record['envelope_digest']:raise ValueError('Stale result')
+    fields=request['approved_fields']
+    if request['decision']!='approve_fields' and fields:raise ValueError('Cannot approve fields in rejection')
+    if request['decision']=='approve_fields' and not fields:raise ValueError('No explicit field approval')
+    approved=copy.deepcopy(record['attributes']);approved.update(fields)
+    parse_attributes(json.dumps(approved))
+    return {'contract_version':'pc-ai.human-confirmation-result.v1','confirmation_id':request['confirmation_id'],
+            'confirmation_digest':digest(request),'result_id':record['result_id'],'binding':current,
+            'status':'human_confirmed_fields' if request['decision']=='approve_fields' else request['decision'],
+            'approved_fields':copy.deepcopy(fields),'approved_for_auto_apply':False,
+            'note':'Explicit human field confirmation only; app ACK/auth/durable idempotency and update transaction are not implemented.'}

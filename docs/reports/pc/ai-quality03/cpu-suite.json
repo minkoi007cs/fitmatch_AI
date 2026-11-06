@@ -1,0 +1,117 @@
+{
+  "session": "PC-AI-QUALITY-20261106-03",
+  "scope": "CPU fixtures, logical controller, envelope/retention proposal and isolated native Windows process tests",
+  "tests_run": 61,
+  "failures": 0,
+  "errors": 0,
+  "skipped": [
+    "Native file-link case Not run: Windows1314; no elevation requested"
+  ],
+  "passed": 60,
+  "exit_code": 0,
+  "seconds": 5.897,
+  "gpu_model_loaded": false,
+  "real_machine_memory_exhaustion": false,
+  "native_events": [
+    {
+      "test": "test_cpu_child_crash_exit7",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "exit": 7,
+      "all_job_processes_exited": true
+    },
+    {
+      "test": "test_exclusion_then_normal_unload",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "contender_exit": 75,
+      "child_launch_refused": true,
+      "launcher_pid": 23548,
+      "actual_interpreter": {
+        "pid": 13608,
+        "parent_pid": 23548,
+        "creation_time": 1793975459.6066225,
+        "mode": "hold",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false
+      },
+      "all_job_processes_exited": true
+    },
+    {
+      "test": "test_injected_low_ram_exit86_without_real_pressure",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "exit": 86,
+      "injected_values": [
+        2147483648,
+        536870912,
+        536870912,
+        536870912
+      ],
+      "physical_pressure_created": false,
+      "all_job_processes_exited": true
+    },
+    {
+      "test": "test_owned_guard_crash_kill_on_close",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "guard_creation_time": 1793975460.715202,
+      "actual_interpreter": {
+        "pid": 19228,
+        "parent_pid": 19120,
+        "creation_time": 1793975460.8168082,
+        "mode": "tree",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false,
+        "grandchild_launcher_pid": 28028
+      },
+      "grandchild": {
+        "pid": 21852,
+        "parent_pid": 28028,
+        "creation_time": 1793975461.0066617,
+        "mode": "hold",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false
+      },
+      "unrelated_sentinel_survived": true,
+      "recovery_exit": 0
+    },
+    {
+      "test": "test_slot_refused_before_child_launch",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "exit": 75,
+      "child_launch_refused": true
+    },
+    {
+      "test": "test_timeout_drains_child_and_grandchild",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "exit": 124,
+      "launcher_pid": 30248,
+      "actual_interpreter": {
+        "pid": 23156,
+        "parent_pid": 30248,
+        "creation_time": 1793975461.8498893,
+        "mode": "tree",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false,
+        "grandchild_launcher_pid": 26108
+      },
+      "grandchild": {
+        "pid": 2376,
+        "parent_pid": 26108,
+        "creation_time": 1793975462.03807,
+        "mode": "hold",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false
+      },
+      "all_job_processes_exited": true
+    }
+  ],
+  "peak_sampled_process_tree_rss_bytes": 155430912,
+  "min_sampled_host_available_bytes": 5052678144,
+  "process_peak_working_set_bytes": 36872192,
+  "raw_local_result_sha256": "e8c577c05e1ddcaa39cf8220c476b868be24a2f86c74aa1446db01bd06863309",
+  "samples_csv": "cpu-memory.csv"
+}

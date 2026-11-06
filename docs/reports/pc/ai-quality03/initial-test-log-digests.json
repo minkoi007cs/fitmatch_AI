@@ -1,0 +1,10 @@
+[
+  {
+    "log": "envelope-retention-tests-initial.log",
+    "sha256": "22a219cf79b916e371122fb19f14bcb2aed460f519d84f52fcfee9a525968cee"
+  },
+  {
+    "log": "envelope-retention-tests-link-error.log",
+    "sha256": "dd71f3f93687b8a20f5a0f49c33332e8d9011c4d74db26df1bd977ef3856a3a4"
+  }
+]

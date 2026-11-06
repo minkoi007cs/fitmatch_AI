@@ -1,0 +1,53 @@
+import hashlib
+import json
+from pathlib import Path
+ROOT=Path(__file__).resolve().parent
+GPU=ROOT.parents[1];REPORTS=GPU/'reports'/'ai'/'quality03'
+new=json.loads((REPORTS/'new-fixture-provenance.json').read_text(encoding='utf-8'))
+old=json.loads((GPU/'reports'/'ai'/'public-image-provenance.json').read_text(encoding='utf-8'))
+def item(ident,scoreable,*,unknown=(),texts=(),complete=False,requires_target=False,notes='',kind='photograph'):
+    return {'id':ident,'image_kind':kind,'scoreable':scoreable,'unknown_required':list(unknown),
+        'ocr':{'confirmed_texts':list(texts),'complete':complete},'requires_target':requires_target,
+        'notes':notes,'annotation':'Visual inspection by PC-AI-01, not model generated; single annotator, pending second review',
+        'model_run':'Not run in AI-QUALITY-03'}
+unseen=['material_composition','pockets_total','back_pocket_count']
+labels=[
+ item('legacy-striped-illustration',{'category':['tshirt'],'dominant_colors':[['blue','white']],'pattern':['striped'],'logo_presence':['visible'],'neckline':['crew'],'sleeves':['short']},
+      unknown=unseen,texts=['FON BET','DELO','RUSCON'],notes='Prior regression only; no new inference to chase DELO. Crest text not adjudicated.',kind='illustration'),
+ item('legacy-blue-jeans',{'category':['jeans'],'dominant_colors':[['blue']],'pattern':['solid'],'logo_presence':['not_visible']},
+      unknown=unseen,texts=[],complete=True,notes='Original front photograph; no hidden-back pocket/material truth.'),
+ item('plain-white',{'category':['tshirt'],'dominant_colors':[['white']],'pattern':['printed'],'logo_presence':['visible'],'neckline':['crew'],'sleeves':['short']},
+      unknown=unseen,texts=['ESPRIT'],notes='Despite acquisition alias plain-white, actual image has green chest print. ESPRIT is visible on neck tag and small chest text. Stylized central text remains unadjudicated. Filename/title are not labels.'),
+ item('multi-hanger',{},unknown=unseen,texts=[],requires_target=True,
+      notes='Several garments and heavy mutual occlusion; no single item target. Need crop/target selection before model load; no garment-wide no-logo claim.'),
+ item('black-jeans',{'category':['jeans'],'dominant_colors':[['black']],'pattern':['solid'],'logo_presence':['visible']},
+      unknown=['material_composition','pockets_total'],texts=[],notes='Folded/back view, tan waistband patch and red tag visible, two visible rear pockets can be annotated separately. Brand text is unadjudicated at inspected display scale. Filename brand is not OCR truth.'),
+ item('striped-wiki',{'dominant_colors':[['white','brown'],['white','yellow']],'pattern':['striped'],'logo_presence':['visible'],'sleeves':['short']},
+      unknown=unseen+['category','neckline'],texts=['Wikipedia'],notes='Central rider shirt only, back/partial view. Sack occludes lower graphic. Collared striped top is out of the first-release tee class; category/neckline unknown/review. Printed word Wikipedia visible; lower graphic/text unadjudicated. Nearby riders are distractors.'),
+ item('long-sleeve',{'category':['tshirt'],'dominant_colors':[['blue']],'pattern':['solid'],'logo_presence':['not_visible'],'neckline':['crew'],'sleeves':['long']},
+      unknown=unseen,texts=[],complete=True,notes='Navy coarse color=blue, plain front long-sleeve top worn by a publicly licensed model. Garment labels only, no identity/face analysis.')]
+provenance=[]
+for entry in new:
+    path=ROOT/'fixtures'/'public-images'/entry['file']
+    if not path.exists() or hashlib.sha256(path.read_bytes()).hexdigest()!=entry['sha256']:raise ValueError('New source missing/hash mismatch')
+    entry['label_status']='Visually annotated';provenance.append(entry)
+for ident,entry in zip(['legacy-striped-illustration','legacy-blue-jeans'],old):
+    provenance.append({**entry,'id':ident,'download_status':'Reused prior verified local source','label_status':'Prior visual labels reused'})
+plan={'plan_version':'pc-ai.fixture-plan.v1','labels_version':'quality03.visual-labels.v1','acquired_images':7,'new_photos':5,
+      'annotation_status':'single-annotator provisional, second review required','inference_runs_this_task':0,
+      'partition':{'regression':['legacy-striped-illustration','legacy-blue-jeans'],
+                   'new_cpu_labeled_holdout':['plain-white','multi-hanger','black-jeans','striped-wiki','long-sleeve']},
+      'labels':labels,'provenance':provenance,
+      'additional_collection_plan':[
+        {'condition':'Short-sleeve plain tee, dark and light, front/back','target_new_photos':4,'status':'Planned; rights+visual annotation before use'},
+        {'condition':'Patterned tee photographs beyond illustration, naturally occluded and readable logos','target_new_photos':4,'status':'Planned; no invented brand label'},
+        {'condition':'Jeans front/back in light/dark wash, partial tags and no tag','target_new_photos':4,'status':'Planned; separate view-specific visible facts'},
+        {'condition':'Hard negatives: non-tee tops/non-jeans, multiple items, poor lighting','target_new_photos':4,'status':'Planned; target selection/unknown expected'}],
+      'acceptance_protocol':['Freeze hash/provenance/labels and partition before any new GPU run.',
+          'Report category/color/pattern errors and abstention/coverage separately.',
+          'Only fully adjudicated OCR regions support precision; partial-region extras require review.',
+          'No personal-photo accuracy or generalization claims from seven curated sources.',
+          'No fixture truths or accepted logo strings supplied to the model prompt.',
+          'GPU only for new cases that add evidence, with current3Dslot/sharedOSlock and RAM admission.']}
+(ROOT/'corpus-plan.json').write_text(json.dumps(plan,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+print(json.dumps({'images':7,'new_photos':5,'model_runs':0,'new_photo_bytes':sum(x['local_bytes'] for x in new)}))

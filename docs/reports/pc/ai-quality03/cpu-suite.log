@@ -1,0 +1,66 @@
+test_ambiguous_target_refused_before_load (test_control.ControllerTests) ... ok
+test_changed_headroom_after_acquire_no_load (test_control.ControllerTests) ... ok
+test_deadline_after_generation_no_retry (test_control.ControllerTests) ... ok
+test_deadline_before_first_generation (test_control.ControllerTests) ... ok
+test_invalid_budgets (test_control.ControllerTests) ... ok
+test_invalid_forever_stops_at_two (test_control.ControllerTests) ... ok
+test_invalid_headroom_type_refused_before_load (test_control.ControllerTests) ... ok
+test_load_failure_still_unloads (test_control.ControllerTests) ... ok
+test_lock_refusal_no_load_release (test_control.ControllerTests) ... ok
+test_missing_or_expired_slot_before_load (test_control.ControllerTests) ... ok
+test_nonfinite_slot_and_clock_refused_before_load (test_control.ControllerTests) ... ok
+test_one_invalid_then_valid_is_two_attempts (test_control.ControllerTests) ... ok
+test_output_size_is_terminal (test_control.ControllerTests) ... ok
+test_pressure_gate_injection_and_recovery (test_control.ControllerTests) ... ok
+test_runtime_crash_not_misclassified_schema_retry (test_control.ControllerTests) ... ok
+test_success_unloads_before_release (test_control.ControllerTests) ... ok
+test_surviving_child_keeps_lease (test_control.ControllerTests) ... ok
+test_unload_failure_keeps_logical_lease (test_control.ControllerTests) ... ok
+test_changed_candidates_invalidate_digest (test_envelope.EnvelopeTests) ... ok
+test_each_stale_binding_component_rejected (test_envelope.EnvelopeTests) ... ok
+test_explicit_human_correction_bound_to_source (test_envelope.EnvelopeTests) ... ok
+test_foreign_body_binding_rejected (test_envelope.EnvelopeTests) ... ok
+test_model_cannot_provide_approval_fields (test_envelope.EnvelopeTests) ... ok
+test_no_empty_or_unallowlisted_approval (test_envelope.EnvelopeTests) ... ok
+test_outer_autoapply_tampering_rejected_even_with_new_digest (test_envelope.EnvelopeTests) ... ok
+test_promoted_ocr_rejected_even_with_new_digest (test_envelope.EnvelopeTests) ... ok
+test_raw_ocr_stays_unverified (test_envelope.EnvelopeTests) ... ok
+test_reject_and_needs_input_cannot_include_approval (test_envelope.EnvelopeTests) ... ok
+test_replay_digest_is_stable_not_durable_idempotency (test_envelope.EnvelopeTests) ... ok
+test_stale_result_and_digest (test_envelope.EnvelopeTests) ... ok
+test_tombstone_and_cancel_block_confirmation (test_envelope.EnvelopeTests) ... ok
+test_unknown_version_rejected (test_envelope.EnvelopeTests) ... ok
+test_wrong_authenticated_owner_rejected (test_envelope.EnvelopeTests) ... ok
+test_active_job_blocks_plan (test_retention.RetentionTests) ... ok
+test_changed_bytes_refused (test_retention.RetentionTests) ... ok
+test_dry_run_keeps_source (test_retention.RetentionTests) ... ok
+test_filename_hash_mismatch_refused (test_retention.RetentionTests) ... ok
+test_forged_owner_in_both_request_and_tombstone_fails_stored_binding (test_retention.RetentionTests) ... ok
+test_raw_ocr_evidence_can_share_source_binding (test_retention.RetentionTests) ... ok
+test_reparse_flag_fault_injection_refused (test_retention.RetentionTests) ... ok
+test_retry_still_lists_logically_deleted_source (test_retention.RetentionTests) ... ok
+test_symlink_source_refused_without_deleting_target (test_retention.RetentionTests) ... skipped 'Native file-link case Not run: Windows1314; no elevation requested'
+test_tombstone_owner_revision_and_fence (test_retention.RetentionTests) ... ok
+test_traversal_foreign_models_and_derived_refused (test_retention.RetentionTests) ... ok
+test_abstention_is_coverage_loss_not_correct (test_metrics.MetricsTests) ... ok
+test_all_abstained_accuracy_undefined (test_metrics.MetricsTests) ... ok
+test_invented_brand_counted_only_for_complete_truth (test_metrics.MetricsTests) ... ok
+test_model_does_not_get_fixture_truth (test_metrics.MetricsTests) ... ok
+test_multiple_items_needs_target_before_load (test_metrics.MetricsTests) ... ok
+test_punctuation_normalization_does_not_repair_letters (test_metrics.MetricsTests) ... ok
+test_unknown_truth_does_not_award_correct_guess (test_metrics.MetricsTests) ... ok
+test_wrong_color_is_error_not_json_pass (test_metrics.MetricsTests) ... ok
+test_ambiguous_and_misleading_filename_labels (test_corpus.CorpusTests) ... ok
+test_partition_and_annotation_are_not_inference (test_corpus.CorpusTests) ... ok
+test_source_bytes_and_licenses (test_corpus.CorpusTests) ... ok
+test_cpu_child_crash_exit7 (test_native_cpu.NativeCPUTests) ... ok
+test_exclusion_then_normal_unload (test_native_cpu.NativeCPUTests) ... ok
+test_injected_low_ram_exit86_without_real_pressure (test_native_cpu.NativeCPUTests) ... ok
+test_owned_guard_crash_kill_on_close (test_native_cpu.NativeCPUTests) ... ok
+test_slot_refused_before_child_launch (test_native_cpu.NativeCPUTests) ... ok
+test_timeout_drains_child_and_grandchild (test_native_cpu.NativeCPUTests) ... ok
+
+----------------------------------------------------------------------
+Ran 61 tests in 5.891s
+
+OK (skipped=1)

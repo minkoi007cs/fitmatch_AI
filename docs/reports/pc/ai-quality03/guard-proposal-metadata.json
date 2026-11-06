@@ -1,0 +1,10 @@
+{
+  "owner": "PC-3D-02",
+  "status": "Proposal only; not applied or independently tested as a patched guard",
+  "base_source_sha256": "4ddf206d2cb16794f1e05eded7278d82c027dab1d277ac737b003322f8006680",
+  "proposed_normalized_sha256": "ace366f5643bf8ee5dfc61230d5d0238e6be24256dbcc6cddbecbaa1aba656c8",
+  "scope": "Finite slot metadata validation only; no lock path, wire, process or GPU behavior changes",
+  "format": "Zero-context review patch; git apply --unidiff-zero --check on exact base, owner review required",
+  "repro": "slot-metadata-repro.json; isolated CPU child admitted by NaN/Infinity expiry",
+  "next": "3D owner reviews, applies on own branch and tests before use; current Qwen control proposal already rejects these signals"
+}
