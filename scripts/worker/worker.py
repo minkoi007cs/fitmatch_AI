@@ -316,39 +316,83 @@ class DirLock:
         return (self.handle.fileno(),) if self.handle and os.name != 'nt' else ()
 
 
-def windows_kill_on_close():
-    """Best effort, not yet verified on the PC: children of this worker die when the worker process dies."""
-    if os.name != 'nt':
-        return
+class ContainmentError(RuntimeError):
+    pass
+
+
+CONTAINMENT_DISABLED = 'unsafe-disabled'
+
+
+def bind_windows_job_object():
+    """Put this worker in a Job Object with KILL_ON_JOB_CLOSE so adapters die with the worker.
+
+    Returns the open job handle (must stay open for the life of the process) or raises OSError.
+    The job does not set BREAKAWAY_OK, so adapter children cannot leave it.
+    """
+    import ctypes
+    from ctypes import wintypes
+
+    class Basic(ctypes.Structure):
+        _fields_ = [('PerProcessUserTimeLimit', ctypes.c_int64), ('PerJobUserTimeLimit', ctypes.c_int64),
+                    ('LimitFlags', wintypes.DWORD), ('MinimumWorkingSetSize', ctypes.c_size_t),
+                    ('MaximumWorkingSetSize', ctypes.c_size_t), ('ActiveProcessLimit', wintypes.DWORD),
+                    ('Affinity', ctypes.c_size_t), ('PriorityClass', wintypes.DWORD), ('SchedulingClass', wintypes.DWORD)]
+
+    class Io(ctypes.Structure):
+        _fields_ = [(n, ctypes.c_uint64) for n in ('Read', 'Write', 'Other', 'ReadBytes', 'WriteBytes', 'OtherBytes')]
+
+    class Extended(ctypes.Structure):
+        _fields_ = [('Basic', Basic), ('Io', Io), ('ProcessMemoryLimit', ctypes.c_size_t), ('JobMemoryLimit', ctypes.c_size_t),
+                    ('PeakProcessMemoryUsed', ctypes.c_size_t), ('PeakJobMemoryUsed', ctypes.c_size_t)]
+
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.CreateJobObjectW.argtypes = (wintypes.LPVOID, wintypes.LPCWSTR)
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel32.SetInformationJobObject.argtypes = (wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD)
+    kernel32.AssignProcessToJobObject.argtypes = (wintypes.HANDLE, wintypes.HANDLE)
+    kernel32.IsProcessInJob.argtypes = (wintypes.HANDLE, wintypes.HANDLE, ctypes.POINTER(wintypes.BOOL))
+    job = kernel32.CreateJobObjectW(None, None)
+    if not job:
+        raise OSError(ctypes.get_last_error(), 'CreateJobObjectW failed')
+    info = Extended()
+    info.Basic.LimitFlags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+    if not kernel32.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info)):
+        raise OSError(ctypes.get_last_error(), 'SetInformationJobObject failed')
+    if not kernel32.AssignProcessToJobObject(job, kernel32.GetCurrentProcess()):
+        raise OSError(ctypes.get_last_error(), 'AssignProcessToJobObject failed (worker may already be in a job without breakaway)')
+    inside = wintypes.BOOL(False)
+    if not kernel32.IsProcessInJob(kernel32.GetCurrentProcess(), job, ctypes.byref(inside)) or not inside.value:
+        raise OSError(ctypes.get_last_error(), 'IsProcessInJob did not confirm the job binding')
+    return job
+
+
+def ensure_process_containment(config, platform=None, binder=bind_windows_job_object):
+    """Fail closed: refuse to start inference unless adapters cannot outlive the worker.
+
+    POSIX: adapters run in their own session, the parent kills the group on timeout/lease loss,
+    and an adapter orphaned by a parent crash keeps the inherited workDir flock, so a restarted
+    worker refuses to start (DirLock). Windows: a KILL_ON_JOB_CLOSE job object is required.
+    The only way to run Windows without it is the explicit operator opt-in
+    `"processContainment": "unsafe-disabled"`, which is logged on every start.
+    """
+    platform = platform or os.name
+    mode = config.get('processContainment', 'required')
+    if mode not in ('required', CONTAINMENT_DISABLED):
+        raise ContainmentError(f'processContainment must be "required" or "{CONTAINMENT_DISABLED}"')
+    if platform != 'nt':
+        return 'posix-session+dirlock'
     try:
-        import ctypes
-        from ctypes import wintypes
-
-        class Basic(ctypes.Structure):
-            _fields_ = [('PerProcessUserTimeLimit', ctypes.c_int64), ('PerJobUserTimeLimit', ctypes.c_int64),
-                        ('LimitFlags', wintypes.DWORD), ('MinimumWorkingSetSize', ctypes.c_size_t),
-                        ('MaximumWorkingSetSize', ctypes.c_size_t), ('ActiveProcessLimit', wintypes.DWORD),
-                        ('Affinity', ctypes.c_size_t), ('PriorityClass', wintypes.DWORD), ('SchedulingClass', wintypes.DWORD)]
-
-        class Io(ctypes.Structure):
-            _fields_ = [(n, ctypes.c_uint64) for n in ('Read', 'Write', 'Other', 'ReadBytes', 'WriteBytes', 'OtherBytes')]
-
-        class Extended(ctypes.Structure):
-            _fields_ = [('Basic', Basic), ('Io', Io), ('ProcessMemoryLimit', ctypes.c_size_t), ('JobMemoryLimit', ctypes.c_size_t),
-                        ('PeakProcessMemoryUsed', ctypes.c_size_t), ('PeakJobMemoryUsed', ctypes.c_size_t)]
-
-        kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
-        kernel32.CreateJobObjectW.restype = wintypes.HANDLE
-        kernel32.GetCurrentProcess.restype = wintypes.HANDLE
-        job = kernel32.CreateJobObjectW(None, None)
-        info = Extended()
-        info.Basic.LimitFlags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-        if not job or not kernel32.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info)) \
-                or not kernel32.AssignProcessToJobObject(job, kernel32.GetCurrentProcess()):
-            print('Warning: could not bind adapters to a kill-on-close job object', flush=True)
-        windows_kill_on_close.job = job  # keep the handle open for the life of the process
-    except Exception:
-        print('Warning: kill-on-close job object unavailable', flush=True)
+        ensure_process_containment.job = binder()  # keep the handle open for the life of the process
+        return 'windows-job-object'
+    except Exception as error:
+        if mode == CONTAINMENT_DISABLED:
+            print('WARNING: processContainment=unsafe-disabled. A worker crash can leave an adapter running on the GPU; '
+                  'restart only after checking Task Manager. Reason: ' + type(error).__name__, flush=True)
+            return 'disabled-by-operator'
+        raise ContainmentError('Could not bind adapters to a kill-on-close job object (' + type(error).__name__ +
+                               '). Refusing to run GPU jobs. Start the worker outside other job objects, or set '
+                               f'"processContainment": "{CONTAINMENT_DISABLED}" only if you accept orphaned adapters.')
 
 
 def stop_process(process):
@@ -633,7 +677,12 @@ def main():
     if not lock.acquire(float(config.get('lockWaitSeconds', 0))):
         print('Another worker or an orphaned adapter still holds this workDir; not starting a second inference.', flush=True)
         return 2
-    windows_kill_on_close()
+    try:
+        containment = ensure_process_containment(config)
+    except ContainmentError as error:
+        print(str(error), flush=True)
+        return 3
+    print(f'Process containment: {containment}', flush=True)
     worker = Worker(config, os.environ['FITMATCH_WORKER_TOKEN'], root, lock)
     return worker.loop(args.once, float(config.get('pollSeconds', 8)))
 

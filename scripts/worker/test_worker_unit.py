@@ -124,5 +124,29 @@ class ClassificationTests(unittest.TestCase):
         self.assertEqual(worker.JobFailure('TIMEOUT').code, 'TIMEOUT')
 
 
+class ContainmentTests(unittest.TestCase):
+    def failing(self):
+        raise OSError(5, 'access denied')
+
+    def test_windows_binding_failure_refuses_to_start(self):
+        with self.assertRaises(worker.ContainmentError):
+            worker.ensure_process_containment({}, platform='nt', binder=self.failing)
+
+    def test_windows_binding_success(self):
+        self.assertEqual(worker.ensure_process_containment({}, platform='nt', binder=lambda: object()), 'windows-job-object')
+
+    def test_windows_explicit_disabled_mode_runs_with_warning(self):
+        mode = worker.ensure_process_containment({'processContainment': 'unsafe-disabled'}, platform='nt', binder=self.failing)
+        self.assertEqual(mode, 'disabled-by-operator')
+
+    def test_unknown_mode_is_rejected_everywhere(self):
+        for platform in ('nt', 'posix'):
+            with self.assertRaises(worker.ContainmentError):
+                worker.ensure_process_containment({'processContainment': 'off'}, platform=platform, binder=lambda: object())
+
+    def test_posix_uses_session_and_dirlock(self):
+        self.assertEqual(worker.ensure_process_containment({}, platform='posix', binder=self.failing), 'posix-session+dirlock')
+
+
 if __name__ == '__main__':
     unittest.main()

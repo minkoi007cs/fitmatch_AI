@@ -5,6 +5,11 @@
   "pollSeconds": 8,
   "requestTimeoutSeconds": 30,
   "lockWaitSeconds": 0,
-  "retry": { "attempts": 6, "baseSeconds": 2, "maxSeconds": 30 },
+  "processContainment": "required",
+  "retry": {
+    "attempts": 6,
+    "baseSeconds": 2,
+    "maxSeconds": 30
+  },
   "engines": {}
 }
