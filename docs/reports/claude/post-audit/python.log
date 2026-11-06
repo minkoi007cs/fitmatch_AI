@@ -1,0 +1,9 @@
+Checkpoint set aside: unreadable or unrecognized checkpoint
+.....Checkpoint set aside: unreadable or unrecognized checkpoint
+.........WARNING: processContainment=unsafe-disabled. A worker crash can leave an adapter running on the GPU; restart only after checking Task Manager. Reason: OSError
+....
+----------------------------------------------------------------------
+Ran 18 tests in 0.074s
+
+OK
+exit=0

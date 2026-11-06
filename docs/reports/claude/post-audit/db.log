@@ -1,0 +1,12 @@
+
+> fitmatch-ai@0.1.0 test:v2:db
+> node scripts/test-v2-db.mjs
+
+PASS C1 PostgreSQL: migration on populated DB backfills legacy garments/fittings to top and keeps legacy looks; slot/kind constraint; jeans→bottom with bottom.* kinds; pants/foreign refused; top-only worker never claims jeans; per-item fitting cache with inherited slot; save_look checks readiness/slot/avatar/owner and snapshots camera + asset sha256; browser roles denied.
+PASS C2 PostgreSQL: video asset kind with 150 MB cap (photos stay 40 MB), avatar inputs photos or video+photo with aligned roles, video only for avatars; source delete tombstones inputs, cancels every unfinished job that reads them, blocks late output/complete, retry and re-enqueue; keep choice; owner-only; browser roles denied.
+PASS C3 PostgreSQL: GC dry run lists stale pending uploads, tombstoned source objects, unpublished outputs and staging copies after the grace period; published outputs kept; deletes nothing; browser roles denied.
+PASS fitting generations: eight concurrent requests create one successor; owner/source/active guards; old retry denied; new cache and saved look pinning.
+PASS CL-PRIV-01 PostgreSQL: C2 retry-loses-paths reproduced then fixed; backfill of earlier tombstones; durable pending/failed/completed intents with backoff and 5-attempt collector bound; failed paths survive repeat requests; completed never reopened by late failures; per-model status for shared sources; foreign owner/browser roles denied; derived GLBs untouched; 6 concurrent deletes record each object once.
+PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.
+PASS S1 PostgreSQL: concurrent dedupe, cross-owner denial, capability claims, one worker/job, expired lease recovery, stale completion fencing, cancel/retry, revocation, immutable cache, RLS/grants, 20/25 queue quota, 2/6 upload quota.
+exit=0

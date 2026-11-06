@@ -1,0 +1,43 @@
+
+> fitmatch-ai@0.1.0 test:v2
+> node --import tsx scripts/test-auth-http.mjs --v2 --studio
+
+PASS: guest APIs blocked before parsing/AI; cross-origin mutation rejected
+PASS: PKCE/state verified; callback bridges user-scoped Supabase session and preserves next/vibe
+PASS R1 worker recovery (real routes + SQL + Python worker): complete/finalize reply loss and outage, upload outcome unknown and expired URL, claim reply loss redelivered, restart within lease, restart after lease loss reusing output (stale token 409), MODEL_UNAVAILABLE, adapter contract exit78/exit2+JSON/usage/configured OOM/TIMEOUT, default-deny grants, operator create/grant/ungrant/rotate/revoke, crash during inference guarded by workDir lock, host GPU lock blocks claims while another process holds the GPU, no secrets in adapter env. Synthetic geometry only.
+▲ Next.js 16.4.5
+- Local:         http://localhost:3220
+- Network:       http://192.0.2.2:3220
+✓ Ready in 112ms
+✓ Running next.config.ts took 25ms
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  {
++   bottom: 'Trang phục gốc của avatar',
++   top: 'Trang phục gốc của avatar'
+-   bottom: 'Jeans đen (fixture)',
+-   top: 'Tee đỏ (fixture)'
+  }
+
+    at waitShown (/home/claude/app/scripts/test-full-look-http.mjs:139:14)
+    at async testFullLook (/home/claude/app/scripts/test-full-look-http.mjs:209:5)
+    at async testV2 (/home/claude/app/scripts/test-v2-http.mjs:473:5)
+    at async <anonymous> (/home/claude/app/scripts/test-auth-http.mjs:161:97) {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: {
+    top: 'Trang phục gốc của avatar',
+    bottom: 'Trang phục gốc của avatar'
+  },
+  expected: { top: 'Tee đỏ (fixture)', bottom: 'Jeans đen (fixture)' },
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.4
