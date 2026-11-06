@@ -1,0 +1,27 @@
+{
+  "session": "PC-AI-QUALITY-20261106-03",
+  "task": "AI-QUALITY-03",
+  "docs_baseline": "f75290da00e2006e67ef4139afdcafac5daa655d",
+  "prepublication_docs_readback": "d3f29a51f8615f4831aa173791896a6fba0eca6e",
+  "status": "Ready for review",
+  "cpu_cases": 61,
+  "passed": 60,
+  "not_run": [
+    "Native file-symlink creation1314",
+    "New model/GPU inference",
+    "Loaded-Qwen pressure cleanup",
+    "Live app/retention integration"
+  ],
+  "known_gap": "Q03-GUARD-01: NaN/Infinity expiry admitted isolated CPU child; scoped proposal only, guard unchanged",
+  "corpus": {
+    "images": 7,
+    "new_licensed_photos": 5,
+    "inference_runs": 0,
+    "labels": "single annotator provisional"
+  },
+  "retention": "metadata inventory + bound dry-run proposal; no real source/model deletion",
+  "contract": "pc-ai.review-envelope.v2 + pc-ai.human-confirmation.v1, awaiting Claude ACK",
+  "auto_apply": false,
+  "central_process_modified": false,
+  "next": "Codex reviews;3D owner hardens guard;Claude ACKs schemas/privacy protocol;personal inputs needs_input"
+}

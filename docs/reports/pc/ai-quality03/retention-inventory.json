@@ -1,0 +1,97 @@
+{
+  "version": "pc-ai.retention-inventory.v1",
+  "mode": "metadata only, no personal/3D folders inspected",
+  "areas": [
+    {
+      "alias": "public_reference_sources",
+      "exists": true,
+      "files": 2,
+      "bytes": 107441,
+      "extensions": [
+        ".jpg",
+        ".png"
+      ],
+      "reparse_entries_skipped": 0,
+      "policy": "reference_corpus_keep"
+    },
+    {
+      "alias": "public_quality03_sources",
+      "exists": true,
+      "files": 5,
+      "bytes": 8241486,
+      "extensions": [
+        ".jpg"
+      ],
+      "reparse_entries_skipped": 0,
+      "policy": "reference_corpus_keep"
+    },
+    {
+      "alias": "source_temp_jobs",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "extensions": [],
+      "reparse_entries_skipped": 0,
+      "policy": "owner_job_revision_binding_required"
+    },
+    {
+      "alias": "hf_config_cache",
+      "exists": false,
+      "files": 0,
+      "bytes": 0,
+      "extensions": [],
+      "reparse_entries_skipped": 0,
+      "policy": "cache_review_separately"
+    },
+    {
+      "alias": "original_model",
+      "exists": true,
+      "files": 13,
+      "bytes": 8887291213,
+      "extensions": [
+        ".json",
+        ".md",
+        ".safetensors",
+        ".txt"
+      ],
+      "reparse_entries_skipped": 0,
+      "policy": "never_source_cleanup"
+    },
+    {
+      "alias": "derived_model",
+      "exists": true,
+      "files": 28,
+      "bytes": 8887290909,
+      "extensions": [
+        ".json",
+        ".md",
+        ".safetensors",
+        ".txt"
+      ],
+      "reparse_entries_skipped": 0,
+      "policy": "never_source_cleanup"
+    },
+    {
+      "alias": "qwen_reports",
+      "exists": true,
+      "files": 43,
+      "bytes": 353243,
+      "extensions": [
+        ".json",
+        ".log",
+        ".md"
+      ],
+      "reparse_entries_skipped": 0,
+      "policy": "source_sensitive_if_personal_inputs_future"
+    }
+  ],
+  "deleted_files": 0,
+  "live_job_binding_implemented": false,
+  "personal_sources": "needs_input; none fetched",
+  "findings": [
+    "Current reference sources have corpus provenance, not owner/job/source-revision binding.",
+    "No Qwen job-local deletion ledger or collector is implemented.",
+    "Raw OCR/error logs must follow source-sensitive retention when personal images are introduced.",
+    "Model/config/derived-weight caches and ready avatar/garment/looks are separate lifecycles."
+  ]
+}

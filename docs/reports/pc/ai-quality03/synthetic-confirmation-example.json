@@ -1,0 +1,79 @@
+{
+  "kind": "Synthetic DTO only; no image inference, no authenticated user or app update",
+  "envelope": {
+    "contract_version": "pc-ai.review-envelope.v2",
+    "result_id": "00000000-0000-0000-0000-000000000005",
+    "binding": {
+      "owner_id": "00000000-0000-0000-0000-000000000001",
+      "job_id": "00000000-0000-0000-0000-000000000002",
+      "item_id": "00000000-0000-0000-0000-000000000003",
+      "source_revision": "00000000-0000-0000-0000-000000000004",
+      "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "model_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+    "policy_revision": "quality03.1",
+    "raw_output_sha256": "ccfbdf4445c799688d57e07976a831efcb27bf475368708e0825814d33d4a685",
+    "attributes": {
+      "schema_version": "pc-ai.grounded-attributes.v2",
+      "category": "tshirt",
+      "dominant_colors": [
+        "white"
+      ],
+      "pattern": "printed",
+      "logo_presence": "visible",
+      "logo_texts": [],
+      "neckline": "crew",
+      "sleeves": "short",
+      "material_composition": "unknown",
+      "back_pocket_count": "unknown",
+      "pockets_total": "unknown"
+    },
+    "candidate_logo_texts": [
+      "UNVERIFIED"
+    ],
+    "ocr_status": "unverified",
+    "status": "requires_human_review",
+    "approved_for_auto_apply": false,
+    "envelope_digest": "38eb775122249b1370dcb3368a192a8d9021d370ecff377123cff5d10a7632f2"
+  },
+  "human_request_example": {
+    "contract_version": "pc-ai.human-confirmation.v1",
+    "confirmation_id": "00000000-0000-0000-0000-000000000006",
+    "result_id": "00000000-0000-0000-0000-000000000005",
+    "binding": {
+      "owner_id": "00000000-0000-0000-0000-000000000001",
+      "job_id": "00000000-0000-0000-0000-000000000002",
+      "item_id": "00000000-0000-0000-0000-000000000003",
+      "source_revision": "00000000-0000-0000-0000-000000000004",
+      "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "expected_envelope_digest": "38eb775122249b1370dcb3368a192a8d9021d370ecff377123cff5d10a7632f2",
+    "decision": "approve_fields",
+    "approved_fields": {
+      "logo_texts": [
+        "USER TRANSCRIPTION"
+      ]
+    }
+  },
+  "validation_result_example": {
+    "contract_version": "pc-ai.human-confirmation-result.v1",
+    "confirmation_id": "00000000-0000-0000-0000-000000000006",
+    "confirmation_digest": "2e7ad6e7670c78bda79d85d9729d59ba830557a3860a8bc2111178cc94ced2a3",
+    "result_id": "00000000-0000-0000-0000-000000000005",
+    "binding": {
+      "owner_id": "00000000-0000-0000-0000-000000000001",
+      "job_id": "00000000-0000-0000-0000-000000000002",
+      "item_id": "00000000-0000-0000-0000-000000000003",
+      "source_revision": "00000000-0000-0000-0000-000000000004",
+      "image_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "status": "human_confirmed_fields",
+    "approved_fields": {
+      "logo_texts": [
+        "USER TRANSCRIPTION"
+      ]
+    },
+    "approved_for_auto_apply": false,
+    "note": "Explicit human field confirmation only; app ACK/auth/durable idempotency and update transaction are not implemented."
+  }
+}

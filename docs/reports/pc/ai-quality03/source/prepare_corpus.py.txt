@@ -1,0 +1,49 @@
+"""Download public Commons garment fixtures only; no personal files or inference."""
+import hashlib
+import html
+import json
+from pathlib import Path
+import re
+import urllib.parse
+import urllib.request
+import urllib.error
+
+ROOT=Path(__file__).resolve().parent
+REPORTS=ROOT.parents[1]/'reports'/'ai'/'quality03'
+TARGET=ROOT/'fixtures'/'public-images';TARGET.mkdir(parents=True,exist_ok=True)
+CASES=[('plain-white','T-shirt.jpg'),('multi-hanger','Tshirt.jpg'),('black-jeans',"Levi's 501 black.jpg"),
+       ('striped-wiki','Shirt-Wikipedia.JPG'),('long-sleeve',"Men's long-sleeve T-shirt.jpg")]
+url='https://commons.wikimedia.org/w/api.php?'+urllib.parse.urlencode({'action':'query','format':'json','prop':'imageinfo',
+    'iiprop':'url|size|sha1|extmetadata','titles':'|'.join('File:'+name for _,name in CASES)})
+def get(url):
+    request=urllib.request.Request(url,headers={'User-Agent':'FitMatchQualityFixtures/1.0 (local noncommercial validation)'})
+    with urllib.request.urlopen(request,timeout=60) as response:return response.read()
+metadata=json.loads(get(url));pages={p['title']:p for p in metadata['query']['pages'].values()}
+records=[]
+download_deferred=False
+for ident,name in CASES:
+    page=pages['File:'+name];info=page['imageinfo'][0];ext=info['extmetadata']
+    def field(key):return html.unescape(re.sub('<[^>]+>','',ext.get(key,{}).get('value','')))
+    license=field('LicenseShortName')
+    if not any(value in license for value in ['CC BY','CC0','Public domain']):raise ValueError('License requires review: '+license)
+    target=TARGET/(ident+Path(name).suffix.lower())
+    too_large=info['size']>6*1024**2
+    state='Planned only; original exceeds6MiB budget' if too_large else 'Deferred after upstream429' if download_deferred else 'Not downloaded'
+    if not target.exists() and not download_deferred and not too_large:
+        try:
+            data=get(info['url'])
+            if len(data)!=info['size'] or hashlib.sha1(data).hexdigest()!=info['sha1']:raise ValueError('Source byte/hash mismatch')
+            target.write_bytes(data)
+        except urllib.error.HTTPError as error:
+            if error.code!=429:raise
+            download_deferred=True;state='HTTP429; no immediate retry'
+    data=target.read_bytes() if target.exists() else None
+    if data is not None and hashlib.sha1(data).hexdigest()!=info['sha1']:raise ValueError('Cached fixture mismatch')
+    records.append({'id':ident,'file':target.name,'source_page':info['descriptionurl'],'pageid':page['pageid'],
+        'source_url':info['url'],'author':field('Artist'),'license':license,'license_url':field('LicenseUrl'),
+        'width':info['width'],'height':info['height'],'expected_bytes':info['size'],'local_bytes':len(data) if data else 0,'source_sha1':info['sha1'],
+        'sha256':hashlib.sha256(data).hexdigest() if data else None,'download_status':'DownloadedAndHashVerified' if data else state,
+        'modifications':'No image edits; originals stay outside Git',
+        'label_status':'Pending visual annotation','gpu_inference':'Not run'})
+(REPORTS/'new-fixture-provenance.json').write_text(json.dumps(records,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
+print(json.dumps({'candidates':len(records),'download_bytes':sum(x['local_bytes'] for x in records),'ids':[x['id'] for x in records]}))
