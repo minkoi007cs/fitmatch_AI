@@ -133,6 +133,20 @@ class InputNameTests(unittest.TestCase):
         self.assertEqual(worker.input_name(4, {'role': 'video', 'mediaType': 'text/html'}), 'input-4.bin')
 
 
+class GpuLockTests(unittest.TestCase):
+    def test_one_gpu_job_per_host_across_workers(self):
+        path = Path(tempfile.mkdtemp()) / 'gpu.lock'
+        a, b = worker.FileLock(path), worker.FileLock(path)
+        self.assertTrue(a.acquire(0))
+        self.assertTrue(a.acquire(0), 're-entrant for the holder')
+        self.assertFalse(b.acquire(0), 'second worker (other owner/workDir) must wait')
+        self.assertNotEqual(a.fds(), (), 'adapter inherits the GPU lock on POSIX')
+        a.release()
+        self.assertEqual(a.fds(), ())
+        self.assertTrue(b.acquire(0))
+        b.release()
+
+
 class ContainmentTests(unittest.TestCase):
     def failing(self):
         raise OSError(5, 'access denied')

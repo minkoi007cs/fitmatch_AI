@@ -16,7 +16,7 @@ const BODY = [
   [0.27, 1.2, 0, 0.09, 0.56, 0.09],
 ];
 const TOP = [
-  [0, 1.24, 0, 0.4, 0.54, 0.24],
+  [0, 1.24, 0, 0.41, 0.54, 0.26], // worn over the waistband: strictly outside the bottom shell
   [-0.27, 1.38, 0, 0.12, 0.22, 0.12], // short sleeves
   [0.27, 1.38, 0, 0.12, 0.22, 0.12],
 ];

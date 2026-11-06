@@ -58,7 +58,7 @@ import {
 } from "@/lib/studio/cloud";
 import { api } from "@/lib/v2/client";
 import type { CameraState, ModelRow } from "@/lib/v2/contracts";
-import type { ModelAsset, ViewerControl } from "@/components/studio/Viewer";
+import type { ModelAsset, ViewerControl, LookbookShot } from "@/components/studio/Viewer";
 const Viewer = dynamic(() => import("@/components/studio/Viewer"), {
   ssr: false,
   loading: () => (
@@ -132,6 +132,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
+  const [shot, setShot] = useState<LookbookShot>({ angle: "front", background: "neutral" });
   const state = useRef({ scene, items, outfit, assets });
   useEffect(() => {
     state.current = { scene, items, outfit, assets };
@@ -481,6 +482,16 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
     apply(lookOutfit(look));
     if (look.camera) viewer.current?.setCamera(look.camera);
   }
+  async function renderLookbook() {
+    const blob = await viewer.current?.capture(shot);
+    if (!blob) {
+      setError("Chưa chụp được ảnh. Hãy đợi mô hình tải xong rồi thử lại.");
+      return;
+    }
+    const name = [nameOf(outfit.shown.top)?.name, nameOf(outfit.shown.bottom)?.name].filter(Boolean).join(" + ") || "avatar";
+    downloadBlob(blob, `fitmatch-lookbook-${name.replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 60)}-${shot.angle}.png`);
+    setNotice("Đã lưu ảnh lookbook render từ chính avatar và bộ đồ đang hiển thị. Không dùng AI tạo ảnh.");
+  }
   function exportSelection() {
     if (!bundle) return;
     downloadBlob(
@@ -736,6 +747,33 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
                 ))}
               </ul>
             )}
+          </section>
+          <section className="border border-border rounded-3xl p-5" aria-label="Ảnh lookbook">
+            <h2 className="text-sm font-semibold">Ảnh lookbook</h2>
+            <p className="text-xs text-fg-muted leading-5 mt-2">Render trực tiếp từ avatar và bộ đồ đang hiển thị; màu, logo và phom giữ nguyên, không dùng AI tạo ảnh.</p>
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <label className="text-xs text-fg-muted">
+                Góc máy
+                <select aria-label="Góc máy lookbook" value={shot.angle} onChange={(e) => setShot((v) => ({ ...v, angle: e.target.value as LookbookShot["angle"] }))} className="mt-1 w-full bg-bg border border-border rounded-xl p-2 text-fg">
+                  <option value="front">Trước</option>
+                  <option value="side">Bên</option>
+                  <option value="back">Sau</option>
+                  <option value="current">Góc đang xem</option>
+                </select>
+              </label>
+              <label className="text-xs text-fg-muted">
+                Nền
+                <select aria-label="Nền lookbook" value={shot.background} onChange={(e) => setShot((v) => ({ ...v, background: e.target.value as LookbookShot["background"] }))} className="mt-1 w-full bg-bg border border-border rounded-xl p-2 text-fg">
+                  <option value="neutral">Trung tính</option>
+                  <option value="white">Trắng</option>
+                  <option value="dark">Tối</option>
+                </select>
+              </label>
+            </div>
+            <button disabled={!scene || pending.length > 0} onClick={() => void renderLookbook()} className={`${action} w-full border border-border mt-3`}>
+              <Download size={14} />
+              Lưu ảnh lookbook
+            </button>
           </section>
           <div className="space-y-4">
             <section className="border border-border rounded-3xl p-5">

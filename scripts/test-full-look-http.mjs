@@ -210,6 +210,21 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
     assert.equal((await worker("claim", {})).status, 204, "nothing queued after reopen");
     await page.getByRole("button", { name: "Trước", exact: true }).click();
     await page.screenshot({ path: "test-results/c1-full-look-reopened.png" });
+    // Lookbook: rendered from the same scene, chosen angle and background, no generator.
+    await page.getByLabel("Góc máy lookbook").selectOption("back");
+    await page.getByLabel("Nền lookbook").selectOption("white");
+    const downloading = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Lưu ảnh lookbook" }).click();
+    const file = await (await downloading).path();
+    const png = sharp(file);
+    const meta = await png.metadata();
+    assert.equal(meta.format, "png");
+    const { data, info } = await png.raw().toBuffer({ resolveWithObject: true });
+    const px = (x, y) => [...data.subarray((y * info.width + x) * info.channels, (y * info.width + x) * info.channels + 3)];
+    assert.deepEqual(px(2, 2), [255, 255, 255], "white background as chosen");
+    const center = px(Math.floor(info.width / 2), Math.floor(info.height * 0.35));
+    assert.notDeepEqual(center, [255, 255, 255], "the outfit is in the frame");
+    await (await import("node:fs/promises")).copyFile(file, "test-results/c3-lookbook-back-white.png");
     await page.setViewportSize({ width: 390, height: 844 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "no horizontal scroll on phone width");
     assert.deepEqual(errors, []);

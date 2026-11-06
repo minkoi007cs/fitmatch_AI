@@ -604,6 +604,23 @@ try {
       "PASS C2 PostgreSQL: video asset kind with 150 MB cap (photos stay 40 MB), avatar inputs photos or video+photo with aligned roles, video only for avatars; source delete tombstones inputs, cancels every unfinished job that reads them, blocks late output/complete, retry and re-enqueue; keep choice; owner-only; browser roles denied.",
     );
   }
+  {
+    // ---------------- C3 GC dry run ----------------
+    sql(readFileSync(new URL("../supabase/migrations/20261106044040_gc_dry_run_c3.sql", import.meta.url), "utf8"));
+    const before = service("select count(*) from fm_v2_assets;");
+    sql("update fm_v2_assets set created_at = now() - interval '10 days', deleted_at = case when state='deleted' then now() - interval '9 days' end;");
+    const rows = JSON.parse(service("select coalesce(json_agg(t),'[]') from fm_v2_gc_candidates() t;"));
+    const reasons = new Set(rows.map((r) => r.reason));
+    for (const r of ["stale-pending", "deleted-source-objects", "verified-staging-copy", "unpublished-output"]) assert.ok(reasons.has(r), "candidate kind " + r);
+    assert.ok(rows.filter((r) => r.reason === "deleted-source-objects").every((r) => r.state === "deleted"));
+    // Published outputs (model.output_asset_id) are never candidates for removal of the verified object.
+    const published = service("select string_agg(output_asset_id::text, ',') from fm_v2_models where output_asset_id is not null;").split(",");
+    assert.ok(!rows.some((r) => r.reason !== "verified-staging-copy" && published.includes(r.asset_id)), "published outputs are kept");
+    assert.equal(JSON.parse(service("select coalesce(json_agg(t),'[]') from fm_v2_gc_candidates(interval '30 days') t;")).length, 0, "grace period respected");
+    assert.equal(service("select count(*) from fm_v2_assets;"), before, "dry run deletes nothing");
+    for (const role of ["anon", "authenticated"]) assert.throws(() => sql(`set role ${role};select * from fm_v2_gc_candidates();`));
+    console.log("PASS C3 PostgreSQL: GC dry run lists stale pending uploads, tombstoned source objects, unpublished outputs and staging copies after the grace period; published outputs kept; deletes nothing; browser roles denied.");
+  }
   console.log(
     "PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.",
   );

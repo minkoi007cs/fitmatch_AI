@@ -44,7 +44,8 @@ export default function LooksPage() {
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
-    [loaded, setLoaded] = useState(false);
+    [loaded, setLoaded] = useState(false),
+    [occasion, setOccasion] = useState<"" | "daily" | "campus" | "work" | "evening">("");
   const alive = useRef(true),
     lock = useRef(false),
     mutating = useRef(false);
@@ -127,11 +128,26 @@ export default function LooksPage() {
             Gu của bạn. Áo của bạn.
           </h1>
           <p className="text-sm text-fg-muted leading-6 mt-4 max-w-xl">
-            Ba lựa chọn từ tủ đồ, dựa trên phong cách, màu sắc và dịp mặc. Bản
-            nghiên cứu bắt đầu với áo thun và sơ mi.
+            Tối đa ba bộ áo + jeans có thật trong tủ đồ, dựa trên gu trong quiz và
+            dịp bạn chọn. Tủ chưa có jeans thì gợi ý phần áo.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <label className="text-xs text-fg-muted">
+            Dịp
+            <select
+              aria-label="Dịp mặc"
+              value={occasion}
+              onChange={(e) => setOccasion(e.target.value as typeof occasion)}
+              className="ml-2 bg-bg border border-border rounded-xl p-2 text-fg"
+            >
+              <option value="">Theo quiz</option>
+              <option value="daily">Hằng ngày</option>
+              <option value="campus">Đi học</option>
+              <option value="work">Đi làm</option>
+              <option value="evening">Buổi tối</option>
+            </select>
+          </label>
           <Link href="/quiz" className={button}>
             Chỉnh gu
           </Link>
@@ -139,9 +155,9 @@ export default function LooksPage() {
             disabled={busy || !loaded}
             onClick={() =>
               void run(async () => {
-                await api("recommendations", {});
+                await api("recommendations", occasion ? { occasion } : {});
                 setNotice(
-                  "Đã cập nhật theo tủ đồ và hồ sơ phong cách mới nhất.",
+                  "Đã cập nhật theo tủ đồ, gu trong quiz và dịp bạn chọn.",
                 );
               })
             }
@@ -249,6 +265,11 @@ export default function LooksPage() {
             ? data?.jobs.find((j) => j.model_id === fitting.id)
             : undefined;
           const href = `/studio?avatar=${avatarId}&fitting=${fitting?.id}`;
+          const full = look.renderScope === "full-look" && !!look.bottomItemId;
+          const bottomItem = full ? items.find((i) => i.id === look.bottomItemId) : undefined;
+          const bottomGarment = full
+            ? data?.models.find((m) => m.kind === "garment" && m.wardrobe_item_id === look.bottomItemId && m.output_asset_id)
+            : undefined;
           return (
             <article
               key={look.id}
@@ -284,16 +305,36 @@ export default function LooksPage() {
               <div className="p-6">
                 <h2 className="font-display text-2xl break-words">
                   {look.itemName}
+                  {full && <span className="block text-lg text-fg-muted">+ {look.bottomItemName}</span>}
                 </h2>
                 <p className="text-xs text-accent-text mt-2">
-                  {look.category === "shirt" ? "Sơ mi" : "Áo thun"} · Mặc thử
-                  phần áo
+                  {look.category === "shirt" ? "Sơ mi" : "Áo thun"}
+                  {full ? " + Jeans · Mặc thử cả bộ" : " · Mặc thử phần áo"}
                 </p>
                 <p className="text-sm text-fg-muted leading-6 mt-4">
                   {look.reason}
                 </p>
                 <div className="mt-6 space-y-3">
-                  {!item ? (
+                  {full ? (
+                    !item || !bottomItem ? (
+                      <p className="text-sm text-fg-muted">Một món không còn trong tủ. Bấm Gợi ý lại.</p>
+                    ) : !avatar ? (
+                      <Link href="/prepare" className={`${button} w-full`}>
+                        Tạo avatar trước
+                      </Link>
+                    ) : garment && bottomGarment ? (
+                      <Link
+                        href={`/studio?avatar=${avatar.id}&top=${garment.id}&bottom=${bottomGarment.id}`}
+                        className={`${button} bg-accent text-bg w-full`}
+                      >
+                        Mặc thử cả bộ <ArrowUpRight size={14} />
+                      </Link>
+                    ) : (
+                      <Link href="/prepare" className={`${button} w-full`}>
+                        Chuẩn bị {!garment ? "áo" : "quần"} 3D trước
+                      </Link>
+                    )
+                  ) : !item ? (
                     <p className="text-sm text-fg-muted">
                       Bấm Gợi ý lại để cập nhật tủ đồ.
                     </p>

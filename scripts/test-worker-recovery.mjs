@@ -134,13 +134,13 @@ if(mode==='slow'){await new Promise(r=>setTimeout(r,4000));}
 writeFileSync(output,Buffer.from('${mesh([0.2, 0.6, 0.4, 1]).toString("base64")}','base64'));`,
     );
     let n = 0;
-    const setup = async ({ mode = "ok", retry = { attempts: 3, baseSeconds: 0.05, maxSeconds: 0.2 }, timeoutSeconds = 60, allowed, workDir, exitCodes } = {}) => {
+    const setup = async ({ mode = "ok", retry = { attempts: 3, baseSeconds: 0.05, maxSeconds: 0.2 }, timeoutSeconds = 60, allowed, workDir, exitCodes, gpuLock } = {}) => {
       const w = v2.worker(owner, allowed);
       const dir = workDir ?? join(temp, "work-" + ++n);
       const counter = join(temp, "count-" + n);
       const config = join(temp, "config-" + n + ".json");
       await writeFile(config, JSON.stringify({
-        appUrl: proxyUrl, workDir: dir, heartbeatSeconds: 1, pollSeconds: 0.2, requestTimeoutSeconds: 10, retry,
+        appUrl: proxyUrl, workDir: dir, gpuLock: gpuLock ?? dir + ".gpu.lock", heartbeatSeconds: 1, pollSeconds: 0.2, requestTimeoutSeconds: 10, retry,
         engines: { [KIND]: { ...ENGINE, timeoutSeconds, ...(exitCodes ? { exitCodes } : {}), command: [process.execPath, adapter, "{input}", "{output}", counter, mode] } },
       }));
       const count = async () => (existsSync(counter) ? (await readFile(counter, "utf8")).length : 0);
@@ -327,6 +327,27 @@ writeFileSync(output,Buffer.from('${mesh([0.2, 0.6, 0.4, 1]).toString("base64")}
       console.log("PASS R1 compatibility: legacy worker.py completes a job (legacy output-intent, granted capability).");
     }
 
+    // S13 host GPU lock: while another process on the machine holds the GPU lock (another owner's
+    // worker, or the PC AI tool), this worker claims nothing; once released it runs the job.
+    reset();
+    const sharedGpu = join(temp, "shared-gpu.lock");
+    w = await setup({ gpuLock: sharedGpu });
+    id = await newJob();
+    const holder = spawn("python3", ["-I", "-c", `import fcntl,sys,time\nf=open(sys.argv[1],'a+')\nfcntl.flock(f.fileno(),fcntl.LOCK_EX)\nprint('held',flush=True)\ntime.sleep(60)`, sharedGpu], { stdio: ["ignore", "pipe", "inherit"] });
+    await new Promise((res) => holder.stdout.once("data", res));
+    try {
+      r = await runWorker(w.config, w.token, w.env);
+      assert.match(r.stdout, /GPU is busy/, r.stdout);
+      assert.equal(job(id).state, "queued", "no claim while the GPU is busy");
+      assert.equal(await w.count(), 0);
+    } finally {
+      holder.kill("SIGKILL");
+      await new Promise((res) => holder.once("exit", res));
+    }
+    r = await runWorker(w.config, w.token, w.env);
+    assert.match(r.stdout, /Completed job/, r.stdout);
+    assert.equal(await w.count(), 1);
+
     // S12 operator CLI: create with grants, ungrant/grant, rotate (old token stops), revoke.
     const manage = (...args) =>
       new Promise((res, rej) => {
@@ -358,7 +379,7 @@ writeFileSync(output,Buffer.from('${mesh([0.2, 0.6, 0.4, 1]).toString("base64")}
     assert.equal((await hbWith(rotated.token)).status, 401);
 
     console.log(
-      "PASS R1 worker recovery (real routes + SQL + Python worker): complete/finalize reply loss and outage, upload outcome unknown and expired URL, claim reply loss redelivered, restart within lease, restart after lease loss reusing output (stale token 409), MODEL_UNAVAILABLE, adapter contract exit78/exit2+JSON/usage/configured OOM/TIMEOUT, default-deny grants, operator create/grant/ungrant/rotate/revoke, crash during inference guarded by workDir lock, no secrets in adapter env. Synthetic geometry only.",
+      "PASS R1 worker recovery (real routes + SQL + Python worker): complete/finalize reply loss and outage, upload outcome unknown and expired URL, claim reply loss redelivered, restart within lease, restart after lease loss reusing output (stale token 409), MODEL_UNAVAILABLE, adapter contract exit78/exit2+JSON/usage/configured OOM/TIMEOUT, default-deny grants, operator create/grant/ungrant/rotate/revoke, crash during inference guarded by workDir lock, host GPU lock blocks claims while another process holds the GPU, no secrets in adapter env. Synthetic geometry only.",
     );
   } finally {
     await proxy.close();

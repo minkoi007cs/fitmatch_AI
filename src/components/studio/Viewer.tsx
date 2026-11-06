@@ -9,9 +9,13 @@ import type { Outfit } from "@/lib/studio/outfit";
 import type { CameraState } from "@/lib/v2/contracts";
 
 export type ModelAsset = { id: string; name: string; bytes: ArrayBuffer };
+export type LookbookShot = { angle: "current" | "front" | "side" | "back"; background: "neutral" | "white" | "dark" };
+export const LOOKBOOK_BACKGROUNDS: Record<LookbookShot["background"], string> = { neutral: "#e4e4e0", white: "#ffffff", dark: "#1d1d1f" };
 export type ViewerControl = {
   getCamera(): CameraState | null;
   setCamera(camera: CameraState): void;
+  /** Renders the exact scene on screen (same avatar, items, versions, lights) to a PNG. No generative step. */
+  capture(shot: LookbookShot): Promise<Blob | null>;
 };
 function disposeObject(object: THREE.Object3D) {
   const textures = new Set<THREE.Texture>();
@@ -39,6 +43,8 @@ type Scene = {
   controls: OrbitControls;
   radius: number;
   host: HTMLElement;
+  renderer: THREE.WebGLRenderer;
+  scene: THREE.Scene;
 };
 const round = (v: number) => Math.round(v * 1000) / 1000;
 
@@ -119,6 +125,31 @@ export default function Viewer({
         applyCamera(s, c);
         setAutoOrbit(c.autoOrbit);
       },
+      async capture(shot) {
+        const s = state.current;
+        if (!s) return null;
+        const background = s.scene.background;
+        const position = s.camera.position.clone();
+        const target = s.controls.target.clone();
+        const rotating = s.controls.autoRotate;
+        s.controls.autoRotate = false;
+        try {
+          if (shot.angle !== "current") {
+            const angle = { front: 0, side: Math.PI / 2, back: Math.PI }[shot.angle];
+            s.camera.position.set(Math.sin(angle) * s.radius * 1.65, s.radius * .12, Math.cos(angle) * s.radius * 1.65);
+            s.camera.lookAt(0, 0, 0);
+          }
+          s.scene.background = new THREE.Color(LOOKBOOK_BACKGROUNDS[shot.background]);
+          s.renderer.render(s.scene, s.camera);
+          return await new Promise<Blob | null>((resolve) => s.renderer.domElement.toBlob(resolve, "image/png"));
+        } finally {
+          s.scene.background = background;
+          s.camera.position.copy(position);
+          s.controls.target.copy(target);
+          s.controls.autoRotate = rotating;
+          s.controls.update();
+        }
+      },
     };
     return () => {
       controlRef.current = null;
@@ -169,14 +200,17 @@ export default function Viewer({
         const box = new THREE.Box3().setFromObject(body);
         if (box.isEmpty()) throw new Error("Avatar không chứa hình học.");
         const center = box.getCenter(new THREE.Vector3());
-        const radius = box.getSize(new THREE.Vector3()).length() * .75;
+        const size = box.getSize(new THREE.Vector3());
+        // Orbit distance that keeps the whole body (head to feet) in frame at this field of view.
+        const fit = (size.y / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.12 / 1.65;
+        const radius = Math.max(size.length() * .75, fit);
         if (!Number.isFinite(radius) || radius < .001) throw new Error("Kích thước avatar không hợp lệ.");
         world.position.sub(center);
         // Front view by default.
         camera.position.set(0, radius * .12, radius * 1.65);
         camera.near = radius / 1000; camera.far = radius * 100; camera.updateProjectionMatrix();
         controls.target.set(0, 0, 0); controls.minDistance = radius * .4; controls.maxDistance = radius * 4; controls.update();
-        const s: Scene = { world, loader, models, loading: new Set(), camera, controls, radius, host: element };
+        const s: Scene = { world, loader, models, loading: new Set(), camera, controls, radius, host: element, renderer, scene };
         if (firstCamera.current) applyCamera(s, firstCamera.current);
         else mark(s);
         controls.addEventListener("end", () => mark(s));

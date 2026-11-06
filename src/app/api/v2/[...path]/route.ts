@@ -487,6 +487,11 @@ async function handle(
           ),
         });
       if (method === "POST") {
+        // The occasion is chosen per request (U17); the rest of the taste comes from the quiz.
+        const options = await readJson(
+          request,
+          z.object({ occasion: styleAnswers.shape.occasion.optional() }).strict(),
+        );
         const profile = result(
           await db
             .from("fm_v2_profiles")
@@ -506,7 +511,10 @@ async function handle(
             .order("id")
             .limit(500),
         ) as Candidate[];
-        const answers = styleAnswers.parse(profile.answers);
+        const answers = {
+          ...styleAnswers.parse(profile.answers),
+          ...(options.occasion ? { occasion: options.occasion } : {}),
+        };
         const votes = result(
           await db
             .from("fm_v2_feedback")
@@ -591,7 +599,10 @@ async function handle(
           !rec ||
           !item ||
           !Array.isArray(rec.data) ||
-          !rec.data.some((l: { itemId: string }) => l.itemId === body.itemId)
+          !rec.data.some(
+            (l: { itemId: string; bottomItemId?: string }) =>
+              l.itemId === body.itemId || l.bottomItemId === body.itemId,
+          )
         )
           throw new InputError(404, "NOT_FOUND");
         result(

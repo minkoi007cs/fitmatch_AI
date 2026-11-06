@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash, randomUUID } from "node:crypto";
-import sharp from "sharp";
+import { normalizePhoto } from "./image";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { InputError } from "@/lib/validation";
 import { validateOutputGlb } from "./output";
@@ -172,27 +172,7 @@ export async function finalizeAsset(
   let bytes = Buffer.from(await blob.arrayBuffer());
   if (row.kind === "photo") {
     try {
-      const image = sharp(bytes, {
-        limitInputPixels: 40_000_000,
-        failOn: "error",
-      });
-      const meta = await image.metadata();
-      if (
-        !["jpeg", "png", "webp"].includes(meta.format ?? "") ||
-        (meta.width ?? 0) < 512 ||
-        (meta.height ?? 0) < 512
-      )
-        throw new Error();
-      bytes = await image
-        .rotate()
-        .resize({
-          width: 2048,
-          height: 2048,
-          fit: "inside",
-          withoutEnlargement: true,
-        })
-        .jpeg({ quality: 95 })
-        .toBuffer();
+      bytes = Buffer.from(await normalizePhoto(bytes));
     } catch {
       throw new InputError(400, "INVALID_IMAGE");
     }

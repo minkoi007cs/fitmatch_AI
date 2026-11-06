@@ -23,6 +23,7 @@ import struct
 import subprocess
 import sys
 import threading
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -295,17 +296,21 @@ class Checkpoint:
         return {'path': path, 'bytes': output['bytes'], 'sha256': output['sha256']}
 
 
-class DirLock:
-    """One worker process per workDir. On POSIX the lock is inherited by the adapter (pass_fds), so an
-    adapter orphaned by a worker crash keeps the lock until it exits: a restarted worker cannot start a
-    second inference meanwhile. On Windows the adapter is placed in a kill-on-close job object instead."""
+class FileLock:
+    """Exclusive OS lock on a file (flock on POSIX, msvcrt byte lock on Windows). Released by the OS when
+    the process dies. On POSIX the descriptor is inherited by the adapter (pass_fds), so an adapter
+    orphaned by a worker crash keeps holding it until it exits."""
 
-    def __init__(self, root):
-        self.path = root / '.worker.lock'
+    def __init__(self, path):
+        self.path = Path(path)
         self.handle = None
+        self.held = False
 
     def acquire(self, wait_seconds):
-        self.handle = self.path.open('a+')
+        if self.held:
+            return True
+        if self.handle is None:
+            self.handle = self.path.open('a+')
         deadline = time.monotonic() + wait_seconds
         while True:
             try:
@@ -316,14 +321,42 @@ class DirLock:
                 else:
                     import fcntl
                     fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self.held = True
                 return True
             except OSError:
                 if time.monotonic() >= deadline:
                     return False
                 time.sleep(1)
 
+    def release(self):
+        if not self.handle or not self.held:
+            return
+        if os.name == 'nt':
+            import msvcrt
+            self.handle.seek(0)
+            msvcrt.locking(self.handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(self.handle.fileno(), fcntl.LOCK_UN)
+        self.held = False
+
     def fds(self):
-        return (self.handle.fileno(),) if self.handle and os.name != 'nt' else ()
+        return (self.handle.fileno(),) if self.handle and self.held and os.name != 'nt' else ()
+
+
+class DirLock(FileLock):
+    """One worker process per workDir (see FileLock for orphaned-adapter behaviour). On Windows the
+    adapter is placed in a kill-on-close job object instead."""
+
+    def __init__(self, root):
+        super().__init__(root / '.worker.lock')
+
+
+def default_gpu_lock():
+    """Host-wide lock shared by every worker process (any owner, any workDir) and by other GPU tools
+    on this machine that follow the same file-lock protocol: one heavy GPU job at a time."""
+    base = os.environ.get('PROGRAMDATA') if os.name == 'nt' else None
+    return Path(base or tempfile.gettempdir()) / 'fitmatch' / 'gpu-0.lock'
 
 
 class ContainmentError(RuntimeError):
@@ -423,8 +456,10 @@ def stop_process(process):
 
 
 class Worker:
-    def __init__(self, config, token, root, lock):
+    def __init__(self, config, token, root, lock, gpu=None):
         self.config, self.token, self.root, self.lock = config, token, root, lock
+        self.gpu = gpu
+        self.gpu_busy_logged = False
         self.engines = config.get('engines', {})
         self.capabilities = {}
         for kind, engine in self.engines.items():
@@ -589,7 +624,8 @@ class Worker:
             err_path = attempt_dir / 'adapter.err'  # private; parsed for one structured error record only
             with log_path.open('wb') as log, err_path.open('wb') as err:
                 process = subprocess.Popen(command, cwd=attempt_dir, env=adapter_environment(self.token), stdout=log,
-                    stderr=err, start_new_session=os.name != 'nt', pass_fds=self.lock.fds())
+                    stderr=err, start_new_session=os.name != 'nt',
+                    pass_fds=self.lock.fds() + (self.gpu.fds() if self.gpu else ()))
                 cp.save(version=CHECKPOINT_VERSION, jobId=job_id, modelId=job['modelId'], kind=job['kind'],
                         modelRevision=job['modelRevision'], inputDigest=digest, attempt=job['lease']['attempt'],
                         leaseToken=lease['leaseToken'], instance=self.instance, stage='inferring', adapterPid=process.pid,
@@ -660,11 +696,23 @@ class Worker:
             try:
                 self.worker_heartbeat()
                 self.resume_pending()
-                job = self.claim()
-                if job:
-                    if job.get('redelivered'):
-                        print('Claim reply was lost; received the same assignment again', flush=True)
-                    self.execute(job)
+                # Claim only while holding the host GPU lock, so no lease runs out while waiting for the GPU.
+                if self.gpu and not self.gpu.acquire(0):
+                    if not self.gpu_busy_logged:
+                        print('GPU is busy with another job on this machine; waiting before claiming.', flush=True)
+                        self.gpu_busy_logged = True
+                    job = None
+                else:
+                    self.gpu_busy_logged = False
+                    try:
+                        job = self.claim()
+                        if job:
+                            if job.get('redelivered'):
+                                print('Claim reply was lost; received the same assignment again', flush=True)
+                            self.execute(job)
+                    finally:
+                        if self.gpu:
+                            self.gpu.release()
                 if once:
                     return 0
             except KeyboardInterrupt:
@@ -694,7 +742,15 @@ def main():
         print(str(error), flush=True)
         return 3
     print(f'Process containment: {containment}', flush=True)
-    worker = Worker(config, os.environ['FITMATCH_WORKER_TOKEN'], root, lock)
+    gpu = None
+    if config.get('gpuLock', 'default') is not None:
+        gpu_path = default_gpu_lock() if config.get('gpuLock', 'default') == 'default' else Path(config['gpuLock'])
+        gpu_path.parent.mkdir(parents=True, exist_ok=True)
+        gpu = FileLock(gpu_path)
+        print(f'Host GPU lock: {gpu_path}', flush=True)
+    else:
+        print('WARNING: gpuLock disabled; another GPU job on this machine may run at the same time.', flush=True)
+    worker = Worker(config, os.environ['FITMATCH_WORKER_TOKEN'], root, lock, gpu)
     return worker.loop(args.once, float(config.get('pollSeconds', 8)))
 
 

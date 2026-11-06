@@ -121,6 +121,7 @@ export async function v2Fixture() {
       "20261106025506_worker_recovery_r1.sql",
       "20261106035951_full_look_c1.sql",
       "20261106042143_capture_retention_c2.sql",
+      "20261106044040_gc_dry_run_c3.sql",
     ])
       sql(
         readFileSync(

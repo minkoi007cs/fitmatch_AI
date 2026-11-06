@@ -139,3 +139,53 @@ test("Vietnamese blue preference does not treat every xanh garment as blue", () 
     "b",
   );
 });
+
+test("full look: three owned top+jeans outfits, varied, never invented; occasion changes the ranking", () => {
+  const owned = [
+    { id: "t1", name: "Tee trắng", category: "t-shirt", color: "white", style: "minimal", pattern: "plain" },
+    { id: "t2", name: "Sơ mi xanh", category: "shirt", color: "blue", style: "formal", pattern: "plain" },
+    { id: "t3", name: "Tee đỏ", category: "t-shirt", color: "red", style: "casual", pattern: "plain" },
+    { id: "j1", name: "Jeans xanh", category: "jeans", color: "blue", style: "casual", pattern: "plain" },
+    { id: "j2", name: "Jeans đen", category: "jeans", color: "black", style: "minimal", pattern: "plain" },
+    { id: "p1", name: "Quần tây", category: "pants", color: "gray", style: "formal", pattern: "plain" },
+  ];
+  const looks = recommend(owned, profile);
+  assert.equal(looks.length, 3);
+  assert.ok(looks.every((l) => l.renderScope === "full-look" && l.bottomItemId && ["j1", "j2"].includes(l.bottomItemId)));
+  assert.ok(looks.every((l) => ["t1", "t2", "t3"].includes(l.itemId)), "only owned tops");
+  assert.equal(new Set(looks.map((l) => l.itemId)).size, 3, "each outfit uses a different top first");
+  assert.equal(new Set(looks.map((l) => `${l.itemId}+${l.bottomItemId}`)).size, 3);
+  assert.ok(looks.every((l) => !("itemColor" in l)));
+  assert.match(looks[0].reason, /ghép với/);
+  // One top and one jeans: exactly one outfit, not three.
+  assert.equal(recommend([owned[0], owned[3]], profile).length, 1);
+  // Two tops, one jeans: two outfits.
+  assert.equal(recommend([owned[0], owned[1], owned[3]], profile).length, 2);
+  // Skipped jeans are not used; with no jeans left the result falls back to top-only cards.
+  const fallback = recommend(owned, profile, { j1: "skip", j2: "skip" });
+  assert.ok(fallback.every((l) => l.renderScope === "top-only" && !l.bottomItemId));
+  // Occasion is an input each time: work favours the shirt.
+  const casual = { ...profile, style: "casual" as const, favoriteColors: ["red" as const] };
+  const work = recommend(owned, { ...casual, occasion: "work" });
+  const daily = recommend(owned, { ...casual, occasion: "daily" });
+  assert.equal(work[0].itemId, "t3");
+  assert.equal(work[1].itemId, "t2", "work moves the shirt up");
+  assert.equal(daily[1].itemId, "t1");
+  assert.deepEqual(recommend(owned, profile), looks, "deterministic");
+});
+
+test("photo normalization flattens transparent pixels onto white, keeps opaque colors", async () => {
+  const { normalizePhoto } = await import("../src/lib/v2/image");
+  const sharp = (await import("sharp")).default;
+  const png = await sharp({ create: { width: 600, height: 600, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([{ input: { create: { width: 200, height: 200, channels: 4, background: { r: 200, g: 30, b: 30, alpha: 1 } } }, left: 200, top: 200 }])
+    .png()
+    .toBuffer();
+  const out = await normalizePhoto(png);
+  const { data, info } = await sharp(out).raw().toBuffer({ resolveWithObject: true });
+  const px = (x: number, y: number) => [...data.subarray((y * info.width + x) * 3, (y * info.width + x) * 3 + 3)];
+  assert.ok(px(10, 10).every((v) => v > 250), "transparent → white, not black");
+  const [r, g, b] = px(300, 300);
+  assert.ok(r > 180 && g < 60 && b < 60, "garment color kept");
+  await assert.rejects(normalizePhoto(await sharp({ create: { width: 300, height: 300, channels: 3, background: "#fff" } }).png().toBuffer()));
+});
