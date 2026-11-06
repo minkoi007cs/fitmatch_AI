@@ -1,0 +1,50 @@
+{
+  "$id": "https://fitmatch.local/schemas/v1-r2/camera-state.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "position": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "target": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "items": false,
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "autoOrbit": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "position",
+    "target",
+    "autoOrbit"
+  ],
+  "additionalProperties": false
+}

@@ -16,6 +16,7 @@ import {
   progressRequest,
   failureRequest,
   styleAnswers,
+  lookRequest,
   type ModelRow,
   type JobRow,
   type WorkerRow,
@@ -97,7 +98,17 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
                 : "back",
       })),
     );
+    let category = model.params.category as string | undefined;
     if (model.kind === "fitting") {
+      const garment = required(
+        await db
+          .from("fm_v2_models")
+          .select("params")
+          .eq("id", model.garment_id)
+          .eq("user_id", w.user_id)
+          .single(),
+      );
+      category = garment.params?.category;
       for (const [role, modelId] of [
         ["body", model.avatar_id],
         ["garment", model.garment_id],
@@ -133,6 +144,8 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
         params: model.params,
         avatarVersionId: model.avatar_id,
         garmentVersionId: model.garment_id,
+        slot: model.slot ?? null,
+        category: category ?? null,
         assets: inputs,
       },
       outputContract: {
@@ -143,8 +156,18 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
         embeddedTextures: true,
         content:
           model.kind === "fitting"
-            ? "garment-only-aligned-to-avatar"
-            : model.kind,
+            ? `${model.slot ?? "top"}-only-aligned-to-avatar`
+            : model.kind === "garment"
+              ? `${model.slot ?? "top"}-canonical`
+              : model.kind,
+        sharedFrame: {
+          units: "meters",
+          up: "+Y",
+          front: "+Z",
+          origin: "floor-between-feet",
+          pose: "a-pose-v1",
+          note: "body, top and bottom must share this frame; never normalize one item on its own",
+        },
         maxFileBytes: 41943040,
       },
     });
@@ -570,72 +593,20 @@ async function handle(
           ),
         });
       if (method === "POST") {
-        const body = await readJson(
-          request,
-          z
-            .object({
-              name: z.string().trim().min(1).max(80),
-              avatarId: id,
-              fittingId: id.nullable(),
-              recommendationId: id.nullable().optional(),
-            })
-            .strict(),
+        const body = await readJson(request, lookRequest);
+        // One RPC validates owner, avatar binding, slot and readiness and snapshots the asset versions.
+        const look = result(
+          await db.rpc("fm_v2_save_look", {
+            p_user: owner,
+            p_name: body.name,
+            p_avatar: body.avatarId,
+            p_top: body.topFittingId ?? body.fittingId ?? null,
+            p_bottom: body.bottomFittingId ?? null,
+            p_camera: body.camera ?? null,
+            p_recommendation: body.recommendationId ?? null,
+          }),
         );
-        const avatar = result(
-          await db
-            .from("fm_v2_models")
-            .select("id")
-            .eq("id", body.avatarId)
-            .eq("user_id", owner)
-            .eq("kind", "avatar")
-            .not("output_asset_id", "is", null)
-            .maybeSingle(),
-        );
-        if (!avatar) throw new InputError(409, "MODEL_NOT_READY");
-        if (body.fittingId) {
-          const fit = result(
-            await db
-              .from("fm_v2_models")
-              .select("id")
-              .eq("id", body.fittingId)
-              .eq("avatar_id", body.avatarId)
-              .eq("kind", "fitting")
-              .eq("user_id", owner)
-              .not("output_asset_id", "is", null)
-              .maybeSingle(),
-          );
-          if (!fit) throw new InputError(409, "FITTING_NOT_READY");
-        }
-        if (body.recommendationId) {
-          const rec = result(
-            await db
-              .from("fm_v2_recommendations")
-              .select("id")
-              .eq("id", body.recommendationId)
-              .eq("user_id", owner)
-              .maybeSingle(),
-          );
-          if (!rec) throw new InputError(404, "NOT_FOUND");
-        }
-        return reply(
-          {
-            look: result(
-              await db
-                .from("fm_v2_looks")
-                .insert({
-                  id: randomUUID(),
-                  user_id: owner,
-                  name: body.name,
-                  avatar_id: body.avatarId,
-                  fitting_id: body.fittingId,
-                  recommendation_id: body.recommendationId ?? null,
-                })
-                .select("*")
-                .single(),
-            ),
-          },
-          201,
-        );
+        return reply({ look }, 201);
       }
     }
     if (path[0] === "looks" && path.length === 2 && method === "DELETE") {

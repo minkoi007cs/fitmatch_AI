@@ -452,6 +452,107 @@ try {
       `select fm_v2_output_intent('${wA}','${J3}','${a2.lease_token}',gen_random_uuid(),100,'${shaA}','s','p');`,
     ])
       assert.throws(() => sql(`set role ${role};${q}`));
+  {
+  // ---------------- C1 full look (CL-FULLLOOK-20261105-01) ----------------
+  // Applied on a database that already holds legacy rows: garment/fitting without slot, single-fitting look.
+  const legacyLook = "cccccccc-1111-4111-a111-111111111111";
+  sql(`insert into fm_v2_looks(id,user_id,name,avatar_id,fitting_id) values('${legacyLook}','${owner}','Legacy','${next.model_id}','${f1.modelId}');`);
+  assert.equal(service(`select count(*) from information_schema.columns where table_name='fm_v2_models' and column_name='slot';`), "0", "legacy schema before C1");
+  sql(readFileSync(new URL("../supabase/migrations/20261106035951_full_look_c1.sql", import.meta.url), "utf8"));
+  assert.equal(service(`select slot from fm_v2_models where id='${garment}';`), "top", "legacy garment backfilled to top");
+  assert.equal(service(`select slot from fm_v2_models where id='${f1.modelId}';`), "top", "legacy fitting backfilled to top");
+  assert.equal(service(`select fitting_id||'|'||coalesce(top_fitting_id::text,'null') from fm_v2_looks where id='${legacyLook}';`), `${f1.modelId}|null`, "legacy look untouched");
+  assert.throws(() => sql(`insert into fm_v2_models(id,user_id,kind,name) values(gen_random_uuid(),'${owner}','garment','no slot');`), /fm_v2_models_slot_kind/);
+  assert.throws(() => sql(`insert into fm_v2_models(id,user_id,kind,name,slot) values(gen_random_uuid(),'${owner}','avatar','a','top');`), /fm_v2_models_slot_kind/);
+  const cu = "dddddddd-1111-4111-a111-111111111111",
+    cuOther = "dddddddd-2222-4222-a222-222222222222";
+  sql(`insert into auth.users values('${cu}'),('${cuOther}');`);
+  const cp = [31, 32, 33].map(photo);
+  for (const id of cp)
+    sql(`insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes) values('${id}','${cu}','photo','ready','c1p-${id}','c1s-${id}',100);`);
+  const items = { tee: photo(41), jeans: photo(42), pants: photo(43), shirt: photo(44), foreign: photo(45) };
+  sql(`insert into fm_wardrobe_items values('${items.tee}','${cu}','t-shirt'),('${items.jeans}','${cu}','jeans'),('${items.pants}','${cu}','pants'),('${items.shirt}','${cu}','shirt'),('${items.foreign}','${cuOther}','jeans');`);
+  const c1enqueue = (key, kind, o = {}) =>
+    JSON.parse(service(`select fm_v2_enqueue('${o.user ?? cu}','${key}','${key}','${kind}','C1 ${kind}',${kind === "fitting" ? "'{}'" : `array[${(kind === "avatar" ? cp : cp.slice(0, 2)).map((x) => `'${x}'`)}]::uuid[]`},'{}',${u(o.wardrobe)},${u(o.avatar)},${u(o.garment)});`));
+  const kindOf = (r) => service(`select kind from fm_v2_jobs where id='${r.jobId}';`);
+  const slotOf = (r) => service(`select slot from fm_v2_models where id='${r.modelId}';`);
+  const av = c1enqueue("cu-avatar-01", "avatar");
+  const tee = c1enqueue("cu-tee-0001", "garment", { wardrobe: items.tee });
+  const jeans = c1enqueue("cu-jeans-001", "garment", { wardrobe: items.jeans });
+  assert.equal(slotOf(tee), "top");
+  assert.equal(kindOf(tee), "garment.reconstruct", "tops keep v1 kinds");
+  assert.equal(slotOf(jeans), "bottom");
+  assert.equal(jeans.slot, "bottom");
+  assert.equal(kindOf(jeans), "bottom.reconstruct", "jeans never become a shirt job");
+  assert.equal(service(`select params->>'category' from fm_v2_models where id='${jeans.modelId}';`), "jeans");
+  assert.throws(() => c1enqueue("cu-pants-001", "garment", { wardrobe: items.pants }), /INVALID_GARMENT/, "trousers not opened yet");
+  assert.throws(() => c1enqueue("cu-foreign-1", "garment", { wardrobe: items.foreign }), /INVALID_GARMENT/, "foreign wardrobe item");
+  // Default deny per slot: a top-only worker never claims jeans.
+  const wTop = "eeeeeeee-1111-4111-a111-111111111111",
+    wAll = "eeeeeeee-2222-4222-a222-222222222222";
+  const allCaps = JSON.stringify(Object.fromEntries(["avatar.reconstruct", "garment.reconstruct", "garment.drape", "bottom.reconstruct", "bottom.drape"].map((k) => [k, { model: "m", revision: "r" }])));
+  sql(`insert into fm_v2_workers(id,user_id,token_hash,name,last_seen,capabilities,allowed_capabilities) values('${wTop}','${cu}','hTop','Top',now(),'${allCaps}','{garment.reconstruct}'),('${wAll}','${cu}','hAll','All',now(),'${allCaps}','{avatar.reconstruct,garment.reconstruct,garment.drape,bottom.reconstruct,bottom.drape}');`);
+  assert.throws(() => sql(`update fm_v2_workers set allowed_capabilities='{pants.drape}' where id='${wTop}';`));
+  const topClaim = claimR1(wTop, null);
+  assert.equal(topClaim.id, tee.jobId, "top worker gets the tee");
+  assert.equal(claimR1(wTop, null), null, "one job per worker");
+  const finish = (w, job, sha) => {
+    const out = intent(w, job.id, job.lease_token, sha);
+    markReady(out.assetId);
+    assert.equal(tr(w, job.id, job.lease_token, "complete", null, out.assetId), "t");
+  };
+  finish(wTop, topClaim, "1".repeat(64));
+  assert.equal(claimR1(wTop, null), null, "jeans stay queued for the top-only worker");
+  const seen = new Set();
+  for (let i = 0; i < 2; i++) {
+    const j = claimR1(wAll, null);
+    seen.add(j.kind);
+    finish(wAll, j, String(i + 2).repeat(64));
+  }
+  assert.deepEqual([...seen].sort(), ["avatar.reconstruct", "bottom.reconstruct"]);
+  // Fittings: per item and avatar version, slot inherited, drape kind per slot, cached (no outfit combinations).
+  const fitTop = c1enqueue("cu-fit-top-1", "fitting", { avatar: av.modelId, garment: tee.modelId });
+  const fitBottom = c1enqueue("cu-fit-bot-1", "fitting", { avatar: av.modelId, garment: jeans.modelId });
+  assert.equal(slotOf(fitTop), "top");
+  assert.equal(slotOf(fitBottom), "bottom");
+  assert.equal(kindOf(fitTop), "garment.drape");
+  assert.equal(kindOf(fitBottom), "bottom.drape");
+  const again = c1enqueue("cu-fit-bot-2", "fitting", { avatar: av.modelId, garment: jeans.modelId });
+  assert.equal(again.modelId, fitBottom.modelId);
+  assert.equal(again.reused, true);
+  assert.equal(again.slot, "bottom");
+  // save_look before fittings are ready: refused.
+  const save = (o) =>
+    JSON.parse(service(`select fm_v2_save_look('${o.user ?? cu}','${o.name ?? "Weekend"}','${o.avatar ?? av.modelId}',${u(o.top)},${u(o.bottom)},${o.camera ? `'${JSON.stringify(o.camera)}'` : "null"},${u(o.rec)});`));
+  assert.throws(() => save({ top: fitTop.modelId, bottom: fitBottom.modelId }), /FITTING_NOT_READY/);
+  for (let i = 0; i < 2; i++) {
+    const j = claimR1(wAll, null);
+    finish(wAll, j, String(i + 6).repeat(64));
+  }
+  const camera = { position: [0, 1.3, 3.1], target: [0, 1, 0], autoOrbit: true };
+  const look = save({ top: fitTop.modelId, bottom: fitBottom.modelId, camera });
+  assert.equal(look.top_fitting_id, fitTop.modelId);
+  assert.equal(look.bottom_fitting_id, fitBottom.modelId);
+  assert.equal(look.fitting_id, fitTop.modelId, "legacy readers still see the top");
+  assert.deepEqual(look.camera, camera);
+  assert.equal(look.snapshot.top.sha256, "6".repeat(64));
+  assert.equal(look.snapshot.bottom.sha256, "7".repeat(64));
+  assert.equal(look.snapshot.bottom.garmentId, jeans.modelId);
+  assert.equal(look.snapshot.avatar.modelId, av.modelId);
+  // Slot swap, wrong avatar, foreign owner: refused.
+  assert.throws(() => save({ top: fitBottom.modelId }), /FITTING_NOT_READY/, "jeans cannot fill the top slot");
+  assert.throws(() => save({ bottom: fitTop.modelId }), /FITTING_NOT_READY/, "tee cannot fill the bottom slot");
+  assert.throws(() => save({ user: cuOther, top: fitTop.modelId }), /MODEL_NOT_READY/);
+  assert.throws(() => save({ avatar: next.model_id, top: fitTop.modelId }), /MODEL_NOT_READY/);
+  assert.throws(() => save({ name: " ", top: fitTop.modelId }), /INVALID_INPUT/);
+  const bottomOnly = save({ bottom: fitBottom.modelId });
+  assert.equal(bottomOnly.top_fitting_id, null, "one slot may stay on the labelled preset");
+  for (const role of ["anon", "authenticated"])
+    assert.throws(() => sql(`set role ${role};select fm_v2_save_look('${cu}','x','${av.modelId}',null,null,null,null);`));
+  console.log(
+    "PASS C1 PostgreSQL: migration on populated DB backfills legacy garments/fittings to top and keeps legacy looks; slot/kind constraint; jeans→bottom with bottom.* kinds; pants/foreign refused; top-only worker never claims jeans; per-item fitting cache with inherited slot; save_look checks readiness/slot/avatar/owner and snapshots camera + asset sha256; browser roles denied.",
+  );
+  }
   console.log(
     "PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.",
   );

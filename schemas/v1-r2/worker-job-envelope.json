@@ -1,0 +1,303 @@
+{
+  "$id": "https://fitmatch.local/schemas/v1-r2/worker-job-envelope.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "protocolRevision": {
+      "type": "string"
+    },
+    "redelivered": {
+      "type": "boolean"
+    },
+    "jobId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "avatar.reconstruct",
+        "garment.reconstruct",
+        "garment.drape",
+        "bottom.reconstruct",
+        "bottom.drape"
+      ]
+    },
+    "modelId": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "modelRevision": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "revision": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "model",
+            "revision"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "lease": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "expiresAt": {
+          "type": "string"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "token",
+        "expiresAt",
+        "attempt"
+      ]
+    },
+    "input": {
+      "type": "object",
+      "properties": {
+        "params": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        },
+        "avatarVersionId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "garmentVersionId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "slot": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "top",
+                "bottom"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "category": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "assetId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "front",
+                  "side",
+                  "back",
+                  "detail",
+                  "body",
+                  "garment"
+                ]
+              },
+              "url": {
+                "type": "string"
+              },
+              "sha256": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "bytes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "assetId",
+              "role",
+              "url",
+              "sha256",
+              "bytes"
+            ]
+          }
+        }
+      },
+      "required": [
+        "params",
+        "avatarVersionId",
+        "garmentVersionId",
+        "slot",
+        "category",
+        "assets"
+      ]
+    },
+    "outputContract": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "const": "glb-v2"
+        },
+        "units": {
+          "type": "string",
+          "const": "meters"
+        },
+        "up": {
+          "type": "string",
+          "const": "+Y"
+        },
+        "front": {
+          "type": "string",
+          "const": "+Z"
+        },
+        "embeddedTextures": {
+          "type": "boolean",
+          "const": true
+        },
+        "content": {
+          "type": "string",
+          "enum": [
+            "avatar",
+            "top-canonical",
+            "bottom-canonical",
+            "top-only-aligned-to-avatar",
+            "bottom-only-aligned-to-avatar"
+          ]
+        },
+        "maxFileBytes": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "sharedFrame": {
+          "type": "object",
+          "properties": {
+            "units": {
+              "type": "string",
+              "const": "meters"
+            },
+            "up": {
+              "type": "string",
+              "const": "+Y"
+            },
+            "front": {
+              "type": "string",
+              "const": "+Z"
+            },
+            "origin": {
+              "type": "string",
+              "const": "floor-between-feet"
+            },
+            "pose": {
+              "type": "string",
+              "const": "a-pose-v1"
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "units",
+            "up",
+            "front",
+            "origin",
+            "pose",
+            "note"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "format",
+        "units",
+        "up",
+        "front",
+        "embeddedTextures",
+        "content",
+        "maxFileBytes",
+        "sharedFrame"
+      ]
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "protocolRevision",
+    "redelivered",
+    "jobId",
+    "kind",
+    "modelId",
+    "modelRevision",
+    "lease",
+    "input",
+    "outputContract"
+  ],
+  "additionalProperties": false
+}

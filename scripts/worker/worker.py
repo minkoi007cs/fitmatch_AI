@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Outbound Fitmatch worker protocol v1, revision v1-r1. Python 3.10+, stdlib only; inference adapters are separate.
+"""Outbound Fitmatch worker protocol v1, revision v1-r2. Python 3.10+, stdlib only; inference adapters are separate.
 Never advertises a model unless a local command is explicitly configured. No mock generation.
 
 R1 recovery rules (see docs/worker-api-contract-v1.md):
@@ -29,8 +29,8 @@ import urllib.parse
 import urllib.request
 import uuid
 
-PROTOCOL_REVISION = 'v1-r1'
-KINDS = {'avatar.reconstruct', 'garment.reconstruct', 'garment.drape'}
+PROTOCOL_REVISION = 'v1-r2'
+KINDS = {'avatar.reconstruct', 'garment.reconstruct', 'garment.drape', 'bottom.reconstruct', 'bottom.drape'}
 MAX_BYTES = 40 * 1024 * 1024
 CHECKPOINT_VERSION = 1
 FAIL_CODES = {'OOM', 'INVALID_INPUT', 'MODEL_UNAVAILABLE', 'INFERENCE_FAILED', 'EXPORT_FAILED', 'TIMEOUT'}
@@ -573,7 +573,7 @@ class Worker:
                 'outputContract': job['outputContract'], 'outputPath': str(output)}, indent=2), encoding='utf8')
             # Only operator-authored argv is executed, never an app/user-supplied command or shell string.
             command = [value.replace('{input}', str(manifest)).replace('{output}', str(output)) for value in engine['command']]
-            stage[0] = 'draping' if job['kind'] == 'garment.drape' else 'reconstructing'
+            stage[0] = 'draping' if job['kind'].endswith('.drape') else 'reconstructing'
             log_path = attempt_dir / 'adapter.log'
             err_path = attempt_dir / 'adapter.err'  # private; parsed for one structured error record only
             with log_path.open('wb') as log, err_path.open('wb') as err:

@@ -19,11 +19,16 @@ export function result<T>(r: {
       "INVALID_ASSET",
       "INVALID_GARMENT",
       "MODEL_NOT_READY",
+      "FITTING_NOT_READY",
+      "LOOK_NOT_FOUND",
       "INVALID_INPUT",
       "LEASE_LOST",
     ].find((c) => r.error!.message.includes(c));
     if (known)
-      throw new InputError(known === "QUOTA_EXCEEDED" ? 429 : 409, known);
+      throw new InputError(
+        known === "QUOTA_EXCEEDED" ? 429 : known === "LOOK_NOT_FOUND" ? 404 : 409,
+        known,
+      );
     throw new InputError(503, "DATA_UNAVAILABLE");
   }
   return r.data;

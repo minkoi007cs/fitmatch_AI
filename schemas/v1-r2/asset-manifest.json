@@ -1,0 +1,306 @@
+{
+  "$id": "https://fitmatch.local/schemas/v1-r2/asset-manifest.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "fitmatch.full-look-fixture/v1"
+    },
+    "protocolRevision": {
+      "type": "string"
+    },
+    "provenance": {
+      "type": "string",
+      "minLength": 10
+    },
+    "frame": {
+      "type": "object",
+      "properties": {
+        "units": {
+          "type": "string",
+          "const": "meters"
+        },
+        "up": {
+          "type": "string",
+          "const": "+Y"
+        },
+        "front": {
+          "type": "string",
+          "const": "+Z"
+        },
+        "origin": {
+          "type": "string",
+          "const": "floor-between-feet"
+        },
+        "pose": {
+          "type": "string",
+          "const": "a-pose-v1"
+        }
+      },
+      "required": [
+        "units",
+        "up",
+        "front",
+        "origin",
+        "pose"
+      ],
+      "additionalProperties": false
+    },
+    "animation_ready": {
+      "type": "boolean",
+      "const": false
+    },
+    "assets": {
+      "type": "object",
+      "properties": {
+        "body": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z]+\\.glb$"
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "avatar",
+                "top",
+                "bottom"
+              ]
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 41943040
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bounds": {
+              "type": "object",
+              "properties": {
+                "min": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "max": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              },
+              "required": [
+                "min",
+                "max"
+              ]
+            }
+          },
+          "required": [
+            "file",
+            "role",
+            "bytes",
+            "sha256",
+            "bounds"
+          ],
+          "additionalProperties": false
+        },
+        "top": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z]+\\.glb$"
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "avatar",
+                "top",
+                "bottom"
+              ]
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 41943040
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bounds": {
+              "type": "object",
+              "properties": {
+                "min": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "max": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              },
+              "required": [
+                "min",
+                "max"
+              ]
+            }
+          },
+          "required": [
+            "file",
+            "role",
+            "bytes",
+            "sha256",
+            "bounds"
+          ],
+          "additionalProperties": false
+        },
+        "bottom": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "pattern": "^[a-z]+\\.glb$"
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "avatar",
+                "top",
+                "bottom"
+              ]
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 41943040
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bounds": {
+              "type": "object",
+              "properties": {
+                "min": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "max": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              },
+              "required": [
+                "min",
+                "max"
+              ]
+            }
+          },
+          "required": [
+            "file",
+            "role",
+            "bytes",
+            "sha256",
+            "bounds"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "body",
+        "top",
+        "bottom"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema",
+    "protocolRevision",
+    "provenance",
+    "frame",
+    "animation_ready",
+    "assets"
+  ],
+  "additionalProperties": false
+}

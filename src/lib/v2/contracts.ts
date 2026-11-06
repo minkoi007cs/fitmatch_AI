@@ -72,16 +72,51 @@ export const completeRequest = z
 export const claimRequest = z
   .object({ instanceId: id.optional(), requestId: id.optional() })
   .strict();
+/** Tops keep the v1 kinds; bottoms (jeans) have their own kinds so a top-only adapter never receives them. */
 export const workerKinds = [
   "avatar.reconstruct",
   "garment.reconstruct",
   "garment.drape",
+  "bottom.reconstruct",
+  "bottom.drape",
 ] as const;
-export const protocolRevision = "v1-r1";
+export type WorkerKind = (typeof workerKinds)[number];
+/** v1-r2 = v1-r1 + slot/category in the job input and the bottom.* kinds (additive). */
+export const protocolRevision = "v1-r2";
+export const slots = ["top", "bottom"] as const;
+export type Slot = (typeof slots)[number];
+/** Wardrobe categories that can become 3D garments, and the slot each one fills. */
+export const slotForCategory: Record<string, Slot> = {
+  "t-shirt": "top",
+  shirt: "top",
+  jeans: "bottom",
+};
+export const cameraState = z
+  .object({
+    position: z.tuple([z.number(), z.number(), z.number()]),
+    target: z.tuple([z.number(), z.number(), z.number()]),
+    autoOrbit: z.boolean(),
+  })
+  .strict()
+  .refine((c) => [...c.position, ...c.target].every((v) => Math.abs(v) <= 50), "camera out of range");
+export type CameraState = z.infer<typeof cameraState>;
+export const lookRequest = z
+  .object({
+    name: z.string().trim().min(1).max(80),
+    avatarId: id,
+    /** Legacy single-garment save (treated as the top slot). */
+    fittingId: id.nullable().optional(),
+    topFittingId: id.nullable().optional(),
+    bottomFittingId: id.nullable().optional(),
+    camera: cameraState.optional(),
+    recommendationId: id.nullable().optional(),
+  })
+  .strict()
+  .refine((v) => !(v.fittingId && v.topFittingId && v.fittingId !== v.topFittingId), "fittingId conflicts with topFittingId");
 export const workerHeartbeat = z
   .object({
     capabilities: z.partialRecord(
-      z.enum(["avatar.reconstruct", "garment.reconstruct", "garment.drape"]),
+      z.enum(workerKinds),
       z.object({ model: name, revision: z.string().min(1).max(160) }).strict(),
     ),
   })
@@ -147,6 +182,7 @@ export type ModelRow = {
   user_id: string;
   kind: "avatar" | "garment" | "fitting";
   name: string;
+  slot?: Slot | null;
   wardrobe_item_id: string | null;
   avatar_id: string | null;
   garment_id: string | null;

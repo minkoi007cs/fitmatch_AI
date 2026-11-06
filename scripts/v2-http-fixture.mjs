@@ -119,6 +119,7 @@ export async function v2Fixture() {
     for (const migration of [
       "20261105_studio_control_plane.sql",
       "20261106025506_worker_recovery_r1.sql",
+      "20261106035951_full_look_c1.sql",
     ])
       sql(
         readFileSync(
@@ -323,9 +324,9 @@ export async function v2Fixture() {
         }
         return false;
       },
-      seed(owner, itemId) {
+      seed(owner, itemId, category = "shirt") {
         sql(
-          `insert into auth.users values(${quote(owner)}) on conflict do nothing;insert into fm_wardrobe_items values(${quote(itemId)},${quote(owner)},'shirt') on conflict do nothing;`,
+          `insert into auth.users values(${quote(owner)}) on conflict do nothing;insert into fm_wardrobe_items values(${quote(itemId)},${quote(owner)},${quote(category)}) on conflict do nothing;`,
         );
       },
       worker(
