@@ -259,3 +259,8 @@ Người dùng yêu cầu giao PC và Claude chạy tiếp trước khi tiếp t
 ### H-PAIR-007 — việc chạy độc lập
 
 [Lệnh PC + Claude](./docs/handoffs/pc-claude-next-20261105.md). PC-CONF-01 Assigned trước receipt mới;21 tests là report chứ chưa reviewer rerun. Claude R1 vẫn Assigned trước receipt. DraftPR1 giữ draft/unmerged; PC code/weights/fitting local và engines rỗng. MSVC pause chưa gỡ; G0/G1/real integration vẫn NOT VERIFIED. Dispatch/receipt ghi riêng bên dưới khi có kết quả tool, không tự gọi cả hai đang chạy.
+
+
+### L-018 — 05/11/2026 — DISPATCH PC — H-PAIR-007
+
+Đã publish5793e01 và remote readback. Chủ dự án cho phép giao PC chạy; dùng send_message_to_thread gửi đúng chat PC “Khảo sát pipeline GPU Fitmatch AI”, thread01a1aa1b-fb39-7ab2-9ca0-1b5e637c9fae, host remote-control đã discover. Tool xác nhận gửi thành công; chưa có receipt/completion mới nên chưa đánh In progress/Done. Claude external không có endpoint gửi trực tiếp; prompt H-PAIR-007 đã sẵn cho chủ dự án chuyển, không giả đã khởi chạy Claude. MSVC pause giữ nguyên.
