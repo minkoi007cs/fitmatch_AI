@@ -1,0 +1,379 @@
+{
+  "task": "PC-INT-007",
+  "kind": "existing005-vs006 CPU comparison",
+  "patternResized": false,
+  "meshWritten": false,
+  "newFitting": false,
+  "newSimulation": false,
+  "all": {
+    "edges": 21577,
+    "changed": 1970,
+    "p95AbsoluteStrain005": 0.05753724415223327,
+    "p95AbsoluteStrain006": 0.05936348711659686,
+    "maxAbsoluteStrain005": 0.464511552399433,
+    "maxAbsoluteStrain006": 0.7249070219136196,
+    "over20Percent005": 50,
+    "over20Percent006": 89
+  },
+  "seamAdjacent": {
+    "edges": 1970,
+    "changed": 1970,
+    "p95AbsoluteStrain005": 0.09379461269595324,
+    "p95AbsoluteStrain006": 0.14460923950809637,
+    "maxAbsoluteStrain005": 0.41328493843887104,
+    "maxAbsoluteStrain006": 0.7249070219136196,
+    "over20Percent005": 20,
+    "over20Percent006": 59
+  },
+  "interior": {
+    "edges": 19607,
+    "changed": 0,
+    "p95AbsoluteStrain005": 0.0540903595624936,
+    "p95AbsoluteStrain006": 0.0540903595624936,
+    "maxAbsoluteStrain005": 0.464511552399433,
+    "maxAbsoluteStrain006": 0.464511552399433,
+    "over20Percent005": 30,
+    "over20Percent006": 30
+  },
+  "sourceCoordinateRegions": {
+    "armhole": {
+      "edges": 313,
+      "changed": 313,
+      "p95AbsoluteStrain005": 0.132749065506632,
+      "p95AbsoluteStrain006": 0.3179742286971328,
+      "maxAbsoluteStrain005": 0.36304338965104543,
+      "maxAbsoluteStrain006": 0.6186989576576927,
+      "over20Percent005": 3,
+      "over20Percent006": 33
+    },
+    "collar": {
+      "edges": 216,
+      "changed": 11,
+      "p95AbsoluteStrain005": 0.07440296631012311,
+      "p95AbsoluteStrain006": 0.07605376043706519,
+      "maxAbsoluteStrain005": 0.11171353249501514,
+      "maxAbsoluteStrain006": 0.1940463275866401,
+      "over20Percent005": 0,
+      "over20Percent006": 0
+    },
+    "hem": {
+      "edges": 1032,
+      "changed": 67,
+      "p95AbsoluteStrain005": 0.02783468027387052,
+      "p95AbsoluteStrain006": 0.028368589797301388,
+      "maxAbsoluteStrain005": 0.07878716158633159,
+      "maxAbsoluteStrain006": 0.07878716158633159,
+      "over20Percent005": 0,
+      "over20Percent006": 0
+    },
+    "sleeve": {
+      "edges": 7072,
+      "changed": 732,
+      "p95AbsoluteStrain005": 0.04998253681095066,
+      "p95AbsoluteStrain006": 0.05100135166239308,
+      "maxAbsoluteStrain005": 0.3758007434143569,
+      "maxAbsoluteStrain006": 0.7249070219136196,
+      "over20Percent005": 7,
+      "over20Percent006": 14
+    },
+    "torso": {
+      "edges": 12944,
+      "changed": 847,
+      "p95AbsoluteStrain005": 0.06004713743244904,
+      "p95AbsoluteStrain006": 0.06166913156376557,
+      "maxAbsoluteStrain005": 0.464511552399433,
+      "maxAbsoluteStrain006": 0.5022398193671831,
+      "over20Percent005": 40,
+      "over20Percent006": 42
+    }
+  },
+  "syntheticLogoRectangleApproximation": {
+    "edges": 2256,
+    "changed": 173,
+    "p95AbsoluteStrain005": 0.032484609570274575,
+    "p95AbsoluteStrain006": 0.032484609570274575,
+    "maxAbsoluteStrain005": 0.12032258259655682,
+    "maxAbsoluteStrain006": 0.12032258259655682,
+    "over20Percent005": 0,
+    "over20Percent006": 0
+  },
+  "changedEdgesOutsideSeamAdjacency": 0,
+  "pairedCanonicalRestTargets": {
+    "physicalEdges": 21257,
+    "over10PercentMismatch": 0,
+    "maxTargetRatio": 1.0068543158338443,
+    "note": "Different per-panel target lengths can compete at shared physical seam edges; no target changed here"
+  },
+  "worst006Edges": [
+    {
+      "edge": 88,
+      "sourceVertexA": 28,
+      "sourceVertexB": 1262,
+      "region": "sleeve",
+      "seamAdjacent": true,
+      "restMetres": 0.008026485829106774,
+      "absoluteStrain005": 0.3758007434143569,
+      "absoluteStrain006": 0.7249070219136196,
+      "increase": 0.3491062784992627,
+      "lengthChangeMetres": 0.002802096597226536
+    },
+    {
+      "edge": 90,
+      "sourceVertexA": 29,
+      "sourceVertexB": 1262,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.009298242896011765,
+      "absoluteStrain005": 0.01930183567835586,
+      "absoluteStrain006": 0.6186989576576927,
+      "increase": 0.5993971219793368,
+      "lengthChangeMetres": 0.005932286344286783
+    },
+    {
+      "edge": 5460,
+      "sourceVertexA": 1897,
+      "sourceVertexB": 1898,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.009956616791904944,
+      "absoluteStrain005": 0.05401798127501389,
+      "absoluteStrain006": 0.5605496964901011,
+      "increase": 0.5065317152150872,
+      "lengthChangeMetres": 0.00504334218134295
+    },
+    {
+      "edge": 7119,
+      "sourceVertexA": 2478,
+      "sourceVertexB": 2479,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.009958009391905616,
+      "absoluteStrain005": 0.06674799311333202,
+      "absoluteStrain006": 0.56033145794233,
+      "increase": 0.49358346482899795,
+      "lengthChangeMetres": 0.006244463063083301
+    },
+    {
+      "edge": 93,
+      "sourceVertexA": 30,
+      "sourceVertexB": 1262,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.008026485829106606,
+      "absoluteStrain005": 0.016021425494870734,
+      "absoluteStrain006": 0.5111080056776152,
+      "increase": 0.49508658018274443,
+      "lengthChangeMetres": 0.0039738054200176495
+    },
+    {
+      "edge": 4079,
+      "sourceVertexA": 1408,
+      "sourceVertexB": 1706,
+      "region": "torso",
+      "seamAdjacent": true,
+      "restMetres": 0.00954291129675679,
+      "absoluteStrain005": 0.41328493843887104,
+      "absoluteStrain006": 0.5022398193671831,
+      "increase": 0.08895488092831205,
+      "lengthChangeMetres": 0.0008488885381124425
+    },
+    {
+      "edge": 89,
+      "sourceVertexA": 29,
+      "sourceVertexB": 30,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.00973873649897336,
+      "absoluteStrain005": 0.03683527144662446,
+      "absoluteStrain006": 0.4728762601614691,
+      "increase": 0.43604098871484465,
+      "lengthChangeMetres": 0.00424648829184569
+    },
+    {
+      "edge": 4073,
+      "sourceVertexA": 1406,
+      "sourceVertexB": 1407,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.00973922551281825,
+      "absoluteStrain005": 0.1461650768642091,
+      "absoluteStrain006": 0.47280230593563455,
+      "increase": 0.32663722907142545,
+      "lengthChangeMetres": 0.0031811936348086853
+    },
+    {
+      "edge": 17496,
+      "sourceVertexA": 5928,
+      "sourceVertexB": 6100,
+      "region": "torso",
+      "seamAdjacent": false,
+      "restMetres": 0.010629165692325148,
+      "absoluteStrain005": 0.464511552399433,
+      "absoluteStrain006": 0.464511552399433,
+      "increase": 0.0,
+      "lengthChangeMetres": 0.0
+    },
+    {
+      "edge": 17040,
+      "sourceVertexA": 5822,
+      "sourceVertexB": 5928,
+      "region": "torso",
+      "seamAdjacent": false,
+      "restMetres": 0.011172179628630938,
+      "absoluteStrain005": 0.4173005454551484,
+      "absoluteStrain006": 0.4173005454551484,
+      "increase": 0.0,
+      "lengthChangeMetres": 0.0
+    }
+  ],
+  "largestIncreases": [
+    {
+      "edge": 90,
+      "sourceVertexA": 29,
+      "sourceVertexB": 1262,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.009298242896011765,
+      "absoluteStrain005": 0.01930183567835586,
+      "absoluteStrain006": 0.6186989576576927,
+      "increase": 0.5993971219793368,
+      "lengthChangeMetres": 0.005932286344286783
+    },
+    {
+      "edge": 5460,
+      "sourceVertexA": 1897,
+      "sourceVertexB": 1898,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.009956616791904944,
+      "absoluteStrain005": 0.05401798127501389,
+      "absoluteStrain006": 0.5605496964901011,
+      "increase": 0.5065317152150872,
+      "lengthChangeMetres": 0.00504334218134295
+    },
+    {
+      "edge": 93,
+      "sourceVertexA": 30,
+      "sourceVertexB": 1262,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.008026485829106606,
+      "absoluteStrain005": 0.016021425494870734,
+      "absoluteStrain006": 0.5111080056776152,
+      "increase": 0.49508658018274443,
+      "lengthChangeMetres": 0.0039738054200176495
+    },
+    {
+      "edge": 7119,
+      "sourceVertexA": 2478,
+      "sourceVertexB": 2479,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.009958009391905616,
+      "absoluteStrain005": 0.06674799311333202,
+      "absoluteStrain006": 0.56033145794233,
+      "increase": 0.49358346482899795,
+      "lengthChangeMetres": 0.006244463063083301
+    },
+    {
+      "edge": 89,
+      "sourceVertexA": 29,
+      "sourceVertexB": 30,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.00973873649897336,
+      "absoluteStrain005": 0.03683527144662446,
+      "absoluteStrain006": 0.4728762601614691,
+      "increase": 0.43604098871484465,
+      "lengthChangeMetres": 0.00424648829184569
+    },
+    {
+      "edge": 7053,
+      "sourceVertexA": 2456,
+      "sourceVertexB": 3596,
+      "region": "torso",
+      "seamAdjacent": true,
+      "restMetres": 0.007702606023585602,
+      "absoluteStrain005": 0.012393993780881463,
+      "absoluteStrain006": 0.3875413737114526,
+      "increase": 0.3751473799305711,
+      "lengthChangeMetres": 0.002889612468385575
+    },
+    {
+      "edge": 14877,
+      "sourceVertexA": 5162,
+      "sourceVertexB": 5571,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.00802431525207936,
+      "absoluteStrain005": 0.021339162145183166,
+      "absoluteStrain006": 0.39328199549262766,
+      "increase": 0.3719428333474445,
+      "lengthChangeMetres": 0.003327050879067886
+    },
+    {
+      "edge": 88,
+      "sourceVertexA": 28,
+      "sourceVertexB": 1262,
+      "region": "sleeve",
+      "seamAdjacent": true,
+      "restMetres": 0.008026485829106774,
+      "absoluteStrain005": 0.3758007434143569,
+      "absoluteStrain006": 0.7249070219136196,
+      "increase": 0.3491062784992627,
+      "lengthChangeMetres": 0.002802096597226536
+    },
+    {
+      "edge": 7122,
+      "sourceVertexA": 2479,
+      "sourceVertexB": 2480,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.009990959505732366,
+      "absoluteStrain005": 0.036455558497751284,
+      "absoluteStrain006": 0.3778327970823382,
+      "increase": 0.3413772385845869,
+      "lengthChangeMetres": -0.004139138184297126
+    },
+    {
+      "edge": 4002,
+      "sourceVertexA": 1382,
+      "sourceVertexB": 1384,
+      "region": "armhole",
+      "seamAdjacent": true,
+      "restMetres": 0.01158429319203044,
+      "absoluteStrain005": 0.06826560342004195,
+      "absoluteStrain006": 0.4000089429568294,
+      "increase": 0.3317433395367875,
+      "lengthChangeMetres": 0.003843012109697449
+    }
+  ],
+  "wallSeconds": 0.31794460001401603,
+  "inputs": [
+    {
+      "file": "unsewn.json",
+      "sha256": "9015f66fff0872c8658f41bb5f4cff17386d4deb9255f52d4d38dcb0eef2843e"
+    },
+    {
+      "file": "draped-template-metres.obj",
+      "sha256": "49463fdab7ebbaa88765bfbec803a88c6295e16f358c3c5b4211121a2cdf7366"
+    },
+    {
+      "file": "tee-welded-metres.obj",
+      "sha256": "d218e54e7f0bfcc9d1e4081ef61c942a5576585e88fdd2f020a65fc66aadef50"
+    },
+    {
+      "file": "uv-corner-map.json",
+      "sha256": "11f27a34f5ff5839459332f45c0157c522b4e392efc2b460fd7b106572f1b33c"
+    },
+    {
+      "file": "tee-template_vertex_labels.yaml",
+      "sha256": "b4c6046bd3f6c7107c5543fed139ba02568ba778ba0d581def2177bb3e72e591"
+    }
+  ],
+  "limitations": [
+    "Regions are approximate canonical-template labels, not anatomical/personal measurements",
+    "Static edge-length comparison does not validate cloth physics or material fit",
+    "Logo rectangle is only an approximate fixture region; unchanged aggregate p95/max does not imply unchanged edges or real-photo reconstruction"
+  ]
+}
