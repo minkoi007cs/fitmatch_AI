@@ -34,10 +34,11 @@ KINDS = {'avatar.reconstruct', 'garment.reconstruct', 'garment.drape'}
 MAX_BYTES = 40 * 1024 * 1024
 CHECKPOINT_VERSION = 1
 FAIL_CODES = {'OOM', 'INVALID_INPUT', 'MODEL_UNAVAILABLE', 'INFERENCE_FAILED', 'EXPORT_FAILED', 'TIMEOUT'}
-# Proposed adapter exit-code contract. Not yet confirmed by the PC adapter owner; override per engine
-# with "exitCodes" in config once the real adapter's codes are known.
-DEFAULT_EXIT_CODES = {3: 'OOM', 4: 'INVALID_INPUT', 5: 'EXPORT_FAILED', 6: 'MODEL_UNAVAILABLE'}
-OOM_MARKERS = (b'CUDA out of memory', b'OutOfMemoryError', b'CUBLAS_STATUS_ALLOC_FAILED')
+# Adapter exit contract (provisional, from PC-CONF-01 / draft PR1, adapter revision 37213bc): a failure is
+# classified only when the exit code is in this table AND stderr ends with one bounded JSON object
+# {"success": false, "code": <same code>}. Anything else (argparse usage text, unknown exit, malformed or
+# mismatched record) is INFERENCE_FAILED. Operators may extend it per engine with "exitCodes" once agreed.
+DEFAULT_EXIT_CODES = {78: 'MODEL_UNAVAILABLE', 2: 'INVALID_INPUT'}
 SECRET_NAME = re.compile(r'(TOKEN|SECRET|PASSW|CREDENTIAL|API_?KEY|PRIVATE_?KEY|SERVICE_?ROLE|AUTHORIZATION|COOKIE|SESSION)', re.I)
 UUID = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 RESUMABLE = ('output_ready', 'uploading', 'finalized')
@@ -202,21 +203,28 @@ def adapter_environment(token):
             if not SECRET_NAME.search(k) and not k.startswith('FITMATCH_WORKER') and (not token or token not in v)}
 
 
-def classify_exit(returncode, engine, log_path):
+def structured_error(err_path, limit=16384):
+    """Last non-empty stderr line as a bounded JSON error record, or None. Raw stderr is never forwarded."""
+    try:
+        with err_path.open('rb') as stream:
+            stream.seek(max(0, err_path.stat().st_size - limit))
+            lines = [line for line in stream.read().decode('utf8', 'replace').splitlines() if line.strip()]
+        record = json.loads(lines[-1]) if lines else None
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, dict) or record.get('success') is not False or record.get('code') not in FAIL_CODES:
+        return None
+    return record['code']
+
+
+def classify_exit(returncode, engine, err_path):
     mapping = dict(DEFAULT_EXIT_CODES)
     for key, value in (engine.get('exitCodes') or {}).items():
-        if value in FAIL_CODES:
+        if str(key).lstrip('-').isdigit() and value in FAIL_CODES:
             mapping[int(key)] = value
-    if returncode in mapping:
-        return mapping[returncode]
-    try:
-        with log_path.open('rb') as stream:
-            stream.seek(max(0, log_path.stat().st_size - 65536))
-            tail = stream.read()
-        if any(marker in tail for marker in OOM_MARKERS):
-            return 'OOM'
-    except OSError:
-        pass
+    expected = mapping.get(returncode)
+    if expected and structured_error(err_path) == expected:
+        return expected
     return 'INFERENCE_FAILED'
 
 
@@ -523,9 +531,10 @@ class Worker:
             command = [value.replace('{input}', str(manifest)).replace('{output}', str(output)) for value in engine['command']]
             stage[0] = 'draping' if job['kind'] == 'garment.drape' else 'reconstructing'
             log_path = attempt_dir / 'adapter.log'
-            with log_path.open('wb') as log:
+            err_path = attempt_dir / 'adapter.err'  # private; parsed for one structured error record only
+            with log_path.open('wb') as log, err_path.open('wb') as err:
                 process = subprocess.Popen(command, cwd=attempt_dir, env=adapter_environment(self.token), stdout=log,
-                    stderr=subprocess.STDOUT, start_new_session=os.name != 'nt', pass_fds=self.lock.fds())
+                    stderr=err, start_new_session=os.name != 'nt', pass_fds=self.lock.fds())
                 cp.save(version=CHECKPOINT_VERSION, jobId=job_id, modelId=job['modelId'], kind=job['kind'],
                         modelRevision=job['modelRevision'], inputDigest=digest, attempt=job['lease']['attempt'],
                         leaseToken=lease['leaseToken'], instance=self.instance, stage='inferring', adapterPid=process.pid,
@@ -540,7 +549,7 @@ class Worker:
                 finally:
                     stop_process(process)
             if process.returncode != 0:
-                raise JobFailure(classify_exit(process.returncode, engine, log_path))
+                raise JobFailure(classify_exit(process.returncode, engine, err_path))
             stage[0] = 'exporting'
             if not glb_ok(output):
                 raise JobFailure('EXPORT_FAILED')

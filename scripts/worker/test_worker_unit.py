@@ -86,17 +86,24 @@ class CheckpointTests(unittest.TestCase):
 
 
 class ClassificationTests(unittest.TestCase):
-    def test_exit_codes(self):
-        log = Path(tempfile.mkdtemp()) / 'adapter.log'
-        log.write_bytes(b'')
-        self.assertEqual(worker.classify_exit(3, {}, log), 'OOM')
-        self.assertEqual(worker.classify_exit(4, {}, log), 'INVALID_INPUT')
-        self.assertEqual(worker.classify_exit(5, {}, log), 'EXPORT_FAILED')
-        self.assertEqual(worker.classify_exit(1, {}, log), 'INFERENCE_FAILED')
-        self.assertEqual(worker.classify_exit(7, {'exitCodes': {'7': 'OOM', '8': 'NOT_A_CODE'}}, log), 'OOM')
-        self.assertEqual(worker.classify_exit(8, {'exitCodes': {'8': 'NOT_A_CODE'}}, log), 'INFERENCE_FAILED')
-        log.write_bytes(b'... torch.cuda.OutOfMemoryError: CUDA out of memory ...')
-        self.assertEqual(worker.classify_exit(1, {}, log), 'OOM')
+    def test_exit_codes_follow_structured_adapter_contract(self):
+        err = Path(tempfile.mkdtemp()) / 'adapter.err'
+        def classify(code, text, engine=None):
+            err.write_text(text, encoding='utf8')
+            return worker.classify_exit(code, engine or {}, err)
+        disabled = '{"success":false,"code":"MODEL_UNAVAILABLE","reason":"SiTH adapter is disabled"}'
+        invalid = '{"success":false,"code":"INVALID_INPUT","reason":"Invalid manifest JSON"}'
+        self.assertEqual(classify(78, disabled), 'MODEL_UNAVAILABLE')            # actual PC adapter (draft PR1)
+        self.assertEqual(classify(2, invalid), 'INVALID_INPUT')                   # actual PC adapter
+        self.assertEqual(classify(2, 'usage: sith_avatar.py [-h] --input INPUT'), 'INFERENCE_FAILED')  # argparse, non-JSON
+        self.assertEqual(classify(2, disabled), 'INFERENCE_FAILED')              # code/exit mismatch
+        self.assertEqual(classify(78, ''), 'INFERENCE_FAILED')                    # missing record
+        self.assertEqual(classify(1, 'Traceback ... CUDA out of memory'), 'INFERENCE_FAILED')  # no traceback guessing
+        self.assertEqual(classify(3, '{"success":false,"code":"OOM"}'), 'INFERENCE_FAILED')    # 3 is not agreed
+        oom = {'exitCodes': {'3': 'OOM', '9': 'NOT_A_CODE'}}
+        self.assertEqual(classify(3, '{"success":false,"code":"OOM"}', oom), 'OOM')           # operator-configured
+        self.assertEqual(classify(9, '{"success":false,"code":"NOT_A_CODE"}', oom), 'INFERENCE_FAILED')
+        self.assertEqual(classify(78, 'noise\n' + disabled + '\n'), 'MODEL_UNAVAILABLE')     # last line wins
 
     def test_adapter_environment_drops_secrets(self):
         token = 'fmw_' + 'z' * 43

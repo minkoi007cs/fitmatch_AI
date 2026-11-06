@@ -124,20 +124,24 @@ appendFileSync(counter,'x');
 const secret=Object.keys(process.env).filter(k=>/TOKEN|SECRET|API_?KEY|PASSW|SERVICE_?ROLE/i.test(k)||String(process.env[k]).includes('fmw_'));
 if(secret.length&&mode!=='legacy'){console.error('secret leaked',secret);process.exit(9);}
 JSON.parse(readFileSync(input,'utf8'));
-if(mode==='oom')process.exit(3);
+const fail=(code,exit)=>{process.stderr.write(JSON.stringify({success:false,code,reason:'synthetic'})+String.fromCharCode(10));process.exit(exit);};
+if(mode==='disabled')fail('MODEL_UNAVAILABLE',78);
+if(mode==='invalid')fail('INVALID_INPUT',2);
+if(mode==='usage'){process.stderr.write('usage: adapter --input INPUT --output OUTPUT'+String.fromCharCode(10));process.exit(2);}
+if(mode==='oom')fail('OOM',3);
 if(mode==='sleep'){await new Promise(r=>setTimeout(r,30000));}
 if(mode==='slow'){await new Promise(r=>setTimeout(r,4000));}
 writeFileSync(output,Buffer.from('${mesh([0.2, 0.6, 0.4, 1]).toString("base64")}','base64'));`,
     );
     let n = 0;
-    const setup = async ({ mode = "ok", retry = { attempts: 3, baseSeconds: 0.05, maxSeconds: 0.2 }, timeoutSeconds = 60, allowed, workDir } = {}) => {
+    const setup = async ({ mode = "ok", retry = { attempts: 3, baseSeconds: 0.05, maxSeconds: 0.2 }, timeoutSeconds = 60, allowed, workDir, exitCodes } = {}) => {
       const w = v2.worker(owner, allowed);
       const dir = workDir ?? join(temp, "work-" + ++n);
       const counter = join(temp, "count-" + n);
       const config = join(temp, "config-" + n + ".json");
       await writeFile(config, JSON.stringify({
         appUrl: proxyUrl, workDir: dir, heartbeatSeconds: 1, pollSeconds: 0.2, requestTimeoutSeconds: 10, retry,
-        engines: { [KIND]: { ...ENGINE, timeoutSeconds, command: [process.execPath, adapter, "{input}", "{output}", counter, mode] } },
+        engines: { [KIND]: { ...ENGINE, timeoutSeconds, ...(exitCodes ? { exitCodes } : {}), command: [process.execPath, adapter, "{input}", "{output}", counter, mode] } },
       }));
       const count = async () => (existsSync(counter) ? (await readFile(counter, "utf8")).length : 0);
       return { ...w, dir, config, count, env: { MY_API_KEY: "should-not-leak", OTHER_VALUE: w.token } };
@@ -254,17 +258,24 @@ writeFileSync(output,Buffer.from('${mesh([0.2, 0.6, 0.4, 1]).toString("base64")}
     assert.deepEqual(job(id), { state: "failed", attempt: 1, error: "MODEL_UNAVAILABLE" }, r.stdout);
     assert.equal(await w.count(), 0);
 
-    // S9 adapter exit classification: OOM (proposed exit 3) and timeout.
-    reset();
-    w = await setup({ mode: "oom" });
-    id = await newJob();
-    await runWorker(w.config, w.token, w.env);
-    assert.deepEqual(job(id), { state: "failed", attempt: 1, error: "OOM" });
-    reset();
-    w = await setup({ mode: "sleep", timeoutSeconds: 1 });
-    id = await newJob();
-    await runWorker(w.config, w.token, w.env);
-    assert.deepEqual(job(id), { state: "failed", attempt: 1, error: "TIMEOUT" });
+    // S9 adapter exit classification against the PC adapter contract (draft PR1): exit 78 + JSON
+    // MODEL_UNAVAILABLE, exit 2 + JSON INVALID_INPUT, argparse usage -> INFERENCE_FAILED, unconfigured
+    // exit 3 -> INFERENCE_FAILED, operator-configured exit 3 -> OOM, parent time limit -> TIMEOUT.
+    for (const [mode, expected, extra] of [
+      ["disabled", "MODEL_UNAVAILABLE"],
+      ["invalid", "INVALID_INPUT"],
+      ["usage", "INFERENCE_FAILED"],
+      ["oom", "INFERENCE_FAILED"],
+      ["oom", "OOM", { exitCodes: { 3: "OOM" } }],
+      ["sleep", "TIMEOUT", { timeoutSeconds: 1 }],
+    ]) {
+      reset();
+      w = await setup({ mode, ...(extra ?? {}) });
+      id = await newJob();
+      r = await runWorker(w.config, w.token, w.env);
+      assert.deepEqual(job(id), { state: "failed", attempt: 1, error: expected }, mode + ": " + r.stdout);
+      assert.equal(glbCount(id), 0, "no output published on failure");
+    }
 
     // S10 grants: declared but not granted is neither advertised nor claimable.
     reset();
@@ -347,7 +358,7 @@ writeFileSync(output,Buffer.from('${mesh([0.2, 0.6, 0.4, 1]).toString("base64")}
     assert.equal((await hbWith(rotated.token)).status, 401);
 
     console.log(
-      "PASS R1 worker recovery (real routes + SQL + Python worker): complete/finalize reply loss and outage, upload outcome unknown and expired URL, claim reply loss redelivered, restart within lease, restart after lease loss reusing output (stale token 409), MODEL_UNAVAILABLE, OOM/TIMEOUT, default-deny grants, operator create/grant/ungrant/rotate/revoke, crash during inference guarded by workDir lock, no secrets in adapter env. Synthetic geometry only.",
+      "PASS R1 worker recovery (real routes + SQL + Python worker): complete/finalize reply loss and outage, upload outcome unknown and expired URL, claim reply loss redelivered, restart within lease, restart after lease loss reusing output (stale token 409), MODEL_UNAVAILABLE, adapter contract exit78/exit2+JSON/usage/configured OOM/TIMEOUT, default-deny grants, operator create/grant/ungrant/rotate/revoke, crash during inference guarded by workDir lock, no secrets in adapter env. Synthetic geometry only.",
     );
   } finally {
     await proxy.close();
