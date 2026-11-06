@@ -621,6 +621,34 @@ try {
     for (const role of ["anon", "authenticated"]) assert.throws(() => sql(`set role ${role};select * from fm_v2_gc_candidates();`));
     console.log("PASS C3 PostgreSQL: GC dry run lists stale pending uploads, tombstoned source objects, unpublished outputs and staging copies after the grace period; published outputs kept; deletes nothing; browser roles denied.");
   }
+  sql(readFileSync(new URL("../supabase/migrations/20261106053812_fitting_generations.sql", import.meta.url), "utf8"));
+  const regenAvatar = photo(91);
+  sql(`insert into fm_v2_models(id,user_id,kind,name,output_asset_id) select '${regenAvatar}',user_id,kind,'Regeneration',output_asset_id from fm_v2_models where id='${next.model_id}';`);
+  const broken = JSON.parse(service(enqueue("regen-original", "fitting", {avatar:regenAvatar,garment})));
+  const act = (user, job, action) => `select fm_v2_job_action('${user}','${job}','${action}');`;
+  assert.equal(service(act(owner,broken.jobId,"regenerate")), "f", "queued job cannot regenerate");
+  sql(`update fm_v2_jobs set state='failed',attempt=3 where id='${broken.jobId}';`);
+  assert.equal(service(act(other,broken.jobId,"regenerate")), "f", "foreign owner denied");
+  const concurrent = await parallel(Array.from({length:8},()=>act(owner,broken.jobId,"regenerate")));
+  assert.ok(concurrent.every(r=>r.ok && r.value==='t'), JSON.stringify(concurrent));
+  const successor = service(`select superseded_by from fm_v2_models where id='${broken.modelId}';`);
+  assert.ok(successor && successor!==broken.modelId);
+  assert.equal(service(`select count(*) from fm_v2_models where avatar_id='${regenAvatar}' and superseded_by is null;`),"1");
+  assert.equal(service(`select attempt||'|'||state from fm_v2_jobs where model_id='${successor}';`),"0|queued");
+  assert.equal(service(act(owner,broken.jobId,"retry")),"f", "superseded job cannot revive");
+  assert.equal(JSON.parse(service(enqueue("regen-new-key","fitting",{avatar:regenAvatar,garment}))).modelId,successor);
+  assert.equal(service(`select fitting_id from fm_v2_looks where name='Legacy';`),f1.modelId,"saved look stays pinned");
+  const successorJob = service(`select id from fm_v2_jobs where model_id='${successor}';`);
+  sql(`update fm_v2_jobs set state='failed',attempt=3,error_code='SOURCE_DELETED' where id='${successorJob}';`);
+  assert.equal(service(act(owner,successorJob,"regenerate")),"f","source deleted denied");
+  sql(`update fm_v2_jobs set error_code=null where id='${successorJob}';
+    insert into fm_v2_models(id,user_id,kind,name) select gen_random_uuid(),'${owner}','avatar','quota-probe' from generate_series(1,20);
+    insert into fm_v2_jobs(id,user_id,model_id,kind,idempotency_key,payload_hash)
+      select gen_random_uuid(),'${owner}',id,'avatar.reconstruct',id::text,id::text from fm_v2_models where name='quota-probe';`);
+  assert.throws(()=>service(act(owner,successorJob,"regenerate")),/QUOTA_EXCEEDED/);
+  assert.equal(service(`select superseded_by is null from fm_v2_models where id='${successor}';`),"t","quota refusal leaves current generation intact");
+  for(const role of ['anon','authenticated']) assert.throws(()=>sql(`set role ${role};${act(owner,broken.jobId,'regenerate')}`));
+  console.log('PASS fitting generations: eight concurrent requests create one successor; owner/source/active guards; old retry denied; new cache and saved look pinning.');
   console.log(
     "PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.",
   );

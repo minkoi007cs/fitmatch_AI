@@ -78,7 +78,7 @@ export function cloudItems(models: ModelRow[], jobs: JobRow[], avatarId: string)
         items.push({ id: g.id, name: g.name, category, slot, preset: false, status: "failed" });
       continue;
     }
-    const fit = models.find((m) => m.kind === "fitting" && m.avatar_id === avatarId && m.garment_id === g.id);
+    const fit = models.find((m) => !m.superseded_by && m.kind === "fitting" && m.avatar_id === avatarId && m.garment_id === g.id);
     const job = fit ? jobOf(fit.id) : undefined;
     const status: StudioItem["status"] = !fit
       ? "prepare"

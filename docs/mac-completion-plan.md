@@ -7,7 +7,7 @@ Owner: Codex integration, following user instruction to complete work while PC p
 | Package | State | Deliverable and acceptance |
 |---|---|---|
 | MAC-14A recovery presentation | Implemented, tested | Failed/canceled reconstruction remains visible in Studio; category lookup rejects prototype names; source-deleted errors explain recapture. Unit regressions + lint/build. |
-| MAC-14B fitting regeneration | Planned | Explicit new generation after exhausted attempts, preserving old versions and saved looks. Same request id dedupes, new request may create generation only after prior terminal failure; quota still enforced. DB concurrent requests, owner isolation, stale completion and tombstoned-source tests required. |
+| MAC-14B fitting regeneration | Implemented, tested | Explicit new generation after exhausted attempts, preserving old versions and saved looks. Same request id dedupes, new request may create generation only after prior terminal failure; quota still enforced. DB concurrent requests, owner isolation, stale completion and tombstoned-source tests required. |
 | MAC-14C engine version policy | Planned | Pin engine revision at creation and make cache generation distinguish revision; existing ready assets stay viewable. Never auto-run all wardrobe items after engine upgrade. Coordinate PC revision contract first; additive migration and populated-DB regression. |
 | MAC-14D expired asset recovery | Planned | Refresh a signed URL once for the same model/version; hash remains pinned. Abort stale selection; no inference triggered. Test expired links, changed version/hash, network failure and selection races. |
 | MAC-14E privacy completion | Planned | Audit tombstones versus staging copies, duplicate source references and saved derived assets. Keep collector dry-run until exact deletion policy reviewed. PC cached-source deletion needs PC implementation/receipt. |
@@ -28,3 +28,10 @@ Native Windows Job Object teardown, shared lock used by both Qwen and 3D, strict
 ## Completion evidence for this increment
 
 MAC-14A adds three regressions; npm test 47 PASS. lint/build results recorded in process after completion. Earlier independent full DB/API/browser results remain attached to the earlier revision; they are not claimed rerun for this small presentation change. No production schema, wire or engine change in this increment.
+
+
+## Fitting generation implementation
+
+Migration `20261106053812_fitting_generations.sql` adds `superseded_by` (deferred self-reference) and a partial unique index allowing one current fitting per avatar/item. POST jobs/:id/regenerate applies only to exhausted failed/canceled fittings without output; the old job id is the idempotency identity. Owner advisory lock serializes requests. Quotas remain enforced. Ready derived inputs are required; retained derived GLBs can still be fitted after original photos are deleted. SOURCE_DELETED failures and unavailable derived inputs are rejected.
+
+Old models/jobs/assets/looks stay intact. Superseded jobs cannot retry; current Studio/recommendation selectors exclude them. Saved looks resolve their explicit IDs. Fresh prepare requests use new request keys; DB pair uniqueness dedupes them, avoiding replay of the first generation's old idempotency receipt. No automatic regeneration or engine-revision upgrade is included. Apply migration before app rollout in a test environment; production migration is not performed here.

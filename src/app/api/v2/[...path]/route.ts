@@ -408,7 +408,7 @@ async function handle(
       path[0] === "jobs" &&
       path.length === 3 &&
       method === "POST" &&
-      ["cancel", "retry"].includes(path[2])
+      ["cancel", "retry", "regenerate"].includes(path[2])
     ) {
       const ok = result(
         await db.rpc("fm_v2_job_action", {

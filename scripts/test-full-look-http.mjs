@@ -231,6 +231,15 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
   } finally {
     await browser.close();
   }
+  const generationAvatar = randomUUID();
+  v2.sql(`insert into fm_v2_models(id,user_id,kind,name,output_asset_id)
+    select '${generationAvatar}',user_id,kind,'regen-test',output_asset_id from fm_v2_models where id='${avatar.modelId}';`);
+  const exhausted = await enqueue({kind:'fitting',name:'retry-test',avatarId:generationAvatar,garmentId:teeA.modelId}, 'generation-http-test');
+  v2.sql(`update fm_v2_jobs set state='failed',attempt=3 where id='${exhausted.jobId}';`);
+  const responses = await Promise.all(Array.from({length:4},()=>request(`/api/v2/jobs/${exhausted.jobId}/regenerate`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})));
+  responses.forEach(r=>assert.equal(r.status,200));
+  assert.equal(v2.sql(`select count(*) from fm_v2_models where avatar_id='${generationAvatar}' and superseded_by is null;`),'1');
+  assert.equal((await request(`/api/v2/jobs/${exhausted.jobId}/retry`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})).status,409);
   console.log(
     "PASS C1 full look (real routes + PostgreSQL + browser): jeans enqueue→bottom.reconstruct/bottom.drape with slot/category/shared frame validated against schemas/v1-r2, per-item fittings (one job for jeans B, no outfit combinations), two independent slots, A→B→A with late result not applied, pending auto-apply only while selected, auto-orbit toggle, whole outfit + camera + asset sha saved, reopen restores outfit and camera with no new job. Synthetic box geometry only.",
   );

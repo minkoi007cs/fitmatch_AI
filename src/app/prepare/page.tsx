@@ -69,13 +69,15 @@ export default function PreparePage() {
       clearInterval(timer);
     };
   }, [refresh]);
-  async function action(jobId: string, command: "retry" | "cancel") {
+  async function action(jobId: string, command: "retry" | "cancel" | "regenerate") {
     setBusy(true);
     setNotice("");
     try {
       await api(`jobs/${jobId}/${command}`, {});
       setNotice(
-        command === "retry"
+        command === "regenerate"
+          ? "Đã tạo lượt mặc thử mới. Phiên bản cũ được giữ lại."
+          : command === "retry"
           ? "Đã đưa tác vụ trở lại hàng đợi."
           : "Đã hủy tác vụ. Kết quả đến muộn sẽ không được công bố.",
       );
@@ -286,7 +288,7 @@ export default function PreparePage() {
                       Hủy
                     </button>
                   )}
-                  {j &&
+                  {j && !m.superseded_by &&
                     ["failed", "canceled"].includes(j.state) &&
                     j.error_code !== "SOURCE_DELETED" &&
                     j.attempt < 3 && (
@@ -298,6 +300,12 @@ export default function PreparePage() {
                         Thử lại
                       </button>
                     )}
+                  {j && m.kind === "fitting" && !m.superseded_by && !m.output_asset_id &&
+                    ["failed", "canceled"].includes(j.state) && j.attempt >= 3 && j.error_code !== "SOURCE_DELETED" && (
+                    <button disabled={busy} className={button} onClick={() => void action(j.id, "regenerate")}>
+                      Tạo lượt mặc thử mới
+                    </button>
+                  )}
                 </div>
               </article>
             );

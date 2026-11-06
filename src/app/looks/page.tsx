@@ -256,7 +256,7 @@ export default function LooksPage() {
             avatar && garment
               ? data?.models.find(
                   (m) =>
-                    m.kind === "fitting" &&
+                    !m.superseded_by && m.kind === "fitting" &&
                     m.avatar_id === avatar.id &&
                     m.garment_id === garment.id,
                 )

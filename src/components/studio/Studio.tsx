@@ -215,7 +215,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       const res = await api<{ modelId: string; reused: boolean }>(
         "models",
         { kind: "fitting", name: item.name, avatarId: avatarModelId, garmentId: item.id },
-        { "Idempotency-Key": `fit_${avatarModelId}_${item.id}` },
+        { "Idempotency-Key": `fit_${crypto.randomUUID()}` },
       );
       if (sceneKey.current !== key) return;
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "pending", fittingId: res.modelId } : i)));

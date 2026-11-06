@@ -227,6 +227,7 @@ export const styleAnswers = z
   .strict();
 export type StyleAnswers = z.infer<typeof styleAnswers>;
 export type ModelRow = {
+  superseded_by?: string | null;
   id: string;
   user_id: string;
   kind: "avatar" | "garment" | "fitting";

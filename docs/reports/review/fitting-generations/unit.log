@@ -1,0 +1,59 @@
+> fitmatch-ai@0.1.0 test
+> node --import tsx --test tests/*.test.ts
+
+✔ signed hub session binds both hub identity and local wardrobe owner (0.763792ms)
+✔ tampered local identity cannot select another wardrobe (0.108917ms)
+✔ keys, cookie purpose, malformed encodings and invalid shape are rejected (0.1205ms)
+✔ PKCE flow rejects stale/future attempts and preserves explicit linking proof (0.219584ms)
+✔ return paths preserve intent but reject redirect escapes and auth loops (0.120625ms)
+✔ each parallel sign-in attempt gets a safe independent cookie name (0.103ms)
+✔ file ownership excludes traversal, encoded traversal, other tenants and absolute URLs (0.082042ms)
+✔ independent instances share one durable refresh and return the same successor (102.362875ms)
+✔ different tokens do not share refresh results (0.157667ms)
+✔ ambiguous refresh transport failure is not retried with a possibly consumed token (0.146875ms)
+✔ revocation verdict is shared rather than rotating again (0.073792ms)
+✔ failed or canceled reconstruction remains visible in Studio for recovery (0.39ms)
+✔ queued reconstruction remains pending; unrelated jobs cannot label it failed (0.268958ms)
+✔ prototype names are not garment categories (0.052709ms)
+✔ superseded fitting is ignored regardless of response ordering (0.106334ms)
+✔ committed v1-r2 schemas and fixture match the code that generates them (97.038541ms)
+✔ fixture body/top/bottom: valid GLBs, hashes match, one shared frame (2.585542ms)
+✔ jeans are a bottom with their own kinds; tops keep v1 kinds (0.468208ms)
+✔ look request: both slots, camera, legacy fittingId (1.364542ms)
+✔ job envelope schema accepts a bottom drape job and rejects an unknown content type (2.068708ms)
+✔ outfit identities do not depend on duplicate model IDs and preferences reach the prompt (11.619417ms)
+✔ unrecognized vision categories and patterns fall back to editable enum values (0.261792ms)
+✔ changing the top keeps the jeans and the reverse (0.591708ms)
+✔ A→B→A with B finishing late never overrides the current choice (0.130666ms)
+✔ pending item auto-applies only if it is still selected (0.064458ms)
+✔ full outfit switches both slots in one step, never half (0.051ms)
+✔ results for another avatar version are ignored (0.048875ms)
+✔ a failed pending item falls back to what is shown (0.068459ms)
+✔ prepared garments must belong to the selected avatar version (0.509583ms)
+✔ reject path traversal, duplicate names and reserved IDs (0.106583ms)
+✔ reject GLBs that could request arbitrary network or filesystem resources (0.21925ms)
+✔ reject corrupt GLB lengths and unsupported required decoders (0.076208ms)
+✔ capture requires complete body views and a plausible height before packaging (4.812709ms)
+✔ local look restore rejects selection from another bundle or duplicate models (47.352167ms)
+✔ quiz selects real supported inventory, honors excluded patterns and gives transparent reasons (0.818709ms)
+✔ recommendations remain deterministic and never fabricate more items to fill three cards (0.078625ms)
+✔ item feedback suppresses skipped inventory without inventing replacements (0.087042ms)
+✔ strict input contracts reject ownership injection, duplicate photos and partial quizzes (2.145209ms)
+✔ output publication requires reachable geometry and valid embedded buffer ranges (0.54775ms)
+✔ Vietnamese blue preference does not treat every xanh garment as blue (0.085958ms)
+✔ full look: three owned top+jeans outfits, varied, never invented; occasion changes the ranking (6.044042ms)
+✔ photo normalization flattens transparent pixels onto white, keeps opaque colors (54.100584ms)
+✔ partial wardrobe updates preserve omitted values and keep explicit false/null (1.773958ms)
+✔ empty and invalid profiles cannot erase saved data (0.642041ms)
+✔ archive rejects malformed nested parts before persistence (0.612541ms)
+✔ legacy quiz hydration never passes null or malformed arrays into the form (0.127916ms)
+✔ invalid JSON and oversized requests are client errors (9.679541ms)
+✔ python worker: checkpoint safety, exit classification, adapter env (stdlib unittest) (368.347875ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 471.044375

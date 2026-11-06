@@ -85,6 +85,6 @@ export async function prepareFitting(avatar: ModelRow, garment: ModelRow) {
       avatarId: avatar.id,
       garmentId: garment.id,
     },
-    { "Idempotency-Key": `fit_${avatar.id}_${garment.id}` },
+    { "Idempotency-Key": `fit_${crypto.randomUUID()}` },
   );
 }

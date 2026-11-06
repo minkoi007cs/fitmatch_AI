@@ -24,3 +24,15 @@ test("prototype names are not garment categories", () => {
     assert.equal(categoryOf({ ...garment, params: { category } }), null);
   }
 });
+
+
+test("superseded fitting is ignored regardless of response ordering", () => {
+  const readyGarment = { ...garment, output_asset_id: "garment-glb" };
+  const old: ModelRow = { ...garment, id: "old-fit", kind: "fitting", avatar_id: "avatar", garment_id: garment.id, superseded_by: "new-fit", output_asset_id: null };
+  const current: ModelRow = { ...old, id: "new-fit", superseded_by: null, output_asset_id: "fitted-glb" };
+  for (const models of [[readyGarment, old, current], [readyGarment, current, old]]) {
+    const item = cloudItems(models, [], "avatar")[0];
+    assert.equal(item.fittingId, "new-fit");
+    assert.equal(item.status, "ready");
+  }
+});
