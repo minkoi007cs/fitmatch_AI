@@ -1,0 +1,32 @@
+[
+  {
+    "path": "ai-service/quality02/processor_compare.py",
+    "raw_local_sha256": "5d020317fc385d25e1bbeb298f291ff3b62871a272a1d9a0bc9b0b48256cd39c",
+    "normalized_utf8_sha256": "5d020317fc385d25e1bbeb298f291ff3b62871a272a1d9a0bc9b0b48256cd39c",
+    "public_snapshot": "source/processor_compare.py.txt"
+  },
+  {
+    "path": "ai-service/quality02/reshard.py",
+    "raw_local_sha256": "9deaa2fa1b2747fbd1ff07e6a0a92947fe582dc8a21e7e4f15ed0f56daf50c6a",
+    "normalized_utf8_sha256": "9deaa2fa1b2747fbd1ff07e6a0a92947fe582dc8a21e7e4f15ed0f56daf50c6a",
+    "public_snapshot": "source/reshard.py.txt"
+  },
+  {
+    "path": "ai-service/quality02/run_quality.py",
+    "raw_local_sha256": "867cb88b212b4f70b8bef60a7b0f4a398e093b9e22ae9e8bc0cfd6edf2eaaf96",
+    "normalized_utf8_sha256": "867cb88b212b4f70b8bef60a7b0f4a398e093b9e22ae9e8bc0cfd6edf2eaaf96",
+    "public_snapshot": "source/run_quality.py.txt"
+  },
+  {
+    "path": "ai-service/quality02/semantic.py",
+    "raw_local_sha256": "1afd3c435d4bc69052d8988445e2733a779f1cf83f81bacc44677b426f2915bb",
+    "normalized_utf8_sha256": "1afd3c435d4bc69052d8988445e2733a779f1cf83f81bacc44677b426f2915bb",
+    "public_snapshot": "source/semantic.py.txt"
+  },
+  {
+    "path": "ai-service/quality02/test_semantic.py",
+    "raw_local_sha256": "d390438d87fb7800bd105a03e8ce0e365a8eb3276b3dcb173909699304a4b6b9",
+    "normalized_utf8_sha256": "d390438d87fb7800bd105a03e8ce0e365a8eb3276b3dcb173909699304a4b6b9",
+    "public_snapshot": "source/test_semantic.py.txt"
+  }
+]

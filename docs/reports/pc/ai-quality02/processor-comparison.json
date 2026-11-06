@@ -1,0 +1,90 @@
+{
+  "scope": "CPU-only processor shapes, no model weights",
+  "profiles": [
+    {
+      "profile": "baseline",
+      "edge": 512,
+      "processor_size": {
+        "longest_edge": 16777216,
+        "shortest_edge": 65536
+      },
+      "samples": [
+        {
+          "file": "tshirt.png",
+          "input_image_size": [
+            171,
+            155
+          ],
+          "visual_tokens": 72,
+          "grid_thw": [
+            [
+              1,
+              16,
+              18
+            ]
+          ],
+          "total_tokens_for_identical_prompt": 87
+        },
+        {
+          "file": "jeans.jpg",
+          "input_image_size": [
+            343,
+            512
+          ],
+          "visual_tokens": 176,
+          "grid_thw": [
+            [
+              1,
+              32,
+              22
+            ]
+          ],
+          "total_tokens_for_identical_prompt": 191
+        }
+      ]
+    },
+    {
+      "profile": "quality02",
+      "edge": 320,
+      "processor_size": {
+        "longest_edge": 16777216,
+        "shortest_edge": 65536
+      },
+      "samples": [
+        {
+          "file": "tshirt.png",
+          "input_image_size": [
+            171,
+            155
+          ],
+          "visual_tokens": 25,
+          "grid_thw": [
+            [
+              1,
+              10,
+              10
+            ]
+          ],
+          "total_tokens_for_identical_prompt": 40
+        },
+        {
+          "file": "jeans.jpg",
+          "input_image_size": [
+            214,
+            320
+          ],
+          "visual_tokens": 70,
+          "grid_thw": [
+            [
+              1,
+              20,
+              14
+            ]
+          ],
+          "total_tokens_for_identical_prompt": 85
+        }
+      ]
+    }
+  ],
+  "cuda_initialized": false
+}

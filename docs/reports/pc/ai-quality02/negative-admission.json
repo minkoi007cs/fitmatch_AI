@@ -1,0 +1,22 @@
+{
+  "session": "PC-AI-QUALITY-20261106-02",
+  "status": "QualityRunFailed",
+  "phase": "cleanup",
+  "samples": [],
+  "started_at_utc": "2026-11-06T05:43:48.539918+00:00",
+  "max_new_tokens": 192,
+  "max_schema_retries": 1,
+  "image_max_edge": 320,
+  "min_pixels": 4096,
+  "max_pixels": 98304,
+  "model": "same BF16 tensors locally resharded; NF4 on load",
+  "offload": false,
+  "min_host_ram_before_load_bytes": 4294967296,
+  "sustained_host_ram_abort_bytes": 1073741824,
+  "error_type": "RuntimeError",
+  "error": "Not a child of the active shared guard",
+  "memory_samples": [],
+  "process_peak_working_set_bytes": 28807168,
+  "seconds": 0.033,
+  "ended_at_utc": "2026-11-06T05:43:48.572252+00:00"
+}

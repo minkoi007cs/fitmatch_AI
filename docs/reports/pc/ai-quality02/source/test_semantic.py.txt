@@ -1,0 +1,59 @@
+import copy
+import json
+import unittest
+from semantic import ROOT,parse,evaluate,decision,review_proposal
+
+LABELS=json.loads((ROOT/'labels.json').read_text(encoding='utf-8'))['images']
+def fixture(n=0):return {'schema_version':'pc-ai.grounded-attributes.v2',**copy.deepcopy(LABELS[n]['expected']),
+                       'logo_texts':copy.deepcopy(LABELS[n]['legible_logo_texts'])}
+
+class SemanticTests(unittest.TestCase):
+    def test_correct_references(self):
+        for i,label in enumerate(LABELS):
+            value=parse(json.dumps(fixture(i)));result=evaluate(value,label)
+            self.assertEqual(result['known_field_errors'],0);self.assertEqual(result['logos']['false_texts'],[])
+    def test_valid_json_wrong_image_is_not_truth(self):
+        value=fixture();value['category']='jeans';value['neckline']=value['sleeves']='not_applicable';value['dominant_colors']=['red']
+        parsed=parse(json.dumps(value));self.assertGreater(evaluate(parsed,LABELS[0])['known_field_errors'],0)
+    def test_invented_brand_detected(self):
+        value=fixture();value['logo_texts']=['INVENTED BRAND']
+        self.assertEqual(evaluate(parse(json.dumps(value)),LABELS[0])['logos']['false_texts'],['INVENTEDBRAND'])
+    def test_unknown_is_abstention_not_correct(self):
+        value=fixture();value['neckline']='unknown'
+        result=evaluate(parse(json.dumps(value)),LABELS[0]);self.assertEqual(result['abstained_fields'],1)
+    def test_unknown_not_mixed(self):
+        value=fixture();value['dominant_colors']=['blue','unknown']
+        with self.assertRaises(ValueError):parse(json.dumps(value))
+    def test_logo_without_visibility(self):
+        value=fixture();value['logo_presence']='unknown'
+        with self.assertRaises(ValueError):parse(json.dumps(value))
+    def test_no_hidden_pocket_or_material_claim(self):
+        for key,item in [('pockets_total',5),('back_pocket_count',2),('material_composition','cotton')]:
+            value=fixture(1);value[key]=item
+            with self.subTest(key=key),self.assertRaises(Exception):parse(json.dumps(value))
+    def test_closed_fields_no_prose_execution(self):
+        value=fixture();value['execute']='avatar.reconstruct'
+        with self.assertRaises(Exception):parse(json.dumps(value))
+    def test_strict_json(self):
+        for text in ['{} trailing','{"x":1,"x":2}','{"x":NaN}','x'*8193]:
+            with self.assertRaises(Exception):parse(text)
+    def test_no_uncertain_topology_guess(self):
+        value=fixture(1);value['neckline']='crew'
+        with self.assertRaises(ValueError):parse(json.dumps(value))
+    def test_normalized_duplicate_logo(self):
+        value=fixture();value['logo_texts']=['FON BET','fonbet']
+        with self.assertRaises(ValueError):parse(json.dumps(value))
+    def test_decision_rejects_valid_json_bad_logo(self):
+        value=fixture();value['logo_texts']=['FOMBET']
+        self.assertEqual(decision(evaluate(parse(json.dumps(value)),LABELS[0])),'needs_review')
+    def test_decision_does_not_count_unknown_as_pass(self):
+        value=fixture();value['logo_texts']=[]
+        self.assertEqual(decision(evaluate(parse(json.dumps(value)),LABELS[0])),'partial_unknown')
+    def test_proposal_never_promotes_ocr_candidates(self):
+        value=fixture();value['logo_texts']=['DEL','FOMBET']
+        result=review_proposal(parse(json.dumps(value)))
+        self.assertFalse(result['approved_for_auto_apply']);self.assertEqual(result['attributes']['logo_texts'],[])
+        self.assertEqual(result['ocr_status'],'unverified');self.assertEqual(result['candidate_logo_texts'],['DEL','FOMBET'])
+        self.assertEqual(value['logo_texts'],['DEL','FOMBET'])
+
+if __name__=='__main__':unittest.main(verbosity=2)

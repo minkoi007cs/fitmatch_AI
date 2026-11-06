@@ -1,0 +1,16 @@
+{
+  "owner": "pc-ai",
+  "session": "PC-AI-QUALITY-20261106-02",
+  "status": "Released",
+  "recordedAtUtc": "2026-11-06T05:48:45.4730264Z",
+  "guardEndedAt": "2026-11-06T00:47:52.81851-05:00",
+  "guardPid": 16272,
+  "childPid": 15528,
+  "allJobProcessesExited": true,
+  "exitCode": 0,
+  "deviceUsedAfterExitMiB": 759,
+  "nextGPUJob": "None scheduled",
+  "coordinatorAction": "3D may reclaim admission; AI does not change slot",
+  "modelUnloaded": true,
+  "result": "RAM improved; tshirt OCR still needs review; no further model runs in this task"
+}

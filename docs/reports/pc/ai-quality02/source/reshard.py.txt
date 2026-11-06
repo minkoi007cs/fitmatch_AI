@@ -1,0 +1,96 @@
+"""CPU byte-preserving safetensors reshard; never import torch or load a model."""
+import gc
+import hashlib
+import json
+from pathlib import Path
+import shutil
+import struct
+import time
+import psutil
+
+ROOT=Path(__file__).resolve().parents[2]
+SOURCE=ROOT/'models'/'qwen3-vl-4b'
+TARGET=ROOT/'models'/'qwen3-vl-4b-reshard512m'
+REPORTS=ROOT/'reports'/'ai'/'quality02'
+CHUNK=8*1024**2
+BUDGET=512*1024**2
+
+def load(path):return json.loads(path.read_text(encoding='utf-8-sig'))
+def save(value):
+    (REPORTS/'reshard-manifest.json').write_text(json.dumps(value,indent=2)+'\n',encoding='utf-8')
+def digest_file(path):
+    digest=hashlib.sha256()
+    with path.open('rb') as stream:
+        while data:=stream.read(CHUNK):digest.update(data)
+    return digest.hexdigest()
+
+def main():
+    started=time.perf_counter()
+    baseline=load(ROOT/'reports'/'ai'/'model-manifest.json')
+    report={'status':'Preparing','source_revision':baseline['revision'],'artifact':'BF16 byte-preserving local reshard; not quantized',
+            'downloaded_bytes':0,'target_budget_bytes':BUDGET,'files':[],'tensors':[],
+            'ram_available_before_bytes':psutil.virtual_memory().available,'min_ram_available_bytes':psutil.virtual_memory().available}
+    if report['ram_available_before_bytes']<4*1024**3:raise RuntimeError('Need 4GiB host headroom even for streaming copy')
+    if shutil.disk_usage(TARGET).free<baseline['verified_bytes']+2*1024**3:raise RuntimeError('Insufficient disk')
+    tensors=[]
+    for entry in baseline['files']:
+        if not entry['file'].endswith('.safetensors'):continue
+        path=SOURCE/entry['file']
+        if digest_file(path)!=entry['sha256']:raise RuntimeError('Original shard hash changed')
+        with path.open('rb') as stream:
+            length=struct.unpack('<Q',stream.read(8))[0]; header=json.loads(stream.read(length))
+        for name,meta in header.items():
+            if name!='__metadata__':tensors.append({'name':name,'source_file':entry['file'],'source_start':8+length+meta['data_offsets'][0],
+                 'bytes':meta['data_offsets'][1]-meta['data_offsets'][0],'dtype':meta['dtype'],'shape':meta['shape']})
+    groups=[];group=[];size=0
+    for item in tensors:
+        if group and size+item['bytes']>BUDGET:groups.append(group);group=[];size=0
+        group.append(item);size+=item['bytes']
+    if group:groups.append(group)
+    index={'metadata':{'total_size':sum(t['bytes'] for t in tensors)},'weight_map':{}}
+    for number,group in enumerate(groups,1):
+        if psutil.virtual_memory().available<2*1024**3:
+            report['status']='StoppedBeforeNextShardLowRAM';save(report);return 2
+        name=f'model-{number:05d}-of-{len(groups):05d}.safetensors'; path=TARGET/name
+        if path.exists():raise RuntimeError('Destination file exists; no overwrite')
+        offset=0;header={'__metadata__':{'format':'pt'}}
+        for item in group:
+            header[item['name']]={'dtype':item['dtype'],'shape':item['shape'],'data_offsets':[offset,offset+item['bytes']]}
+            offset+=item['bytes'];index['weight_map'][item['name']]=name
+        raw=json.dumps(header,separators=(',',':')).encode();raw+=b' '*((-len(raw))%8)
+        with path.open('xb') as output:
+            output.write(struct.pack('<Q',len(raw)));output.write(raw)
+            for item in group:
+                h=hashlib.sha256()
+                with (SOURCE/item['source_file']).open('rb') as source:
+                    source.seek(item['source_start']);remaining=item['bytes']
+                    while remaining:
+                        data=source.read(min(CHUNK,remaining))
+                        if not data:raise ValueError('Source unexpectedly ended')
+                        output.write(data);h.update(data);remaining-=len(data)
+                report['tensors'].append({'name':item['name'],'bytes':item['bytes'],'sha256':h.hexdigest(),'target_file':name})
+        # Independent disk reread checks every tensor's actual target bytes.
+        with path.open('rb') as check:
+            check.seek(8+len(raw))
+            for entry in report['tensors'][-len(group):]:
+                h=hashlib.sha256();remaining=entry['bytes']
+                while remaining:
+                    data=check.read(min(CHUNK,remaining))
+                    if not data:raise ValueError('Target unexpectedly ended')
+                    h.update(data);remaining-=len(data)
+                if h.hexdigest()!=entry['sha256']:raise ValueError('Tensor copy digest mismatch')
+        report['files'].append({'file':name,'bytes':path.stat().st_size,'sha256':digest_file(path),'tensor_bytes':offset})
+        report['min_ram_available_bytes']=min(report['min_ram_available_bytes'],psutil.virtual_memory().available)
+        save(report);print(f'VERIFIED {name} bytes={offset}',flush=True);gc.collect()
+    for entry in baseline['files']:
+        if not entry['file'].endswith('.safetensors') and entry['file']!='model.safetensors.index.json':shutil.copyfile(SOURCE/entry['file'],TARGET/entry['file'])
+    (TARGET/'model.safetensors.index.json').write_text(json.dumps(index,indent=2)+'\n',encoding='utf-8')
+    if len(index['weight_map'])!=713:raise ValueError('Unexpected tensor count')
+    report.update(status='ReshardedAndTensorVerified',tensor_count=len(tensors),shard_count=len(groups),
+                  total_tensor_bytes=index['metadata']['total_size'],seconds=round(time.perf_counter()-started,3),
+                  peak_process_working_set_bytes=psutil.Process().memory_info().peak_wset,
+                  max_target_shard_bytes=max(x['bytes'] for x in report['files']))
+    save(report);print(json.dumps({k:v for k,v in report.items() if k not in {'files','tensors'}}),flush=True)
+    return 0
+
+if __name__=='__main__':raise SystemExit(main())

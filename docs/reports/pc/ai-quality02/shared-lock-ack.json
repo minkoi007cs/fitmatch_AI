@@ -1,0 +1,13 @@
+{
+  "owner": "PC-AI-01",
+  "session": "PC-AI-QUALITY-20261106-02",
+  "acknowledged": true,
+  "lockPath": "<GPU_ROOT>\\coordination\\gpu0.lock",
+  "lockMechanism": "msvcrt byte0 OS exclusive lock",
+  "guardPath": "<GPU_ROOT>\\fitmatch_AI\\workers\\windows\\gpu_guard.py",
+  "guardSha256": "4ddf206d2cb16794f1e05eded7278d82c027dab1d277ac737b003322f8006680",
+  "guardRequiresCurrent3DSlot": true,
+  "liveWorkerEnabled": false,
+  "noNestedSameLockWrapper": true,
+  "recordedAtUtc": "2026-11-06T05:45:49.9878596Z"
+}

@@ -1,0 +1,16 @@
+{
+  "status": "completed",
+  "owner": "pc-ai",
+  "label": "qwen-quality-detail-PC-AI-20261106-02",
+  "guardPid": 16272,
+  "startedAtUtc": "2026-11-06T05:46:53.296717+00:00",
+  "childPid": 15528,
+  "killOnJobClose": true,
+  "jobName": "Global\\FitmatchGPU0Setup-16272-784293515000000",
+  "lock": "<GPU_ROOT>\\coordination\\gpu0.lock",
+  "scope": "internal setup only",
+  "childCreationTime": 134384176132988579,
+  "exitCode": 0,
+  "endedAtUtc": "2026-11-06T05:47:52.818510+00:00",
+  "allJobProcessesExited": true
+}
