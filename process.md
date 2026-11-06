@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0007. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 05/11/2026, America/New_York. Revision: PROC-0008. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## 1. Snapshot hiện tại và điểm tiếp nối
 
@@ -264,3 +264,30 @@ Người dùng yêu cầu giao PC và Claude chạy tiếp trước khi tiếp t
 ### L-018 — 05/11/2026 — DISPATCH PC — H-PAIR-007
 
 Đã publish5793e01 và remote readback. Chủ dự án cho phép giao PC chạy; dùng send_message_to_thread gửi đúng chat PC “Khảo sát pipeline GPU Fitmatch AI”, thread01a1aa1b-fb39-7ab2-9ca0-1b5e637c9fae, host remote-control đã discover. Tool xác nhận gửi thành công; chưa có receipt/completion mới nên chưa đánh In progress/Done. Claude external không có endpoint gửi trực tiếp; prompt H-PAIR-007 đã sẵn cho chủ dự án chuyển, không giả đã khởi chạy Claude. MSVC pause giữ nguyên.
+
+
+### L-019 — 05/11/2026 — START — CX-PRODUCT-20261105-08 / SPEC-01
+
+Phỏng vấn từng câu theo yêu cầu người dùng đã có đầy đủ quyết định cốt lõi: D>A>B>C, avatar video/số đo/auto+edit, mặt>dáng>tóc/da, mục tiêu15–30phút, wardrobe-first tùy chọn, thun+jeans bản đầu, ảnh đồ front/back flat, chọn món nền và save bộ, AI3 bộ owned-only theo quiz+occasion, render lookbook, remote website/mobile capture/private accounts và retention user choice. Claim chỉ docs/spec/roadmap/process, không source app/PC. Chốt rõ scope mới khác shirt-only cũ; feasibility chưa được chứng minh từ CPU/transport tests. Không tự đổi nhiệm vụ PC-CONF/R1 đang giao hoặc gỡ MSVC pause.
+
+
+### L-020 — 05/11/2026 — SPEC / END — CX-PRODUCT-20261105-08 / SPEC-01
+
+Hoàn tất phỏng vấn cốt lõi27quyết định và lưu docs/product-requirements-2026-11-05.md. Chủ dự án ưu tiên D>A>B>C, video/ảnh mặt/số đo, auto+edit slider+lời, mặt>dáng>tóc/da, target15–30phút tùy kết quả và draft user choice. Wardrobe hiện hữu là trung tâm: upload mobile/desktop, front/back flat cho áo, thun+jeans first release, slot riêng/giữ món còn lại/save bộ, pending selected-only autoapply, thêm đồ/ảnh avatar thứ tự tùy ý. Owned-only3looks theo quiz+occasion; render3D lookbook đúng đồ/góc/nền trước generative. Mỗi tài khoản wardrobe riêng, remote website+homePC, retention source user chọn giữ/xóa. UI giao Codex chọn trung tính/chân thực/dễ phối. Chưa deadline/ngân sách paid, chi phí xem sau PC benchmark.
+
+Roadmap/rules đã cập nhật scope mới ưu tiên hơn shirt-only snapshot. Đánh giá: nền tảng queue/cache/viewer/wardrobe phù hợp, nhưng face editor/video/jeans/latency là gaps chưa chứng minh; không chạy tests cũ để giả đóng quality gate. Các package DISC/APP mới Planned, không tự dispatch hoặc đổi scope R1/PC-CONF/MSVC pause. Không sửa implementation, không triển khai paid/cloud/deploy.
+
+### H-SPEC-008 — yêu cầu sản phẩm hiện hành
+
+[27quyết định và assessment](./docs/product-requirements-2026-11-05.md). R1/PC-CONF tiếp scope cũ, chưa feature expansion; trước nhiệm vụ quality/UX mới đọc SPEC-01. Bản dùng thử thun-only có thể đánh giá spike, chưa full first release.
+
+| Package mới | Owner dự kiến | Trạng thái | Điều kiện |
+|---|---|---|---|
+| SPEC-01 | Codex | Done | Phỏng vấn/requirements/roadmap/docs consistency, không product PASS |
+| DISC-AV-01 | PC + Codex review | Planned | Capture video/ảnh/số đo, face likeness, đo target15–30phút; toolchain pause vẫn giữ |
+| DISC-EDIT-01 | PC/Claude theo file scope khi được giao | Planned | Edit thật slider+lời, mặt ưu tiên, version/preview |
+| DISC-DENIM-01 | PC + Mac khi được giao | Planned | Jeans ảnh thật + thun trên cùng body, texture/form/slots |
+| APP-FLOW-01 | Mac/Claude khi được giao | Planned | Mobile capture/remote, onboarding linh hoạt, background selection-safe, privacy |
+| APP-AI-01 | Mac/Claude khi được giao | Planned | 3 full look owned top+jeans theo quiz+occasion |
+| APP-RENDER-01 | Mac/Claude khi được giao | Planned | Render avatar/outfit đúng scene/version/góc/nền |
+| PILOT-01 | Hai bên + Codex/user QA | Planned | Hai wardrobe riêng, full journey/likeness/reliability thật |

@@ -1,6 +1,9 @@
 # FitMatch — roadmap sản phẩm và phát triển
 
-Cập nhật: 05/11/2026, America/New_York. Trạng thái: đã reconcile PROC-0002; PC có báo cáo body fitting SiTH, Mac có V2 code/test fixture; full real pipeline chưa nghiệm thu. Xem process và handoff resume hiện hành.
+> **Phạm vi hiện hành sau phỏng vấn — SPEC-01 / PROC-0008:** đọc [27 quyết định sản phẩm và đánh giá hướng đi](./docs/product-requirements-2026-11-05.md). Bản đầu là trọn luồng **avatar cá nhân + áo thun + jeans**, face/body/hair edits bằng thanh kéo và lời, wardrobe nền/mobile capture, AI từ đồ thật và lookbook render3D. Những mục shirt-only cũ bên dưới chỉ là spike kỹ thuật, không đủ nghiệm thu first release. Yêu cầu mới này ưu tiên hơn snapshot/prompt cũ; PC-CONF và Claude R1 tiếp tục trong scope đã giao, chưa tự mở nhiệm vụ DISC hoặc gỡ MSVC pause.
+
+
+Cập nhật: 05/11/2026, America/New_York. Trạng thái: yêu cầu đã được phỏng vấn lại và chốt trong SPEC-01; pipeline full real avatar/top/jeans/edit chưa nghiệm thu. Tiến độ chỉ đọc process mới nhất, không suy từ ngày kế hoạch.
 
 ## 0. Cách đọc và nguồn sự thật
 
@@ -13,9 +16,9 @@ Yêu cầu mới trực tiếp từ chủ dự án ưu tiên hơn tài liệu; A
 - Người dùng thực tế: chủ dự án và giáo viên, hai người; chưa có yêu cầu phục vụ công cộng.
 - Phần cứng đã được người dùng xác nhận: PC có RTX 3060 12GB. Theo report PC ở chat khác: Windows, RAM16GB, driver610.88, Python3.10.22/torch2.1.0+cu121; reviewer chưa kiểm PC trực tiếp. CPU/SSD/mạng và trạng thái toolchain hiện tại cần inventory delta.
 - Mục tiêu ưu tiên: avatar cá nhân giống người thật nhất có thể, đặc biệt mặt, dáng, da/tóc; quần áo giữ màu, logo và form. Đẹp và giống là hai tiêu chí riêng.
-- Bản đầu: người đứng yên, camera orbit/zoom 360°, body và áo tách riêng, thay áo đã chuẩn bị và lưu/mở lại look.
+- Bản đầu: người đứng yên, front camera mặc định/orbit/zoom/auto-orbit tùy chọn; body, top và jeans tách riêng. Chọn slot độc lập, lưu/mở lại cả bộ; giày và đồ mặc ban đầu dùng preset ghi nhãn.
 - Sau khi bản tĩnh ổn định: người thở/chuyển trọng tâm/đầu nhẹ, áo chuyển động tương ứng; không làm đi bộ, nói chuyện hoặc pose tự do trong đợt này.
-- Một áo thun là vertical slice đầu tiên; sơ mi vẫn là phạm vi dự kiến tiếp theo, sau khi áo thun đạt nghiệm thu. Không tự hủy scope sơ mi.
+- Một áo thun riêng chỉ là technical spike. First-release vertical slice cần **áo thun + jeans**; tiếp theo sơ mi, quần vải/tây và short. Không tự cắt jeans khỏi bản đầu đã được xác nhận.
 - Tận dụng PC hiện có, một tác vụ GPU nặng tại một thời điểm. Không tự mua GPU, thuê cloud hoặc chuyển sang API trả phí.
 - Không thay tính năng 3D bằng ảnh 2D, mannequin chung hoặc mesh người mặc áo liền khối. Demo/fixture được phép dùng để phát triển, phải ghi rõ nguồn và chưa phải avatar của người dùng.
 
@@ -53,9 +56,9 @@ Entity bổ sung: `avatars`, `avatar_versions`, `garment_views`, `garment_assets
 
 ## 4. Hướng kỹ thuật được đề xuất, chưa khóa engine
 
-### Avatar chân thực, tĩnh trước
+### Avatar chân thực, tĩnh trước — cập nhật capture/editor theo SPEC-01
 
-1. Capture có hướng dẫn: front/side/back cùng tư thế, chiều cao; thêm góc chéo và ảnh mặt nếu cần. Không hứa chỉ ba ảnh sẽ đủ chất lượng. Ánh sáng đều, không filter, không nhòe, quần áo ôm vừa; không yêu cầu khỏa thân.
+1. Capture có hướng dẫn từ video quanh người + ảnh mặt + số đo được người dùng chấp nhận. Engine phải báo frame/góc nào thực sự dùng; không gọi single-frame pipeline là multiview fusion. Ánh sáng đều, không filter, quần áo ôm vừa; không yêu cầu khỏa thân. Auto tạo draft rồi cho chỉnh bằng slider và lời, ưu tiên mặt→dáng→tóc/da. Target15–30phút cần đo, chưa SLA.
 2. Tách silhouette/body fitting và appearance. Body collision không chứa lớp áo cũ. Không coi vùng cơ thể bị che là đã biết chính xác.
 3. Thử baseline body tham số + texture/đầu cá nhân; benchmark thêm ECON/SiTH theo nghiên cứu có sẵn nếu quyền dùng, dependency và VRAM phù hợp. Mesh clothed từ các repo này chỉ là baseline so sánh, không tự là body sạch thay áo được.
 4. Xử lý mặt/tóc/UV riêng khi cần; cho phép chỉnh thủ công ở pilot nếu ghi rõ thao tác và thời gian. Không quảng bá là tự động hoàn toàn.
@@ -84,9 +87,9 @@ Giữ kích thước áo canonical; không tự may đo theo mỗi body rồi tu
 |---|---|---|---|
 | G0 — nền tảng | Đo cấu hình thật, driver/CUDA/WSL, disk/RAM; chốt env và model license; kiểm nguồn ảnh | Ghi baseline, đọc AGENTS/CLAUDE và Next docs; chốt contract, schema/queue thiết kế | Inventory không secret, commit/env manifests, đề xuất engine và đầu vào thiếu |
 | G1 — khả thi 3D | Một body + áo template tách biệt, một thử nghiệm body/appearance từ ảnh người thật; export v1 | Viewer tối giản đọc manifest, upload/download private assets, adapter fixture có nhãn | GLB/texture thật, turntable, ảnh đối chiếu, raw logs RAM/VRAM/thời gian; không chỉ screenshot mock |
-| G2 — luồng thật | Avatar cá nhân + áo thun từ ảnh, texture/drape; worker adapter | Capture → job → progress → load model → đổi áo → save/reopen; chuẩn bị queue từ sớm | Một luồng chạy worker thật trên 3060, source/output đúng owner/version; lỗi và phần chỉnh tay được ghi |
+| G2 — luồng thật theo SPEC-01 | Avatar cá nhân + top thun + jeans từ ảnh, texture/fitting; editor spike và adapter | Capture linh hoạt → job → draft/edit → chọn slot top/bottom → save/reopen; wardrobe độc lập trước avatar | Một full-look thật trên3060, owner/version đúng; thun-only chỉ partial, video/editor/latency phải có evidence |
 | G3 — bản tĩnh ổn định | Restart/offline/OOM recovery, benchmark lặp, render QA | Lease/fencing/idempotency, A→B→A, owner isolation, cache/URL refresh, UI và regressions | Hai account, artifact/screenshot/video, test DB/API thật và latency thực; chủ dự án duyệt độ giống |
-| G4 — sơ mi | Thêm cổ/nút/tay/texture trên pipeline đã đạt | Mở category/QA và luồng needs_input | Thun và sơ mi có mẫu thật; giới hạn rõ. Không trì hoãn bản thun chỉ vì sơ mi chưa đạt |
+| G4 — category sau bản đầu | Sơ mi, quần vải/tây rồi short trên pipeline đã đạt | Mở category/QA và needs_input | Không chặn first release thun+jeans; không bỏ các loại đã được yêu cầu |
 | G5 — idle có vải | Rig, clip idle và áo bake tương ứng; benchmark codec/size | Animation playback đồng bộ, pause/reduced motion, swap theo phase, static fallback | Clip vòng lặp đủ thấy điểm nối, góc trước/bên/sau, không xuyên rõ/giật/trượt chân; bộ nhớ/tải đo thật |
 
 G0/G1 có thể làm song song với skeleton app. Không xây toàn bộ UI trước khi có một asset thật dùng được. G2/G3 phải hoàn thành trước G5; G4 và thời điểm thêm sơ mi có thể điều chỉnh sau bản thun, không tự đưa vào gate đầu tiên. Thực thi đợt đầu dừng để review tại G1; các phần độc lập có thể hoàn thiện cục bộ nhưng không tự bỏ qua gate.
@@ -135,7 +138,7 @@ Mỗi báo cáo gồm:
 
 Codex review trả: kết luận PASS / NEEDS CHANGES / NOT VERIFIED cho gate; lỗi chặn theo mức ưu tiên; bằng chứng thiếu; yêu cầu sửa cụ thể cho từng bên. Model chọn engine chỉ thành quyết định sau khi có bằng chứng phần cứng + chất lượng + quyền dùng. Chất lượng diện mạo cuối cùng cần chủ dự án xem và xác nhận.
 
-## 9. Danh mục sản phẩm và UX đầy đủ
+## 9. Danh mục sản phẩm và UX — áp dụng slot/capture/editor mới từ SPEC-01
 
 | Module | Kết quả cần có | Giai đoạn |
 |---|---|---|
@@ -163,6 +166,7 @@ ID dùng xuyên suốt trong process, report và review. Đây là thứ tự ph
 | DOC-02 | Reconcile checkpoint PC/worktree Mac, giao lại việc và protocol gap matrix | Codex | Kiểm chat/worktree thực tế |
 | OPS-01 | Sao lưu/dọn nhánh local cũ đã tích hợp, giữ worktree và bộ điều hành | Codex | Chủ dự án giao cleanup rõ, kiểm ancestry/backup |
 | OPS-02 | Publish docs/handoff GitHub và quy trình đồng bộ hai máy | Codex | Chủ dự án cho phép push tài liệu, kiểm secrets/diff/remote |
+| SPEC-01 | Chốt27quyết định sau phỏng vấn, đánh giá và đổi acceptance first release | Codex | Câu trả lời trực tiếp chủ dự án |
 | PC-00 | Inventory PC và xác định tài nguyên/môi trường | PC | Đọc tài liệu |
 | PC-01 | Env pinned, checkpoint/license manifest, lệnh tái hiện | PC | PC-00 |
 | PC-02 | Body + áo template riêng, drape/export/manifest fixture | PC | PC-01 |
@@ -228,3 +232,12 @@ Hai nhánh local hiện hành: `main` tại checkout nguồn (tài liệu điề
 ## Nguồn đồng bộ GitHub — OPS-02
 
 Chủ dự án đã cho phép publish bộ điều hành/handoff trên nhánh tài liệu `codex/project-operations`. Xem [github-sync.md](./docs/handoffs/github-sync.md) để đọc/clone/pull và gửi report/PR đúng scope. Không dùng ZIP mỗi lần; không merge nhánh tài liệu vào checkpoint code một cách mù. Repo công khai nên chỉ publish tài liệu/report đã loại secrets và dữ liệu cá nhân không cần thiết. Đây là ngoại lệ cho hạn chế push tài liệu cũ trong file này; hạn chế push app/deploy/migration vẫn giữ nguyên. Trạng thái publish thực tế được xác nhận qua remote readback trước bàn giao.
+
+
+## 15. Lộ trình bổ sung theo SPEC-01
+
+Ưu tiên trải nghiệm→likeness→trang phục→recommendations; không mở rộng backend vô hạn trước chất lượng. Sau review R1/PC-CONF và khi unblock phần phụ thuộc, cổng kỹ thuật tiếp theo là DISC-AV-01 + DISC-EDIT-01 + DISC-DENIM-01: một người thật, edit thật và jeans riêng, đo thời gian/VRAM/RAM và cho người dùng xem mẫu. Nếu chưa đạt, báo giới hạn/chi phí rồi người dùng quyết định; không tự thuê GPU hoặc giảm mục tiêu mặt giống thành mannequin.
+
+APP-FLOW-01 tập hợp full journey upload mobile/desktop→avatar draft→wardrobe prep→top/bottom independent→save. APP-AI-01 là3look từ owned inventory/quiz/occasion; APP-RENDER-01 chụp/render scene đúng bộ và góc/nền. PILOT-01 hai tài khoản riêng truy cập website bất kỳ đâu, PC ở nhà outbound worker. Chi tiết và acceptance tại docs/product-requirements-2026-11-05.md. Các package mới Planned, chưa assign/start implementation từ tài liệu này.
+
+Ảnh/video avatar: user chọn giữ hoặc xóa khi hoàn tất, giữ thì có thể xóa sau. Source và derived assets/looks tách vòng đời. Đồ mới xử lý nền, không có avatar vẫn làm canonical; khi fitting ready chỉ autoapply nếu selection/current avatarVersion còn đúng. Không infer lại mỗi click; không tự chuẩn bị mọi tổ hợp áo×quần.

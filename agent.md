@@ -84,3 +84,8 @@ Chủ dự án đã cho phép publish bộ điều hành/handoff trên nhánh t�
 ## Scoped handoff H-CLAUDE-R1-006
 
 Chủ dự án yêu cầu tiếp tục phân việc sau review. Claude được triển khai FIX-MAC-01/02/03 trên nhánh task/worktree riêng từ d2a9898 theo `docs/handoffs/prompt-claude-recovery-r1.md`, sau receipt scope/revision. Ngoại lệ này thay read-only cũ trong đúng phạm vi R1, không cho sửa chồng worktree Studio gốc, PC adapters hoặc merge/push app/production. Process PROC-0006 là trạng thái giao việc, không bằng chứng agent đang chạy.
+
+
+## Product scope sau phỏng vấn SPEC-01
+
+Đọc docs/product-requirements-2026-11-05.md cùng roadmap mới. First release phải full journey với thun+jeans, avatar ưu tiên face likeness và editor slider+lời; shirt-only/SiTH demo/transport tests không đủ product PASS. Snapshot cũ giữ lịch sử, không lấy chúng để cắt scope user vừa chốt. R1/PC-CONF hiện hữu giữ phạm vi; các package quality/editor/denim mới chưa tự khởi động. MSVC/admin pause, chưa paid budget hay public deploy vẫn giữ. Nếu không đạt chất lượng/target15–30phút, đưa mẫu/số đo/chi phí cho chủ dự án quyết định, không tự đổi mục tiêu.
