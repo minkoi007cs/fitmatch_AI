@@ -20,6 +20,7 @@ export function result<T>(r: {
       "INVALID_GARMENT",
       "MODEL_NOT_READY",
       "INVALID_INPUT",
+      "LEASE_LOST",
     ].find((c) => r.error!.message.includes(c));
     if (known)
       throw new InputError(known === "QUOTA_EXCEEDED" ? 429 : 409, known);
@@ -49,7 +50,7 @@ export async function workerAuth(request: Request): Promise<WorkerRow> {
   const row = result(
     await createAdminClient()
       .from("fm_v2_workers")
-      .select("id,user_id,capabilities,enabled,last_seen")
+      .select("id,user_id,capabilities,allowed_capabilities,enabled,last_seen")
       .eq("token_hash", digest(token))
       .eq("enabled", true)
       .maybeSingle(),
@@ -126,9 +127,31 @@ export async function finalizeAsset(
   if (!row || row.job_id !== jobId)
     throw new InputError(404, "ASSET_NOT_FOUND");
   if (row.state === "ready") return { assetId: row.id, sha256: row.sha256 };
-  const info = required(await db.storage.from(bucket).info(row.source_path));
-  if (Number(info.size) !== row.expected_bytes)
-    throw new InputError(400, "ASSET_SIZE_MISMATCH");
+  if (row.state === "rejected") throw new InputError(400, "ASSET_REJECTED");
+  // A job output that fails verification is marked rejected so the worker's next
+  // output-intent creates a fresh logical asset instead of reusing bad staging bytes.
+  const reject = async (code: string): Promise<never> => {
+    if (row.job_id && row.kind === "glb")
+      result(
+        await db
+          .from("fm_v2_assets")
+          .update({ state: "rejected" })
+          .eq("id", row.id)
+          .eq("user_id", userId)
+          .eq("state", "pending"),
+      );
+    throw new InputError(400, code);
+  };
+  const info = await db.storage.from(bucket).info(row.source_path);
+  if (info.error) {
+    const e = info.error as { status?: number; statusCode?: string; message?: string };
+    // Not uploaded yet (or the upload never landed): the worker re-requests an upload URL.
+    if (e.status === 404 || e.statusCode === "404" || /not.?found|missing/i.test(e.message ?? ""))
+      throw new InputError(404, "ASSET_NOT_UPLOADED");
+    throw new InputError(503, "DATA_UNAVAILABLE");
+  }
+  if (Number(info.data?.size) !== row.expected_bytes)
+    await reject("ASSET_SIZE_MISMATCH");
   const blob = required(
     await db.storage.from(bucket).download(row.source_path),
   );
@@ -165,10 +188,12 @@ export async function finalizeAsset(
     try {
       validateOutputGlb(Uint8Array.from(bytes).buffer);
     } catch {
-      throw new InputError(400, "INVALID_GLB");
+      return await reject("INVALID_GLB");
     }
   }
   const hash = digest(bytes);
+  if (row.expected_sha256 && row.expected_sha256 !== hash)
+    await reject("ASSET_HASH_MISMATCH");
   const upload = await db.storage.from(bucket).upload(row.path, bytes, {
     contentType: row.kind === "photo" ? "image/jpeg" : "model/gltf-binary",
     upsert: false,
@@ -190,6 +215,38 @@ export async function finalizeAsset(
       .eq("user_id", userId),
   );
   return { assetId: row.id, sha256: hash };
+}
+/** R1 idempotent output intent. Lease is checked inside the database transaction. */
+export async function outputIntent(
+  worker: WorkerRow,
+  jobId: string,
+  leaseToken: string,
+  bytes: number,
+  sha256: string,
+) {
+  const db = createAdminClient();
+  const assetId = randomUUID();
+  const r = required(
+    await db.rpc("fm_v2_output_intent", {
+      p_worker: worker.id,
+      p_job: jobId,
+      p_token: leaseToken,
+      p_id: assetId,
+      p_bytes: bytes,
+      p_sha: sha256,
+      p_source: `${worker.user_id}/staging/${assetId}`,
+      p_path: `${worker.user_id}/verified/${assetId}.glb`,
+    }),
+  ) as { assetId: string; state: "pending" | "ready"; sourcePath: string; created: boolean };
+  if (r.state === "ready")
+    return { assetId: r.assetId, state: r.state, uploadUrl: null, created: false };
+  // Fresh URL on every call: an expired URL is refreshed without a new logical asset.
+  const signed = required(
+    await db.storage
+      .from(bucket)
+      .createSignedUploadUrl(r.sourcePath, { upsert: false }),
+  );
+  return { assetId: r.assetId, state: r.state, uploadUrl: signed.signedUrl, created: r.created };
 }
 export async function signedAsset(userId: string, assetId: string) {
   const db = createAdminClient();

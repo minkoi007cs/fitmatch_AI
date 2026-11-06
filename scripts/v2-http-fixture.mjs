@@ -24,6 +24,12 @@ const quote = (v) =>
       : typeof v === "boolean"
         ? String(v)
         : `'${(typeof v === "object" ? JSON.stringify(v) : String(v)).replaceAll("'", "''")}'`;
+// Postgres array columns written through the REST fixture (everything else that is an array is jsonb).
+const arrayColumns = new Set(["allowed_capabilities", "input_assets"]);
+const pgArray = (v) =>
+  `'{${v.map((x) => '"' + String(x).replaceAll("'", "''").replaceAll('"', '\\"') + '"').join(",")}}'`;
+const value = (key, v) =>
+  arrayColumns.has(key) && Array.isArray(v) ? pgArray(v) : quote(v);
 const ident = (v) => {
   if (!/^[a-z_][a-z_0-9]*$/.test(v))
     throw new Error("Invalid fixture identifier");
@@ -33,7 +39,9 @@ export async function v2Fixture() {
   const name = `fitmatch-v2-http-${process.pid}`,
     objects = new Map(),
     uploadPaths = new Map(),
-    readPaths = new Map();
+    readPaths = new Map(),
+    // Fault injection for storage transport tests (counts are consumed per request).
+    faults = { uploadDropAfterStore: 0, uploadExpire: 0, uploads: 0 };
   const sql = (s) =>
     execFileSync(
       "docker",
@@ -108,18 +116,20 @@ export async function v2Fixture() {
     sql(
       "create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create function auth.uid() returns uuid language sql stable as $$select null::uuid$$;create table auth.users(id uuid primary key);create table fm_wardrobe_items(id uuid primary key,user_id uuid,category text);create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);grant select on fm_wardrobe_items to service_role;",
     );
-    sql(
-      readFileSync(
-        new URL(
-          "../supabase/migrations/20261105_studio_control_plane.sql",
-          import.meta.url,
+    for (const migration of [
+      "20261105_studio_control_plane.sql",
+      "20261106025506_worker_recovery_r1.sql",
+    ])
+      sql(
+        readFileSync(
+          new URL("../supabase/migrations/" + migration, import.meta.url),
+          "utf8",
         ),
-        "utf8",
-      ),
-    );
+      );
     return {
       stop,
       sql,
+      faults,
       async handle(req, res, url, body, raw, send) {
         const objectPath = url.pathname.replace(/^\/storage\/v1/, "");
         res.setHeader("Access-Control-Allow-Origin", "http://localhost:3220");
@@ -133,11 +143,23 @@ export async function v2Fixture() {
         if (objectPath.startsWith("/fixture-upload/")) {
           const path = uploadPaths.get(objectPath);
           if (!path || req.method !== "PUT") return false;
+          faults.uploads++;
+          if (faults.uploadExpire > 0) {
+            faults.uploadExpire--;
+            send({ statusCode: "400", error: "InvalidJWT", message: "jwt expired" }, 400);
+            return true;
+          }
           if (objects.has(path)) {
             send({ message: "exists" }, 409);
             return true;
           }
           objects.set(path, Buffer.from(raw));
+          if (faults.uploadDropAfterStore > 0) {
+            // Stored, but the client never learns the outcome.
+            faults.uploadDropAfterStore--;
+            req.socket.destroy();
+            return true;
+          }
           send({ Key: path });
           return true;
         }
@@ -235,10 +257,10 @@ export async function v2Fixture() {
             const keys = Object.keys(body);
             if (table === "fm_v2_models")
               body.input_assets = body.input_assets ?? [];
-            statement = `insert into ${ident(table)}(${keys.map(ident)}) values(${keys.map((k) => quote(body[k]))})${url.searchParams.has("on_conflict") ? " on conflict (" + url.searchParams.get("on_conflict").split(",").map(ident) + ") do update set " + keys.map((k) => ident(k) + "=excluded." + ident(k)).join(",") : ""} returning *`;
+            statement = `insert into ${ident(table)}(${keys.map(ident)}) values(${keys.map((k) => value(k, body[k]))})${url.searchParams.has("on_conflict") ? " on conflict (" + url.searchParams.get("on_conflict").split(",").map(ident) + ") do update set " + keys.map((k) => ident(k) + "=excluded." + ident(k)).join(",") : ""} returning *`;
           } else if (req.method === "PATCH") {
             statement = `update ${ident(table)} set ${Object.entries(body)
-              .map(([k, v]) => `${ident(k)}=${quote(v)}`)
+              .map(([k, v]) => `${ident(k)}=${value(k, v)}`)
               .join(",")}${where} returning *`;
           } else if (req.method === "DELETE") {
             statement = `delete from ${ident(table)}${where} returning *`;
@@ -277,7 +299,7 @@ export async function v2Fixture() {
             throw new Error("Service role RPC expected");
           const fn = table.slice(4);
           if (
-            !/^fm_v2_(enqueue|claim|transition|job_action|asset_intent)$/.test(
+            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent)$/.test(
               fn,
             )
           )
@@ -306,11 +328,15 @@ export async function v2Fixture() {
           `insert into auth.users values(${quote(owner)}) on conflict do nothing;insert into fm_wardrobe_items values(${quote(itemId)},${quote(owner)},'shirt') on conflict do nothing;`,
         );
       },
-      worker(owner) {
+      worker(
+        owner,
+        allowed = ["avatar.reconstruct", "garment.reconstruct", "garment.drape"],
+      ) {
         const token = "fmw_" + randomBytes(32).toString("base64url"),
           workerId = randomUUID();
+        // Operator grant, as scripts/worker/manage.mjs does; R1 default is deny.
         sql(
-          `insert into fm_v2_workers(id,user_id,token_hash,name) values('${workerId}',${quote(owner)},'${createHash("sha256").update(token).digest("hex")}','Synthetic worker');`,
+          `insert into fm_v2_workers(id,user_id,token_hash,name,allowed_capabilities) values('${workerId}',${quote(owner)},'${createHash("sha256").update(token).digest("hex")}','Synthetic worker',array[${allowed.map(quote).join(",")}]::text[]);`,
         );
         return { token, workerId };
       },

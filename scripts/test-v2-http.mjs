@@ -160,8 +160,18 @@ export async function testV2({ base, request, jar, owner, itemId, v2 }) {
       (await worker(`jobs/${job.jobId}/complete`, done)).status,
       200,
     );
+    // R1: an identical replay is idempotent (lost reply); a different asset is refused.
     assert.equal(
       (await worker(`jobs/${job.jobId}/complete`, done)).status,
+      200,
+    );
+    assert.equal(
+      (
+        await worker(`jobs/${job.jobId}/complete`, {
+          ...lease,
+          assetId: job.input.assets[0].assetId,
+        })
+      ).status,
       409,
     );
     return job;

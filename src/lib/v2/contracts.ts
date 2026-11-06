@@ -50,9 +50,34 @@ export const outputRequest = z
       .max(40 * 1024 * 1024),
   })
   .strict();
+/** Without sha256 the legacy (non-idempotent) intent is used; R1 workers always send it. */
+export const outputIntentRequest = z
+  .object({
+    leaseToken: id,
+    bytes: z
+      .number()
+      .int()
+      .min(20)
+      .max(40 * 1024 * 1024),
+    sha256: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .optional(),
+  })
+  .strict();
 export const completeRequest = z
   .object({ leaseToken: id, assetId: id })
   .strict();
+/** Claim identity: instanceId is random per worker process start; requestId per claim call. */
+export const claimRequest = z
+  .object({ instanceId: id.optional(), requestId: id.optional() })
+  .strict();
+export const workerKinds = [
+  "avatar.reconstruct",
+  "garment.reconstruct",
+  "garment.drape",
+] as const;
+export const protocolRevision = "v1-r1";
 export const workerHeartbeat = z
   .object({
     capabilities: z.partialRecord(
@@ -84,6 +109,7 @@ export const failureRequest = z
       "MODEL_UNAVAILABLE",
       "INFERENCE_FAILED",
       "EXPORT_FAILED",
+      "TIMEOUT",
     ]),
   })
   .strict();
@@ -142,6 +168,7 @@ export type JobRow = {
   error_code: string | null;
   stage: string | null;
   engine?: { model: string; revision: string } | null;
+  redelivered?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -156,11 +183,14 @@ export type AssetRow = {
   bytes: number | null;
   sha256: string | null;
   job_id: string | null;
+  expected_sha256?: string | null;
+  job_attempt?: number | null;
 };
 export type WorkerRow = {
   id: string;
   user_id: string;
   capabilities: Record<string, { model: string; revision: string }>;
+  allowed_capabilities: string[];
   enabled: boolean;
   last_seen: string | null;
 };

@@ -88,15 +88,16 @@ try {
     `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;grant usage on schema auth to authenticated;create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table auth.users(id uuid primary key);insert into auth.users values('${owner}'),('${other}'),('${quota}');create table fm_wardrobe_items(id uuid primary key,user_id uuid,category text);create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);grant select on fm_wardrobe_items to service_role;`,
   );
   sql("insert into storage.buckets(id,name,public) values('fitmatch-v2','fitmatch-v2',true);");
-  sql(
-    readFileSync(
-      new URL(
-        "../supabase/migrations/20261105_studio_control_plane.sql",
-        import.meta.url,
+  for (const migration of [
+    "20261105_studio_control_plane.sql",
+    "20261106025506_worker_recovery_r1.sql",
+  ])
+    sql(
+      readFileSync(
+        new URL("../supabase/migrations/" + migration, import.meta.url),
+        "utf8",
       ),
-      "utf8",
-    ),
-  );
+    );
   assert.equal(sql("select public from storage.buckets where id='fitmatch-v2';"),'f','migration enforces private bucket even when an old bucket exists');
   for (let i = 1; i <= 3; i++)
     sql(
@@ -117,7 +118,7 @@ try {
   );
   service(enqueue("second-key-02"));
   sql(
-    `insert into fm_v2_workers(id,user_id,token_hash,name,last_seen,capabilities) values('${w1}','${owner}','hash1','A',now(),'{"avatar.reconstruct":{}}'),('${w2}','${owner}','hash2','B',now(),'{"avatar.reconstruct":{}}');`,
+    `insert into fm_v2_workers(id,user_id,token_hash,name,last_seen,capabilities,allowed_capabilities) values('${w1}','${owner}','hash1','A',now(),'{"avatar.reconstruct":{}}','{avatar.reconstruct}'),('${w2}','${owner}','hash2','B',now(),'{"avatar.reconstruct":{}}','{avatar.reconstruct}');`,
   );
   const claims = await parallel([
     `select fm_v2_claim('${w1}');`,
@@ -148,10 +149,16 @@ try {
     `insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes,job_id) values('${output}','${owner}','glb','ready','out','source-out',100,'${next.id}');`,
   );
   assert.equal(transition(next, "complete", output), "t");
+  // R1: an identical replay (same worker, lease and asset) is idempotent; a different asset is not.
   assert.equal(
     transition(next, "complete", output),
+    "t",
+    "identical complete replay is idempotent",
+  );
+  assert.equal(
+    transition(next, "complete", photo(5)),
     "f",
-    "cannot publish twice",
+    "cannot publish a different output",
   );
   assert.equal(
     service(
@@ -270,6 +277,184 @@ try {
     ),
   );
   assert.equal(uploads.filter((r) => r.ok).length, 2);
+  // ---------------- R1 worker recovery (CL-RECOVERY-R1-20261105-01) ----------------
+  const r1 = "66666666-6666-4666-a666-666666666666",
+    r1x = "77777777-7777-4777-a777-777777777777";
+  const wA = "88888888-8888-4888-a888-888888888888",
+    wB = "99999999-9999-4999-a999-999999999999",
+    wX = "aaaaaaaa-1111-4111-a111-111111111111";
+  const I1 = "bbbbbbbb-1111-4111-a111-111111111111",
+    I2 = "bbbbbbbb-2222-4222-a222-222222222222";
+  const shaA = "a".repeat(64),
+    shaB = "b".repeat(64);
+  const u = (v) => (v ? `'${v}'` : "null");
+  sql(`insert into auth.users values('${r1}'),('${r1x}');`);
+  const r1photos = [21, 22, 23].map(photo);
+  for (const id of r1photos)
+    sql(
+      `insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes) values('${id}','${r1}','photo','ready','r1p-${id}','r1s-${id}',100);`,
+    );
+  const r1enqueue = (key) =>
+    JSON.parse(
+      service(
+        `select fm_v2_enqueue('${r1}','${key}','${key}','avatar','R1',array[${r1photos.map((x) => `'${x}'`)}]::uuid[],'{}');`,
+      ),
+    ).jobId;
+  const caps = '{"avatar.reconstruct":{"model":"m","revision":"r"}}';
+  sql(
+    `insert into fm_v2_workers(id,user_id,token_hash,name,last_seen,capabilities,allowed_capabilities) values('${wA}','${r1}','hA','A',now(),'${caps}','{avatar.reconstruct}'),('${wB}','${r1}','hB','B',now(),'${caps}','{}'),('${wX}','${r1x}','hX','X',now(),'${caps}','{avatar.reconstruct}');`,
+  );
+  const claimR1 = (w, inst, req = null) =>
+    JSON.parse(
+      service(`select fm_v2_claim_r1('${w}',${u(inst)},${u(req)});`) || "null",
+    );
+  const tr = (w, j, token, action, stage = null, asset = null) =>
+    service(
+      `select fm_v2_transition('${w}','${j}','${token}','${action}',${u(stage)},${u(asset)});`,
+    );
+  const intent = (w, j, token, sha, bytes = 100) =>
+    JSON.parse(
+      service(
+        `select fm_v2_output_intent('${w}','${j}','${token}',gen_random_uuid(),${bytes},'${sha}','src-'||gen_random_uuid(),'dst-'||gen_random_uuid());`,
+      ),
+    );
+  const markReady = (assetId) =>
+    sql(
+      `update fm_v2_assets set state='ready',bytes=expected_bytes,sha256=expected_sha256 where id='${assetId}';`,
+    );
+  // R1C default deny: declared but not granted never claims; grants restrict to known kinds.
+  const J1 = r1enqueue("r1-job-0001");
+  assert.equal(claimR1(wB, I1), null, "declared capability is not a grant");
+  assert.throws(
+    () =>
+      sql(`update fm_v2_workers set allowed_capabilities='{evil}' where id='${wB}';`),
+    "unknown capability cannot be granted",
+  );
+  // R1B redelivery: same instance gets the same assignment, same token, same attempt, no second job.
+  const first = claimR1(wA, I1, I1);
+  assert.equal(first.id, J1);
+  assert.equal(first.attempt, 1);
+  assert.equal(first.redelivered, false);
+  r1enqueue("r1-job-0002");
+  const again = await parallel(
+    Array.from(
+      { length: 8 },
+      () => `select fm_v2_claim_r1('${wA}','${I1}',gen_random_uuid());`,
+    ),
+  );
+  assert.ok(again.every((r) => r.ok));
+  for (const r of again.map((r) => JSON.parse(r.value))) {
+    assert.equal(r.id, J1, "redelivery never hands out a second job");
+    assert.equal(r.lease_token, first.lease_token);
+    assert.equal(r.attempt, 1, "redelivery does not consume an attempt");
+    assert.equal(r.redelivered, true);
+  }
+  assert.equal(claimR1(wA, I2), null, "another process instance gets nothing");
+  assert.equal(
+    service(`select fm_v2_claim('${wA}');`) || "",
+    "",
+    "legacy claim never redelivers",
+  );
+  assert.equal(tr(wA, J1, first.lease_token, "heartbeat", "reconstructing"), "t");
+  assert.equal(claimR1(wA, I1), null, "no redelivery after the worker reported progress");
+  // Lease expiry: the job comes back as a new attempt with a new token.
+  sql(`update fm_v2_jobs set lease_until=now()-interval '1 second' where id='${J1}';`);
+  const second = claimR1(wA, I2);
+  assert.equal(second.id, J1);
+  assert.equal(second.attempt, 2);
+  assert.notEqual(second.lease_token, first.lease_token);
+  // R1A output intent: idempotent per job+sha, lease-checked, owner-scoped.
+  const oi1 = intent(wA, J1, second.lease_token, shaA);
+  assert.equal(oi1.created, true);
+  assert.equal(oi1.state, "pending");
+  const oi2 = intent(wA, J1, second.lease_token, shaA);
+  assert.equal(oi2.assetId, oi1.assetId, "retry does not create a new logical artifact");
+  assert.equal(oi2.created, false);
+  assert.notEqual(intent(wA, J1, second.lease_token, shaB).assetId, oi1.assetId);
+  assert.throws(() => intent(wA, J1, first.lease_token, shaA), /LEASE_LOST/);
+  assert.throws(() => intent(wX, J1, second.lease_token, shaA), /LEASE_LOST/);
+  markReady(oi1.assetId);
+  assert.equal(
+    tr(wA, J1, second.lease_token, "fail", "INFERENCE_FAILED"),
+    "f",
+    "an attempt with a published output cannot be failed",
+  );
+  assert.equal(
+    tr(wA, J1, first.lease_token, "complete", null, oi1.assetId),
+    "f",
+    "stale token cannot publish",
+  );
+  // Concurrent identical completes: all succeed, one receipt, model gets that output.
+  const completes = await parallel(
+    Array.from(
+      { length: 6 },
+      () =>
+        `select fm_v2_transition('${wA}','${J1}','${second.lease_token}','complete',null,'${oi1.assetId}');`,
+    ),
+  );
+  assert.deepEqual(
+    completes.map((r) => r.value),
+    Array(6).fill("t"),
+  );
+  assert.equal(
+    service(`select count(*) from fm_v2_job_receipts where job_id='${J1}';`),
+    "1",
+  );
+  assert.equal(
+    tr(wA, J1, second.lease_token, "complete", null, oi1.assetId),
+    "t",
+    "replay after reply loss",
+  );
+  assert.equal(tr(wA, J1, second.lease_token, "complete", null, r1photos[0]), "f");
+  assert.equal(tr(wA, J1, first.lease_token, "complete", null, oi1.assetId), "f");
+  assert.equal(tr(wX, J1, second.lease_token, "complete", null, oi1.assetId), "f");
+  assert.throws(() => intent(wA, J1, second.lease_token, shaA), /LEASE_LOST/);
+  sql(`update fm_v2_workers set enabled=false where id='${wA}';`);
+  assert.equal(
+    tr(wA, J1, second.lease_token, "complete", null, oi1.assetId),
+    "f",
+    "revoked credential cannot replay",
+  );
+  sql(`update fm_v2_workers set enabled=true where id='${wA}';`);
+  // Cancel race: canceled job cannot be completed or replayed with its old token.
+  const c1 = claimR1(wA, I2);
+  const cOut = intent(wA, c1.id, c1.lease_token, shaA);
+  markReady(cOut.assetId);
+  assert.equal(
+    service(`select fm_v2_job_action('${r1}','${c1.id}','cancel');`),
+    "t",
+  );
+  assert.equal(tr(wA, c1.id, c1.lease_token, "complete", null, cOut.assetId), "f");
+  assert.equal(
+    service(`select state from fm_v2_jobs where id='${c1.id}';`),
+    "canceled",
+  );
+  // Reclaim after lease loss reuses the already verified output (no second logical artifact).
+  const J3 = r1enqueue("r1-job-0003");
+  const a1 = claimR1(wA, I1);
+  assert.equal(a1.id, J3);
+  const out3 = intent(wA, J3, a1.lease_token, shaB);
+  markReady(out3.assetId);
+  sql(`update fm_v2_jobs set lease_until=now()-interval '1 second' where id='${J3}';`);
+  const a2 = claimR1(wA, I2);
+  assert.equal(a2.id, J3);
+  assert.equal(a2.attempt, 2);
+  const reuse = intent(wA, J3, a2.lease_token, shaB);
+  assert.equal(reuse.assetId, out3.assetId);
+  assert.equal(reuse.state, "ready");
+  assert.equal(tr(wA, J3, a1.lease_token, "complete", null, out3.assetId), "f");
+  assert.equal(tr(wA, J3, a2.lease_token, "complete", null, out3.assetId), "t");
+  // Browser roles never see receipts or call the new RPCs.
+  for (const role of ["anon", "authenticated"])
+    for (const q of [
+      "select * from fm_v2_job_receipts;",
+      `select fm_v2_claim_r1('${wA}',null,null);`,
+      `select fm_v2_output_intent('${wA}','${J3}','${a2.lease_token}',gen_random_uuid(),100,'${shaA}','s','p');`,
+    ])
+      assert.throws(() => sql(`set role ${role};${q}`));
+  console.log(
+    "PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.",
+  );
   console.log(
     "PASS S1 PostgreSQL: concurrent dedupe, cross-owner denial, capability claims, one worker/job, expired lease recovery, stale completion fencing, cancel/retry, revocation, immutable cache, RLS/grants, 20/25 queue quota, 2/6 upload quota.",
   );

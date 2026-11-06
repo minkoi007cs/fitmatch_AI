@@ -8,8 +8,11 @@ import {
   modelRequest,
   uploadRequest,
   workerHeartbeat,
-  outputRequest,
+  outputIntentRequest,
   completeRequest,
+  claimRequest,
+  protocolRevision,
+  workerKinds,
   progressRequest,
   failureRequest,
   styleAnswers,
@@ -25,6 +28,7 @@ import {
   workerAuth,
   ownedJob,
   assetIntent,
+  outputIntent,
   finalizeAsset,
   signedAsset,
 } from "@/lib/v2/server";
@@ -54,11 +58,20 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
         .eq("id", w.id)
         .eq("enabled", true),
     );
-    return reply({ success: true });
+    // Declarations are not permissions: report what the operator actually granted.
+    return reply({
+      success: true,
+      grantedCapabilities: grantedKinds(body.capabilities, w.allowed_capabilities),
+    });
   }
   if (path.join("/") === "claim") {
+    const body = await readJson(request, claimRequest);
     const job = result(
-      await db.rpc("fm_v2_claim", { p_worker: w.id }),
+      await db.rpc("fm_v2_claim_r1", {
+        p_worker: w.id,
+        p_instance: body.instanceId ?? null,
+        p_request: body.requestId ?? null,
+      }),
     ) as JobRow | null;
     if (!job) return new Response(null, { status: 204 });
     const model = result(
@@ -105,6 +118,8 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
     }
     return reply({
       protocolVersion: 1,
+      protocolRevision,
+      redelivered: job.redelivered === true,
       jobId: job.id,
       kind: job.kind,
       modelId: model.id,
@@ -153,7 +168,13 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
     return reply({ success: true });
   }
   if (action === "output-intent") {
-    const body = await readJson(request, outputRequest);
+    const body = await readJson(request, outputIntentRequest);
+    if (body.sha256)
+      return reply(
+        await outputIntent(w, jobId, body.leaseToken, body.bytes, body.sha256),
+        201,
+      );
+    // Legacy v1 worker without sha256: previous non-idempotent behavior.
     await ownedJob(w, jobId, body.leaseToken);
     return reply(await assetIntent(w.user_id, "glb", body.bytes, jobId), 201);
   }
@@ -214,10 +235,18 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
         p_stage: body.code,
       }),
     );
-    if (!ok) throw new InputError(409, "LEASE_LOST");
+    if (!ok) throw new InputError(409, "LEASE_LOST_OR_OUTPUT_PUBLISHED");
     return reply({ success: true });
   }
   throw new InputError(404, "NOT_FOUND");
+}
+function grantedKinds(
+  declared: Record<string, unknown> | null | undefined,
+  allowed: string[] | null | undefined,
+) {
+  return workerKinds.filter(
+    (k) => !!declared && k in declared && (allowed ?? []).includes(k),
+  );
 }
 async function handle(
   request: Request,
@@ -333,15 +362,24 @@ async function handle(
       const workers = result(
         await db
           .from("fm_v2_workers")
-          .select("last_seen,capabilities")
+          .select("last_seen,capabilities,allowed_capabilities")
           .eq("user_id", owner)
           .eq("enabled", true),
-      ) as Pick<WorkerRow, "last_seen" | "capabilities">[];
+      ) as Pick<
+        WorkerRow,
+        "last_seen" | "capabilities" | "allowed_capabilities"
+      >[];
       return reply({
         workers: workers.map((w) => ({
           online:
             !!w.last_seen && Date.parse(w.last_seen) > Date.now() - 90_000,
-          capabilities: w.capabilities,
+          // Only capabilities that are both declared and granted by the operator.
+          capabilities: Object.fromEntries(
+            grantedKinds(w.capabilities, w.allowed_capabilities).map((k) => [
+              k,
+              w.capabilities[k],
+            ]),
+          ),
           lastSeen: w.last_seen,
         })),
       });
