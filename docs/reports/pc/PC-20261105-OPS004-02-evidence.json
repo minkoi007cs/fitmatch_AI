@@ -77,5 +77,214 @@
   "gateStatus": "NOT VERIFIED",
   "evidenceScope": "Public-safe metadata only. No source/output meshes, images, models, credentials, signed URLs or private filesystem paths.",
   "operationsRecheckedBeforePublication": "17b77fe021d0ccffe413810dfb786bbf7c0dc532",
-  "processRevisionRechecked": "PROC-0005"
+  "processRevisionRechecked": "PROC-0005",
+  "conformanceR1": {
+    "task": "PC-CONF-01",
+    "sessionId": "PC-20261105-CONF01-03",
+    "docsCommitRead": "5793e01c93391b5b304f6be1203e9cba74c86b58",
+    "gpuStartCommit": "acb4719d61eac73e99aa53469f27201c2bb6c939",
+    "localCodeCommit": "37213bc7907901b95c4049276b09ca4eaede5822",
+    "sourceCodePublished": false,
+    "repro": {
+      "enumerated": 12,
+      "passed": 10,
+      "failed": 1,
+      "skipped": 1,
+      "runnerExitCode": 1,
+      "failure": "UUID alias duplicated identity was not rejected"
+    },
+    "final": {
+      "task": "PC-CONF-01",
+      "scope": "targeted CPU conformance only; no original21-suite rerun",
+      "adapterSHA256": "32cd193f55f9caa703eee10b777db571d51db0094b159f9494dbe33e63444cd1",
+      "testSourceSHA256": "587a14066d34b5ceb58119993b441c03420de7b2fe9501c01986d57a8233bf54",
+      "testsRun": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": [
+        {
+          "test": "test_symlink_to_external_photo_is_rejected_when_supported",
+          "reason": "File symlink creation unavailable; winerror=1314"
+        }
+      ],
+      "failureTests": [],
+      "passed": 11,
+      "runnerExitCode": 0,
+      "wallSeconds": 0.7282986999489367,
+      "observations": [
+        {
+          "case": "operator-cli-usage",
+          "exitCode": 2,
+          "stdoutEmpty": true,
+          "stderrIsJSON": false,
+          "errorCode": null,
+          "outputExists": false,
+          "wallSeconds": 0.06818669999483973
+        },
+        {
+          "case": "dummy-multitoken-env",
+          "exitCode": 2,
+          "stdoutEmpty": true,
+          "stderrIsJSON": true,
+          "errorCode": "INVALID_INPUT",
+          "outputExists": false,
+          "wallSeconds": 0.0647457999875769
+        },
+        {
+          "case": "duplicate-role",
+          "exitCode": 2,
+          "stdoutEmpty": true,
+          "stderrIsJSON": true,
+          "errorCode": "INVALID_INPUT",
+          "outputExists": false,
+          "wallSeconds": 0.07541659998241812
+        },
+        {
+          "case": "path-escape",
+          "exitCode": 2,
+          "stdoutEmpty": true,
+          "stderrIsJSON": true,
+          "errorCode": "INVALID_INPUT",
+          "outputExists": false,
+          "wallSeconds": 0.0752337999874726
+        },
+        {
+          "case": "existing-output",
+          "exitCode": 2,
+          "stdoutEmpty": true,
+          "stderrIsJSON": true,
+          "errorCode": "INVALID_INPUT",
+          "outputExists": true,
+          "wallSeconds": 0.07182880002073944
+        },
+        {
+          "case": "malformed-json",
+          "exitCode": 2,
+          "stdoutEmpty": true,
+          "stderrIsJSON": true,
+          "errorCode": "INVALID_INPUT",
+          "outputExists": false,
+          "wallSeconds": 0.06737900001462549
+        },
+        {
+          "case": "synthetic-texture-positive",
+          "structuralGate": "passed",
+          "independentTrimeshReload": true,
+          "personalAvatar": false
+        },
+        {
+          "case": "duplicate-uuid-alias",
+          "exitCode": 2,
+          "stdoutEmpty": true,
+          "stderrIsJSON": true,
+          "errorCode": "INVALID_INPUT",
+          "outputExists": false,
+          "wallSeconds": 0.07557400001678616
+        },
+        {
+          "case": "valid-disabled",
+          "exitCode": 78,
+          "stdoutEmpty": true,
+          "stderrIsJSON": true,
+          "errorCode": "MODEL_UNAVAILABLE",
+          "outputExists": false,
+          "wallSeconds": 0.07672419992741197
+        },
+        {
+          "case": "valid-inspect-only",
+          "exitCode": 0,
+          "stdoutEmpty": false,
+          "stderrIsJSON": false,
+          "errorCode": null,
+          "outputExists": false,
+          "wallSeconds": 0.06724270002450794
+        }
+      ],
+      "newInference": false,
+      "engineReady": false,
+      "engines": {}
+    },
+    "relatedRegressions": {
+      "passed": 2,
+      "exitCode": 0,
+      "unittestSeconds": 0.045,
+      "wholeOriginal21SuiteRerun": false
+    },
+    "logSHA256": {
+      "pc-conf01-repro.log": "34d8a9652c2d8751823dfd3caaf1beafab7f25fec26e85500c6560a10aa44491",
+      "pc-conf01-repro.json": "f488b0aeb441a1a01d18f51579bed70707b4b1932e7e4734fbf5cf8cf8d3e90f",
+      "pc-conf01-final.log": "4d2615b85ee77f07303325ffa203af9bbd626edf0838dd6a9cbd5634619d5dae",
+      "pc-conf01-final.json": "7d5396a5bd24722b8fa49f6e1443f3cab9623baa61cb2313811c821970c63ba9",
+      "pc-conf01-regression.log": "c17ef97212e230f49b87fcd3d9a514d9e6eef3624f03510d67ee76f2e32fa209"
+    },
+    "encodingRepairs": [
+      {
+        "file": "PC-20261105-OPS004-02-delta.md",
+        "sha256Before": "b9fbdc63f22ca0509a31468a631db4641f88ff4307f893dd75907fc94974c90a",
+        "sha256AfterRepair": "b86eeb9fed6f931fcb3eeae93dbeb14d8e0da87c504826b4f20205663f928246",
+        "method": "strict inverse Windows-1252 decoding of UTF-8 bytes; no semantic edits"
+      },
+      {
+        "file": "PC-20261105-OPS004-02-report.md",
+        "sha256Before": "e663cb01efef268bfe32ef86c7d17c53d7cbdb2fa560b330315f1078d4486664",
+        "sha256AfterRepair": "82273ebc3677fc4d48f3947661b5abc492a6014965a31b1d1a21f5de52d6952e",
+        "method": "strict inverse Windows-1252 decoding of UTF-8 bytes; no semantic edits"
+      }
+    ],
+    "checkpointSHA256": "52d0f666ed0284aad1c2eb809e7d534349d4b52729de4244d486093855648a2b",
+    "checkpointUnmodified": true,
+    "msvcPaused": true,
+    "mappingStatus": "Proposal only, not confirmed or applied by Claude",
+    "symlinkStatus": "Not run; Windows file symlink permission unavailable (1314)",
+    "testNames": [
+      {
+        "name": "test_valid_manifest_disabled_and_inspect_are_distinct",
+        "status": "passed"
+      },
+      {
+        "name": "test_malformed_json_cli_is_redacted_invalid_input",
+        "status": "passed"
+      },
+      {
+        "name": "test_uuid_alias_is_duplicate_identity",
+        "status": "passed"
+      },
+      {
+        "name": "test_duplicate_role_cli",
+        "status": "passed"
+      },
+      {
+        "name": "test_existing_output_is_preserved_by_cli",
+        "status": "passed"
+      },
+      {
+        "name": "test_dummy_multitoken_environment_is_rejected_not_logged",
+        "status": "passed"
+      },
+      {
+        "name": "test_existing_external_file_is_rejected",
+        "status": "passed"
+      },
+      {
+        "name": "test_symlink_to_external_photo_is_rejected_when_supported",
+        "status": "Not run"
+      },
+      {
+        "name": "test_cli_usage_error_has_no_adapter_json",
+        "status": "passed"
+      },
+      {
+        "name": "test_positive_uv_texture_decodes_and_reloads",
+        "status": "passed"
+      },
+      {
+        "name": "test_bad_material_reference_and_image_mime_are_rejected",
+        "status": "passed"
+      },
+      {
+        "name": "test_corrupt_embedded_image_is_rejected_by_decoder",
+        "status": "passed"
+      }
+    ]
+  }
 }
