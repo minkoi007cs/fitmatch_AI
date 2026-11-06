@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 06/11/2026, America/New_York. Revision: PROC-0014. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 06/11/2026, America/New_York. Revision: PROC-0015. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Trạng thái tiếp nối hiện hành — PROC-0013
 
@@ -380,3 +380,21 @@ User giao tiếp tục kế hoạch/hoàn thiện lúc chờPC. Claim Mac backlo
 ### L-032 — 06/11/2026 — HANDOFF — CX-MAC-COMPLETION-14
 
 MAC-14A implemented: failed/canceled garment reconstruction remains visible in Studio, category own-key validation, source-deleted/fitting-not-ready/look-not-found UI messages. npm47tests + lint/build PASS; initial test fixture type error corrected with full ModelRow fields then rebuilt successfully. No DB/wire changes; full DB/browser suite not rerun this increment. Plan MAC-14A–H: docs/mac-completion-plan.md on appbranch. Cache investigation confirms fixed pair idempotency plus unique fitting and attempt cap; proper regeneration requires additive generation lifecycle preserving saved looks/stale fencing, remains Planned. SignedURL recovery/privacy/captureUX/test deployment runbook also Planned; no claim all completed. NativePC/assets/editor/likeness gates unchanged. User-authorized app/docs push follows; canonical unchanged.
+
+
+### L-033 — START — CX-FITTING-GENERATIONS-15 / MAC-14B
+Baseline849ffbb clean. Codex nhận migration additive fitting successor, job regenerate API/UI, current-cache selection và DB concurrency/owner/quota/source regressions. Worker wire/PC adapters không đổi; canonical giữ nguyên.
+
+
+### L-034 — 06/11/2026 — PC CHECK / DISPATCH — CX-FITTING-GENERATIONS-15
+
+User yêu cầu kiểm2chat và giao tiếp khi Mac tắt. wait_threads đã kết nối: Qwen completed setup PR3commit49d27d0 (reported8.89GB pinned/hash,9CPUtests,3GPUJSONschema,peakVRAM5.16GiB; RAMfree154MiB,semantic errors), 3Dactive đóng gói template005 (reported3GLB2.15MB/8renders/Khronos0/0,10producer+8regression+4nativechecks). Đây là report agent, chưa independent artifact review. send_message_to_thread success cả2: Qwen AI-QUALITY-02 tối ưuloadRAM/groundedattributes/schema+semanticcases,3D hoàn tất005 rồi3D-QA-006 seam/UV/render/native evidence. GPU cùngabsoluteOSlock+slot; giữUACpause/weights/checkpoint; khôngpaid/live. Snapshot sau gửi: cả2active, Qwen phân tích peakRAMtạiweightload và chuẩn bịsmallshards,3Dđónggói. Không hứa tiếp tục khi máyPC/app/network không chạy; nhiệm vụ đã gửi không phụ thuộc chờ Mac.
+
+
+### L-035 — 06/11/2026 — VALIDATION — CX-FITTING-GENERATIONS-15
+
+MAC-14B implementation: additive superseded_by + partialunique activepair; explicit POST jobs/:id/regenerate after exhaustedfailed/canceled/nooutput; sameoldjob replay idempotent, ownerlock+quota+derivedready guards. Savedlooks/versionIDs preserved, supersededretry denied, Studio/Looks current selection and newprepare request keys updated. npm48,lint/build,DB6blocks/schema20 PASS. NativePC/realquality not checked. HTTP/browser final outcome in app report. Initial DB test scoping mistakes corrected and rerun; initial browser timeout during concurrent rebuild is not called PASS, isolated rerun in progress. Migration CLI-generated; production not applied.
+
+
+### L-036 — END — CX-FITTING-GENERATIONS-15
+MAC-14B Ready for review: npm48,lint/build,DB6blocks,export20schemas PASS; isolated final HTTP/browser13blocks PASS including4parallel regenerate route requests and oldretry409. Migration only local Docker, not production. Report/logs docs/reports/review/fitting-generations on appbranch. PCdispatch bothconfirmed and bothactive; no waiting for Mac reply.
