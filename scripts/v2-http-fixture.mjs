@@ -300,14 +300,14 @@ export async function v2Fixture() {
             throw new Error("Service role RPC expected");
           const fn = table.slice(4);
           if (
-            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent)$/.test(
+            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look)$/.test(
               fn,
             )
           )
             return false;
           const args = Object.entries(body).map(
             ([k, v]) =>
-              `${ident(k)} => ${k === "p_inputs" ? `array[${v.map(quote)}]::uuid[]` : quote(v)}`,
+              `${ident(k)} => ${k === "p_inputs" ? `array[${v.map(quote)}]::uuid[]` : v !== null && typeof v === "object" ? `${quote(JSON.stringify(v))}::jsonb` : quote(v)}`,
           );
           try {
             const value = await query(

@@ -1,11 +1,19 @@
 import { parseBundle, validateGlb, type StudioBundle } from "./bundle";
 
+import { cameraState, type CameraState } from "@/lib/v2/contracts";
 export type LocalLook = {
   id: string;
   name: string;
+  /** Legacy single-garment looks only had this; it is the top slot. */
   garmentId: string | null;
+  top?: string | null;
+  bottom?: string | null;
+  camera?: CameraState | null;
   createdAt: string;
 };
+export function lookOutfit(look: LocalLook) {
+  return { top: look.top !== undefined ? look.top : look.garmentId, bottom: look.bottom ?? null };
+}
 export type Workspace = {
   version: 1;
   bundle: StudioBundle;
@@ -109,8 +117,12 @@ export function validateWorkspace(value: unknown): Workspace {
       typeof look.name !== "string" ||
       !look.name.trim() ||
       look.name.length > 80 ||
-      (look.garmentId !== null &&
-        !bundle.garments.some((g) => g.id === look.garmentId))
+      [look.garmentId, look.top, look.bottom].some(
+        (g) => g !== undefined && g !== null && !bundle.garments.some((x) => x.id === g),
+      ) ||
+      (look.top && bundle.garments.find((g) => g.id === look.top)?.category === "jeans") ||
+      (look.bottom && bundle.garments.find((g) => g.id === look.bottom)?.category !== "jeans") ||
+      (look.camera != null && !cameraState.safeParse(look.camera).success)
     )
       throw new Error("Look đã lưu không thuộc bộ avatar/áo này.");
   }

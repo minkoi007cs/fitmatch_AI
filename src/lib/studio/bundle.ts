@@ -1,19 +1,23 @@
 export type StudioBundle = {
   version: 1;
   avatar: { id: string; name: string; file: string };
-  garments: Array<{ id: string; name: string; file: string; category: "t-shirt" | "shirt"; avatarId: string }>;
+  /** `preset: true` marks a labelled sample outfit piece prepared for this avatar, not a wardrobe item. */
+  garments: Array<{ id: string; name: string; file: string; category: GarmentCategory; avatarId: string; preset?: boolean }>;
 };
+export type GarmentCategory = "t-shirt" | "shirt" | "jeans";
+export const CATEGORY_SLOT: Record<GarmentCategory, "top" | "bottom"> = { "t-shirt": "top", shirt: "top", jeans: "bottom" };
+export const CATEGORY_LABEL: Record<GarmentCategory, string> = { "t-shirt": "Áo thun", shirt: "Sơ mi", jeans: "Jeans" };
 export const MAX_GLB_BYTES = 40 * 1024 * 1024;
 const filename = (v: unknown): v is string => typeof v === "string" && /^[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,100}\.glb$/.test(v);
 const label = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 100;
 export function parseBundle(value: unknown): StudioBundle {
   if (!value || typeof value !== "object") throw new Error("Manifest không hợp lệ.");
   const b = value as StudioBundle;
-  if (b.version !== 1 || !b.avatar || !label(b.avatar.id) || !label(b.avatar.name) || !filename(b.avatar.file) || !Array.isArray(b.garments) || b.garments.length > 12) throw new Error("Cần manifest v1, avatar và tối đa 12 áo.");
+  if (b.version !== 1 || !b.avatar || !label(b.avatar.id) || !label(b.avatar.name) || !filename(b.avatar.file) || !Array.isArray(b.garments) || b.garments.length > 12) throw new Error("Cần manifest v1, avatar và tối đa 12 món đồ.");
   const ids = new Set<string>();
   const files = new Set([b.avatar.file]);
   for (const g of b.garments) {
-    if (!g || (!label(g.id) || g.id === "avatar") || !label(g.name) || !filename(g.file) || !["t-shirt", "shirt"].includes(g.category) || g.avatarId !== b.avatar.id || ids.has(g.id) || files.has(g.file)) throw new Error("Áo phải có ID riêng và được chuẩn bị cho đúng avatar.");
+    if (!g || (!label(g.id) || g.id === "avatar") || !label(g.name) || !filename(g.file) || !(g.category in CATEGORY_SLOT) || (g.preset !== undefined && typeof g.preset !== "boolean") || g.avatarId !== b.avatar.id || ids.has(g.id) || files.has(g.file)) throw new Error("Mỗi món đồ phải có ID riêng, loại hợp lệ (áo thun, sơ mi, jeans) và được chuẩn bị cho đúng avatar.");
     ids.add(g.id); files.add(g.file);
   }
   return b;

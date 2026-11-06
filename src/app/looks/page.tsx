@@ -29,6 +29,8 @@ type SavedLook = {
   name: string;
   avatar_id: string;
   fitting_id: string | null;
+  top_fitting_id?: string | null;
+  bottom_fitting_id?: string | null;
 };
 export default function LooksPage() {
   const [votes, setVotes] = useState<
@@ -450,7 +452,7 @@ export default function LooksPage() {
             {saved.map((l) => (
               <div key={l.id} className={`${panel} flex gap-3 items-center`}>
                 <Link
-                  href={`/studio?avatar=${l.avatar_id}${l.fitting_id ? `&fitting=${l.fitting_id}` : ""}`}
+                  href={`/studio?avatar=${l.avatar_id}&look=${l.id}`}
                   className="text-sm flex-1 break-words"
                 >
                   {l.name} ↗

@@ -176,11 +176,11 @@ export async function testStudio(base, jar) {
     await page.getByRole("button", { name: "Chỉ xem avatar" }).click();
     await page.getByRole("button", { name: "So sánh A ↔ B" }).click();
     assert.equal(await tee.getAttribute("aria-pressed"), "true");
-    await page.getByLabel("Tìm áo").fill("missing garment");
-    await page.getByText("Không có áo phù hợp bộ lọc.").waitFor();
-    await page.getByLabel("Tìm áo").fill("");
+    await page.getByLabel("Tìm đồ").fill("missing garment");
+    await page.getByText("Không có món đồ phù hợp bộ lọc.").first().waitFor();
+    await page.getByLabel("Tìm đồ").fill("");
     await page.getByRole("button", { name: "Sơ mi", exact: true }).click();
-    await page.getByText("Không có áo phù hợp bộ lọc.").waitFor();
+    await page.getByText("Không có món đồ phù hợp bộ lọc.").first().waitFor();
     await page.getByRole("button", { name: "Tất cả", exact: true }).click();
     await page.getByLabel("Tên bộ phối").fill("Weekend look");
     await page.getByRole("button", { name: "Lưu look trong phiên" }).click();

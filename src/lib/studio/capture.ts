@@ -1,4 +1,4 @@
-export type CaptureKind = "avatar" | "t-shirt" | "shirt";
+export type CaptureKind = "avatar" | "t-shirt" | "shirt" | "jeans";
 export type CaptureSlot = "front" | "side" | "back" | "detail";
 export function requiredSlots(kind: CaptureKind): CaptureSlot[] {
   return kind === "avatar" ? ["front", "side", "back"] : ["front", "back"];

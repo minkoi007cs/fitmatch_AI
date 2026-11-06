@@ -70,8 +70,8 @@ export const stateLabel: Record<string, string> = {
 };
 export const kindLabel: Record<string, string> = {
   avatar: "Avatar",
-  garment: "Áo 3D",
-  fitting: "Áo đã mặc thử",
+  garment: "Đồ 3D",
+  fitting: "Đồ đã mặc thử",
 };
 export async function prepareFitting(avatar: ModelRow, garment: ModelRow) {
   return api<{ jobId: string; modelId: string; reused: boolean }>(

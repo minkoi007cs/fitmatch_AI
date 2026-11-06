@@ -199,12 +199,14 @@ export default function CaptureDrawer({
           <Camera size={20} className="text-accent-text mb-2" />
           {avatar
             ? "Chụp toàn thân trước, bên và sau, cùng ánh sáng, máy ngang tầm người. Mặc đồ ôm vừa, tay cách thân nhẹ; không cần ảnh khỏa thân."
-            : "Trải áo phẳng trên nền trơn, chụp trước và sau với ánh sáng tự nhiên. Không dùng bộ lọc; thêm ảnh chi tiết để giữ logo, cổ và hàng nút."}
+            : kind === "jeans"
+              ? "Trải quần phẳng trên nền trơn, hai ống duỗi thẳng, cạp quần ở trên. Chụp mặt trước và mặt sau cùng ánh sáng tự nhiên, không bộ lọc; thêm ảnh chi tiết túi/logo nếu cần."
+              : "Trải áo phẳng trên nền trơn, chụp trước và sau với ánh sáng tự nhiên. Không dùng bộ lọc; thêm ảnh chi tiết để giữ logo, cổ và hàng nút."}
         </div>
         {!avatar && (
           <div className="flex gap-2 text-xs text-fg-muted">
             <span className="border border-border px-3 py-2 rounded-full">
-              {kind === "shirt" ? "Sơ mi" : "Áo thun"}
+              {kind === "shirt" ? "Sơ mi" : kind === "jeans" ? "Jeans" : "Áo thun"}
             </span>
             <span className="px-3 py-2">Một áo / một bộ ảnh</span>
           </div>

@@ -53,7 +53,7 @@ export default function PreparePage() {
         if (alive.current)
           setItems(
             d.items.filter((i: WardrobeItem) =>
-              ["shirt", "t-shirt"].includes(i.category),
+              ["shirt", "t-shirt", "jeans"].includes(i.category),
             ),
           );
       })
@@ -135,7 +135,9 @@ export default function PreparePage() {
                 ({
                   "avatar.reconstruct": "Dựng người",
                   "garment.reconstruct": "Dựng áo",
-                  "garment.drape": "Mặc thử",
+                  "garment.drape": "Mặc thử áo",
+                  "bottom.reconstruct": "Dựng quần",
+                  "bottom.drape": "Mặc thử quần",
                 })[c] ?? c,
             )
             .join(" · ") || "Chưa có năng lực xử lý được xác nhận"}
@@ -160,25 +162,25 @@ export default function PreparePage() {
         </section>
         <section className={panel}>
           <Shirt className="text-accent-text mb-5" />
-          <p className="text-xs text-fg-muted mb-2">02 / Chiếc áo thật</p>
-          <h2 className="font-display text-2xl">Đưa áo vào không gian 3D</h2>
+          <p className="text-xs text-fg-muted mb-2">02 / Áo thun và jeans thật</p>
+          <h2 className="font-display text-2xl">Đưa đồ vào không gian 3D</h2>
           <label className="block text-sm mt-4">
-            Áo trong tủ đồ
+            Món đồ trong tủ
             <select
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
               className={field}
             >
-              <option value="">Chọn áo thun hoặc sơ mi</option>
+              <option value="">Chọn áo thun, sơ mi hoặc jeans</option>
               {items.map((i) => (
                 <option key={i.id} value={i.id}>
-                  {i.name}
+                  {i.name} · {i.category === "jeans" ? "Jeans" : i.category === "shirt" ? "Sơ mi" : "Áo thun"}
                 </option>
               ))}
             </select>
           </label>
           <p className="text-xs text-fg-muted my-3">
-            Chụp mặt trước / sau trên nền trơn; thêm ảnh logo nếu cần.
+            Chụp mặt trước / sau trên nền trơn; thêm ảnh logo/túi nếu cần. Áo và quần được xử lý riêng, không cần avatar trước.
           </p>
           <div className="flex flex-wrap gap-3">
             <button
@@ -186,13 +188,13 @@ export default function PreparePage() {
               onClick={() => setCapture("garment")}
               className={button}
             >
-              Thêm ảnh áo
+              Thêm ảnh món đồ
             </button>
             <Link
               href="/wardrobe"
               className="text-accent-text text-xs inline-flex items-center gap-1"
             >
-              Thêm áo vào tủ đồ <ArrowUpRight size={13} />
+              Thêm đồ vào tủ <ArrowUpRight size={13} />
             </Link>
           </div>
         </section>
@@ -297,7 +299,9 @@ export default function PreparePage() {
               ? "avatar"
               : item?.category === "shirt"
                 ? "shirt"
-                : "t-shirt"
+                : item?.category === "jeans"
+                  ? "jeans"
+                  : "t-shirt"
           }
           wardrobeItemId={capture === "garment" ? selected : undefined}
           onClose={() => setCapture(null)}
