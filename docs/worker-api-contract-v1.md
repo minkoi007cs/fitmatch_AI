@@ -1,10 +1,12 @@
-# Worker protocol v1 — implemented S1
+# Worker protocol v1 — implemented S1, revision v1-r1
+
+Revision **v1-r1** (R1, 05/11/2026, migration `20261106025506_worker_recovery_r1.sql`) is backward compatible on the wire: old workers keep working once the operator grants capabilities. Changes are listed in [R1 changes](#r1-changes-v1-r1) at the end.
 
 05/11/2026. This document describes current code, not future endpoints. Browser/user routes require existing verified Fitmatch authentication and same-origin mutations; worker routes use a separate scoped bearer credential.
 
 ## Transport and scope
 
-PC polls outbound HTTPS. `Authorization: Bearer fmw_…` is supplied in the environment, hashed in DB, never stored in browser state. One worker is bound to one owner; disabled tokens fail authentication. `manage.mjs` enrolls/revokes through trusted server credentials. No service-role key on PC. Heartbeats20s; online90s; lease120s; maximum3claimed attempts. One running job per worker process. Registration alone does not prove engine health: capability claims are operator configuration and real-data conformance is still required.
+PC polls outbound HTTPS. `Authorization: Bearer fmw_…` is supplied in the environment, hashed in DB, never stored in browser state. One worker is bound to one owner; disabled tokens fail authentication. `manage.mjs` enrolls/grants/rotates/revokes through trusted server credentials. No service-role key on PC. Heartbeats20s; online90s; lease120s; maximum3claimed attempts. One running job per worker process. Registration alone does not prove engine health: a worker claims a kind only if it **declares** it in heartbeat **and** the operator **granted** it (default deny since v1-r1).
 
 ## Worker endpoints
 
@@ -12,16 +14,16 @@ All are POST under `/api/v2/worker/`:
 
 | Path | Request | Response |
 |---|---|---|
-| `heartbeat` | `{capabilities:{"avatar.reconstruct":{model,revision},…}}` (subset of 3 capabilities, empty allowed) | `{success:true}` |
-| `claim` | `{}` | 204 if no eligible job; otherwise lease envelope below |
+| `heartbeat` | `{capabilities:{"avatar.reconstruct":{model,revision},…}}` (subset of 3 capabilities, empty allowed) | `{success:true, grantedCapabilities:[…]}` (declared ∩ granted) |
+| `claim` | `{instanceId?, requestId?}` (UUIDs; `{}` still accepted) | 204 if no eligible job; otherwise lease envelope below, with `protocolRevision` and `redelivered` |
 | `jobs/:id/heartbeat` | `{leaseToken,stage}` | 200 or409 if lease lost |
 | `jobs/:id/input-url` | `{leaseToken,assetId}` | fresh `{assetId,url,sha256,bytes}` for an input of this job only |
-| `jobs/:id/output-intent` | `{leaseToken,bytes}` | `{assetId,uploadUrl}`; PUT GLB directly to signed URL |
-| `jobs/:id/finalize` | `{leaseToken,assetId}` | validates staged GLB and publishes immutable verified bytes/hash; does not yet complete job |
-| `jobs/:id/complete` | `{leaseToken,assetId}` | atomically sets model output and success, only valid active lease and ready GLB for same owner/job |
-| `jobs/:id/fail` | `{leaseToken,code}` | stores constrained failure; not success |
+| `jobs/:id/output-intent` | `{leaseToken,bytes,sha256}` | `{assetId,state,uploadUrl,created}`; same job+bytes+sha256 returns the same asset (fresh URL; `uploadUrl:null` when already `ready`). Without `sha256`: legacy non-idempotent intent |
+| `jobs/:id/finalize` | `{leaseToken,assetId}` | validates staged GLB, checks bytes **and sha256** against the intent, publishes immutable verified bytes; replay of a finalized asset returns it. 404 `ASSET_NOT_UPLOADED` / 400 `*_MISMATCH` / `INVALID_GLB` mark what to do next |
+| `jobs/:id/complete` | `{leaseToken,assetId}` | atomically sets model output and success with a durable receipt. **Identical replay** (same worker, lease token, asset) after success returns 200; other token/asset/worker, revoked worker, canceled or stale lease → 409 |
+| `jobs/:id/fail` | `{leaseToken,code}` | stores constrained failure; refused (409) if this attempt already published a verified output |
 
-Stages: starting, preprocessing, reconstructing, texturing, draping, exporting, uploading. Failure codes: OOM, INVALID_INPUT, MODEL_UNAVAILABLE, INFERENCE_FAILED, EXPORT_FAILED. Generic transport maps unknown adapter failure to INFERENCE_FAILED; richer adapter error mapping needs integration. Errors JSON `{success:false,error,requestId}`; HTTP400/401/403/404/409/429/503.429 carries Retry-After60.
+Stages: starting, preprocessing, reconstructing, texturing, draping, exporting, uploading. Failure codes: OOM, INVALID_INPUT, MODEL_UNAVAILABLE, INFERENCE_FAILED, EXPORT_FAILED, TIMEOUT. Adapter exit codes (proposed, **not yet confirmed by the PC adapter owner**, overridable per engine with `exitCodes`): 0 ok, 3 OOM, 4 INVALID_INPUT, 5 EXPORT_FAILED, 6 MODEL_UNAVAILABLE, other → INFERENCE_FAILED unless the adapter log tail shows a CUDA OOM marker. Time limit → TIMEOUT. Engine/protocol revision mismatch → MODEL_UNAVAILABLE immediately. Errors JSON `{success:false,error,requestId}`; HTTP400/401/403/404/409/429/503.429 carries Retry-After60.
 
 Claim envelope:
 
@@ -68,3 +70,24 @@ Limits:50newjobs/dayUTC,20queued/running perowner,100asset intents/rolling24h in
 ## Evidence and integration boundary
 
 `npm run test:v2:db` uses isolated real PostgreSQL to verify concurrency, grants/RLS, quotas and fencing. `npm run test:v2` exercises actual Next handlers/auth/Sharp, real SQL RPCs and Chromium with synthetic local storage and triangle meshes, plus Python worker transport. Neither validates real Supabase storage policies/service rollout nor actual SiTH/garment/drape inference. See `pc-worker-connect.md` for real PC handoff and acceptance.
+
+
+## R1 changes (v1-r1)
+
+**Migration order.** `20261105_studio_control_plane.sql` then `20261106025506_worker_recovery_r1.sql`. Additive: new columns (`fm_v2_workers.allowed_capabilities`, `fm_v2_jobs.claim_instance/claim_request`, `fm_v2_assets.expected_sha256/job_attempt`, asset state `rejected`), table `fm_v2_job_receipts` (service role only, RLS on), RPCs `fm_v2_claim_r1` and `fm_v2_output_intent` (new names, no overloads), `fm_v2_transition` and legacy `fm_v2_claim(uuid)` replaced in place with the same signatures and grants. Ends with `notify pgrst, 'reload schema'`.
+
+**Default deny.** After the migration no worker claims anything until `manage.mjs grant` (or `create OWNER kind…`). `compute/status` shows only declared ∩ granted capabilities.
+
+**Claim redelivery.** The claim stores the caller's `instanceId`/`requestId`. A claim from the same worker **and the same instance** while the lease is valid and before the first job heartbeat returns the same job, token and attempt (`redelivered:true`, lease extended). Another instance, the legacy claim, or a job that already reported progress gets 204; a restarted process waits for lease expiry (one attempt consumed, no output existed yet).
+
+**Recovery policy (worker.py v1-r1).**
+
+- Per-job checkpoint `workDir/jobs/<jobId>/checkpoint.json` (atomic replace) records engine revision, input digest, attempt, lease token and stage: `inferring → output_ready → uploading → finalized → completed` (`failed`/`interrupted`). Unreadable/unknown checkpoints are moved aside as `checkpoint.rejected.*.json`, never trusted, never deleted.
+- An output is reused only if job, model, kind, engine revision, input digest, size, GLB header and sha256 all match and the file is inside the job folder.
+- Retryable = network error, timeout, 429, 5xx: bounded exponential backoff with jitter (`retry` config). 409 = lease no longer ours (stop, keep checkpoint). 401/403 = credential gone. Other 4xx are definitive for that step.
+- After an output exists the worker **never sends `fail`** except when the server rejects the GLB itself (`INVALID_GLB` → EXPORT_FAILED). Exhausted retries keep the checkpoint; each loop first reconciles it: replay `complete` if finalized, else `heartbeat` the stored lease and resume publishing. If the lease is gone, the server requeues the job and the next claim reuses the same verified bytes (output-intent returns the existing ready asset). Old tokens can never publish.
+- Interrupted inference (worker died while the adapter ran) has no trusted output; the job runs again only on a new lease.
+- One worker process per `workDir` (`.worker.lock`). On POSIX the adapter inherits the lock, so an orphaned adapter blocks a second inference until it exits. On Windows adapters are bound to a kill-on-close job object (**not yet verified on the PC**). This is not the two-owner GPU scheduler (R2 / FIX-MAC-05).
+- The adapter environment drops variables whose name looks secret (TOKEN, SECRET, PASSW, CREDENTIAL, API_KEY, PRIVATE_KEY, SERVICE_ROLE, …), every `FITMATCH_WORKER*` variable and any value containing the worker token.
+
+**Rollback.** Redeploy the previous app; keep the additive schema (no data deleted). The old app calls `fm_v2_claim(uuid)`, which keeps working but enforces grants, so keep grants in place. Old `worker.py` keeps working against the new server (no sha256 → legacy output-intent; duplicate complete now returns 200 instead of 409).

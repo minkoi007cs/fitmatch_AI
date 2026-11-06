@@ -13,7 +13,7 @@ Cập nhật: 05/11/2026, America/New_York. Mã ở nhánh `codex/3d-studio-work
 node --env-file=.env.local scripts/worker/manage.mjs create OWNER_UUID
 ```
 
-Lệnh in token worker một lần trong terminal của bạn. Chuyển riêng sang biến môi trường PC; không gửi token vào chat, GitHub hoặc ảnh chụp màn hình. DB chỉ lưu SHA-256 của token. Token chỉ nhận job của đúng chủ tài khoản.
+Lệnh in token worker một lần trong terminal của bạn. Từ revision v1-r1, worker **không nhận job nào** cho tới khi bạn cấp quyền: `manage.mjs create OWNER_UUID avatar.reconstruct` hoặc sau đó `manage.mjs grant OWNER_UUID WORKER_UUID avatar.reconstruct`. Chỉ cấp loại job mà adapter đã self-test thật. `ungrant` gỡ quyền, `rotate` đổi token (token cũ hết hiệu lực ngay), `revoke` vô hiệu hóa worker. Chuyển riêng sang biến môi trường PC; không gửi token vào chat, GitHub hoặc ảnh chụp màn hình. DB chỉ lưu SHA-256 của token. Token chỉ nhận job của đúng chủ tài khoản.
 
 ## Trên Windows
 
@@ -56,7 +56,9 @@ Thêm engine vào config **chỉ sau khi adapter có thể xuất kết quả th
 
 Input JSON có `protocolVersion`, `jobId`, `kind`, `params`, `assets` (role + localPath), `avatarVersionId`, `garmentVersionId`, `modelRevision`, `outputContract`, `outputPath`. Ảnh input được decode/xoay theo EXIF, bỏ metadata và chuẩn hóa JPEG tối đa 2048px, quality95 trên web; không cam kết pixel giống hệt ảnh gốc. Asset GLB <=40MiB, embedded textures, đơn vị mét, +Y lên, +Z trước, không Draco/KTX2. Gate format/mesh không thay cho kiểm định likeness, logo, xuyên áo hoặc độ vừa.
 
-Worker tải file với kiểm tra bytes/SHA-256; gia hạn liên kết input hết hạn; heartbeat 20 giây; upload output vào staging, finalize rồi complete. Server mới quyết định công bố. Lease mất/thu hồi/cancel thì dừng tiến trình con. Network outage không âm thầm chuyển sang cloud AI khác. Worker data và log chứa dữ liệu cá nhân, phải giữ riêng và có chính sách xóa; không đưa vào Git.
+Worker tải file với kiểm tra bytes/SHA-256; gia hạn liên kết input hết hạn; heartbeat 20 giây; upload output vào staging, finalize rồi complete. Server mới quyết định công bố. Từ v1-r1 worker giữ checkpoint trong `workDir/jobs/<jobId>/`: nếu mạng đứt hoặc worker khởi động lại sau khi model đã xuất GLB, worker gửi lại đúng file đó thay vì chạy model lần nữa (chi tiết ở contract, mục R1). Không xóa thư mục `jobs/` khi còn job chưa hoàn tất; dọn dẹp/retention là việc riêng chưa làm.
+
+Adapter nên thoát với mã: 0 thành công, 3 hết VRAM (OOM), 4 input không dùng được, 5 lỗi xuất GLB, 6 model/engine không sẵn sàng. Đây là **đề xuất chưa được PC xác nhận**; nếu adapter thật dùng mã khác, khai báo `"exitCodes": {"<mã>": "OOM"}` trong engine config. Mỗi `workDir` chỉ một worker; chạy process thứ hai sẽ thoát với mã 2. Lease mất/thu hồi/cancel thì dừng tiến trình con. Network outage không âm thầm chuyển sang cloud AI khác. Worker data và log chứa dữ liệu cá nhân, phải giữ riêng và có chính sách xóa; không đưa vào Git.
 
 Chạy một worker process trên GPU 12GB. Không bật nhiều engine cư trú VRAM cùng lúc. Adapter tự nạp/nhả model và benchmark; worker không tự tối ưu VRAM hoặc đảm bảo tốc độ RTX3060.
 
