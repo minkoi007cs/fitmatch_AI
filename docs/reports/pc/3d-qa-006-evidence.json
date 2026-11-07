@@ -1,0 +1,366 @@
+{
+  "session": "PC-20261106-3DQA-006",
+  "task": "3D-QA-006",
+  "sourceRevision": "6cc3b316931a539d13eaaa2586a80d928f250530",
+  "sourceBaseline": "5bfca0979e18aaf6ebc6eda341ca299cc4ccd785",
+  "appRevision": "7be869c989bc8c2b13d8b9ce621c9f70d487e57c",
+  "workerGitBlob": "41ee24291c1129626c9461397d14d5c2ee993768",
+  "operationsRevision": "b23f071f852bea51cb746ee69359e6f089bc62bc",
+  "codePushed": false,
+  "validation": {
+    "status": "format-and-shared-frame-passed",
+    "fixture": true,
+    "productAcceptance": false,
+    "capabilitiesEnabled": [],
+    "files": [
+      {
+        "file": "avatar.glb",
+        "bytes": 856156,
+        "sha256": "f08d64d313ee7c86cfd030a0f9a829b39fcd22cc7de9783ffeefc11c82b57cc2",
+        "meshes": 1,
+        "embeddedImages": 0,
+        "sourceFaces": 47500,
+        "exportedFaces": 47500,
+        "boundsMetres": [
+          [
+            -0.6561799645423889,
+            0.0,
+            -0.14752833545207977
+          ],
+          [
+            0.6518733501434326,
+            1.719901442527771,
+            0.1526433527469635
+          ]
+        ],
+        "sharedFrameBoundsMaxErrorMetres": 2.2372228958289497e-08
+      },
+      {
+        "file": "tee.glb",
+        "bytes": 344848,
+        "sha256": "dc18c44439c337e370f8e8d2fbcc2d13eb940d155adc1ea9cd7523235516e1fd",
+        "meshes": 1,
+        "embeddedImages": 2,
+        "sourceFaces": 14082,
+        "exportedFaces": 14082,
+        "boundsMetres": [
+          [
+            -0.342789888381958,
+            1.0008360147476196,
+            -0.13901887834072113
+          ],
+          [
+            0.34362950921058655,
+            1.4563748836517334,
+            0.1755390614271164
+          ]
+        ],
+        "sharedFrameBoundsMaxErrorMetres": 3.4826652672848013e-10
+      },
+      {
+        "file": "jeans.glb",
+        "bytes": 941952,
+        "sha256": "009598c1fbc5817c749600b63f2663014161217e93e47b0c8e2f8c318de3d6b4",
+        "meshes": 1,
+        "embeddedImages": 2,
+        "sourceFaces": 29038,
+        "exportedFaces": 29038,
+        "boundsMetres": [
+          [
+            -0.23319439589977264,
+            0.08757728338241577,
+            -0.15035973489284515
+          ],
+          [
+            0.22958149015903473,
+            1.0978552103042603,
+            0.14239756762981415
+          ]
+        ],
+        "sharedFrameBoundsMaxErrorMetres": 5.430426019970014e-08
+      }
+    ],
+    "glbTotalBytes": 2142956,
+    "notVerified": [
+      "personal likeness",
+      "real garment reconstruction",
+      "cloth quality",
+      "triangle-level intersections",
+      "live top/bottom contract agreement"
+    ]
+  },
+  "repair": {
+    "stage": "sewing-correspondence-weld",
+    "status": "repaired-pending-QA",
+    "patternResized": false,
+    "personalAvatar": false,
+    "photoReconstruction": false,
+    "verticesBefore": 7503,
+    "verticesAfter": 7173,
+    "facesBefore": 14082,
+    "facesAfter": 14082,
+    "degenerateFacesRemoved": 0,
+    "windingConsistentBefore": true,
+    "windingConsistentAfter": true,
+    "globalOrientationFlipped": false,
+    "sourceBodyNormalDotMedianBeforeFlip": 0.952405007739175,
+    "connectedSurfaceComponents": 1,
+    "boundaryLoopsOrComponents": 4,
+    "nonManifoldEdges": 0,
+    "seamGapAfterMetres": 0.0,
+    "maxVertexMoveMetres": 0.011315534277353306,
+    "meanVertexMoveMetres": 3.3371434596392297e-05,
+    "absoluteRelativeEdgeStrainP95": 0.05936348742905341,
+    "absoluteRelativeEdgeStrainMax": 0.7249070021913355,
+    "edgesOver20PercentStrain": 89,
+    "bodyPenetratingVertices1mm": 0,
+    "minSignedVertexDistanceMetres": 0.0032241259877750254,
+    "wallSeconds": 0.5340083000482991,
+    "inputs": [
+      {
+        "file": "draped-template-metres.obj",
+        "sha256": "49463fdab7ebbaa88765bfbec803a88c6295e16f358c3c5b4211121a2cdf7366"
+      },
+      {
+        "file": "unsewn.json",
+        "sha256": "9015f66fff0872c8658f41bb5f4cff17386d4deb9255f52d4d38dcb0eef2843e"
+      },
+      {
+        "file": "mean_all.obj",
+        "sha256": "4f87d26bba81778c7ed492de9145483750a2dbb64b9fa71fda6de1fac8ef51a8"
+      }
+    ],
+    "limitations": [
+      "closing seams may change local strain; inspect measured deformation",
+      "original panel UV corners preserved separately from welded physical vertices",
+      "BVH/reload/render still required; not a calibrated physics result"
+    ]
+  },
+  "collision": {
+    "scope": "Blender CPU BVH triangle overlap, epsilon0; not exact-arithmetic proof",
+    "positiveAndNegativeControls": "passed",
+    "pairs": {
+      "tee-body": {
+        "trianglePairCount": 0,
+        "first20Pairs": []
+      },
+      "pants-body": {
+        "trianglePairCount": 0,
+        "first20Pairs": []
+      },
+      "tee-pants": {
+        "trianglePairCount": 0,
+        "first20Pairs": []
+      }
+    },
+    "selfIntersections": {
+      "tee": {
+        "nonAdjacentTrianglePairCount": 0,
+        "rawIndexNonAdjacentCount": 0,
+        "sewnAdjacencyExcluded": 0,
+        "first20Pairs": []
+      },
+      "pants": {
+        "nonAdjacentTrianglePairCount": 0,
+        "rawIndexNonAdjacentCount": 0,
+        "sewnAdjacencyExcluded": 0,
+        "first20Pairs": []
+      }
+    },
+    "wallSeconds": 0.2609314000001177
+  },
+  "textureMaterial": {
+    "status": "passed",
+    "scope": "fixture PNG decoded pixels and single-sided material QA only",
+    "files": [
+      {
+        "file": "tee.glb",
+        "embeddedImages": 2,
+        "sourcePixelMatches": [
+          "back",
+          "front"
+        ],
+        "singleSidedMaterialQA": true,
+        "passed": true
+      },
+      {
+        "file": "jeans.glb",
+        "embeddedImages": 2,
+        "sourcePixelMatches": [
+          "back",
+          "front"
+        ],
+        "singleSidedMaterialQA": true,
+        "passed": true
+      }
+    ],
+    "doesNotProve": "UV mapping/render colour fidelity or reconstruction of real photographs"
+  },
+  "nativeProbe": {
+    "status": "passed",
+    "scope": "native Windows CPU process/lock probes, no server or GPU",
+    "workerRevision": "7be869c989bc8c2b13d8b9ce621c9f70d487e57c",
+    "workerSourceSHA256": "f88b38bc29b45566a81eab122e52062809fc86345a20654b60b4275f8dff8da4",
+    "tests": [
+      {
+        "test": "binder-refusal-fails-closed",
+        "passed": true,
+        "evidence": "injected binder refusal, not an OS failure"
+      },
+      {
+        "test": "native-worker-lock-vs-msvcrt-byte0",
+        "passed": true,
+        "scope": "isolated CPU lock fixture"
+      },
+      {
+        "test": "native-worker-crash-kills-own-child-grandchild",
+        "passed": true,
+        "foreignProcessKilled": false,
+        "gpuLoaded": false,
+        "actualInterpreterTargeted": true,
+        "launcherPidEqualsWorkerPid": false
+      },
+      {
+        "test": "native-release-reacquire-closes-descriptor",
+        "passed": true
+      }
+    ],
+    "liveReadiness": false,
+    "gaps": [
+      "Live transport config must use the same coordination/gpu0.lock",
+      "Setup slot admission is not enforced by worker FileLock; do not run live workers during setup slots",
+      "No live claim/lease/cancellation or GPU stress tested"
+    ]
+  },
+  "producerConformance": {
+    "scope": "offline actual producer/local CLI, synthetic JPEG inputs; no API or GPU",
+    "python": "3.10.22 (main, Oct  9 2026, 15:18:58) [MSC v.1944 64 bit (AMD64)]",
+    "adapterSHA256": "000df1514746b5998eebfe632b36a771812eaf53066ff754d7d7339beab0b6a9",
+    "workerSourceSHA256": "f88b38bc29b45566a81eab122e52062809fc86345a20654b60b4275f8dff8da4",
+    "status": "passed",
+    "tests": [
+      {
+        "case": "exact-reviewed-worker-producer-through-PC-CLI",
+        "expected": "MODEL_UNAVAILABLE",
+        "actual": "MODEL_UNAVAILABLE",
+        "passed": true,
+        "outputCreated": false
+      },
+      {
+        "case": "explicit-inspection-stays-disabled",
+        "expected": "inspection-only",
+        "actual": "inspection-only",
+        "exitCode": 0,
+        "passed": true
+      },
+      {
+        "case": "unknown-revision-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unknown-top-field-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "roles-order-mismatch-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "wrong-shared-origin-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "measurement-boolean-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unimplemented-video-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unimplemented-bottom-kind-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      },
+      {
+        "case": "unknown-asset-field-rejected",
+        "expected": "INVALID_INPUT",
+        "actual": "INVALID_INPUT",
+        "exitCode": 2,
+        "passed": true
+      }
+    ],
+    "capabilitiesEnabled": [],
+    "liveProtocolACK": false
+  },
+  "upstreamWindowsSuite": {
+    "revision": "7be869c989bc8c2b13d8b9ce621c9f70d487e57c",
+    "passed": 17,
+    "errors": 1,
+    "exit": 1,
+    "failure": "venv launcher PID killed while real lock-holder interpreter and test stdin pipe remained alive"
+  },
+  "localTestProposal": {
+    "passed": 18,
+    "errors": 0,
+    "seconds": 0.197,
+    "exit": 0,
+    "appliedToUpstream": false,
+    "patchSHA256": "aa8c8b04616253963083fbd3962803bf5c9da81aed0d103b8a51f76c3a71944a"
+  },
+  "gpuAck": {
+    "ownerSession": "PC-AI-QUALITY-20261106-02",
+    "absoluteLockAndGuardPathsMatched": true,
+    "mechanism": "msvcrt byte0 OS exclusive lock",
+    "guardSHA256": "4ddf206d2cb16794f1e05eded7278d82c027dab1d277ac737b003322f8006680",
+    "liveWorkerEnabled": false
+  },
+  "personalInputs": "needs_input",
+  "compilerAdminPause": true,
+  "checkpoint004SHA256": "52d0f666ed0284aad1c2eb809e7d534349d4b52729de4244d486093855648a2b",
+  "capabilities": {},
+  "productGate": "NOT_VERIFIED",
+  "humanReview": "pending",
+  "newBenchmarks": [
+    {
+      "stage": "template006-seam-weld",
+      "status": "passed",
+      "wallSeconds": 4.517743400065228,
+      "peakProcessTreeRssBytes": 133148672,
+      "peakDeviceUsedMiB": 5184,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    },
+    {
+      "stage": "template006-export-render-cpu",
+      "status": "passed",
+      "wallSeconds": 61.53738760005217,
+      "peakProcessTreeRssBytes": 631205888,
+      "peakDeviceUsedMiB": 772,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "exitCode": 0,
+      "oom": false
+    }
+  ]
+}
