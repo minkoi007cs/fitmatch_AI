@@ -1,0 +1,175 @@
+--- a/workers/windows/gpu_guard.py
++++ b/workers/windows/gpu_guard.py
+@@ -11,2 +11,3 @@
+ import json
++import math
+ import msvcrt
+@@ -23,2 +24,6 @@
+ SLOT = DIRECTORY / 'gpu0-slot.json'
++MAX_SLOT_SECONDS = 3600
++MAX_RUN_SECONDS = 86400
++MAX_TIMESTAMP = 253402300799
++CLOCK_SKEW_SECONDS = 5
+ k = C.WinDLL('kernel32', use_last_error=True)
+@@ -96,3 +101,14 @@
+         return default
+-    return json.loads(path.read_text(encoding='utf-8-sig'))
++    if path.stat().st_size > 65536:
++        raise ValueError('Oversized GPU metadata')
++    def pairs(items):
++        result = {}
++        for key, value in items:
++            if key in result:
++                raise ValueError('Duplicate GPU metadata key')
++            result[key] = value
++        return result
++    def constant(_):
++        raise ValueError('Nonfinite JSON metadata')
++    return json.loads(path.read_text(encoding='utf-8-sig'), object_pairs_hook=pairs, parse_constant=constant)
+ 
+@@ -102,3 +118,12 @@
+     temporary.write_text(json.dumps(value, indent=2), encoding='utf-8')
+-    temporary.replace(path)
++    # A concurrent Windows reader can briefly deny replacement. Bound retries;
++    # diagnostic IO must never be the reason an undrained tree loses its lock.
++    for attempt in range(20):
++        try:
++            temporary.replace(path)
++            return
++        except PermissionError:
++            if attempt == 19:
++                raise
++            time.sleep(.01)
+ 
+@@ -127,2 +152,4 @@
+     previous = read(STATE, {})
++    if not isinstance(previous, dict):
++        raise ValueError('Invalid prior GPU receipt')
+     if previous.get('jobName') and not previous.get('allJobProcessesExited'):
+@@ -149,7 +176,74 @@
+ 
++def finite_number(value, label, maximum=MAX_TIMESTAMP):
++    if type(value) not in (int, float):
++        raise ValueError('Invalid numeric GPU ' + label)
++    try:
++        valid = math.isfinite(value) and 0 < value <= maximum
++    except OverflowError:
++        valid = False
++    if not valid:
++        raise ValueError('Invalid finite GPU ' + label)
++    return value
++
++
++def validate_slot(slot, now):
++    now = finite_number(now, 'clock')
++    allowed = {'version', 'owner', 'issuedAtUtc', 'issuedAtUnix', 'admitUntilUnix', 'policy'}
++    if type(slot) is not dict or set(slot) - allowed or slot.get('owner') not in ('pc-3d', 'pc-ai'):
++        raise ValueError('Invalid GPU admission object/owner')
++    version = slot.get('version', 0)
++    if type(version) is not int or version not in (0, 1):
++        raise ValueError('Invalid GPU admission revision')
++    issued_text = slot.get('issuedAtUtc')
++    if type(issued_text) is not str or len(issued_text) > 40:
++        raise ValueError('Invalid GPU issue time')
++    try:
++        date = datetime.fromisoformat(issued_text.replace('Z', '+00:00'))
++        if date.utcoffset() != timezone.utc.utcoffset(date):
++            raise ValueError('GPU issue time must be UTC')
++        issued = finite_number(date.timestamp(), 'issue time')
++    except (OverflowError, OSError) as error:
++        raise ValueError('Invalid GPU issue time') from error
++    if version == 1 or 'issuedAtUnix' in slot:
++        numeric_issue = finite_number(slot.get('issuedAtUnix'), 'issue time')
++        if abs(numeric_issue - issued) > .001:
++            raise ValueError('GPU issue times disagree')
++        # Use the checked numeric issue consistently for the window. ISO has
++        # microsecond precision, while time.time() can retain sub-microseconds.
++        issued = numeric_issue
++    expiry = finite_number(slot.get('admitUntilUnix'), 'expiry')
++    duration = expiry - issued
++    if not 0 < duration <= MAX_SLOT_SECONDS or issued > now + CLOCK_SKEW_SECONDS or expiry <= now:
++        raise ValueError('Invalid or expired GPU admission window')
++    if 'policy' in slot and (type(slot['policy']) is not str or len(slot['policy']) > 160):
++        raise ValueError('Invalid GPU admission policy')
++    return slot['owner']
++
++
+ def slot_owner():
+-    slot = read(SLOT, {'owner': 'pc-3d'})
+-    if slot['owner'] == 'pc-ai' and time.time() > slot.get('admitUntilUnix', 0):
+-        return 'pc-3d'
+-    return slot['owner']
++    now = finite_number(time.time(), 'clock')
++    # No file retains the original coordinator-only bootstrap. A present but
++    # expired/malformed file never silently grants either owner admission.
++    slot = read(SLOT)
++    return 'pc-3d' if slot is None and not SLOT.exists() else validate_slot(slot, now)
++
++
++def terminate_and_drain(job, record):
++    # An unverified query must not free the OS lock. Keep the guard/owned Job
++    # Object alive and quarantine admission until a successful empty-tree query.
++    terminate_job(job, 70)
++    while True:
++        account = Accounting()
++        if query_job(job, 1, C.byref(account), C.sizeof(account), None):
++            if account.activeProcesses == 0:
++                record.update(allJobProcessesExited=True, activeProcessesAtDrain=0,
++                              drainVerifiedAtUtc=utc())
++                return
++        else:
++            record.update(status='quarantined', allJobProcessesExited=False)
++            try:
++                write(STATE, record)
++            except OSError:
++                pass  # keep the Job Object and OS lock even if its diagnostic receipt cannot be written
++        time.sleep(.05)
+ 
+@@ -157,2 +251,3 @@
+ def run(args):
++    finite_number(args.timeout, 'timeout', MAX_RUN_SECONDS)
+     command = args.command[1:] if args.command[:1] == ['--'] else args.command
+@@ -202,5 +297,7 @@
+                     break
+-                if time.monotonic() - start > args.timeout:
++                if not timed_out and time.monotonic() - start > args.timeout:
+                     check(terminate_job(job, 124))
+                     timed_out = True
++                    record.update(status='draining', timedOut=True)
++                    write(STATE, record)
+                 time.sleep(.05)
+@@ -210,3 +307,4 @@
+             record.update(status='completed' if result == 0 else 'child-failed',
+-                          exitCode=result, endedAtUtc=utc(), allJobProcessesExited=True)
++                          exitCode=result, endedAtUtc=utc(), allJobProcessesExited=True,
++                          activeProcessesAtDrain=0, drainVerifiedAtUtc=utc())
+             write(STATE, record)
+@@ -215,10 +313,4 @@
+     except BaseException:
+-        terminate_job(job, 70)
++        terminate_and_drain(job, record)
+         if info.process:
+-            # Wait for our own whole child tree before releasing the OS lock.
+-            while True:
+-                account = Accounting()
+-                if not query_job(job, 1, C.byref(account), C.sizeof(account), None) or account.activeProcesses == 0:
+-                    break
+-                time.sleep(.05)
+             wait(info.process, 10000)
+@@ -247,2 +339,5 @@
+     args = parser.parse_args()
++    finite_number(args.timeout, 'timeout', MAX_RUN_SECONDS)
++    if args.set_slot and (type(args.slot_seconds) is not int or not 0 < args.slot_seconds <= MAX_SLOT_SECONDS):
++        raise ValueError('Invalid GPU slot duration')
+     DIRECTORY.mkdir(parents=True, exist_ok=True)
+@@ -266,5 +361,8 @@
+                     raise ValueError('Only the 3D coordinator changes admission slots')
+-                slot = {'owner': args.set_slot, 'issuedAtUtc': utc(),
+-                        'admitUntilUnix': time.time() + args.slot_seconds,
++                issued = finite_number(time.time(), 'clock')
++                slot = {'version': 1, 'owner': args.set_slot,
++                        'issuedAtUtc': datetime.fromtimestamp(issued, timezone.utc).isoformat(),
++                        'issuedAtUnix': issued, 'admitUntilUnix': issued + args.slot_seconds,
+                         'policy': 'Admission only; never preempt a held OS lock or running child'}
++                validate_slot(slot, issued)
+                 write(SLOT, slot)
