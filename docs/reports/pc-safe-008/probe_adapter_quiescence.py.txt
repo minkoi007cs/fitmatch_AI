@@ -1,0 +1,122 @@
+"""Native CPU fault injection: adapter launcher death vs whole-tree quiescence.
+
+Read-only pinned worker methods, isolated lock and owned disposable processes only.
+No live worker/client, credentials, global GPU lock, model or source deletion.
+"""
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+from gpu_guard import live_stamp
+
+
+def load(path):
+    canonical=path.read_bytes().replace(b'\r\n',b'\n')
+    blob=hashlib.sha1(b'blob '+str(len(canonical)).encode()+b'\0'+canonical).hexdigest()
+    if blob!='41ee24291c1129626c9461397d14d5c2ee993768':
+        raise ValueError('Probe requires the reviewed7be worker blob; review a new revision explicitly')
+    s=importlib.util.spec_from_file_location('pinned_worker',path)
+    w=importlib.util.module_from_spec(s);s.loader.exec_module(w)
+    return w
+
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--worker-source',type=Path,required=True)
+    p.add_argument('--adapter-python',type=Path,required=True)
+    p.add_argument('--worker-revision',default='7be869c989bc8c2b13d8b9ce621c9f70d487e57c')
+    p.add_argument('--launcher-kind',choices=['venv','CPU-surrogate'],default='venv')
+    p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--contained-probe',action='store_true')
+    a=p.parse_args()
+    root=a.output.resolve()
+    if a.contained_probe:
+        w=load(a.worker_source)
+        mode=w.ensure_process_containment({})
+        lock=w.FileLock(root/'isolated-gpu.lock')
+        if not lock.acquire(0):raise RuntimeError('Own isolated lock busy')
+        code=('import os,sys,subprocess,time,json; from pathlib import Path; '
+            'g=subprocess.Popen([sys._base_executable,"-c","import time; time.sleep(120)"]); '
+            f'Path({str(root / "adapter-ready.json")!r}).write_text(json.dumps({{"actualPid":os.getpid(),"grandchildPid":g.pid}})); '
+            'time.sleep(120)')
+        with (root/'adapter.log').open('w') as output:
+            executable=str(a.adapter_python)
+            if a.launcher_kind=='CPU-surrogate':
+                code=('import subprocess,time;subprocess.Popen(['+repr(str(a.adapter_python.resolve()))+
+                    ',"-I","-c",'+repr(code)+']);time.sleep(120)')
+                executable=sys._base_executable
+            adapter=subprocess.Popen([executable,'-I','-c',code],stdout=output,stderr=output)
+            for _ in range(200):
+                try:
+                    ready=json.loads((root/'adapter-ready.json').read_text())
+                    break
+                except (OSError,ValueError):time.sleep(.025)
+            else:raise RuntimeError('Own adapter readiness timed out')
+            actual=ready['actualPid'];grand=ready['grandchildPid']
+            before=live_stamp(actual);grand_before=live_stamp(grand)
+            adapter.kill()  # exact test-owned Popen launcher, not arbitrary/another owner's process
+            adapter.wait(timeout=5)
+            w.stop_process(adapter)  # unchanged upstream method returns if launcher.poll() is not None
+            alive=live_stamp(actual)==before and before is not None
+            lock.release()  # same ordering as pinned Worker.loop finally; isolated CPU fixture only
+            probe_code=('import importlib.util,sys; s=importlib.util.spec_from_file_location("w",sys.argv[1]); '
+                'w=importlib.util.module_from_spec(s);s.loader.exec_module(w);l=w.FileLock(sys.argv[2]); '
+                'ok=l.acquire(0);l.release();sys.exit(0 if ok else 75)')
+            contender=subprocess.run([sys._base_executable,'-I','-c',probe_code,
+                str(a.worker_source.resolve()),str(root/'isolated-gpu.lock')],timeout=5)
+            result={'containmentMode':mode,'launcherPid':adapter.pid,'actualAdapterPid':actual,
+                'actualAdapterCreation':before,'grandchildPid':grand,'grandchildCreation':grand_before,
+                'launcherDistinctFromInterpreter':adapter.pid!=actual,
+                'launcherKind':a.launcher_kind,
+                'actualAdapterAliveAfterStopProcess':alive,
+                'isolatedLockAcquiredByAnotherProcess':contender.returncode==0,
+                'liveGPUJobStarted':False,'networkAPIUsed':False,'sourceDeleted':False}
+            (root/'probe-private.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+        # Actual contained worker process exits; its Job Object closes and kills owned descendants.
+        return 0
+    actual_revision=subprocess.run(['git','-C',str(a.worker_source.resolve().parent),'rev-parse','HEAD'],
+        capture_output=True,text=True,check=True).stdout.strip()
+    if actual_revision!=a.worker_revision:
+        raise ValueError('Read-only worker checkout revision differs from requested evidence revision')
+    subprocess.run(['git','-C',str(a.worker_source.resolve().parent),'diff','--quiet','HEAD','--',a.worker_source.name],check=True)
+    root.mkdir(parents=True,exist_ok=False)
+    sentinel=subprocess.Popen([sys._base_executable,'-I','-c','import time;time.sleep(60)'])
+    sentinel_stamp=live_stamp(sentinel.pid)
+    process=subprocess.Popen([sys._base_executable,str(Path(__file__).resolve()),
+        '--worker-source',str(a.worker_source.resolve()),'--adapter-python',str(a.adapter_python.resolve()),
+        '--worker-revision',a.worker_revision,'--launcher-kind',a.launcher_kind,
+        '--output',str(root),'--contained-probe'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+    try:
+        stdout,stderr=process.communicate(timeout=20)
+        (root/'probe-stdout.log').write_text(stdout,encoding='utf-8')
+        (root/'probe-stderr.log').write_text(stderr,encoding='utf-8')
+        if process.returncode:raise RuntimeError('Own probe failed; see private stdout/stderr')
+        private=json.loads((root/'probe-private.json').read_text(encoding='utf-8'))
+        for _ in range(200):
+            if live_stamp(private['actualAdapterPid'])!=private['actualAdapterCreation'] and live_stamp(private['grandchildPid'])!=private['grandchildCreation']:
+                break
+            time.sleep(.025)
+        exited=live_stamp(private['actualAdapterPid'])!=private['actualAdapterCreation'] and live_stamp(private['grandchildPid'])!=private['grandchildCreation']
+        if not exited:raise RuntimeError('Own Job Object descendants did not exit')
+        if sentinel.poll() is not None or live_stamp(sentinel.pid)!=sentinel_stamp:
+            raise RuntimeError('External sentinel did not survive owned cleanup')
+        public={k:v for k,v in private.items() if 'Pid' not in k and 'Creation' not in k}
+        public.update(scope='native CPU method-level fault injection, not live worker E2E',
+            reproduced=private['launcherDistinctFromInterpreter'] and private['actualAdapterAliveAfterStopProcess'] and private['isolatedLockAcquiredByAnotherProcess'],
+            ownedDescendantsExitedWhenActualWorkerExited=exited,
+            workerRevision=a.worker_revision,transportSourceEdited=False,externalSentinelSurvived=True,
+            workerGitBlob='41ee24291c1129626c9461397d14d5c2ee993768',
+            interpretation='stop_process on an already-exited launcher does not prove adapter-tree quiescence; transport owner must fence per-job cleanup/admission')
+        (root/'finding-public.json').write_text(json.dumps(public,indent=2),encoding='utf-8')
+        print(json.dumps(public,indent=2))
+    finally:
+        if process.poll() is None:process.kill();process.wait(timeout=5)
+        if sentinel.poll() is None:sentinel.terminate();sentinel.wait(timeout=5)
+
+
+if __name__=='__main__':raise SystemExit(main())
