@@ -422,3 +422,7 @@ User giao kiểm2PC/nghiệmthu/dispatch tiếp. Đọc onboarding và H-AUDIT-0
 
 ### L-041 — 07/11/2026 — REVIEW / ASSIGN — CX-PC-REVIEW-17
 PR6eb9b009/PR73aacf25/PR81f7da0f báo Readyforreview; Claude appremote d17ca355. PC newfindings quiescence launcher/interpreter gap và guard nonfiniteexpiry; chưa production/code independenttest. Report và H-PC-017 giữ personalG1–G3 NOT VERIFIED/firstrelease NEEDS CHANGES; estimate46% unchanged. PC-SAFE-008/AI-QUALITY-04 Assigned, không tự khai running trước receipt. Live PC host unavailable khi snapshot; dispatchresults ghi tiếp. Scope chỉdocs; Claude vẫn giữapp.
+
+
+### L-042 — 07/11/2026 — HANDOFF / DISPATCH UNAVAILABLE — CX-PC-REVIEW-17
+Published7b90c2f chứa review/H-PC-017. Hai send_message_to_thread đều lỗi AppServerManager RPC unavailable trên remotePC; không delivered/receipt/running. Chủ dự án có thể paste lệnh H-PC-017 vào đúng2chat khi PC online. Không auto-monitor được thiết lập. Git diff check và kiểmrelative links của2docs mới; không app/GPU rerun. Finalpublication SHA theo git history/readback.
