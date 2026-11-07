@@ -1,0 +1,23 @@
+"""Deterministic CPU repro of a legal max-duration writer rejected after UTC microsecond rounding."""
+from datetime import datetime, timezone
+import json
+from pathlib import Path
+from candidate_driver import candidate, HASH
+
+issued = 1794057600.1234562
+value = {'version':1,'owner':'pc-ai','issuedAtUtc':datetime.fromtimestamp(issued,timezone.utc).isoformat(),
+         'issuedAtUnix':issued,'admitUntilUnix':issued+3600,'policy':'Admission only'}
+guard = candidate()
+try:
+    guard.validate_slot(value,issued)
+    result = 'accepted'
+except ValueError as error:
+    result = 'rejected'
+    reason = str(error)
+decoded = datetime.fromisoformat(value['issuedAtUtc']).timestamp()
+output = {'candidate_sha256':HASH,'scope':'CPU only; exact candidate v1 writer expressions',
+    'issued':value,'requested_duration_seconds':3600,'UTC_roundtrip_duration_seconds':value['admitUntilUnix']-decoded,
+    'observed':result,'expected':'accepted','shared_guard_modified':False,'GPU_loaded':False}
+target = Path(__file__).resolve().parents[2]/'reports/ai/qint_p/slot-roundtrip-retest.json'
+target.write_text(json.dumps(output,indent=2)+'\n')
+print(json.dumps(output))

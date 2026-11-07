@@ -1,0 +1,160 @@
+"""Local adapter boundary proposal, NOT the Claude/server wire contract."""
+import hashlib
+import json
+import math
+from pathlib import Path
+import re
+import stat
+import uuid
+from datetime import datetime, timezone
+
+MODEL_REVISION = 'ebb281ec70b05090aa6165b016eac8ec08e71b17'
+POLICY_REVISION = 'quality03.1'
+VERSION = 'pc-ai.local-adapter.v1'
+MAX_IMAGE_BYTES = 6 * 1024**2
+MAX_IMAGE_PIXELS = 24_000_000
+MAX_REQUEST_BYTES = 4096
+OLD_GUARD = '4ddf206d2cb16794f1e05eded7278d82c027dab1d277ac737b003322f8006680'
+
+class Refused(ValueError):
+    def __init__(self, code):
+        self.code = code
+        super().__init__(code)
+
+def finite(value):
+    try:
+        return type(value) in (int, float) and math.isfinite(value)
+    except OverflowError:
+        return False
+
+def strict_json(raw, limit=MAX_REQUEST_BYTES):
+    if not isinstance(raw, str) or len(raw.encode('utf-8')) > limit:
+        raise Refused('invalid_json_size')
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise Refused('duplicate_json_key')
+            result[key] = value
+        return result
+    def constant(_):
+        raise Refused('nonfinite_json')
+    try:
+        return json.loads(raw, object_pairs_hook=pairs, parse_constant=constant)
+    except (json.JSONDecodeError, RecursionError) as error:
+        raise Refused('invalid_json') from error
+
+def canonical_uuid(value):
+    try:
+        if not isinstance(value, str) or str(uuid.UUID(value)) != value:
+            raise ValueError()
+    except (ValueError, AttributeError):
+        raise Refused('invalid_identity') from None
+
+def request(value):
+    required = {'local_version', 'binding', 'result_id', 'model_revision',
+                'policy_revision', 'budget', 'target'}
+    if type(value) is not dict or set(value) != required:
+        raise Refused('request_shape')
+    if value['local_version'] != VERSION:
+        raise Refused('unknown_local_version')
+    if value['model_revision'] != MODEL_REVISION or value['policy_revision'] != POLICY_REVISION:
+        raise Refused('unsupported_revision')
+    binding = value['binding']
+    keys = {'owner_id', 'job_id', 'item_id', 'source_revision', 'image_sha256'}
+    if type(binding) is not dict or set(binding) != keys:
+        raise Refused('binding_shape')
+    for key in keys - {'image_sha256'}:
+        canonical_uuid(binding[key])
+    canonical_uuid(value['result_id'])
+    if not isinstance(binding['image_sha256'], str) or not re.fullmatch('[0-9a-f]{64}', binding['image_sha256']):
+        raise Refused('invalid_image_digest')
+    budget = value['budget']
+    if type(budget) is not dict or set(budget) != {'attempts', 'seconds', 'output_tokens', 'response_bytes'}:
+        raise Refused('budget_shape')
+    for key, upper in [('attempts', 2), ('output_tokens', 192), ('response_bytes', 8192)]:
+        if type(budget[key]) is not int or not 1 <= budget[key] <= upper:
+            raise Refused('budget_bounds')
+    if not finite(budget['seconds']) or not 0 < budget['seconds'] <= 600:
+        raise Refused('budget_bounds')
+    # The transport/server must select one garment. Image content never supplies target permission.
+    if value['target'] not in ['single_garment', 'needs_selection']:
+        raise Refused('target_shape')
+    if value['target'] == 'needs_selection':
+        raise Refused('needs_input')
+    return value
+
+def safe_file(path, root):
+    """Reject reparse points before resolve; trusted root must itself be an actual directory."""
+    path, root = Path(path).absolute(), Path(root).absolute()
+    try:
+        path.relative_to(root)
+        for component in [root, *root.parents, path, *path.parents]:
+            info = component.lstat()
+            if component.is_symlink() or getattr(info, 'st_file_attributes', 0) & 0x400:
+                raise Refused('reparse_path')
+        if not stat.S_ISREG(path.stat().st_mode):
+            raise Refused('not_regular_file')
+        path.resolve(strict=True).relative_to(root.resolve(strict=True))
+    except (ValueError, OSError) as error:
+        raise Refused('unsafe_or_missing_path') from error
+    return path
+
+def read_image(path, root, expected_hash, *, byte_limit=MAX_IMAGE_BYTES):
+    """Read one bounded snapshot; decode exactly the bytes hashed to avoid path replacement races."""
+    from io import BytesIO
+    from PIL import Image, UnidentifiedImageError
+    path = safe_file(path, root)
+    with path.open('rb') as stream:
+        data = stream.read(byte_limit + 1)
+    if len(data) > byte_limit:
+        raise Refused('image_size')
+    if hashlib.sha256(data).hexdigest() != expected_hash:
+        raise Refused('image_digest_mismatch')
+    try:
+        with Image.open(BytesIO(data)) as source:
+            if source.format not in {'PNG', 'JPEG'}:
+                raise Refused('image_format')
+            if source.width * source.height > MAX_IMAGE_PIXELS or min(source.size) < 16:
+                raise Refused('image_dimensions')
+            if getattr(source, 'n_frames', 1) != 1:
+                raise Refused('animated_image')
+            source.load()
+            rgba = source.convert('RGBA')
+            white = Image.new('RGBA', rgba.size, 'white')
+            white.alpha_composite(rgba)
+            image = white.convert('RGB')
+            image.thumbnail((320, 320))
+            return image
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as error:
+        raise Refused('image_decode') from error
+
+def slot(value, now):
+    if type(value) is not dict or value.get('owner') != 'pc-ai':
+        raise Refused('gpu_busy')
+    allowed = {'version', 'owner', 'issuedAtUtc', 'issuedAtUnix', 'admitUntilUnix', 'policy'}
+    if set(value) - allowed or type(value.get('version', 0)) is not int or value.get('version', 0) not in {0, 1}:
+        raise Refused('invalid_slot_shape')
+    expiry = value.get('admitUntilUnix')
+    issued_text = value.get('issuedAtUtc')
+    if type(issued_text) is not str or len(issued_text) > 40:
+        raise Refused('invalid_slot_issue')
+    try:
+        date = datetime.fromisoformat(issued_text.replace('Z', '+00:00'))
+        if date.utcoffset() != timezone.utc.utcoffset(date):
+            raise ValueError()
+        issued = date.timestamp()
+    except (ValueError, OverflowError, OSError):
+        raise Refused('invalid_slot_issue') from None
+    if value.get('version', 0) == 1 or 'issuedAtUnix' in value:
+        numeric_issue = value.get('issuedAtUnix')
+        if not finite(numeric_issue) or abs(numeric_issue - issued) > .001:
+            raise Refused('invalid_slot_issue')
+        issued = numeric_issue
+    if (not finite(now) or not 0 < now <= 253402300799 or not finite(expiry)
+        or not finite(issued) or not 0 < issued <= 253402300799
+        or not now < expiry <= 253402300799 or not 0 < expiry - issued <= 3600 or issued > now + 5):
+        raise Refused('invalid_slot_window')
+    if 'policy' in value and (type(value['policy']) is not str or len(value['policy']) > 160):
+        raise Refused('invalid_slot_policy')
+    return expiry

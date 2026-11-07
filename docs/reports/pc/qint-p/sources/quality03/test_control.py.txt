@@ -1,0 +1,91 @@
+import copy
+import json
+import unittest
+from control import Budget,AdmissionDenied,InvalidOutput,CleanupPending,PressureGate,GIB,execute
+
+class ControllerTests(unittest.TestCase):
+    def setUp(self):
+        self.state={'slot_owner':'pc-ai','admit_until':100,'shared_lock_held':True,'guard_child_verified':True,
+                    'host_available':8*GIB,'gpu_free':10*GIB}
+        self.events=[];self.now=0;self.responses=['{"ok":true}'];self.calls=0
+    def call(self,**overrides):
+        def gen(**kwargs):
+            self.calls+=1;self.events.append(('generate',kwargs))
+            return self.responses[min(self.calls-1,len(self.responses)-1)]
+        opts=dict(snapshot=lambda:self.state,clock=lambda:self.now,acquire=lambda:self.events.append('acquire'),
+            load=lambda:self.events.append('load'),generate=gen,parse=json.loads,
+            unload=lambda:self.events.append('unload'),children_exited=lambda:True,release=lambda:self.events.append('release'))
+        opts.update(overrides);return execute(**opts)
+    def test_success_unloads_before_release(self):
+        result=self.call();self.assertEqual(result['attempts'],1);self.assertLess(self.events.index('unload'),self.events.index('release'))
+    def test_missing_or_expired_slot_before_load(self):
+        for key,value in [('slot_owner','pc-3d'),('admit_until',0),('shared_lock_held',False),('guard_child_verified',False),('host_available',GIB),('gpu_free',GIB)]:
+            with self.subTest(key=key):
+                self.setUp();self.state[key]=value
+                with self.assertRaises(AdmissionDenied):self.call()
+                self.assertEqual(self.events,[])
+    def test_changed_headroom_after_acquire_no_load(self):
+        def acquire():self.events.append('acquire');self.state['host_available']=GIB
+        with self.assertRaises(AdmissionDenied):self.call(acquire=acquire)
+        self.assertNotIn('load',self.events);self.assertNotIn('unload',self.events);self.assertIn('release',self.events)
+    def test_lock_refusal_no_load_release(self):
+        with self.assertRaises(AdmissionDenied):self.call(acquire=lambda:False)
+        self.assertEqual(self.events,[])
+    def test_one_invalid_then_valid_is_two_attempts(self):
+        self.responses=['invalid','{}'];self.assertEqual(self.call()['attempts'],2);self.assertEqual(self.calls,2)
+    def test_invalid_forever_stops_at_two(self):
+        self.responses=['invalid']
+        with self.assertRaises(InvalidOutput):self.call()
+        self.assertEqual(self.calls,2);self.assertIn('unload',self.events);self.assertIn('release',self.events)
+    def test_output_size_is_terminal(self):
+        self.responses=['x'*8193]
+        with self.assertRaises(InvalidOutput):self.call()
+        self.assertEqual(self.calls,1)
+    def test_deadline_after_generation_no_retry(self):
+        def late(**kwargs):self.now=61;return '{}'
+        with self.assertRaises(TimeoutError):self.call(generate=late)
+        self.assertIn('unload',self.events);self.assertIn('release',self.events)
+    def test_deadline_before_first_generation(self):
+        def slow_load():self.now=61
+        with self.assertRaises(TimeoutError):self.call(load=slow_load)
+        self.assertEqual(self.calls,0)
+    def test_load_failure_still_unloads(self):
+        def broken():raise RuntimeError('partial load')
+        with self.assertRaises(RuntimeError):self.call(load=broken)
+        self.assertEqual(self.events,['acquire','unload','release'])
+    def test_runtime_crash_not_misclassified_schema_retry(self):
+        def crash(**kwargs):raise RuntimeError('runtime crash')
+        with self.assertRaises(RuntimeError):self.call(generate=crash)
+        self.assertIn('unload',self.events);self.assertIn('release',self.events)
+    def test_unload_failure_keeps_logical_lease(self):
+        def broken():raise RuntimeError('unload failure')
+        with self.assertRaises(RuntimeError):self.call(unload=broken)
+        self.assertNotIn('release',self.events)
+    def test_surviving_child_keeps_lease(self):
+        with self.assertRaises(CleanupPending):self.call(children_exited=lambda:False)
+        self.assertNotIn('release',self.events)
+    def test_pressure_gate_injection_and_recovery(self):
+        gate=PressureGate();self.assertFalse(gate.observe(512*1024**2));self.assertFalse(gate.observe(512*1024**2))
+        self.assertFalse(gate.observe(2*GIB));self.assertFalse(gate.observe(512*1024**2));self.assertFalse(gate.observe(512*1024**2));self.assertTrue(gate.observe(512*1024**2))
+    def test_invalid_budgets(self):
+        for args in [{'attempts':100},{'attempts':True},{'seconds':float('nan')},{'seconds':True},{'seconds':0},{'output_tokens':1000},{'response_bytes':100000}]:
+            with self.subTest(args=args),self.assertRaises(ValueError):Budget(**args)
+    def test_nonfinite_slot_and_clock_refused_before_load(self):
+        for expiry in [float('nan'),float('inf'),'future',True]:
+            self.setUp();self.state['admit_until']=expiry
+            with self.subTest(expiry=expiry),self.assertRaises(AdmissionDenied):self.call()
+            self.assertEqual(self.events,[])
+        self.setUp()
+        with self.assertRaises(AdmissionDenied):self.call(clock=lambda:float('nan'))
+        self.assertEqual(self.events,[])
+    def test_invalid_headroom_type_refused_before_load(self):
+        for value in [True,float('inf'),'8GiB',-1]:
+            self.setUp();self.state['host_available']=value
+            with self.subTest(value=value),self.assertRaises(AdmissionDenied):self.call()
+            self.assertEqual(self.events,[])
+    def test_ambiguous_target_refused_before_load(self):
+        self.state.update(target_required=True,target_confirmed=False)
+        with self.assertRaises(AdmissionDenied):self.call()
+        self.assertEqual(self.events,[])
+
+if __name__=='__main__':unittest.main(verbosity=2)

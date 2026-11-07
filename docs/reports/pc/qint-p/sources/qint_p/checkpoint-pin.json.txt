@@ -1,0 +1,146 @@
+{
+  "model_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "files": [
+    {
+      "file": "chat_template.json",
+      "bytes": 5502,
+      "sha256": "6f8a6a55027e3da5160105556cda5dd69f6423f1c32645f6730d32de7773d0c4"
+    },
+    {
+      "file": "config.json",
+      "bytes": 1505,
+      "sha256": "edac7703329133edfc53e46ac0081835144c99d7eebf28b71c732694d435224d"
+    },
+    {
+      "file": "generation_config.json",
+      "bytes": 269,
+      "sha256": "8469742d1fce0de951c8909b26a2c0c0d8490837ce476efb114da9e0cefc4d44"
+    },
+    {
+      "file": "merges.txt",
+      "bytes": 1671839,
+      "sha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3"
+    },
+    {
+      "file": "model-00001-of-00017.safetensors",
+      "bytes": 777912472,
+      "sha256": "06ad5e33f0cdcae68e97ac9d884873d595ccafbb7ae71c1c95e6ae495bf74eae"
+    },
+    {
+      "file": "model-00002-of-00017.safetensors",
+      "bytes": 503346312,
+      "sha256": "d4dddf93569b35ac7cb21e938c51cd168f052add0ff680dffdf618f5e65d4be9"
+    },
+    {
+      "file": "model-00003-of-00017.safetensors",
+      "bytes": 505974184,
+      "sha256": "8a6adb348b6d257bdc4443ed3826d1f6f26f5461e27dd40083b750b70819717d"
+    },
+    {
+      "file": "model-00004-of-00017.safetensors",
+      "bytes": 503341104,
+      "sha256": "6158e6743b5a02f271ce07a2983ff3425c8cb408fdb9a78d6f627e1482014362"
+    },
+    {
+      "file": "model-00005-of-00017.safetensors",
+      "bytes": 505974184,
+      "sha256": "f51e66faa025bca0a4f9bd4a936da0815a266ed676d4d13fc691d9d45fee3a53"
+    },
+    {
+      "file": "model-00006-of-00017.safetensors",
+      "bytes": 503341096,
+      "sha256": "2e88446636cc539cf41ed01dd13645c6caed087977bbb4a110366cfc90ab07b6"
+    },
+    {
+      "file": "model-00007-of-00017.safetensors",
+      "bytes": 505974168,
+      "sha256": "06cb8fd7ee2e7e999f9d51b8796eddc196ac98f43753cadedbbc486d969fcbe4"
+    },
+    {
+      "file": "model-00008-of-00017.safetensors",
+      "bytes": 529561744,
+      "sha256": "dff8f690560d9da5de7f8e6b5acd09a132cac29dc5ac979ecc30138323a55aa6"
+    },
+    {
+      "file": "model-00009-of-00017.safetensors",
+      "bytes": 529560976,
+      "sha256": "e08e0d9e28d5d8b0027f5cd66cfbbf73c5b824755a06d49befe36303628550a0"
+    },
+    {
+      "file": "model-00010-of-00017.safetensors",
+      "bytes": 529561760,
+      "sha256": "96ca01f6993c5d29b28b0b75f0eeb5b98f90cc28722f4c1f629b9e969928ed40"
+    },
+    {
+      "file": "model-00011-of-00017.safetensors",
+      "bytes": 529561008,
+      "sha256": "ede4cb52c91857be9b9fc0933ad6720a274908dfe36fb07d60007b4299433b06"
+    },
+    {
+      "file": "model-00012-of-00017.safetensors",
+      "bytes": 505974184,
+      "sha256": "a5889457754d0dc67214d74b446d16a0f020ec254fac1b9d0d67c570c4dce47c"
+    },
+    {
+      "file": "model-00013-of-00017.safetensors",
+      "bytes": 503341104,
+      "sha256": "c4b36e28bfe2da068dd0637309dea9317f6de1616bf0b3a79840cab3aa693892"
+    },
+    {
+      "file": "model-00014-of-00017.safetensors",
+      "bytes": 505974184,
+      "sha256": "a1085c05f5c785b3adca3b090036cf91bd0a3f757982c9516f1d195d20dd61d9"
+    },
+    {
+      "file": "model-00015-of-00017.safetensors",
+      "bytes": 503341104,
+      "sha256": "f2b8d4c074f7c8460ed303b0168d0cb6dc2660ebbed57faf69096abb703fe199"
+    },
+    {
+      "file": "model-00016-of-00017.safetensors",
+      "bytes": 532648136,
+      "sha256": "bc27fe02c71cc4bf017aaf9413256abcf2f6d4f8252415f3706893e1b6dab9b4"
+    },
+    {
+      "file": "model-00017-of-00017.safetensors",
+      "bytes": 400330600,
+      "sha256": "bd2ac8556dd313f15ba7c0a0d771e211fcf2db44de31f5c4275fe5db37593d75"
+    },
+    {
+      "file": "model.safetensors.index.json",
+      "bytes": 65462,
+      "sha256": "03205abb950c6c6e608355375df1d28d2c91fbd1752174f104272601d6bcf9fd"
+    },
+    {
+      "file": "preprocessor_config.json",
+      "bytes": 390,
+      "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516"
+    },
+    {
+      "file": "README.md",
+      "bytes": 7133,
+      "sha256": "a884e5e78f7d6f7bfe237f909dbc41a126542e259dc79d8ab33cc8980580ff79"
+    },
+    {
+      "file": "tokenizer.json",
+      "bytes": 7032403,
+      "sha256": "a5d85b6dcc535e6b93115a9ef287e6132fdbf30270da6218194ba742261173c7"
+    },
+    {
+      "file": "tokenizer_config.json",
+      "bytes": 10868,
+      "sha256": "c2da771801886ad9ae98181793ffd3dfb7f1af30f6f7c6a4e15d7dbba52e2399"
+    },
+    {
+      "file": "video_preprocessor_config.json",
+      "bytes": 385,
+      "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13"
+    },
+    {
+      "file": "vocab.json",
+      "bytes": 2776833,
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ],
+  "provenance": "17 shards matched existing Q02 per-tensor-verified manifest; small assets inventoried from that derived local checkpoint"
+}

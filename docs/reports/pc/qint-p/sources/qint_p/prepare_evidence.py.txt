@@ -1,0 +1,67 @@
+"""Freeze existing public fixture hashes/labels and run CPU CLI positive/refusal paths. No downloads."""
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from test_adapter import fixture
+from checkpoint import verify_checkpoint
+
+ROOT = Path(__file__).resolve().parent
+GPU = ROOT.parents[1]
+REPORT = GPU / 'reports' / 'ai' / 'qint_p'
+REPORT.mkdir(exist_ok=True)
+def load(path): return json.loads(path.read_text(encoding='utf-8-sig'))
+def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+
+# Independently rehash the frozen pin, not a model load or a fresh pin generation.
+checked = verify_checkpoint()
+(REPORT/'checkpoint-verification.json').write_text(json.dumps(checked,indent=2)+'\n')
+plan = ROOT.parent/'quality03'/'corpus-plan.json'
+labels = load(plan)['labels']
+new_sources = {item['id']:item for item in load(GPU/'reports/ai/quality03/new-fixture-provenance.json')}
+old_sources = {item['file']:item for item in load(GPU/'reports/ai/public-image-provenance.json')}
+frozen = []
+for label in labels:
+    if label['id'].startswith('legacy'):
+        filename = 'tshirt.png' if label['id']=='legacy-striped-illustration' else 'jeans.jpg'
+        path = ROOT.parent/'inputs/public-reference'/filename
+        source = old_sources[filename]
+    else:
+        source = new_sources[label['id']]
+        path = ROOT.parent/'quality03/fixtures/public-images'/source['file']
+    digest = sha(path)
+    assert digest == source['sha256']
+    frozen.append({'id':label['id'],'image_sha256':digest,'label_sha256':hashlib.sha256(
+        json.dumps(label,sort_keys=True,separators=(',',':')).encode()).hexdigest(),
+        'target_crop':'none; original full frame','requires_target':label['requires_target'],
+        'eligible_for_one_pass_after_safety_gate':not label['requires_target'],
+        'second_review':'pending independent reviewer; no claim of second annotator',
+        'inference_this_task':'Not run'})
+(ROOT/'corpus-freeze.json').write_text(json.dumps({'version':'pc-ai.corpus-freeze.v1',
+    'frozen_at_utc':datetime.now(timezone.utc).isoformat(),'plan_sha256':sha(plan),'fixtures':frozen,
+    'priority':'H-QWEN-018 vertical slice before broad corpus; never chase prior OCR'},indent=2)+'\n')
+
+case = fixture()
+image = ROOT.parent/'inputs/public-reference/jeans.jpg'
+case['binding']['image_sha256'] = sha(image)
+(ROOT/'synthetic-request.json').write_text(json.dumps(case,indent=2)+'\n')
+events = []
+for execute in [False,True]:
+    output = REPORT/('cli-denied-'+str(time.monotonic_ns()) if execute else 'cli-inspect-'+str(time.monotonic_ns()))
+    command = [sys.executable,str(ROOT/'cli.py'),'--request',str(ROOT/'synthetic-request.json'),
+        '--image',str(image),'--input-root',str(image.parent),'--output-dir',str(output)]
+    if execute: command += ['--execute','--guard-label','qint-not-granted']
+    process = subprocess.run(command,capture_output=True,text=True,timeout=15)
+    result = load(output/'result.json')
+    assert process.returncode == (2 if execute else 0), process.stderr
+    assert result['torch_imported'] is False and result['model_loaded'] is False
+    if execute: assert result['status']=='error' and result.get('error_code') in {
+        'admission_evidence_unavailable','guard_ack_missing_or_stale','integration_review_pending'}
+    events.append({'case':'execute_without_new_ACK' if execute else 'CPU_image_inspection',
+                   'exit_code':process.returncode,'result':result})
+(REPORT/'cli-evidence.json').write_text(json.dumps({'cases':events,'network_used':False,
+    'model_loaded':False,'guard_lock_taken':False},indent=2)+'\n')
+print(json.dumps({'checkpoint':checked,'frozen_fixtures':len(frozen),'cli_cases':len(events),'model_loaded':False}))

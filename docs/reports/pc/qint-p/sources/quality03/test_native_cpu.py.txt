@@ -1,0 +1,112 @@
+"""Actual Windows Job Object/process tests in an isolated CPU-only test namespace."""
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import time
+import unittest
+import psutil
+
+ROOT=Path(__file__).resolve().parent
+BASE=(ROOT/'test-runs').resolve();BASE.mkdir(exist_ok=True)
+REPORTS=ROOT.parents[1]/'reports'/'ai'/'quality03'
+ACTUAL=psutil.Process().exe()
+VENV=ROOT.parents[1]/'envs'/'qwen-vl'/'Scripts'/'python.exe'
+EVENTS=[]
+
+def alive(record):
+    try:
+        process=psutil.Process(record['pid'])
+        return process.is_running() and process.create_time()==record['creation_time']
+    except psutil.NoSuchProcess:return False
+
+class NativeCPUTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary=tempfile.TemporaryDirectory(prefix='q03-',dir=BASE)
+        self.root=Path(self.temporary.name).resolve();self.assertEqual(self.root.parent,BASE)
+        self.addCleanup(self.temporary.cleanup)
+        (self.root/'TEST-CPU-ONLY').write_text('No GPU/model execution permitted')
+        (self.root/'cpu-test-slot.json').write_text(json.dumps({'owner':'pc-ai','admitUntilUnix':time.time()+120}))
+        self.env=dict(os.environ);self.env['PYTHONPATH']=str(Path(sys.prefix)/'Lib'/'site-packages')
+    def command(self,mode,*,label=None,timeout=10,marker='child.json'):
+        return [ACTUAL,str(ROOT/'isolated_guard.py'),'--test-root',str(self.root),'--owner','pc-ai',
+            '--label',label or self._testMethodName,'--timeout',str(timeout),'--cwd',str(ROOT),'--log',str(self.root/'child.log'),
+            '--',str(VENV),str(ROOT/'cpu_child.py'),'--root',str(self.root),'--mode',mode,'--marker',marker]
+    def wait_file(self,name):
+        end=time.monotonic()+8
+        while time.monotonic()<end:
+            try:return json.loads((self.root/name).read_text())
+            except (FileNotFoundError,json.JSONDecodeError):time.sleep(.03)
+        self.fail('Owned fixture marker did not arrive: '+name)
+    def wait_dead(self,record):
+        end=time.monotonic()+5
+        while time.monotonic()<end and alive(record):time.sleep(.03)
+        self.assertFalse(alive(record))
+    def start(self,mode,**kwargs):
+        process=subprocess.Popen(self.command(mode,**kwargs),env=self.env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,creationflags=0x08000000)
+        creation=psutil.Process(process.pid).create_time()
+        def stop_own():
+            if process.poll() is None:
+                owned=psutil.Process(process.pid)
+                if owned.create_time()!=creation:raise RuntimeError('Owned guard PID identity changed; refuse kill')
+                process.kill();process.wait(timeout=5)
+        self.addCleanup(stop_own);return process
+    def receipt(self):return self.wait_file('cpu-test-state.json')
+    def event(self,**extra):
+        EVENTS.append({'test':self._testMethodName,'passed':True,'scope':'isolated CPU-only Windows processes',**extra})
+    def test_exclusion_then_normal_unload(self):
+        holder=self.start('hold');child=self.wait_file('child.json');state=self.receipt()
+        self.assertEqual(state['guardPid'],holder.pid)
+        contender=subprocess.run(self.command('normal',marker='contender.json'),env=self.env,capture_output=True,text=True,timeout=8)
+        self.assertEqual(contender.returncode,75,contender.stderr);self.assertFalse((self.root/'contender.json').exists())
+        (self.root/'RELEASE').write_text('release only this synthetic CPU process')
+        holder.communicate(timeout=8);self.assertEqual(holder.returncode,0);self.wait_dead(child)
+        self.assertTrue(self.receipt()['allJobProcessesExited'])
+        after=subprocess.run(self.command('normal',marker='after.json'),env=self.env,capture_output=True,text=True,timeout=8)
+        self.assertEqual(after.returncode,0,after.stderr)
+        self.event(contender_exit=75,child_launch_refused=True,launcher_pid=state['childPid'],actual_interpreter=child,all_job_processes_exited=True)
+    def test_timeout_drains_child_and_grandchild(self):
+        process=self.start('tree',timeout=3);child=self.wait_file('child.json');grand=self.wait_file('grandchild.json');state=self.receipt()
+        process.communicate(timeout=10);self.assertEqual(process.returncode,124)
+        self.wait_dead(child);self.wait_dead(grand);self.assertTrue(self.receipt()['allJobProcessesExited'])
+        self.event(exit=124,launcher_pid=state['childPid'],actual_interpreter=child,grandchild=grand,all_job_processes_exited=True)
+    def test_owned_guard_crash_kill_on_close(self):
+        sentinel=subprocess.Popen([ACTUAL,'-c','import time;time.sleep(60)'],creationflags=0x08000000)
+        sentinel_record={'pid':sentinel.pid,'creation_time':psutil.Process(sentinel.pid).create_time()}
+        def stop_sentinel():
+            if alive(sentinel_record):sentinel.kill();sentinel.wait(timeout=5)
+        self.addCleanup(stop_sentinel)
+        process=self.start('tree');child=self.wait_file('child.json');grand=self.wait_file('grandchild.json')
+        state=self.receipt();self.assertEqual(state['guardPid'],process.pid)
+        owned_stamp=psutil.Process(process.pid).create_time()
+        self.assertEqual(psutil.Process(process.pid).create_time(),owned_stamp)
+        process.kill();process.communicate(timeout=5)
+        self.wait_dead(child);self.wait_dead(grand);self.assertTrue(alive(sentinel_record))
+        recovered=subprocess.run(self.command('normal',marker='recovered.json'),env=self.env,capture_output=True,text=True,timeout=8)
+        self.assertEqual(recovered.returncode,0,recovered.stderr)
+        self.event(guard_creation_time=owned_stamp,actual_interpreter=child,grandchild=grand,unrelated_sentinel_survived=True,recovery_exit=0)
+    def test_cpu_child_crash_exit7(self):
+        process=self.start('crash');child=self.wait_file('child.json')
+        process.communicate(timeout=8);self.assertEqual(process.returncode,7);self.wait_dead(child)
+        self.assertTrue(self.receipt()['allJobProcessesExited']);self.event(exit=7,all_job_processes_exited=True)
+    def test_injected_low_ram_exit86_without_real_pressure(self):
+        process=self.start('pressure');process.communicate(timeout=8);self.assertEqual(process.returncode,86)
+        child=self.wait_file('child.json');self.assertFalse(child['physical_pressure_created']);self.wait_dead(child)
+        self.assertTrue(self.receipt()['allJobProcessesExited'])
+        self.event(exit=86,injected_values=child['injected_values'],physical_pressure_created=False,all_job_processes_exited=True)
+    def test_slot_refused_before_child_launch(self):
+        for owner,expires in [('pc-3d',time.time()+120),('pc-ai',time.time()-1)]:
+            (self.root/'cpu-test-slot.json').write_text(json.dumps({'owner':owner,'admitUntilUnix':expires}))
+            result=subprocess.run(self.command('normal'),env=self.env,capture_output=True,text=True,timeout=8)
+            self.assertEqual(result.returncode,75,result.stderr);self.assertFalse((self.root/'child.json').exists())
+        self.event(exit=75,child_launch_refused=True)
+
+if __name__=='__main__':
+    suite=unittest.defaultTestLoader.loadTestsFromTestCase(NativeCPUTests)
+    result=unittest.TextTestRunner(verbosity=2).run(suite)
+    (REPORTS/'native-cpu-evidence.json').write_text(json.dumps({'passed':result.wasSuccessful(),'tests_run':result.testsRun,
+        'scope':'Isolated CPU namespace, unchanged native guard code, no real shared GPU lock/slot edits',
+        'gpu_model_loaded':False,'events':EVENTS},indent=2)+'\n',encoding='utf-8')
+    raise SystemExit(0 if result.wasSuccessful() else 1)

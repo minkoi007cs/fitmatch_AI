@@ -1,0 +1,15 @@
+{
+  "status": "dry_run_passed",
+  "scope": "synthetic bound source, raw OCR and diagnostic copies",
+  "candidate_count": 3,
+  "existing_files_unchanged_before_fixture_teardown": true,
+  "protected_refused": [
+    "models",
+    "derived"
+  ],
+  "active_process_refused": true,
+  "executed": false,
+  "physical_source_deletions": 0,
+  "actual_cli_outputs": "local public-reference diagnostics retained; no deployed binding collector or deletion ledger",
+  "personal_input_cleanup": "Not run; personal inputs absent"
+}
