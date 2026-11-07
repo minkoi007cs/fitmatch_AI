@@ -297,3 +297,7 @@ Cả hai dùng runtime/cache riêng, không sửa chung repoindex hoặc app fil
 
 ## 20. Tiếp nối PC — PROC-0017
 [Review07/11](./docs/reports/review/pc-progress-20261107.md) và [H-PC-017](./docs/handoffs/pc-next-20261107.md). PC-SAFE-008: guard finite metadata/native quiescence evidence. AI-QUALITY-04: independent guard ACK, selected-runtime fault/unload và bounded corpus. Claude PR8 Ready for review; personalG1–G3 NOT VERIFIED. Estimate46% giữ nguyên, không cộng theo số tests/report.
+
+
+## 21. Qwen tích hợp chạy thử — H-QWEN-018 / PROC-0018
+Chủ dự án đã giao triển khai [Qwen app test integration](./docs/handoffs/qwen-app-test-integration-20261107.md). QINT-C Claudeapp/transport, QINT-P PCQwenruntime, QINT-G PC3Dguard, QINT-R Codexreview. Wardrobeimage→durablejob→PCQwen→humanreview; owned3looks/rulesfallback. Một OSlock choGPU, sửa productiondrain và finiteguard trước realintegration; testenv riêng, khôngproduction. Các hạn chế chưa giao Qwen integration cũ được thay trong scope này; không tự mở3Dcapability.

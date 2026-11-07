@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 07/11/2026, America/New_York. Revision: PROC-0017. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 07/11/2026, America/New_York. Revision: PROC-0018. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Trạng thái tiếp nối hiện hành — PROC-0016
 
@@ -426,3 +426,11 @@ PR6eb9b009/PR73aacf25/PR81f7da0f báo Readyforreview; Claude appremote d17ca355.
 
 ### L-042 — 07/11/2026 — HANDOFF / DISPATCH UNAVAILABLE — CX-PC-REVIEW-17
 Published7b90c2f chứa review/H-PC-017. Hai send_message_to_thread đều lỗi AppServerManager RPC unavailable trên remotePC; không delivered/receipt/running. Chủ dự án có thể paste lệnh H-PC-017 vào đúng2chat khi PC online. Không auto-monitor được thiết lập. Git diff check và kiểmrelative links của2docs mới; không app/GPU rerun. Finalpublication SHA theo git history/readback.
+
+
+### L-043 — 07/11/2026 — START — CX-QWEN-INTEGRATION-18
+Chủ dự án giao PC+Claude tích hợp Qwen vào app chạy thử, serialize với3D. Claim docs/handoffs Qwen integration,roadmap/process/dispatch; không sửa app củaClaude. Baseline docs2949906/appClaude d17ca355, PR6/7/8 chưa đổi. Giao quyền triển khai test integration, không production deploy/migration hoặc publicPCport. Existing safety tasks tiếp thành prerequisite, không bỏ checkpoint.
+
+
+### L-044 — 07/11/2026 — ASSIGN — H-QWEN-018
+User explicitly yêu cầu PC+Claude tích hợpAPIQwen chạythử vàserializeGPU. QINT-C AssignedClaude ownappbranch từd17ca355descendant; scoped productiondrainfix mới đượcgiao. QINT-P AssignedPCQwen runtimeadapter; QINT-G AssignedPC3D sharedguard/native; QINT-R Codexreview. Handoff vàClaude fullprompt đãsoạn; featureOFF/testonly/contract+nativegates trướcrealintegratedGPU. Không tự khai dispatched/running/Done. Giữ H-PC-017 safetywork thành prerequisite, allpriorcode/checkpoints/models.
