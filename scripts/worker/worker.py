@@ -459,11 +459,199 @@ def stop_process(process):
     process.wait(timeout=10)
 
 
+class QuarantineError(RuntimeError):
+    """Owned adapter processes could not be proven gone: keep the GPU lock and stop claiming."""
+
+
+def _posix_group_has_live_members(pgid):
+    """True while any non-zombie process is still in process group `pgid`.
+
+    The adapter is a session/group leader (start_new_session), so the group holds exactly the processes
+    it owns: the launcher, the real interpreter behind it and every descendant that did not call
+    setsid(). While the group has members its id cannot be reused, so probing it never targets a
+    foreign process. Zombies (exited, waiting to be reaped by init) no longer run and are ignored.
+    """
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    proc = Path('/proc')
+    if not proc.is_dir():
+        return True
+    for entry in proc.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            stat = (entry / 'stat').read_text()
+        except OSError:
+            continue
+        fields = stat[stat.rfind(')') + 2:].split()
+        if len(fields) > 2 and fields[2] == str(pgid) and fields[0] != 'Z':
+            return True
+    return False
+
+
+class _WindowsJob:
+    """Per-adapter Job Object (nested in the worker's own job): every process the adapter starts,
+    including a venv launcher's real interpreter, is accounted for by the kernel, not by PID."""
+
+    def __init__(self):
+        import ctypes
+        from ctypes import wintypes
+        self.ctypes, self.wintypes = ctypes, wintypes
+        k = ctypes.WinDLL('kernel32', use_last_error=True)
+        k.CreateJobObjectW.restype = wintypes.HANDLE
+        k.CreateJobObjectW.argtypes = (wintypes.LPVOID, wintypes.LPCWSTR)
+        k.SetInformationJobObject.argtypes = (wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD)
+        k.AssignProcessToJobObject.argtypes = (wintypes.HANDLE, wintypes.HANDLE)
+        k.QueryInformationJobObject.argtypes = (wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD, wintypes.LPVOID)
+        k.TerminateJobObject.argtypes = (wintypes.HANDLE, wintypes.UINT)
+        k.CloseHandle.argtypes = (wintypes.HANDLE,)
+        self.k = k
+        self.handle = k.CreateJobObjectW(None, None)
+        if not self.handle:
+            raise OSError(ctypes.get_last_error(), 'CreateJobObjectW failed')
+
+        class Limit(ctypes.Structure):
+            _fields_ = [('a', ctypes.c_int64), ('b', ctypes.c_int64), ('LimitFlags', wintypes.DWORD),
+                        ('c', ctypes.c_size_t), ('d', ctypes.c_size_t), ('e', wintypes.DWORD),
+                        ('f', ctypes.c_size_t), ('g', wintypes.DWORD), ('h', wintypes.DWORD)]
+
+        class Extended(ctypes.Structure):
+            _fields_ = [('Basic', Limit), ('Io', ctypes.c_uint64 * 6), ('i', ctypes.c_size_t), ('j', ctypes.c_size_t),
+                        ('k', ctypes.c_size_t), ('l', ctypes.c_size_t)]
+        info = Extended()
+        info.Basic.LimitFlags = 0x2000  # KILL_ON_JOB_CLOSE, no BREAKAWAY_OK
+        if not k.SetInformationJobObject(self.handle, 9, ctypes.byref(info), ctypes.sizeof(info)):
+            raise OSError(ctypes.get_last_error(), 'SetInformationJobObject failed')
+
+    def assign_and_resume(self, process):
+        handle = self.wintypes.HANDLE(int(process._handle))
+        if not self.k.AssignProcessToJobObject(self.handle, handle):
+            raise OSError(self.ctypes.get_last_error(), 'AssignProcessToJobObject failed for the adapter')
+        ntdll = self.ctypes.WinDLL('ntdll')
+        ntdll.NtResumeProcess.argtypes = (self.wintypes.HANDLE,)
+        if ntdll.NtResumeProcess(handle) != 0:
+            raise OSError(0, 'NtResumeProcess failed')
+
+    def active(self):
+        class Accounting(self.ctypes.Structure):
+            _fields_ = [('t', self.ctypes.c_int64 * 4), ('TotalPageFaultCount', self.wintypes.DWORD),
+                        ('TotalProcesses', self.wintypes.DWORD), ('ActiveProcesses', self.wintypes.DWORD),
+                        ('TotalTerminatedProcesses', self.wintypes.DWORD)]
+        info = Accounting()
+        if not self.k.QueryInformationJobObject(self.handle, 1, self.ctypes.byref(info), self.ctypes.sizeof(info), None):
+            raise OSError(self.ctypes.get_last_error(), 'QueryInformationJobObject failed')
+        return int(info.ActiveProcesses)
+
+    def terminate(self):
+        self.k.TerminateJobObject(self.handle, 1)
+
+    def close(self):
+        if self.handle:
+            self.k.CloseHandle(self.handle)
+            self.handle = None
+
+
+class OwnedProcessTree:
+    """One adapter launch plus every process it owns (PC-QUIESCENCE-01).
+
+    A launcher exiting proves nothing: on Windows a venv python.exe is a launcher whose child is the real
+    interpreter, and any adapter can leave grandchildren. The GPU lock may only be released after
+    `drain()` returned True, i.e. the kernel reports no owned process left (Windows job accounting /
+    POSIX process group). Termination only ever targets this job or this process group, never a PID
+    looked up elsewhere, so foreign processes are never killed.
+    """
+
+    def __init__(self, command, platform=None, popen=subprocess.Popen, job_factory=None, **kwargs):
+        self.platform = platform or os.name
+        self.job = None
+        if self.platform == 'nt':
+            self.job = (job_factory or _WindowsJob)()
+            # Suspended until it is inside the job, so nothing it starts can escape accounting.
+            kwargs['creationflags'] = kwargs.get('creationflags', 0) | 0x00000004 | 0x00000200  # CREATE_SUSPENDED | NEW_PROCESS_GROUP
+            self.process = popen(command, **kwargs)
+            try:
+                self.job.assign_and_resume(self.process)
+            except Exception:
+                self.job.terminate()
+                self.process.kill()
+                self.process.wait(timeout=10)
+                self.job.close()
+                raise ContainmentError('Adapter could not be placed in a per-job Job Object; not running it.')
+        else:
+            kwargs['start_new_session'] = True
+            self.process = popen(command, **kwargs)
+        self.pid = self.process.pid
+
+    def poll(self):
+        return self.process.poll()
+
+    @property
+    def returncode(self):
+        return self.process.returncode
+
+    def alive(self):
+        if self.job is not None:
+            return self.job.active() > 0
+        if self.process.poll() is None:
+            return True
+        return _posix_group_has_live_members(self.pid)
+
+    def _signal_group(self, sig):
+        try:
+            if self.process.poll() is None or _posix_group_has_live_members(self.pid):
+                os.killpg(self.pid, sig)
+        except ProcessLookupError:
+            pass
+
+    def terminate(self):
+        if self.job is not None:
+            self.job.terminate()
+        else:
+            self._signal_group(signal.SIGTERM)
+
+    def drain(self, timeout=30.0, grace=5.0):
+        """Stop every owned process and wait for quiescence. Returns False if it cannot be proven."""
+        deadline = time.monotonic() + timeout
+        try:
+            if not self.alive():
+                self.process.wait(timeout=1)
+                return True
+            self.terminate()
+            killed = False
+            while time.monotonic() < deadline:
+                try:
+                    self.process.wait(timeout=0.2)
+                except subprocess.TimeoutExpired:
+                    pass
+                if not self.alive():
+                    return True
+                if not killed and self.job is None and time.monotonic() > deadline - timeout + grace:
+                    self._signal_group(signal.SIGKILL)
+                    killed = True
+            return False
+        except Exception:
+            return False  # cannot prove anything: fail closed
+        finally:
+            if self.job is not None and self.job.handle and not self._job_alive_safe():
+                self.job.close()
+
+    def _job_alive_safe(self):
+        try:
+            return self.job.active() > 0
+        except Exception:
+            return True
+
+
 class Worker:
     def __init__(self, config, token, root, lock, gpu=None):
         self.config, self.token, self.root, self.lock = config, token, root, lock
         self.gpu = gpu
         self.gpu_busy_logged = False
+        self.quarantine = None  # OwnedProcessTree whose drain could not be proven (PC-QUIESCENCE-01)
         self.engines = config.get('engines', {})
         self.capabilities = {}
         for kind, engine in self.engines.items():
@@ -627,9 +815,14 @@ class Worker:
             log_path = attempt_dir / 'adapter.log'
             err_path = attempt_dir / 'adapter.err'  # private; parsed for one structured error record only
             with log_path.open('wb') as log, err_path.open('wb') as err:
-                process = subprocess.Popen(command, cwd=attempt_dir, env=adapter_environment(self.token), stdout=log,
-                    stderr=err, start_new_session=os.name != 'nt',
-                    pass_fds=self.lock.fds() + (self.gpu.fds() if self.gpu else ()))
+                env = adapter_environment(self.token)
+                if self.gpu:
+                    # One lock owner per GPU execution: the worker already holds the host GPU lock for this job.
+                    # A guarded runner must not take the same lock again (nested acquisition would deadlock).
+                    env['FITMATCH_GPU_LOCK_HELD_BY'] = 'worker'
+                    env['FITMATCH_GPU_LOCK_PATH'] = str(self.gpu.path)
+                process = OwnedProcessTree(command, cwd=attempt_dir, env=env, stdout=log,
+                    stderr=err, pass_fds=self.lock.fds() + (self.gpu.fds() if self.gpu else ()))
                 cp.save(version=CHECKPOINT_VERSION, jobId=job_id, modelId=job['modelId'], kind=job['kind'],
                         modelRevision=job['modelRevision'], inputDigest=digest, attempt=job['lease']['attempt'],
                         leaseToken=lease['leaseToken'], instance=self.instance, stage='inferring', adapterPid=process.pid,
@@ -642,7 +835,13 @@ class Worker:
                         if time.monotonic() - started > engine.get('timeoutSeconds', 1800):
                             raise JobFailure('TIMEOUT')
                 finally:
-                    stop_process(process)
+                    # Success, timeout, cancel and lease loss all end here: every owned process must be gone
+                    # before the GPU lock can be released (by loop()).
+                    if not process.drain(float(engine.get('drainSeconds', 30))):
+                        self.quarantine = process
+                        print('Adapter processes for', job_id, 'did not exit; worker quarantined, GPU lock kept.', flush=True)
+                        if sys.exc_info()[0] is None:  # keep TIMEOUT/lease-loss classification if one is in flight
+                            raise QuarantineError('owned adapter processes still running')
             if process.returncode != 0:
                 raise JobFailure(classify_exit(process.returncode, engine, err_path))
             stage[0] = 'exporting'
@@ -700,6 +899,19 @@ class Worker:
             try:
                 self.worker_heartbeat()
                 self.resume_pending()
+                if self.quarantine is not None:
+                    # Fail closed: never release the GPU lock or claim while an owned process may still run.
+                    if self.quarantine.drain(5.0):
+                        print('Quarantined adapter processes have exited; resuming.', flush=True)
+                        self.quarantine = None
+                        if self.gpu:
+                            self.gpu.release()
+                    else:
+                        print('Still quarantined: owned adapter processes running; not claiming.', flush=True)
+                        if once:
+                            return 4
+                        time.sleep(poll_seconds)
+                        continue
                 # Claim only while holding the host GPU lock, so no lease runs out while waiting for the GPU.
                 if self.gpu and not self.gpu.acquire(0):
                     if not self.gpu_busy_logged:
@@ -715,10 +927,10 @@ class Worker:
                                 print('Claim reply was lost; received the same assignment again', flush=True)
                             self.execute(job)
                     finally:
-                        if self.gpu:
+                        if self.gpu and self.quarantine is None:
                             self.gpu.release()
                 if once:
-                    return 0
+                    return 4 if self.quarantine is not None else 0
             except KeyboardInterrupt:
                 return 0
             except Exception as error:

@@ -8,6 +8,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 spec = importlib.util.spec_from_file_location('worker', Path(__file__).with_name('worker.py'))
@@ -230,6 +231,215 @@ class ContainmentTests(unittest.TestCase):
 
     def test_posix_uses_session_and_dirlock(self):
         self.assertEqual(worker.ensure_process_containment({}, platform='posix', binder=self.failing), 'posix-session+dirlock')
+
+
+def _alive(pid):
+    """Non-zombie process with this pid exists (Linux /proc when available)."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    stat = Path('/proc') / str(pid) / 'stat'
+    if stat.exists():
+        text = stat.read_text()
+        return text[text.rfind(')') + 2:].split()[0] != 'Z'
+    return True
+
+
+@unittest.skipIf(os.name == 'nt', 'POSIX process-group drain; Windows uses the per-job Job Object (native PC test)')
+class QuiescenceTests(unittest.TestCase):
+    """PC-QUIESCENCE-01: a launcher exiting must not count as the adapter tree being gone."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        # Foreign sentinel: not part of any adapter tree, must survive every drain.
+        self.sentinel = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(120)'], start_new_session=True)
+        self.addCleanup(lambda: (self.sentinel.kill(), self.sentinel.wait()))
+
+    def launcher_leaving(self, child_code):
+        """Launcher that starts the 'real interpreter' (a grandchild) and exits at once, like a venv python.exe
+        whose child keeps running. The grandchild writes its pid so the test can watch it."""
+        pidfile = self.tmp / 'grandchild.pid'
+        code = ('import subprocess, sys; p = subprocess.Popen([sys.executable, "-c", %r]); '
+                'open(%r, "w").write(str(p.pid))') % (child_code, str(pidfile))
+        tree = worker.OwnedProcessTree([sys.executable, '-c', code], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        tree.process.wait(timeout=10)
+        deadline = time.monotonic() + 10
+        while not pidfile.exists() or not pidfile.read_text():
+            self.assertLess(time.monotonic(), deadline)
+            time.sleep(0.02)
+        return tree, int(pidfile.read_text())
+
+    def test_old_launcher_poll_reports_done_while_grandchild_runs(self):
+        # Reproduces the finding with the previous behaviour: stop_process() returns immediately.
+        tree, grandchild = self.launcher_leaving('import time; time.sleep(60)')
+        try:
+            worker.stop_process(tree.process)
+            self.assertTrue(_alive(grandchild), 'gap reproduced: launcher done, owned interpreter still running')
+        finally:
+            self.assertTrue(tree.drain(10))
+
+    def test_drain_waits_for_and_stops_owned_grandchild_only(self):
+        tree, grandchild = self.launcher_leaving('import time; time.sleep(60)')
+        self.assertIsNotNone(tree.poll(), 'launcher already exited')
+        self.assertTrue(tree.alive(), 'tree is alive while the owned interpreter runs')
+        self.assertTrue(tree.drain(10))
+        self.assertFalse(_alive(grandchild))
+        self.assertFalse(tree.alive())
+        self.assertIsNone(self.sentinel.poll(), 'foreign process untouched')
+
+    def test_sigterm_ignoring_grandchild_is_killed_after_grace(self):
+        tree, grandchild = self.launcher_leaving(
+            'import signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(60)')
+        started = time.monotonic()
+        self.assertTrue(tree.drain(timeout=10, grace=0.5))
+        self.assertFalse(_alive(grandchild))
+        self.assertLess(time.monotonic() - started, 8)
+        self.assertIsNone(self.sentinel.poll())
+
+    def test_exited_grandchild_left_as_zombie_counts_as_drained(self):
+        tree, grandchild = self.launcher_leaving('pass')
+        deadline = time.monotonic() + 10
+        while _alive(grandchild):
+            self.assertLess(time.monotonic(), deadline)
+            time.sleep(0.05)
+        self.assertFalse(tree.alive())
+        self.assertTrue(tree.drain(1))
+
+    def test_gpu_lock_is_held_until_the_owned_tree_is_drained(self):
+        path = self.tmp / 'gpu-0.lock'
+        gpu = worker.FileLock(path)
+        self.assertTrue(gpu.acquire(0))
+        tree, grandchild = self.launcher_leaving('import time; time.sleep(60)')
+        probe_code = ('import fcntl, sys; f = open(sys.argv[1], "a+")\n'
+                      'try:\n fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB); print("got")\n'
+                      'except OSError:\n print("busy")')
+        probe = lambda: subprocess.run([sys.executable, '-c', probe_code, str(path)], capture_output=True, text=True).stdout.strip()
+        self.assertEqual(probe(), 'busy', 'another process cannot take the GPU while the worker holds it')
+        self.assertTrue(tree.alive())
+        self.assertTrue(tree.drain(10))
+        gpu.release()
+        self.assertEqual(probe(), 'got')
+
+
+class _StubTree:
+    def __init__(self, drains):
+        self.drains = list(drains)
+        self.calls = 0
+
+    def drain(self, timeout=30.0, grace=5.0):
+        self.calls += 1
+        return self.drains.pop(0) if self.drains else True
+
+
+class QuarantineLoopTests(unittest.TestCase):
+    """If drain cannot be proven the worker keeps the GPU lock and claims nothing (fail closed)."""
+
+    def make_worker(self, lock_path):
+        w = worker.Worker.__new__(worker.Worker)
+        w.gpu = worker.FileLock(lock_path)
+        w.gpu_busy_logged = False
+        w.quarantine = None
+        w.claims = 0
+        w.worker_heartbeat = lambda: None
+        w.resume_pending = lambda: None
+
+        def claim():
+            w.claims += 1
+            return {'jobId': JOB_ID}
+        w.claim = claim
+        return w
+
+    def probe(self, path):
+        other = worker.FileLock(path)
+        got = other.acquire(0)
+        if got:
+            other.release()
+        return got
+
+    def test_undrained_tree_keeps_lock_and_blocks_claims_until_it_exits(self):
+        path = Path(tempfile.mkdtemp()) / 'gpu.lock'
+        w = self.make_worker(path)
+        stuck = _StubTree([False, True])
+
+        def execute(job):
+            w.quarantine = stuck  # what run_lease_bound does when drain() returns False
+        w.execute = execute
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 4)
+        self.assertEqual(w.claims, 1)
+        self.assertTrue(w.gpu.held, 'GPU lock kept while owned processes may still run')
+        if os.name != 'nt':
+            self.assertFalse(self.probe(path), 'no other process can take the GPU')
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 4, 'still quarantined')
+        self.assertEqual(w.claims, 1, 'no claim while quarantined')
+        self.assertTrue(w.gpu.held)
+        w.execute = lambda job: None
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 0, 'drained: resumes and claims again')
+        self.assertIsNone(w.quarantine)
+        self.assertEqual(w.claims, 2)
+        self.assertFalse(w.gpu.held)
+        self.assertTrue(self.probe(path))
+
+
+class WindowsJobPlacementTests(unittest.TestCase):
+    """Per-job Job Object placement logic with fakes (native behaviour is verified on the PC)."""
+
+    class FakeProcess:
+        def __init__(self, command, **kwargs):
+            self.kwargs, self.pid, self.killed, self.returncode = kwargs, 4242, False, None
+
+        def kill(self):
+            self.killed = True
+
+        def wait(self, timeout=None):
+            self.returncode = 1
+            return 1
+
+        def poll(self):
+            return self.returncode
+
+    class FakeJob:
+        def __init__(self, fail=False, active=(2, 1, 0)):
+            self.fail, self.counts, self.terminated, self.handle = fail, list(active), 0, 1
+
+        def assign_and_resume(self, process):
+            if self.fail:
+                raise OSError(5, 'nested job not allowed')
+
+        def active(self):
+            return self.counts.pop(0) if len(self.counts) > 1 else self.counts[0]
+
+        def terminate(self):
+            self.terminated += 1
+
+        def close(self):
+            self.handle = None
+
+    def test_adapter_starts_suspended_inside_its_own_job(self):
+        job = self.FakeJob()
+        tree = worker.OwnedProcessTree(['adapter'], platform='nt', popen=self.FakeProcess, job_factory=lambda: job)
+        self.assertTrue(tree.process.kwargs['creationflags'] & 0x4, 'CREATE_SUSPENDED until assigned')
+        self.assertNotIn('start_new_session', tree.process.kwargs)
+        self.assertTrue(tree.drain(timeout=5))
+        self.assertGreaterEqual(job.terminated, 1, 'whole job terminated, not a PID')
+        self.assertIsNone(job.handle, 'job closed only after it reported zero processes')
+
+    def test_placement_failure_refuses_to_run_the_adapter(self):
+        job = self.FakeJob(fail=True)
+        made = []
+
+        def popen(command, **kwargs):
+            made.append(self.FakeProcess(command, **kwargs))
+            return made[-1]
+        with self.assertRaises(worker.ContainmentError):
+            worker.OwnedProcessTree(['adapter'], platform='nt', popen=popen, job_factory=lambda: job)
+        self.assertTrue(made[0].killed, 'suspended adapter killed before it ran')
+
+    def test_job_that_never_empties_is_reported_undrained(self):
+        job = self.FakeJob(active=(1,))
+        tree = worker.OwnedProcessTree(['adapter'], platform='nt', popen=self.FakeProcess, job_factory=lambda: job)
+        self.assertFalse(tree.drain(timeout=0.5))
+        self.assertIsNotNone(job.handle, 'job handle kept open: the processes stay accounted for')
 
 
 if __name__ == '__main__':
