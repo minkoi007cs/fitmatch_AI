@@ -1,0 +1,36 @@
+{
+  "status": "passed",
+  "scope": "native Windows CPU process/lock probes, no server or GPU",
+  "workerRevision": "d17ca355cccb039c496c805667d43a7ddcf63ab2",
+  "workerSourceSHA256": "f88b38bc29b45566a81eab122e52062809fc86345a20654b60b4275f8dff8da4",
+  "tests": [
+    {
+      "test": "binder-refusal-fails-closed",
+      "passed": true,
+      "evidence": "injected binder refusal, not an OS failure"
+    },
+    {
+      "test": "native-worker-lock-vs-msvcrt-byte0",
+      "passed": true,
+      "scope": "isolated CPU lock fixture"
+    },
+    {
+      "test": "native-worker-crash-kills-own-child-grandchild",
+      "passed": true,
+      "foreignProcessKilled": false,
+      "gpuLoaded": false,
+      "actualInterpreterTargeted": true,
+      "launcherPidEqualsWorkerPid": false
+    },
+    {
+      "test": "native-release-reacquire-closes-descriptor",
+      "passed": true
+    }
+  ],
+  "liveReadiness": false,
+  "gaps": [
+    "Live transport config must use the same coordination/gpu0.lock",
+    "Setup slot admission is not enforced by worker FileLock; do not run live workers during setup slots",
+    "No live claim/lease/cancellation or GPU stress tested"
+  ]
+}
