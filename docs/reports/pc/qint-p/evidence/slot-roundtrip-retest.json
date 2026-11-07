@@ -1,0 +1,18 @@
+{
+  "candidate_sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "scope": "CPU only; exact candidate v1 writer expressions",
+  "issued": {
+    "version": 1,
+    "owner": "pc-ai",
+    "issuedAtUtc": "2026-11-07T13:20:00.123456+00:00",
+    "issuedAtUnix": 1794057600.1234562,
+    "admitUntilUnix": 1794061200.1234562,
+    "policy": "Admission only"
+  },
+  "requested_duration_seconds": 3600,
+  "UTC_roundtrip_duration_seconds": 3600.0000002384186,
+  "observed": "accepted",
+  "expected": "accepted",
+  "shared_guard_modified": false,
+  "GPU_loaded": false
+}

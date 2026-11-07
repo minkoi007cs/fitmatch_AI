@@ -1,0 +1,102 @@
+"""Independent exact-candidate CPU matrix + native tree/exclusion regression before ACK."""
+import copy
+from datetime import datetime, timezone
+import hashlib
+import io
+import json
+from pathlib import Path
+import subprocess
+import sys
+import time
+import unittest
+
+ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT.parent/'quality03'))
+import test_native_cpu as old
+from candidate_driver import candidate, HASH
+from boundary import slot
+
+NOW = time.time()
+def valid(owner='pc-ai', now=NOW):
+    return {'version':1,'owner':owner,'issuedAtUtc':datetime.fromtimestamp(now,timezone.utc).isoformat(),
+            'issuedAtUnix':now,'admitUntilUnix':now+120,'policy':'CPU-only independent QINT-P retest'}
+CASES = [None, [], True, {}, {'owner':'nobody'}]
+for key, values in {
+    'version':[True, None, '1', -1, 2],
+    'admitUntilUnix':[True,None,'100',float('nan'),float('inf'),-float('inf'),10**999,0,NOW-1,NOW+3601],
+    'issuedAtUnix':[True,None,'100',float('nan'),10**999,NOW-2],
+    'issuedAtUtc':[None,123,'2026-11-07T08:00:00-05:00','not-a-date','2026-11-07T08:00:00'],
+    'policy':[True,'x'*161],
+}.items():
+    for bad in values:
+        row = valid(); row[key] = bad; CASES.append(row)
+row = valid(); row['command'] = 'bad'; CASES.append(row)
+row = valid(now=NOW+300); CASES.append(row)  # Remains future-invalid throughout native process startup matrix.
+
+class Matrix(unittest.TestCase):
+    def test_shape_finite_window_and_reader_agreement(self):
+        guard = candidate()
+        for row in CASES:
+            with self.subTest(row=str(row)[:120]):
+                with self.assertRaises((ValueError,TypeError)): guard.validate_slot(row,NOW)
+                with self.assertRaises(ValueError): slot(row,NOW)
+    def test_valid_legacy_and_v1_window(self):
+        guard = candidate()
+        for row in [valid(), {key:value for key,value in valid().items() if key not in {'version','issuedAtUnix'}},
+                    {**valid(), 'admitUntilUnix':NOW+3600}]:
+            self.assertEqual(guard.validate_slot(row,NOW),'pc-ai'); self.assertEqual(slot(row,NOW),row['admitUntilUnix'])
+    def test_invalid_clock(self):
+        guard = candidate()
+        for now in [True,None,'100',float('nan'),float('inf'),-float('inf'),10**999,0]:
+            with self.subTest(clock=str(now)[:30]), self.assertRaises(ValueError): guard.validate_slot(valid(),now)
+
+class NativeCandidate(old.NativeCPUTests):
+    def setUp(self):
+        super().setUp()
+        (self.root/'cpu-test-slot.json').write_text(json.dumps(valid(now=time.time())))
+    def command(self,*args,**kw):
+        result = super().command(*args,**kw)
+        result[1] = str(ROOT/'candidate_driver.py')
+        return result
+    def test_slot_refused_before_child_launch(self):
+        wrong = valid('pc-3d',now=time.time())
+        for row, expected in [(wrong,75), *[(row,70) for row in CASES],
+                              ('{"owner":"pc-ai","owner":"pc-ai"}',70),
+                              ('{"owner":"pc-ai","admitUntilUnix":NaN}',70)]:
+            (self.root/'cpu-test-slot.json').write_text(row if isinstance(row,str) else json.dumps(row))
+            result = subprocess.run(self.command('normal'),env=self.env,capture_output=True,text=True,timeout=8)
+            with self.subTest(row=str(row)[:100]):
+                self.assertEqual(result.returncode,expected,result.stderr)
+                self.assertFalse((self.root/'child.json').exists())
+        self.event(invalid_cases=len(CASES)+2,wrong_owner_exit=75,no_child_launched=True)
+
+if __name__ == '__main__':
+    started = time.monotonic(); stream = io.StringIO()
+    suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromTestCase(cls) for cls in [Matrix,NativeCandidate])
+    result = unittest.TextTestRunner(stream=stream,verbosity=2).run(suite)
+    output = {'session':'PC-QINT-P-20261107-01','candidate_sha256':HASH,
+        'tests_run':result.testsRun,'passed':result.testsRun-len(result.errors)-len(result.failures),
+        'errors':len(result.errors),'failures':len(result.failures),'invalid_slot_cases':len(CASES),
+        'native_pre_spawn_cases':len(CASES)+3,'events':old.EVENTS,
+        'seconds':round(time.monotonic()-started,3),'shared_guard_modified':False,
+        'shared_lock_taken':False,'model_loaded':False}
+    report = ROOT.parents[1]/'reports/ai/qint_p'
+    (report/'candidate-retest.json').write_text(json.dumps(output,indent=2)+'\n')
+    (report/'candidate-retest.log').write_text(stream.getvalue().replace(str(ROOT.parents[1]),'<GPU_ROOT>'))
+    print(stream.getvalue()); print(json.dumps({key:value for key,value in output.items() if key!='events'}))
+    if result.wasSuccessful():
+        coordination = ROOT.parents[1]/'coordination'
+        ack = {'version':'qint-p.guard-ack.v1','session':'PC-QINT-P-20261107-01',
+            'guardSha256':HASH,'guardPath':str(ROOT.parents[1]/'fitmatch_AI/workers/windows/gpu_guard.py'),
+            'lockPath':str(coordination/'gpu0.lock'),'lockMechanism':'msvcrt exclusive byte0',
+            'placement':'external_guard_owns_byte0','independent_cpu_retest':True,
+            'candidate_status':'ACK for exact candidate; 3D owner must promote only after idle proof',
+            'slot_policy':'v1 writer; legacy UTC reader; <=3600seconds; present expired/malformed refuses both; idle pc-3d renews',
+            'no_nested_lock':True,'integratedGPUAuthorized':False,
+            'gates_pending':['shared promotion receipt','production transport drain review','exact Claude contract ACK/Codex review','test endpoint/scoped credentials'],
+            'retest_summary':{key:value for key,value in output.items() if key!='events'},
+            'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
+        target = coordination/'qint-p-guard-ack.json'
+        if target.exists(): raise RuntimeError('Preserve existing ACK; reconcile explicitly')
+        target.write_text(json.dumps(ack,indent=2)+'\n')
+    raise SystemExit(0 if result.wasSuccessful() else 1)

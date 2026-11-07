@@ -1,0 +1,95 @@
+"""Read-only inventory and bound cleanup PLAN. No deletion executor is provided."""
+import hashlib
+import json
+from pathlib import Path,PurePosixPath
+import re
+import stat
+import uuid
+
+ROOT=Path(__file__).resolve().parent
+GPU=ROOT.parents[1]
+HASH=re.compile('^[0-9a-f]{64}$')
+
+def canonical_uuid(value):
+    if str(uuid.UUID(value))!=value:raise ValueError('Noncanonical owner/job/source revision')
+    return value
+
+def cleanup_plan(trusted_job_root,*,binding,tombstone,entries,active_processes,job_attempt):
+    root=Path(trusted_job_root).resolve(strict=True)
+    if active_processes!=0:raise ValueError('Owned process tree not drained')
+    for key in ['owner_id','job_id','source_revision']:canonical_uuid(binding[key])
+    if not HASH.fullmatch(binding['image_sha256']):raise ValueError('Invalid image digest')
+    for key in ['owner_id','job_id','source_revision','image_sha256']:
+        if tombstone.get(key)!=binding[key]:raise ValueError('Tombstone binding mismatch')
+    if tombstone.get('deleted') is not True or tombstone.get('job_attempt')!=job_attempt:raise ValueError('Missing/current tombstone fence')
+    # Full UUID hex values avoid the third nested UUID and Windows MAX_PATH failure.
+    # Owner identity remains mandatory in the immutable job/source binding sidecar.
+    prefix=PurePosixPath(uuid.UUID(binding['job_id']).hex,uuid.UUID(binding['source_revision']).hex)
+    manifest=root
+    for component in prefix.parts+('binding.json',):
+        manifest=manifest/component
+        info=manifest.lstat()
+        if stat.S_ISLNK(info.st_mode) or getattr(info,'st_file_attributes',0)&0x400:raise ValueError('Reparse job binding refused')
+    stored=json.loads(manifest.read_text(encoding='utf-8'))
+    if stored!={'version':'pc-ai.job-source-binding.v1','binding':binding}:raise ValueError('Stored owner/job/source binding mismatch')
+    candidates=[]
+    for entry in entries:
+        text=entry['relative_path']
+        if not isinstance(text,str) or '\\' in text or ':' in text or '\0' in text:raise ValueError('Unsafe relative source path')
+        relative=PurePosixPath(text)
+        if relative.is_absolute() or '..' in relative.parts or '.' in relative.parts or len(relative.parts)!=4:raise ValueError('Source traversal/shape')
+        if PurePosixPath(*relative.parts[:2])!=prefix or relative.parts[2] not in {'source','source-evidence'}:
+            raise ValueError('Foreign or derived path')
+        expected=entry['sha256']
+        if not HASH.fullmatch(expected) or Path(relative.name).stem!=expected:raise ValueError('Filename/content digest binding')
+        if relative.parts[2]=='source' and expected!=binding['image_sha256']:raise ValueError('Different source image')
+        suffix=Path(relative.name).suffix.lower()
+        if suffix not in ({'.png','.jpg','.jpeg','.webp'} if relative.parts[2]=='source' else {'.json','.jsonl','.txt'}):raise ValueError('Unsafe source artifact type')
+        candidate=root
+        for component in relative.parts:
+            candidate=candidate/component
+            info=candidate.lstat()
+            if stat.S_ISLNK(info.st_mode) or getattr(info,'st_file_attributes',0)&0x400:raise ValueError('Reparse path refused')
+        resolved=candidate.resolve(strict=True)
+        if not resolved.is_relative_to(root) or not resolved.is_file():raise ValueError('Outside trusted root or not regular file')
+        h=hashlib.sha256()
+        with resolved.open('rb') as stream:
+            for block in iter(lambda:stream.read(1024**2),b''):h.update(block)
+        if h.hexdigest()!=expected:raise ValueError('Source bytes changed')
+        candidates.append({'relative_path':text,'sha256':expected,'bytes':resolved.stat().st_size,'action':'dry_run_only'})
+    return {'plan_version':'pc-ai.source-cleanup-plan.v1','binding':binding,'job_attempt':job_attempt,
+            'status':'physical_delete_pending','candidates':candidates,'executed':False,
+            'note':'Persistent deletion ledger, revalidation and handle-bound Windows delete require app/PC review; no executor here.'}
+
+def inventory():
+    areas=[('public_reference_sources',GPU/'ai-service'/'inputs'/'public-reference','reference_corpus_keep'),
+           ('public_quality03_sources',ROOT/'fixtures'/'public-images','reference_corpus_keep'),
+           ('source_temp_jobs',GPU/'ai-service'/'jobs','owner_job_revision_binding_required'),
+           ('hf_config_cache',GPU/'ai-service'/'cache'/'huggingface','cache_review_separately'),
+           ('original_model',GPU/'models'/'qwen3-vl-4b','never_source_cleanup'),
+           ('derived_model',GPU/'models'/'qwen3-vl-4b-reshard512m','never_source_cleanup'),
+           ('qwen_reports',GPU/'reports'/'ai','source_sensitive_if_personal_inputs_future')]
+    records=[]
+    for alias,path,policy in areas:
+        files=[];skipped=0
+        if path.exists():
+            stack=[path]
+            while stack:
+                current=stack.pop()
+                for entry in current.iterdir():
+                    info=entry.lstat()
+                    if stat.S_ISLNK(info.st_mode) or getattr(info,'st_file_attributes',0)&0x400:skipped+=1;continue
+                    if entry.is_dir():stack.append(entry)
+                    elif entry.is_file():files.append((entry.suffix.lower(),info.st_size))
+        records.append({'alias':alias,'exists':path.exists(),'files':len(files),'bytes':sum(x[1] for x in files),
+                        'extensions':sorted(set(x[0] for x in files)),'reparse_entries_skipped':skipped,'policy':policy})
+    return {'version':'pc-ai.retention-inventory.v1','mode':'metadata only, no personal/3D folders inspected','areas':records,
+            'deleted_files':0,'live_job_binding_implemented':False,'personal_sources':'needs_input; none fetched',
+            'findings':['Current reference sources have corpus provenance, not owner/job/source-revision binding.',
+                        'No Qwen job-local deletion ledger or collector is implemented.',
+                        'Raw OCR/error logs must follow source-sensitive retention when personal images are introduced.',
+                        'Model/config/derived-weight caches and ready avatar/garment/looks are separate lifecycles.']}
+
+if __name__=='__main__':
+    output=inventory();destination=GPU/'reports'/'ai'/'quality03'/'retention-inventory.json'
+    destination.write_text(json.dumps(output,indent=2)+'\n',encoding='utf-8');print(json.dumps(output,indent=2))

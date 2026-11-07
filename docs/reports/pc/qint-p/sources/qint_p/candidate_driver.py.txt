@@ -1,0 +1,39 @@
+"""TEST ONLY: pinned candidate guard in Q03 disposable CPU namespace, never the shared lock."""
+import argparse
+import hashlib
+import importlib.util
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parent
+Q03 = ROOT.parent/'quality03'
+CANDIDATE = ROOT.parents[1]/'handoffs/pc-safe-008/staging/gpu_guard.py'
+HASH = '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c'
+def candidate():
+    if hashlib.sha256(CANDIDATE.read_bytes()).hexdigest() != HASH:
+        raise RuntimeError('Candidate hash drift; no test or ACK')
+    spec = importlib.util.spec_from_file_location('qintp_candidate', CANDIDATE)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+def main():
+    parser = argparse.ArgumentParser(); parser.add_argument('--test-root', type=Path, required=True)
+    args, rest = parser.parse_known_args()
+    root = args.test_root.resolve(strict=True)
+    if root.parent != (Q03/'test-runs').resolve() or not root.name.startswith('q03-') or not (root/'TEST-CPU-ONLY').is_file():
+        raise RuntimeError('Not an isolated CPU test root')
+    child = rest[rest.index('--')+1:]
+    if (len(child)<2 or Path(child[0]).resolve() != (ROOT.parents[1]/'envs/qwen-vl/Scripts/python.exe').resolve()
+        or Path(child[1]).resolve() != Q03/'cpu_child.py'):
+        raise RuntimeError('Only the CPU fixture child is allowed')
+    module = candidate()
+    module.DIRECTORY = root
+    module.LOCK, module.STATE, module.SLOT = [root/name for name in ['cpu-test.lock','cpu-test-state.json','cpu-test-slot.json']]
+    sys.argv = [str(CANDIDATE), *rest]
+    try:
+        return module.main()
+    except (OSError, ValueError, RuntimeError):
+        return 70
+
+if __name__ == '__main__': raise SystemExit(main())

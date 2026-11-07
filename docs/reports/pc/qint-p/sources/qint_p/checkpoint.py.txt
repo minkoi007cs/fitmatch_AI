@@ -1,0 +1,36 @@
+"""Bounded-memory local file hashes before model import/load. No download or model parser."""
+import hashlib
+import json
+from pathlib import Path
+import time
+from boundary import Refused, safe_file, MODEL_REVISION
+
+ROOT = Path(__file__).resolve().parent
+MODEL = ROOT.parents[1] / 'models' / 'qwen3-vl-4b-reshard512m'
+
+def verify_checkpoint(root=MODEL, pin=None):
+    started = time.monotonic()
+    pin = pin if pin is not None else json.loads((ROOT / 'checkpoint-pin.json').read_text(encoding='utf-8'))
+    if pin.get('model_revision') != MODEL_REVISION or len(pin.get('files', [])) != 28:
+        raise Refused('checkpoint_pin_invalid')
+    total = 0
+    if {path.name for path in Path(root).iterdir() if path.is_file()} != {item['file'] for item in pin['files']}:
+        raise Refused('checkpoint_file_set_changed')
+    for item in pin['files']:
+        if Path(item['file']).name != item['file']:
+            raise Refused('checkpoint_pin_path')
+        path = safe_file(Path(root) / item['file'], root)
+        if path.stat().st_size != item['bytes']:
+            raise Refused('checkpoint_size_mismatch')
+        digest = hashlib.sha256()
+        with path.open('rb') as stream:
+            for block in iter(lambda: stream.read(4 * 1024**2), b''):
+                digest.update(block)
+                total += len(block)
+        if digest.hexdigest() != item['sha256']:
+            raise Refused('checkpoint_hash_mismatch')
+    return {'status': 'verified', 'files': len(pin['files']), 'bytes': total,
+            'seconds': round(time.monotonic() - started, 3), 'cuda_imported': False}
+
+if __name__ == '__main__':
+    print(json.dumps(verify_checkpoint()))

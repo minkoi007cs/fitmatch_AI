@@ -1,0 +1,21 @@
+{
+  "schema": "fitmatch.qintg-guard-promotion.v1",
+  "session": "PC-20261107-QINTG008",
+  "recordedAtUtc": "2026-11-07T13:28:33.747610+00:00",
+  "guardSha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "previousGuardSha256": "4ddf206d2cb16794f1e05eded7278d82c027dab1d277ac737b003322f8006680",
+  "guardPath": "<GPU_ROOT>/fitmatch_AI/workers/windows/gpu_guard.py",
+  "lockPath": "<GPU_ROOT>/coordination/gpu0.lock",
+  "lockMechanism": "msvcrt exclusive byte0",
+  "bothPCExactHashACK": true,
+  "QwenIndependentACKFileSHA256": "f415f25f4eddaa5b4f71d6716456172beae9b0358bf4b43a1ff95c7d0acd8089",
+  "idleProof": {
+    "fixedOSLockAcquired": true,
+    "priorNamedJob": "not-present",
+    "priorChildCreationIdentityNotLive": true
+  },
+  "atomicSharedGuardPromotion": true,
+  "newCoordinatorSlotSeconds": 900,
+  "integrationEnabled": false,
+  "scope": "standalone guard; worker-owned execution requires explicit transport placement ACK; no nesting or env-only bypass"
+}

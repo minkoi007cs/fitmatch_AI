@@ -1,0 +1,23 @@
+{
+  "version": "qint-p.worker-admission.v1",
+  "enabled": false,
+  "scope": "disposable_test_only",
+  "reviews": {
+    "contract": "PENDING",
+    "production_drain": "PENDING",
+    "worker_placement": "PENDING",
+    "slot_bridge": "PENDING",
+    "test_environment": "PENDING"
+  },
+  "app_revision": "REVIEWED_APP_COMMIT_REQUIRED",
+  "contract_revision": "REVIEWED_CONTRACT_COMMIT_REQUIRED",
+  "transport_revision": "REVIEWED_TRANSPORT_COMMIT_REQUIRED",
+  "transport_path": "ABSOLUTE_REVIEWED_WORKER_SOURCE_PATH_REQUIRED",
+  "transport_sha256": "REVIEWED_SOURCE_FILE_SHA256_REQUIRED",
+  "transport_python_exe": "ABSOLUTE_ACTUAL_INTERPRETER_PATH_REQUIRED",
+  "config_path": "ABSOLUTE_PRIVATE_TEST_CONFIG_PATH_REQUIRED",
+  "config_sha256": "REVIEWED_TEST_CONFIG_FILE_SHA256_REQUIRED",
+  "work_dir": "ABSOLUTE_PRIVATE_TEST_WORKDIR_REQUIRED",
+  "guard_sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "lock_path": "EXACT_COORDINATOR_ABSOLUTE_GPU0_LOCK_PATH_REQUIRED"
+}

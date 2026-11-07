@@ -1,0 +1,31 @@
+"""Fixture-only metrics; unknown truth and abstention never earn accuracy credit."""
+import re
+def norm(value):return re.sub('[^A-Z0-9]','',value.upper())
+def same(value,option):return set(value)==set(option) if isinstance(value,list) and isinstance(option,list) else value==option
+
+def evaluate(prediction,label,*,target_confirmed=False):
+    if label.get('requires_target') and not target_confirmed:
+        return {'decision':'needs_input_before_load','reason':'Multiple/ambiguous garments; select target first','scoreable_fields':0}
+    fields={};correct=errors=abstentions=unsupported=0
+    for field,options in label['scoreable'].items():
+        value=prediction.get(field,'unknown')
+        if value=='unknown' or value==['unknown']:verdict='abstained';abstentions+=1
+        elif any(same(value,option) for option in options):verdict='correct';correct+=1
+        else:verdict='incorrect';errors+=1
+        fields[field]={'predicted':value,'verdict':verdict,'accepted_options':options}
+    for field in label.get('unknown_required',[]):
+        value=prediction.get(field,'unknown')
+        if value!='unknown' and value!=['unknown']:unsupported+=1
+    truth=label['ocr'];known={norm(x) for x in truth['confirmed_texts']};actual={norm(x) for x in prediction.get('logo_texts',[])}
+    extras=actual-known;matched=actual&known
+    fp=len(extras) if truth['complete'] else None
+    denominator=correct+errors
+    decision='needs_review' if errors or unsupported or extras else 'partial_unknown' if abstentions or known-actual else 'fixture_fields_match'
+    return {'decision':decision,'fields':fields,'correct':correct,'incorrect':errors,'abstained':abstentions,
+        'known_prediction_accuracy':correct/denominator if denominator else None,
+        'coverage':denominator/len(fields) if fields else None,'unsupported_nonvisible_claims':unsupported,
+        'ocr':{'matched_confirmed_texts':sorted(matched),'missing_confirmed_texts':sorted(known-actual),
+               'extra_texts':sorted(extras),'extra_status':'false_text' if truth['complete'] else 'unadjudicated_requires_review',
+               'precision':len(matched)/len(actual) if actual and truth['complete'] else None,
+               'recall_on_confirmed_texts':len(matched)/len(known) if known else None},
+        'scope':'Fixture labels only; OCR precision undefined for partially adjudicated images; no model inference implied.'}
