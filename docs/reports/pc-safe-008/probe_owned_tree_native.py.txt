@@ -1,0 +1,163 @@
+"""Native CPU probes of Claude's actual OwnedProcessTree/Worker.loop.
+
+Pinned read-only source, isolated byte0 lock, no live client/API/GPU. Queue calls
+are explicitly local stubs; Job Object/process teardown uses actual Windows APIs.
+"""
+import argparse
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+from gpu_guard import live_stamp
+
+
+def load(source, sha):
+    if hashlib.sha256(source.read_bytes()).hexdigest()!=sha:
+        raise ValueError('Reviewed worker bytes changed')
+    spec=importlib.util.spec_from_file_location('reviewed_worker',source)
+    w=importlib.util.module_from_spec(spec);spec.loader.exec_module(w)
+    return w
+
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--worker-source',type=Path,required=True)
+    p.add_argument('--worker-revision',required=True)
+    p.add_argument('--adapter-python',type=Path,required=True)
+    p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--contained-probe',action='store_true')
+    p.add_argument('--expected-sha')
+    a=p.parse_args();source=a.worker_source.resolve();root=a.output.resolve()
+    if a.contained_probe:
+        w=load(source,a.expected_sha)
+        assert w.ensure_process_containment({})=='windows-job-object'
+        results=[];identities=[];trees=[]
+        lock=w.FileLock(root/'isolated-gpu.lock')
+        def competitor():
+            code=('import importlib.util,sys;s=importlib.util.spec_from_file_location("w",sys.argv[1]);'
+                  'w=importlib.util.module_from_spec(s);s.loader.exec_module(w);l=w.FileLock(sys.argv[2]);'
+                  'ok=l.acquire(0);l.release();sys.exit(0 if ok else 75)')
+            return subprocess.run([sys._base_executable,'-I','-c',code,str(source),str(root/'isolated-gpu.lock')],timeout=5).returncode
+        def tree_for(name, surrogate=True):
+            ready=root/(name+'-ready.json')
+            child=('import os,sys,subprocess,time,json;from pathlib import Path;'
+                   'g=subprocess.Popen([sys._base_executable,"-I","-c","import time;time.sleep(60)"]);'
+                   f'Path({str(ready)!r}).write_text(json.dumps({{"actual":os.getpid(),"grand":g.pid}}));time.sleep(60)')
+            command=[str(a.adapter_python.resolve()),'-I','-c',child]
+            if surrogate:
+                command=[sys._base_executable,'-I','-c','import subprocess;subprocess.Popen('+repr(command)+')']
+            tree=w.OwnedProcessTree(command,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            trees.append(tree)
+            end=time.monotonic()+5
+            while time.monotonic()<end:
+                try:data=json.loads(ready.read_text());break
+                except (OSError,ValueError):time.sleep(.025)
+            else:raise AssertionError('Own interpreter did not report readiness')
+            stamps={key:live_stamp(pid) for key,pid in data.items()}
+            assert all(stamps.values())
+            identities.append(dict(case=name,pids=data,creation=stamps,launcherPID=tree.pid))
+            (root/'pid-identities-private.json').write_text(json.dumps(identities,indent=2),encoding='utf-8')
+            return tree,data,stamps
+        def gone(data,stamps):return all(live_stamp(pid)!=stamps[key] for key,pid in data.items())
+        def drain_observed(tree,data,stamps):
+            start=time.monotonic();drained=tree.drain(5)
+            immediate=gone(data,stamps)
+            event={'drainReturned':drained,'allPIDsGoneAtReturn':immediate,'jobHandleClosed':not bool(tree.job.handle),
+                   'PIDStateAtReturn':{key:live_stamp(pid) for key,pid in data.items()}}
+            end=time.monotonic()+2
+            while not gone(data,stamps) and time.monotonic()<end:time.sleep(.005)
+            event.update(allPIDsGoneAfterObservation=gone(data,stamps),observationSeconds=time.monotonic()-start)
+            with (root/'drain-events-private.jsonl').open('a',encoding='utf-8') as f:f.write(json.dumps(event)+'\n')
+            return drained and gone(data,stamps)
+        try:
+            assert lock.acquire(0)
+            tree,data,stamps=tree_for('surviving-tree')
+            assert tree.process.wait(timeout=5)==0 and tree.alive()
+            assert competitor()==75
+            assert drain_observed(tree,data,stamps)
+            assert competitor()==75, 'Lock stays worker-owned until explicit release after drain'
+            lock.release();assert competitor()==0
+            results.append(dict(test='actual-OwnedProcessTree-root-exited-descendants-live-drain',passed=True,actualVenvInterpreter=True,CPUFixtureSurrogateRoot=True,allOwnedExited=True))
+
+            assert lock.acquire(0)
+            tree,data,stamps=tree_for('venv-root',surrogate=False)
+            launcher_creation=live_stamp(tree.pid)
+            tree.process.kill();tree.process.wait(timeout=5)
+            assert competitor()==75
+            assert drain_observed(tree,data,stamps)
+            lock.release();assert competitor()==0
+            results.append(dict(test='actual-OwnedProcessTree-venv-launcher-failure',passed=True,allOwnedExited=True,launcherCreationRecorded=launcher_creation is not None))
+
+            assert lock.acquire(0)
+            tree,data,stamps=tree_for('quarantine')
+            assert tree.process.wait(timeout=5)==0 and tree.alive()
+            original_active=tree.job.active
+            def unknown():raise OSError('Injected own Job Object query refusal')
+            tree.job.active=unknown
+            worker=w.Worker.__new__(w.Worker)
+            worker.gpu=lock;worker.quarantine=tree;worker.gpu_busy_logged=False
+            worker.worker_heartbeat=lambda:None;worker.resume_pending=lambda:None
+            claims=[];worker.claim=lambda:claims.append('local-stub') or None
+            worker.execute=lambda job:None
+            assert worker.loop(once=True,poll_seconds=0)==4
+            assert not claims and lock.held and tree.job.handle and competitor()==75
+            tree.job.active=original_active
+            assert worker.loop(once=True,poll_seconds=0)==0
+            assert len(claims)==1 and worker.quarantine is None and not lock.held
+            immediate=gone(data,stamps)
+            observed=time.monotonic();end=observed+2
+            while not gone(data,stamps) and time.monotonic()<end:time.sleep(.005)
+            event={'stage':'actual-Worker-loop-after-release','gpuLockHeld':lock.held,
+                   'allPIDWaitSignalledAtImmediateObservation':immediate,
+                   'allPIDsGoneAfterObservation':gone(data,stamps),'postLoopObservationSeconds':time.monotonic()-observed}
+            with (root/'drain-events-private.jsonl').open('a',encoding='utf-8') as f:f.write(json.dumps(event)+'\n')
+            assert gone(data,stamps) and competitor()==0
+            results.append(dict(test='actual-Worker-loop-quarantine-with-native-owned-tree',kernelMethodChecksPassed=True,injectedJobQueryFailure=True,queueHeartbeatAreCPUStubs=True,noClaimWhileUnknown=True,lockHeldUntilKernelDrain=True,PIDWaitSignalledBeforeImmediateObservation=immediate))
+        finally:
+            for tree in trees:
+                # The outer contained worker exiting is the final fixture safety
+                # net if a failed test cannot prove drain; no foreign tree kill.
+                tree.drain(.5)
+            lock.release()
+        (root/'pid-identities-private.json').write_text(json.dumps(identities,indent=2),encoding='utf-8')
+        (root/'native-tests.json').write_text(json.dumps(results,indent=2),encoding='utf-8')
+        return 0
+    head=subprocess.run(['git','-C',str(source.parent),'rev-parse','HEAD'],capture_output=True,text=True,check=True).stdout.strip()
+    if head!=a.worker_revision:raise ValueError('Read-only checkout revision mismatch')
+    subprocess.run(['git','-C',str(source.parent),'diff','--quiet','HEAD','--',source.name],check=True)
+    sha=hashlib.sha256(source.read_bytes()).hexdigest()
+    root.mkdir(parents=True,exist_ok=False)
+    sentinel=subprocess.Popen([sys._base_executable,'-I','-c','import time;time.sleep(90)'])
+    sentinel_stamp=live_stamp(sentinel.pid)
+    command=[sys._base_executable,str(Path(__file__).resolve()),'--worker-source',str(source),
+             '--worker-revision',a.worker_revision,'--adapter-python',str(a.adapter_python.resolve()),
+             '--output',str(root),'--expected-sha',sha,'--contained-probe']
+    process=subprocess.Popen(command,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    try:
+        stdout,stderr=process.communicate(timeout=30)
+        (root/'native-stdout.log').write_bytes(stdout);(root/'native-stderr.log').write_bytes(stderr)
+        if process.returncode:raise RuntimeError('Native probe failed; see own private logs')
+        identities=json.loads((root/'pid-identities-private.json').read_text())
+        assert all(live_stamp(pid)!=row['creation'][key] for row in identities for key,pid in row['pids'].items())
+        assert sentinel.poll() is None and live_stamp(sentinel.pid)==sentinel_stamp
+        result=dict(schema='fitmatch.worker-native-drain.v1',workerRevision=head,workerSourceSHA256=sha,
+                    tests=json.loads((root/'native-tests.json').read_text()),externalSentinelSurvived=True,
+                    scope='native Windows kernel methods and actual Worker.loop; local queue/heartbeat stubs, no server E2E',
+                    realGPU=False,sharedLockTouched=False,transportEdited=False,liveReadiness=False,
+                    status='native-method-evidence-requires-contract-review',
+                    strictPIDWaitBeforeReleaseAccepted=False,
+                    limitation='Job activeProcesses==0 and descendant process-handle exit signal may have different timings; local observer waits are not an upstream production guarantee')
+        events=[json.loads(line) for line in (root/'drain-events-private.jsonl').read_text().splitlines()]
+        result['drainObservations']=[{key:value for key,value in event.items() if key!='PIDStateAtReturn'} for event in events]
+        (root/'result-public.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+        print(json.dumps(result,indent=2));return 0
+    finally:
+        if process.poll() is None:process.kill();process.wait(timeout=5)
+        if sentinel.poll() is None:sentinel.terminate();sentinel.wait(timeout=5)
+
+
+if __name__=='__main__':raise SystemExit(main())
