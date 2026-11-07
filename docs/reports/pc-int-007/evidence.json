@@ -1,0 +1,110 @@
+{
+  "schema": "fitmatch.pc-int007-evidence.v1",
+  "taskId": "PC-INT-007",
+  "sessionId": "PC-20261106-INT007",
+  "operationsRead": "d3f29a51f8615f4831aa173791896a6fba0eca6e",
+  "requestedOperations": "f75290da00e2006e67ef4139afdcafac5daa655d",
+  "pcBase": "f3bebd19501c515ae4cfd5c392ccaaa01ff1c65f",
+  "pcBranch": "codex/pc-int-007",
+  "appReadOnlyBase": "7be869c989bc8c2b13d8b9ce621c9f70d487e57c",
+  "publicPR": "https://github.com/minkoi007cs/fitmatch_AI/pull/6",
+  "reviewStatus": "Ready for review",
+  "productStatus": "NOT VERIFIED",
+  "engines": {},
+  "preservedCheckpoint004SHA256": "52d0f666ed0284aad1c2eb809e7d534349d4b52729de4244d486093855648a2b",
+  "newCPUStages": [
+    {
+      "stage": "int007-existing-seam-comparison-cpu",
+      "startedAtUtc": "2026-11-06T14:15:13.313904+00:00",
+      "status": "passed",
+      "peakProcessTreeRssBytes": 44179456,
+      "peakProcessWorkingSetBytes": 62902272,
+      "peakDeviceUsedMiB": 763,
+      "sampleIntervalSeconds": 0.5,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "errors": [],
+      "oom": false,
+      "exitCode": 0,
+      "wallSeconds": 1.1199613000499085
+    },
+    {
+      "stage": "int007-local-seam-candidate-cpu",
+      "startedAtUtc": "2026-11-06T14:17:01.186223+00:00",
+      "status": "passed",
+      "peakProcessTreeRssBytes": 111042560,
+      "peakProcessWorkingSetBytes": 112578560,
+      "peakDeviceUsedMiB": 769,
+      "sampleIntervalSeconds": 0.5,
+      "vramScope": "whole GPU including desktop/other processes; sampled, not exact process peak",
+      "errors": [],
+      "oom": false,
+      "exitCode": 0,
+      "wallSeconds": 6.099927200004458
+    }
+  ],
+  "finalChecks": {
+    "retentionFixtureTests": {
+      "passed": 8,
+      "lastWallSeconds": 0.018
+    },
+    "pcScriptsCompile": true,
+    "appCloneClean": true,
+    "patchApplyCheckExit": 0,
+    "pcDiffWhitespaceCheckExit": 0,
+    "expectedVCVars64Exists": false
+  },
+  "priorTestsNotRerun": {
+    "upstream18Suite": {
+      "passed": 17,
+      "errors": 1
+    },
+    "disposableUnitProposal": {
+      "passed": 18,
+      "wallSeconds": 0.197
+    },
+    "nativeActualInterpreterProbes": {
+      "passed": 4
+    }
+  },
+  "newNativeProbe": {
+    "scope": "CPU method-level fault injection",
+    "reproduced": true,
+    "ownedDescendantsExited": true,
+    "productionTransportEdited": false,
+    "realWorkerE2E": false,
+    "realGPUOverlap": false
+  },
+  "retention": {
+    "inventoryFiles": 244,
+    "inventoryBytes": 45243011,
+    "eligible": 0,
+    "deleted": 0,
+    "knownOwnTempFiles": 2,
+    "sourceDeletionVerified": false
+  },
+  "notRun": [
+    "MSVC/Admin/UAC",
+    "nvdiffrast JIT retry",
+    "native Warp build retry",
+    "model download",
+    "new fitting",
+    "full cloth simulation",
+    "GPU inference",
+    "personal likeness/real garments",
+    "new candidate GLB/preview",
+    "live worker API/E2E/source cleanup",
+    "animation"
+  ],
+  "existingPrivate006Artifact": {
+    "bytes": 4581033,
+    "sha256": "a9211bbee97d5b25fc8091a1550a664a0be94b0b508bbe589bc253aea108951d",
+    "templateOnly": true,
+    "newTransferAssumed": false
+  },
+  "limitations": [
+    "CPU command exit0 is not solver convergence or product quality",
+    "Whole-device VRAM includes desktop/other processes, not per-process attribution",
+    "Public evidence has no private absolute paths/raw logs/weights/images/tokens"
+  ],
+  "pcImplementationCommit": "998b048e10b3958ac0fd84cca7836e18840d17f9"
+}
