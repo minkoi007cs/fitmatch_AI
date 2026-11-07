@@ -1,0 +1,26 @@
+Checkpoint set aside: unreadable or unrecognized checkpoint
+Checkpoint set aside: unreadable or unrecognized checkpoint
+WARNING: processContainment=unsafe-disabled. A worker crash can leave an adapter running on the GPU; restart only after checking Task Manager. Reason: OSError
+test_garbage_checkpoint_is_set_aside_not_deleted (test_worker_unit.CheckpointTests) ... ok
+test_job_id_must_be_uuid (test_worker_unit.CheckpointTests) ... ok
+test_other_engine_revision_is_refused (test_worker_unit.CheckpointTests) ... ok
+test_path_outside_job_dir_is_refused (test_worker_unit.CheckpointTests) ... ok
+test_tampered_output_is_refused (test_worker_unit.CheckpointTests) ... ok
+test_unknown_version_is_set_aside (test_worker_unit.CheckpointTests) ... ok
+test_valid_output_is_reused (test_worker_unit.CheckpointTests) ... ok
+test_adapter_environment_drops_secrets (test_worker_unit.ClassificationTests) ... ok
+test_exit_codes_follow_structured_adapter_contract (test_worker_unit.ClassificationTests) ... ok
+test_job_failure_unknown_code_maps_to_inference_failed (test_worker_unit.ClassificationTests) ... ok
+test_posix_uses_session_and_dirlock (test_worker_unit.ContainmentTests) ... ok
+test_unknown_mode_is_rejected_everywhere (test_worker_unit.ContainmentTests) ... ok
+test_windows_binding_failure_refuses_to_start (test_worker_unit.ContainmentTests) ... ok
+test_windows_binding_success (test_worker_unit.ContainmentTests) ... ok
+test_windows_explicit_disabled_mode_runs_with_warning (test_worker_unit.ContainmentTests) ... ok
+test_independent_process_exclusion_and_crash_release (test_worker_unit.GpuLockTests) ... ok
+test_one_gpu_job_per_host_across_workers (test_worker_unit.GpuLockTests) ... ok
+test_media_type_wins_and_legacy_roles_still_work (test_worker_unit.InputNameTests) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.218s
+
+OK
