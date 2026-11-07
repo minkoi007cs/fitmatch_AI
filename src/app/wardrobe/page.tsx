@@ -35,6 +35,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
+import { AnalysisPanel, useWardrobeAnalyses } from "@/components/v2/WardrobeAnalysis";
 
 type DraftItem = {
   name: string;
@@ -83,6 +84,8 @@ export default function WardrobePage() {
   const [dragOver, setDragOver] = useState(false);
 
   const [filters, setFilters] = useState({ category: "", color: "", style: "" });
+  const [reloadKey, setReloadKey] = useState(0);
+  const analyses = useWardrobeAnalyses();
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
@@ -117,7 +120,7 @@ export default function WardrobePage() {
       }).catch(error => { if (!controller.signal.aborted) toast(error.message, "error"); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, [toast]);
+  }, [toast, reloadKey]);
 
   function openAddDrawer() {
     draftVersion.current++;
@@ -525,6 +528,16 @@ export default function WardrobePage() {
                       {item.material ? ` · ${item.material}` : ""}
                     </p>
                   </div>
+                  {analyses.enabled && (
+                    <AnalysisPanel
+                      itemId={item.id}
+                      itemName={item.name}
+                      hasImage={!!item.image_path}
+                      analysis={analyses.byItem[item.id]}
+                      onUpdate={analyses.put}
+                      onWardrobeChanged={() => setReloadKey((k) => k + 1)}
+                    />
+                  )}
                 </article>
               );
             })}

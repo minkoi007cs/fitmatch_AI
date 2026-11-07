@@ -123,7 +123,7 @@ await new Promise(resolve => mock.listen(3221, "127.0.0.1", resolve));
 const app = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "--port", "3220"], { env: { ...process.env,
   OPENAI_API_KEY: "", FITMATCH_AUTH_PROVIDER: "app-system", APP_URL: base, NEXT_PUBLIC_INFRA_URL: fixture,
   INFRA_APP_ID: "test-fitmatch", NEXT_PUBLIC_INFRA_PUBLISHABLE_KEY: "pk_synthetic", INFRA_SECRET_KEY: "sk_synthetic",
-  NEXT_PUBLIC_SUPABASE_URL: fixture, NEXT_PUBLIC_SUPABASE_ANON_KEY: "synthetic-anon", SUPABASE_SERVICE_ROLE_KEY: "synthetic-service",
+  NEXT_PUBLIC_SUPABASE_URL: fixture, NEXT_PUBLIC_SUPABASE_ANON_KEY: "synthetic-anon", SUPABASE_SERVICE_ROLE_KEY: "synthetic-service", QWEN_ANALYSIS_ENABLED: "1",
 }, stdio: ["ignore", "pipe", "pipe"] });
 let output = ""; app.stdout.on("data", part => output += part); app.stderr.on("data", part => output += part);
 const jar = new Map();

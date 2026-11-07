@@ -473,6 +473,8 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2 })
     await testFullLook({ base, request, jar, owner, v2 });
     const { testCaptureRetention } = await import("./test-capture-retention-http.mjs");
     await testCaptureRetention({ base, fixture, request, jar, owner, v2 });
+    const { testQwen } = await import("./test-qwen-http.mjs");
+    await testQwen({ base, request, jar, owner, itemId, v2 });
     assert.equal(
       (await worker("heartbeat", { capabilities: caps })).status,
       401,

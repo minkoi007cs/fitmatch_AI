@@ -31,7 +31,12 @@ import urllib.request
 import uuid
 
 PROTOCOL_REVISION = 'v1-r2'
-KINDS = {'avatar.reconstruct', 'garment.reconstruct', 'garment.drape', 'bottom.reconstruct', 'bottom.drape'}
+KINDS = {'avatar.reconstruct', 'garment.reconstruct', 'garment.drape', 'bottom.reconstruct', 'bottom.drape', 'garment.analyze'}
+# QINT-C: garment.analyze returns one bounded JSON proposal (contract fitmatch.qwen-garment-analysis.v1,
+# docs/qwen-contract-v1.md), never a GLB. Same queue, lease, fencing, lock and drain as 3D jobs.
+ANALYSIS_CONTRACT = 'fitmatch.qwen-garment-analysis.v1'
+ANALYSIS_RESULT = 'fitmatch.garment-analysis.result.v1'
+MAX_RESULT_BYTES = 8192
 MAX_BYTES = 40 * 1024 * 1024
 MAX_VIDEO_BYTES = 150 * 1024 * 1024
 MEDIA_EXT = {'image/jpeg': '.jpg', 'model/gltf-binary': '.glb', 'video/mp4': '.mp4', 'video/webm': '.webm', 'video/quicktime': '.mov'}
@@ -44,12 +49,15 @@ def input_name(index, asset):
     return 'input-' + str(index) + ext
 
 CHECKPOINT_VERSION = 1
-FAIL_CODES = {'OOM', 'INVALID_INPUT', 'MODEL_UNAVAILABLE', 'INFERENCE_FAILED', 'EXPORT_FAILED', 'TIMEOUT'}
+FAIL_CODES = {'OOM', 'INVALID_INPUT', 'MODEL_UNAVAILABLE', 'INFERENCE_FAILED', 'EXPORT_FAILED', 'TIMEOUT',
+              'GPU_BUSY', 'MEMORY_PRESSURE', 'INVALID_OUTPUT'}
 # Adapter exit contract (provisional, from PC-CONF-01 / draft PR1, adapter revision 37213bc): a failure is
 # classified only when the exit code is in this table AND stderr ends with one bounded JSON object
 # {"success": false, "code": <same code>}. Anything else (argparse usage text, unknown exit, malformed or
 # mismatched record) is INFERENCE_FAILED. Operators may extend it per engine with "exitCodes" once agreed.
 DEFAULT_EXIT_CODES = {78: 'MODEL_UNAVAILABLE', 2: 'INVALID_INPUT'}
+# Analysis adapters (qwen-v1); still require the matching structured stderr record.
+ANALYSIS_EXIT_CODES = {75: 'GPU_BUSY', 74: 'MEMORY_PRESSURE', 70: 'INVALID_OUTPUT', 71: 'OOM'}
 SECRET_NAME = re.compile(r'(TOKEN|SECRET|PASSW|CREDENTIAL|API_?KEY|PRIVATE_?KEY|SERVICE_?ROLE|AUTHORIZATION|COOKIE|SESSION)', re.I)
 UUID = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
 RESUMABLE = ('output_ready', 'uploading', 'finalized')
@@ -200,11 +208,29 @@ def glb_ok(path):
         return False
 
 
+def json_result_ok(path, binding=None):
+    """Bounded, parseable result object whose binding matches the job. The server validates fully."""
+    try:
+        if path.stat().st_size > MAX_RESULT_BYTES:
+            return False
+        value = json.loads(path.read_bytes().decode('utf8'))
+    except (OSError, ValueError, UnicodeDecodeError):
+        return False
+    return (isinstance(value, dict) and value.get('contractVersion') == ANALYSIS_RESULT
+            and value.get('approvedForAutoApply') is False and (binding is None or value.get('binding') == binding))
+
+
+def output_ok(path, fmt, binding=None):
+    return json_result_ok(path, binding) if fmt == 'json-v1' else glb_ok(path)
+
+
 def input_digest(job):
     """Identity of what the model would compute: job, model version, engine revision and verified inputs."""
     parts = {'jobId': job['jobId'], 'modelId': job['modelId'], 'kind': job['kind'], 'modelRevision': job['modelRevision'],
              'params': job['input']['params'],
              'assets': sorted((a['role'], a['assetId'], a['sha256'], a['bytes']) for a in job['input']['assets'])}
+    if job['input'].get('binding') is not None:
+        parts['binding'] = job['input']['binding']  # analysis jobs only; 3D digests stay unchanged
     return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
 
 
@@ -228,8 +254,10 @@ def structured_error(err_path, limit=16384):
     return record['code']
 
 
-def classify_exit(returncode, engine, err_path):
+def classify_exit(returncode, engine, err_path, kind=None):
     mapping = dict(DEFAULT_EXIT_CODES)
+    if kind == 'garment.analyze':
+        mapping.update(ANALYSIS_EXIT_CODES)
     for key, value in (engine.get('exitCodes') or {}).items():
         if str(key).lstrip('-').isdigit() and value in FAIL_CODES:
             mapping[int(key)] = value
@@ -291,9 +319,10 @@ class Checkpoint:
         path = (self.dir / output.get('file', '')).resolve() if output.get('file') else None
         if not same or not path or self.dir.resolve() not in path.parents or not path.exists():
             return None
-        if path.stat().st_size != output.get('bytes') or not glb_ok(path) or sha256_file(path) != output.get('sha256'):
+        fmt = output.get('format', 'glb-v2')
+        if path.stat().st_size != output.get('bytes') or not output_ok(path, fmt, job['input'].get('binding')) or sha256_file(path) != output.get('sha256'):
             return None
-        return {'path': path, 'bytes': output['bytes'], 'sha256': output['sha256']}
+        return {'path': path, 'bytes': output['bytes'], 'sha256': output['sha256'], 'format': fmt}
 
 
 class FileLock:
@@ -711,6 +740,24 @@ class Worker:
             return
         raise Retryable('Upload could not be verified')
 
+    def publish_any(self, job_id, lease, cp, output):
+        if output.get('format') == 'json-v1':
+            return self.publish_result(job_id, lease, cp, output)
+        return self.publish(job_id, lease, cp, output)
+
+    def publish_result(self, job_id, lease, cp, output):
+        """JSON result: one idempotent POST of the exact adapter bytes (replay after a lost reply is accepted)."""
+        text = Path(output['path']).read_bytes().decode('utf8')
+        try:
+            self.retry.run(lambda: self.client.api('jobs/' + job_id + '/result',
+                {**lease, 'sha256': output['sha256'], 'resultJson': text}))
+        except Rejected as error:
+            if error.code in ('INVALID_RESULT', 'RESULT_BINDING_MISMATCH', 'RESULT_TOO_LARGE', 'RESULT_HASH_MISMATCH'):
+                raise JobFailure('INVALID_OUTPUT') from None
+            raise
+        cp.save(stage='completed', completedAt=time.time())
+        print('Completed analysis job', job_id, flush=True)
+
     def run_with_lease(self, job_id, lease, stage, body):
         """Runs body() while a background thread keeps the lease alive; returns when body finishes."""
         lost, done = threading.Event(), threading.Event()
@@ -759,9 +806,9 @@ class Worker:
             else:
                 output = self.run_lease_bound(job, lease, cp, digest)
                 output_ready[0] = True
-            self.run_with_lease(job_id, lease, 'uploading', lambda lost, stage: self.publish(job_id, lease, cp, output))
+            self.run_with_lease(job_id, lease, 'uploading', lambda lost, stage: self.publish_any(job_id, lease, cp, output))
         except JobFailure as failure:
-            if output_ready[0] and failure.code != 'EXPORT_FAILED':
+            if output_ready[0] and failure.code not in ('EXPORT_FAILED', 'INVALID_OUTPUT'):
                 print('Output kept; not failing', job_id, flush=True)
             else:
                 if cp.data:
@@ -785,6 +832,9 @@ class Worker:
         attempt_dir = cp.dir / ('a' + str(job['lease']['attempt']) + '-' + self.instance[:8])
         attempt_dir.mkdir(parents=True, mode=0o700, exist_ok=False)  # unique per attempt + process instance
         engine = self.engines[job['kind']]
+        analysis = (job.get('outputContract') or {}).get('format') == 'json-v1'
+        if analysis and (job['kind'] != 'garment.analyze' or len(job['input'].get('assets', [])) != 1 or not isinstance(job['input'].get('binding'), dict)):
+            raise JobFailure('INVALID_INPUT')
 
         def body(lost, stage):
             stage[0] = 'preprocessing'
@@ -803,12 +853,22 @@ class Worker:
                 self.retry.run(fetch)
                 assets.append({'role': asset['role'], 'assetId': asset['assetId'], 'localPath': str(local),
                                **({'mediaType': asset['mediaType']} if asset.get('mediaType') else {})})
-            output = attempt_dir / 'output.glb'
             manifest = attempt_dir / 'input.json'
-            manifest.write_text(json.dumps({'protocolVersion': 1, 'protocolRevision': PROTOCOL_REVISION, 'jobId': job_id, 'kind': job['kind'],
-                'params': job['input']['params'], 'assets': assets, 'modelRevision': job['modelRevision'],
-                'avatarVersionId': job['input']['avatarVersionId'], 'garmentVersionId': job['input']['garmentVersionId'],
-                'outputContract': job['outputContract'], 'outputPath': str(output)}, indent=2), encoding='utf8')
+            if analysis:
+                # qwen-v1 adapter input: exactly one verified local image; the image is data, not instructions.
+                output = attempt_dir / 'result.json'
+                manifest.write_text(json.dumps({'protocolVersion': 1, 'protocolRevision': PROTOCOL_REVISION,
+                    'contract': ANALYSIS_CONTRACT, 'jobId': job_id, 'kind': job['kind'], 'binding': job['input']['binding'],
+                    'modelRevision': job['modelRevision'], 'policy': job['input']['policy'],
+                    'assets': [{'role': a['role'], 'assetId': a['assetId'], 'localPath': a['localPath'], 'sha256': src['sha256'],
+                                'bytes': src['bytes'], 'mediaType': 'image/jpeg'} for a, src in zip(assets, job['input']['assets'])],
+                    'resultSchema': ANALYSIS_RESULT, 'outputPath': str(output)}, indent=2), encoding='utf8')
+            else:
+                output = attempt_dir / 'output.glb'
+                manifest.write_text(json.dumps({'protocolVersion': 1, 'protocolRevision': PROTOCOL_REVISION, 'jobId': job_id, 'kind': job['kind'],
+                    'params': job['input']['params'], 'assets': assets, 'modelRevision': job['modelRevision'],
+                    'avatarVersionId': job['input']['avatarVersionId'], 'garmentVersionId': job['input']['garmentVersionId'],
+                    'outputContract': job['outputContract'], 'outputPath': str(output)}, indent=2), encoding='utf8')
             # Only operator-authored argv is executed, never an app/user-supplied command or shell string.
             command = [value.replace('{input}', str(manifest)).replace('{output}', str(output)) for value in engine['command']]
             stage[0] = 'draping' if job['kind'].endswith('.drape') else 'reconstructing'
@@ -843,13 +903,19 @@ class Worker:
                         if sys.exc_info()[0] is None:  # keep TIMEOUT/lease-loss classification if one is in flight
                             raise QuarantineError('owned adapter processes still running')
             if process.returncode != 0:
-                raise JobFailure(classify_exit(process.returncode, engine, err_path))
+                raise JobFailure(classify_exit(process.returncode, engine, err_path, job['kind']))
             stage[0] = 'exporting'
-            if not glb_ok(output):
-                raise JobFailure('EXPORT_FAILED')
-            result = {'file': attempt_dir.name + '/output.glb', 'bytes': output.stat().st_size, 'sha256': sha256_file(output)}
+            if analysis:
+                if not output.exists() or not json_result_ok(output, job['input']['binding']):
+                    raise JobFailure('INVALID_OUTPUT')
+                fmt = 'json-v1'
+            else:
+                if not glb_ok(output):
+                    raise JobFailure('EXPORT_FAILED')
+                fmt = 'glb-v2'
+            result = {'file': attempt_dir.name + '/' + output.name, 'bytes': output.stat().st_size, 'sha256': sha256_file(output), 'format': fmt}
             cp.save(stage='output_ready', output=result, adapterPid=None)
-            return {'path': output, 'bytes': result['bytes'], 'sha256': result['sha256']}
+            return {'path': output, 'bytes': result['bytes'], 'sha256': result['sha256'], 'format': fmt}
 
         return self.run_with_lease(job_id, lease, 'preprocessing', body)
 
@@ -874,8 +940,13 @@ class Worker:
             if cp.dir.resolve() not in output_file.parents or not output_file.exists() or sha256_file(output_file) != data['output'].get('sha256'):
                 cp.reject('output missing or altered')
                 continue
-            output = {'path': output_file, 'bytes': data['output']['bytes'], 'sha256': data['output']['sha256']}
+            output = {'path': output_file, 'bytes': data['output']['bytes'], 'sha256': data['output']['sha256'],
+                      'format': data['output'].get('format', 'glb-v2')}
             try:
+                if output['format'] == 'json-v1':
+                    # Result POST is idempotent: replay with the original lease, or the server refuses it.
+                    self.publish_result(job_id, lease, cp, output)
+                    continue
                 if data.get('stage') == 'finalized' and data.get('assetId'):
                     try:  # complete may have committed while its reply was lost: replay is idempotent
                         self.client.api('jobs/' + job_id + '/complete', {**lease, 'assetId': data['assetId']})
@@ -886,7 +957,7 @@ class Worker:
                         pass
                 self.client.api('jobs/' + job_id + '/heartbeat', {**lease, 'stage': 'uploading'})
                 print('Resuming publish for', job_id, 'with the original lease', flush=True)
-                self.run_with_lease(job_id, lease, 'uploading', lambda lost, stage: self.publish(job_id, lease, cp, output))
+                self.run_with_lease(job_id, lease, 'uploading', lambda lost, stage: self.publish_any(job_id, lease, cp, output))
             except CredentialLost:
                 print('Credential rejected while resuming', job_id, flush=True)
             except LeaseLost:

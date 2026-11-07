@@ -14,6 +14,7 @@ const tables = new Set(
     "recommendations",
     "looks",
     "feedback",
+    "analyses",
   ].map((v) => "fm_v2_" + v),
 );
 const quote = (v) =>
@@ -114,7 +115,7 @@ export async function v2Fixture() {
     }
     if (!ready) throw new Error("Database did not start");
     sql(
-      "create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create function auth.uid() returns uuid language sql stable as $$select null::uuid$$;create table auth.users(id uuid primary key);create table fm_wardrobe_items(id uuid primary key,user_id uuid,category text);create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);grant select on fm_wardrobe_items to service_role;",
+      "create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create function auth.uid() returns uuid language sql stable as $$select null::uuid$$;create table auth.users(id uuid primary key);create table fm_wardrobe_items(id uuid primary key,user_id uuid,category text,color text not null default 'white',secondary_color text,pattern text,image_path text,updated_at timestamptz not null default now());create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);grant all on fm_wardrobe_items to service_role;",
     );
     for (const migration of [
       "20261105_studio_control_plane.sql",
@@ -124,6 +125,7 @@ export async function v2Fixture() {
       "20261106044040_gc_dry_run_c3.sql",
       "20261106053812_fitting_generations.sql",
       "20261106150000_source_cleanup_priv01.sql",
+      "20261107120000_qwen_analysis_qint.sql",
     ])
       sql(
         readFileSync(
@@ -137,6 +139,8 @@ export async function v2Fixture() {
       faults,
       /** path relative to the bucket, as stored in fm_v2_assets */
       hasObject: (path) => objects.has("fitmatch-v2/" + path),
+      /** Full key including bucket, e.g. "fitmatch-wardrobe/<owner>/tee.jpg". */
+      putObject: (key, bytes) => objects.set(key, Buffer.from(bytes)),
       async handle(req, res, url, body, raw, send) {
         const objectPath = url.pathname.replace(/^\/storage\/v1/, "");
         res.setHeader("Access-Control-Allow-Origin", "http://localhost:3220");
@@ -204,6 +208,19 @@ export async function v2Fixture() {
           }
           const removed = (body.prefixes ?? []).filter((path) => objects.delete("fitmatch-v2/" + path));
           send(removed.map((name) => ({ name })));
+          return true;
+        }
+        if (
+          url.pathname.startsWith("/storage/v1/object/fitmatch-wardrobe/") &&
+          req.method === "GET" &&
+          req.headers.authorization === "Bearer synthetic-service"
+        ) {
+          const bytes = objects.get(decodeURIComponent(url.pathname.slice("/storage/v1/object/".length)));
+          if (!bytes) send({ message: "missing" }, 404);
+          else {
+            res.writeHead(200, { "Content-Type": "application/octet-stream" });
+            res.end(bytes);
+          }
           return true;
         }
         if (
@@ -281,6 +298,9 @@ export async function v2Fixture() {
               filters.push(`${ident(key)}=${quote(value.slice(3))}`);
             else if (value === "not.is.null")
               filters.push(`${ident(key)} is not null`);
+            else if (value === "is.null") filters.push(`${ident(key)} is null`);
+            else if (value.startsWith("in.(") && value.endsWith(")"))
+              filters.push(`${ident(key)} in (${value.slice(4, -1).split(",").map((x) => quote(x.replace(/^"|"$/g, "")))})`);
             else throw new Error("Unsupported fixture filter " + value);
           }
           const where = filters.length ? " where " + filters.join(" and ") : "";
@@ -331,7 +351,7 @@ export async function v2Fixture() {
             throw new Error("Service role RPC expected");
           const fn = table.slice(4);
           if (
-            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look|source_retention|source_cleanup_report|source_cleanup_due)$/.test(
+            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look|source_retention|source_cleanup_report|source_cleanup_due|analysis_enqueue|analysis_result|analysis_defer|analysis_action|analysis_confirm)$/.test(
               fn,
             )
           )

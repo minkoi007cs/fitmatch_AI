@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { execFileSync, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 const run = promisify(execFile),
   container = `fitmatch-v2-test-${process.pid}`;
 const owner = "11111111-1111-4111-a111-111111111111",
@@ -85,7 +86,7 @@ try {
   }
   assert.ok(ready);
   sql(
-    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;grant usage on schema auth to authenticated;create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table auth.users(id uuid primary key);insert into auth.users values('${owner}'),('${other}'),('${quota}');create table fm_wardrobe_items(id uuid primary key,user_id uuid,category text);create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);grant select on fm_wardrobe_items to service_role;`,
+    `create role anon;create role authenticated;create role service_role bypassrls;create schema auth;grant usage on schema auth to authenticated;create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table auth.users(id uuid primary key);insert into auth.users values('${owner}'),('${other}'),('${quota}');create table fm_wardrobe_items(id uuid primary key,user_id uuid,category text,color text not null default 'white',secondary_color text,pattern text,image_path text,updated_at timestamptz not null default now());create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);grant all on fm_wardrobe_items to service_role;`,
   );
   sql("insert into storage.buckets(id,name,public) values('fitmatch-v2','fitmatch-v2',true);");
   for (const migration of [
@@ -720,6 +721,149 @@ try {
     assert.equal(service(`select count(*) from fm_v2_source_cleanup where asset_id = any(array[${p8.map((x) => `'${x}'`)}]::uuid[]);`), "6");
     assert.equal(service(`select state||':'||error_code from fm_v2_jobs where model_id='${vc}';`), "canceled:SOURCE_DELETED");
     console.log("PASS CL-PRIV-01 PostgreSQL: C2 retry-loses-paths reproduced then fixed; backfill of earlier tombstones; durable pending/failed/completed intents with backoff and 5-attempt collector bound; failed paths survive repeat requests; completed never reopened by late failures; per-model status for shared sources; foreign owner/browser roles denied; derived GLBs untouched; 6 concurrent deletes record each object once.");
+  }
+  {
+    // ---------------- QINT-C garment analysis (JSON-result jobs) ----------------
+    const qa = "abababab-1111-4111-a111-111111111111", qb = "abababab-2222-4222-a222-222222222222";
+    const tee = "cdcdcdcd-1111-4111-a111-111111111111", jeansB = "cdcdcdcd-2222-4222-a222-222222222222";
+    const snap = (n) => `efefefef-0000-4000-a000-${String(n).padStart(12, "0")}`;
+    const wq = "fafafafa-1111-4111-a111-111111111111", wqb = "fafafafa-2222-4222-a222-222222222222", w3d = "fafafafa-3333-4333-a333-333333333333";
+    const sha1 = "1".repeat(64), sha2 = "2".repeat(64);
+    const jobsBefore = service("select count(*) from fm_v2_jobs;");
+    sql(readFileSync(new URL("../supabase/migrations/20261107120000_qwen_analysis_qint.sql", import.meta.url), "utf8"));
+    assert.equal(service("select count(*) from fm_v2_jobs where model_id is null;"), "0", "existing jobs keep their model");
+    sql(`insert into auth.users values('${qa}'),('${qb}');
+      insert into fm_wardrobe_items(id,user_id,category,color,image_path) values('${tee}','${qa}','shirt','white','${qa}/tee-1.jpg'),('${jeansB}','${qb}','jeans','blue','${qb}/j.jpg');
+      insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes,bytes,sha256) values
+        ('${snap(1)}','${qa}','photo','ready','${qa}/analysis/1.jpg','${qa}/analysis/1.jpg',100,100,'${sha1}'),
+        ('${snap(2)}','${qa}','photo','ready','${qa}/analysis/2.jpg','${qa}/analysis/2.jpg',100,100,'${sha1}'),
+        ('${snap(3)}','${qb}','photo','ready','${qb}/analysis/3.jpg','${qb}/analysis/3.jpg',100,100,'${sha2}');`);
+    const enq = (user, item, path, asset, sha, a, j) =>
+      JSON.parse(service(`select fm_v2_analysis_enqueue('${user}','${item}','${path}','${asset}','${sha}','qint.1','${a}','${j}');`));
+    const A = "dededede-1111-4111-a111-111111111111", J = "dededede-2222-4222-a222-222222222222";
+    let r = enq(qa, tee, `${qa}/tee-1.jpg`, snap(1), sha1, A, J);
+    assert.deepEqual(r, { analysisId: A, jobId: J, deduped: false });
+    assert.equal(service(`select kind||':'||state||':'||coalesce(model_id::text,'none') from fm_v2_jobs where id='${J}';`), "garment.analyze:queued:none");
+    // Same item + pixels + policy from a racing request: one analysis, the extra snapshot is tombstoned.
+    r = enq(qa, tee, `${qa}/tee-1.jpg`, snap(2), sha1, "dededede-3333-4333-a333-333333333333", "dededede-4444-4444-a444-444444444444");
+    assert.deepEqual(r, { analysisId: A, jobId: J, deduped: true });
+    assert.equal(service(`select state from fm_v2_assets where id='${snap(2)}';`), "deleted");
+    assert.equal(service(`select count(*) from fm_v2_source_cleanup where asset_id='${snap(2)}';`), "1", "path=source_path recorded once");
+    assert.throws(() => enq(qa, jeansB, `${qb}/j.jpg`, snap(1), sha1, "dededede-5555-4555-a555-555555555555", "dededede-6666-4666-a666-666666666666"), /ITEM_NOT_FOUND/, "foreign item");
+    assert.throws(() => enq(qa, tee, `${qa}/other.jpg`, snap(1), sha1, "dededede-5555-4555-a555-555555555555", "dededede-6666-4666-a666-666666666666"), /ITEM_NOT_FOUND/, "image changed");
+    assert.throws(() => enq(qa, tee, `${qa}/tee-1.jpg`, snap(3), sha2, "dededede-5555-4555-a555-555555555555", "dededede-6666-4666-a666-666666666666"), /INVALID_ASSET/, "foreign snapshot");
+    assert.throws(() => sql(`insert into fm_v2_jobs(id,user_id,model_id,analysis_id,kind,idempotency_key,payload_hash) values(gen_random_uuid(),'${qa}',null,null,'avatar.reconstruct','x','x');`), /fm_v2_jobs_subject/);
+    assert.throws(() => sql(`update fm_v2_jobs set kind='avatar.reconstruct' where id='${J}';`), /fm_v2_jobs_analysis_kind/);
+    // Grants: a 3D-only worker never claims analysis; a Qwen worker of another owner never sees it.
+    const qcaps = '{"garment.analyze":{"model":"Qwen/Qwen3-VL-4B-Instruct","revision":"r1"}}';
+    sql(`insert into fm_v2_workers(id,user_id,token_hash,name,last_seen,capabilities,allowed_capabilities) values
+      ('${w3d}','${qa}','hq3','3D',now(),'{"avatar.reconstruct":{}}','{avatar.reconstruct}'),
+      ('${wqb}','${qb}','hqb','QB',now(),'${qcaps}','{garment.analyze}'),
+      ('${wq}','${qa}','hqa','QA',now(),'${qcaps}','{}');`);
+    const claimR1 = (w) => JSON.parse(service(`select fm_v2_claim_r1('${w}',gen_random_uuid(),gen_random_uuid());`) || "null");
+    assert.equal(claimR1(w3d), null, "3D worker cannot claim analysis");
+    assert.equal(claimR1(wqb), null, "other owner's worker sees nothing");
+    assert.equal(claimR1(wq), null, "declared but not granted: default deny");
+    sql(`update fm_v2_workers set allowed_capabilities='{garment.analyze}' where id='${wq}';`);
+    let job = claimR1(wq);
+    assert.equal(job.id, J);
+    assert.equal(job.analysis_id, A);
+    assert.deepEqual(job.engine, JSON.parse(qcaps)["garment.analyze"]);
+    const result = (patch = {}) => ({
+      contractVersion: "fitmatch.garment-analysis.result.v1",
+      binding: { jobId: J, analysisId: A, itemId: tee, imageAssetId: snap(1), imageSha256: sha1 },
+      modelRevision: JSON.parse(qcaps)["garment.analyze"], policyRevision: "qint.1", rawOutputSha256: "b".repeat(64),
+      outcome: "proposal", abstainReason: null,
+      attributes: { category: "tshirt", dominantColors: ["red"], pattern: "printed", logoPresence: "visible", neckline: "crew", sleeves: "short" },
+      candidateLogoTexts: ["FITMATCH"], ocrStatus: "unverified", approvedForAutoApply: false,
+      evidence: { attempts: 1, outputTokens: 100, durationMs: 5000, gpuMiB: null }, ...patch });
+    const lit = (v) => "'" + v.replaceAll("'", "''") + "'";
+    const post = (w, jobRow, value, token = jobRow.lease_token) => {
+      const text = JSON.stringify(value);
+      const sha = createHash("sha256").update(text).digest("hex");
+      return service(`select fm_v2_analysis_result('${w}','${jobRow.id}','${token}','${sha}',${lit(text)},${lit(text)}::jsonb);`);
+    };
+    // Defer (GPU busy) does not consume an attempt and respects backoff; FIFO resumes after not_before.
+    assert.equal(service(`select fm_v2_analysis_defer('${wq}','${J}','${job.lease_token}','GPU_BUSY');`), "t");
+    assert.equal(service(`select state||':'||attempt||':'||deferrals||':'||stage from fm_v2_jobs where id='${J}';`), "queued:0:1:waiting_gpu");
+    assert.equal(claimR1(wq), null, "backoff respected");
+    assert.equal(service(`select fm_v2_analysis_defer('${wq}','${J}','${job.lease_token}','GPU_BUSY');`), "f", "stale lease cannot defer");
+    sql(`update fm_v2_jobs set not_before=now() where id='${J}';`);
+    job = claimR1(wq);
+    assert.equal(job.attempt, 1, "first real attempt");
+    // Fencing and identity: wrong token, wrong binding, wrong model revision, wrong digest all refused.
+    assert.equal(post(wq, job, result(), "00000000-0000-4000-8000-000000000000"), "lease_lost");
+    assert.equal(post(wq, job, result({ binding: { jobId: J, analysisId: A, itemId: jeansB, imageAssetId: snap(1), imageSha256: sha1 } })), "mismatch");
+    assert.equal(post(wq, job, result({ modelRevision: { model: "Qwen/Qwen3-VL-4B-Instruct", revision: "r2" } })), "mismatch");
+    assert.equal(post(wq, job, result({ policyRevision: "quality03.1" })), "mismatch");
+    assert.equal(service(`select fm_v2_analysis_result('${wq}','${J}','${job.lease_token}','${"0".repeat(64)}','{}','{}'::jsonb);`), "mismatch", "sha of bytes checked");
+    assert.equal(post(wqb, job, result()), "lease_lost", "other owner's worker");
+    // Accepted once; identical replay after a lost reply is ok; a second different result is refused.
+    assert.equal(post(wq, job, result()), "ok");
+    assert.equal(post(wq, job, result()), "replay");
+    assert.equal(post(wq, job, result({ evidence: { attempts: 2, outputTokens: 100, durationMs: 5000, gpuMiB: null } })), "lease_lost");
+    assert.equal(service(`select status||':'||(result_json is not null) from fm_v2_analyses where id='${A}';`), "review:true");
+    assert.equal(service(`select state||':'||stage from fm_v2_jobs where id='${J}';`), "succeeded:review");
+    assert.equal(service(`select color||':'||category from fm_wardrobe_items where id='${tee}';`), "white:shirt", "model never writes wardrobe");
+    // Human confirmation.
+    const rsha = service(`select result_sha256 from fm_v2_analyses where id='${A}';`);
+    const confirm = (user, cid, expected, decision, fields, cols, digest = "d1") =>
+      JSON.parse(service(`select fm_v2_analysis_confirm('${user}','${A}','${cid}','${digest}','${expected}','${decision}','${JSON.stringify(fields)}'::jsonb,'${JSON.stringify(cols)}'::jsonb);`));
+    const C1 = "c1c1c1c1-1111-4111-a111-111111111111";
+    assert.throws(() => confirm(qb, C1, rsha, "approve", { primaryColor: "red" }, { color: "red" }), /ANALYSIS_NOT_FOUND/, "foreign confirm");
+    assert.throws(() => confirm(qa, C1, "0".repeat(64), "approve", { primaryColor: "red" }, { color: "red" }), /RESULT_CHANGED/);
+    assert.throws(() => confirm(qa, C1, rsha, "approve", { approved: true }, { material: "cotton" }), /INVALID_INPUT/, "unknown column");
+    assert.throws(() => confirm(qa, C1, rsha, "approve", { category: "x" }, { category: "hoodie" }), /INVALID_INPUT/, "unmapped category");
+    assert.throws(() => confirm(qa, C1, rsha, "approve", {}, {}), /INVALID_INPUT/, "nothing approved");
+    sql(`update fm_wardrobe_items set image_path='${qa}/tee-2.jpg' where id='${tee}';`);
+    assert.throws(() => confirm(qa, C1, rsha, "approve", { primaryColor: "red" }, { color: "red" }), /SOURCE_CHANGED/, "item photo changed after analysis");
+    sql(`update fm_wardrobe_items set image_path='${qa}/tee-1.jpg' where id='${tee}';`);
+    const ok = confirm(qa, C1, rsha, "approve", { category: "tshirt", primaryColor: "red", pattern: "printed" }, { category: "t-shirt", color: "red", pattern: "graphic" });
+    assert.deepEqual(ok, { status: "confirmed", replay: false });
+    assert.equal(service(`select category||':'||color||':'||pattern||':'||coalesce(secondary_color,'-') from fm_wardrobe_items where id='${tee}';`), "t-shirt:red:graphic:-", "only approved columns written");
+    assert.deepEqual(confirm(qa, C1, rsha, "approve", {}, {}, "d1"), { status: "confirmed", replay: true }, "replay with same digest");
+    assert.throws(() => confirm(qa, C1, rsha, "reject", {}, {}, "d2"), /CONFIRMATION_REUSED/);
+    assert.throws(() => confirm(qa, "c1c1c1c1-2222-4222-a222-222222222222", rsha, "reject", {}, {}), /ALREADY_DECIDED/);
+    // Late result after the source changed is never applied (new analysis on jeansB for qb).
+    const B = "dededede-7777-4777-a777-777777777777", JB = "dededede-8888-4888-a888-888888888888";
+    enq(qb, jeansB, `${qb}/j.jpg`, snap(3), sha2, B, JB);
+    sql(`update fm_v2_workers set allowed_capabilities='{garment.analyze}' where id='${wqb}';`);
+    const jb = claimR1(wqb);
+    sql(`update fm_wardrobe_items set image_path='${qb}/j-new.jpg' where id='${jeansB}';`);
+    const late = { ...result(), binding: { jobId: JB, analysisId: B, itemId: jeansB, imageAssetId: snap(3), imageSha256: sha2 } };
+    assert.equal(post(wqb, jb, late), "stale");
+    assert.equal(service(`select a.status||':'||j.state||':'||j.error_code||':'||(a.result_json is null) from fm_v2_analyses a join fm_v2_jobs j on j.analysis_id=a.id where a.id='${B}';`), "stale:canceled:SOURCE_CHANGED:true");
+    // Owner actions: retry bounded by attempts and source; cancel only while pending.
+    assert.equal(service(`select fm_v2_analysis_action('${qb}','${B}','retry');`), "f", "stale analysis cannot be retried");
+    assert.throws(() => service(`select fm_v2_analysis_action('${qa}','${B}','cancel');`), /ANALYSIS_NOT_FOUND/);
+    // Deleting the wardrobe item removes analysis + job and schedules removal of the snapshot.
+    const C = "dededede-9999-4999-a999-999999999999", JC = "dededede-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
+    sql(`insert into fm_wardrobe_items(id,user_id,category,image_path) values('cdcdcdcd-3333-4333-a333-333333333333','${qa}','jeans','${qa}/j3.jpg');
+      insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes,bytes,sha256) values('${snap(4)}','${qa}','photo','ready','${qa}/analysis/4.jpg','${qa}/analysis/4.jpg',100,100,'${"4".repeat(64)}');`);
+    enq(qa, "cdcdcdcd-3333-4333-a333-333333333333", `${qa}/j3.jpg`, snap(4), "4".repeat(64), C, JC);
+    assert.equal(service(`select fm_v2_analysis_action('${qa}','${C}','cancel');`), "t");
+    assert.equal(service(`select fm_v2_analysis_action('${qa}','${C}','retry');`), "t");
+    sql("grant select, delete on fm_wardrobe_items to authenticated;");
+    sql(`set request.jwt.claim.sub='${qa}'; set role authenticated; delete from fm_wardrobe_items where id='cdcdcdcd-3333-4333-a333-333333333333';`);
+    assert.equal(service(`select count(*) from fm_v2_analyses where id='${C}';`), "0");
+    assert.equal(service(`select count(*) from fm_v2_jobs where id='${JC}';`), "0");
+    assert.equal(service(`select state from fm_v2_assets where id='${snap(4)}';`), "deleted");
+    assert.equal(service(`select count(*) from fm_v2_source_cleanup where asset_id='${snap(4)}' and state='pending';`), "1");
+    // Browser roles never read analyses or call the RPCs.
+    for (const role of ["anon", "authenticated"]) {
+      assert.throws(() => sql(`set role ${role};select * from fm_v2_analyses;`));
+      assert.throws(() => sql(`set role ${role};select fm_v2_analysis_confirm('${qa}','${A}','${C1}','d','x','reject','{}','{}');`));
+      assert.throws(() => sql(`set role ${role};select fm_v2_analysis_result('${wq}','${J}','${J}','x','{}','{}');`));
+    }
+    // Concurrency: 8 parallel enqueues of the same snapshot make one analysis and one job.
+    sql(`insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes,bytes,sha256) values('${snap(5)}','${qa}','photo','ready','${qa}/analysis/5.jpg','${qa}/analysis/5.jpg',100,100,'${"5".repeat(64)}');
+      update fm_wardrobe_items set image_path='${qa}/tee-5.jpg' where id='${tee}';`);
+    const runs = await parallel(Array.from({ length: 8 }, (_, i) =>
+      `select fm_v2_analysis_enqueue('${qa}','${tee}','${qa}/tee-5.jpg','${snap(5)}','${"5".repeat(64)}','qint.1','e${i}e0e0e0-0000-4000-a000-000000000000','f${i}f0f0f0-0000-4000-a000-000000000000');`));
+    assert.ok(runs.every((x) => x.ok), JSON.stringify(runs));
+    assert.equal(service(`select count(*) from fm_v2_analyses where image_sha256='${"5".repeat(64)}';`), "1");
+    assert.equal(Number(service("select count(*) from fm_v2_jobs;")) - Number(jobsBefore), 3, "A, B and the concurrent one (C deleted with its item)");
+    console.log("PASS QINT-C PostgreSQL: additive migration on populated DB; analysis jobs bound to one subject; dedupe incl. racing snapshot tombstone; foreign item/asset/photo-change refused; default-deny grants, 3D-only and foreign workers never claim; GPU_BUSY deferral keeps the attempt and honours backoff; lease/binding/model/policy/digest fencing; result replay idempotent, second result refused; model never writes wardrobe; human confirm writes only approved mapped columns, replay/reuse/decided/photo-changed guarded; late result after source change stays unapplied; owner actions bounded; item delete cascades and schedules snapshot removal; browser roles denied; 8 parallel enqueues -> 1.");
   }
   console.log(
     "PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.",

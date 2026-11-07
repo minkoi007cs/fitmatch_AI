@@ -25,10 +25,22 @@ export function result<T>(r: {
       "SOURCE_ALREADY_DELETED",
       "INVALID_INPUT",
       "LEASE_LOST",
+      // QINT-C analysis RPCs
+      "ITEM_NOT_FOUND",
+      "ANALYSIS_NOT_FOUND",
+      "ALREADY_DECIDED",
+      "NOT_REVIEWABLE",
+      "RESULT_CHANGED",
+      "SOURCE_CHANGED",
+      "CONFIRMATION_REUSED",
     ].find((c) => r.error!.message.includes(c));
     if (known)
       throw new InputError(
-        known === "QUOTA_EXCEEDED" ? 429 : known === "LOOK_NOT_FOUND" || known === "MODEL_NOT_FOUND" ? 404 : 409,
+        known === "QUOTA_EXCEEDED"
+          ? 429
+          : ["LOOK_NOT_FOUND", "MODEL_NOT_FOUND", "ITEM_NOT_FOUND", "ANALYSIS_NOT_FOUND"].includes(known)
+            ? 404
+            : 409,
         known,
       );
     throw new InputError(503, "DATA_UNAVAILABLE");

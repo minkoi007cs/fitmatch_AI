@@ -7,7 +7,6 @@ import {
   id,
   modelRequest,
   uploadRequest,
-  workerHeartbeat,
   outputIntentRequest,
   completeRequest,
   claimRequest,
@@ -37,9 +36,42 @@ import {
   bucket,
 } from "@/lib/v2/server";
 import { recommend, type Candidate } from "@/lib/v2/recommend";
+import {
+  analysisEnabled,
+  listAnalyses,
+  createAnalysis,
+  analysisAction,
+  confirmAnalysis,
+  analysisEnvelope,
+  analysisResultFromWorker,
+} from "@/lib/v2/analysis";
+import {
+  ANALYSIS_KIND,
+  analysisRequest,
+  analysisConfirmRequest,
+  analysisResultRequest,
+  analysisFailureCodes,
+} from "@/lib/v2/qwen";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type SourceCleanup = "pending" | "completed" | "failed";
+// QINT-C: the v1-r2 schemas stay unchanged; the analysis kind and its failure codes are accepted here
+// in addition (contract fitmatch.qwen-garment-analysis.v1). With the flag OFF the kind is never stored.
+const allKinds = [...workerKinds, ANALYSIS_KIND] as const;
+const workerHeartbeatQ = z
+  .object({
+    capabilities: z.partialRecord(
+      z.enum(allKinds),
+      z.object({ model: z.string().min(1).max(160), revision: z.string().min(1).max(160) }).strict(),
+    ),
+  })
+  .strict();
+const failureRequestQ = z
+  .object({
+    leaseToken: id,
+    code: z.enum([...failureRequest.shape.code.options, ...analysisFailureCodes.retryable, "INVALID_OUTPUT"]),
+  })
+  .strict();
 /** Storage errors are recorded without their message (it can echo object paths). */
 function storageErrorCode(error: unknown) {
   const e = error as { status?: unknown; statusCode?: unknown } | null;
@@ -58,13 +90,15 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
   const method = request.method;
   if (method !== "POST") throw new InputError(405, "METHOD_NOT_ALLOWED");
   if (path.join("/") === "heartbeat") {
-    const body = await readJson(request, workerHeartbeat);
+    const body = await readJson(request, workerHeartbeatQ);
+    const declared: Record<string, unknown> = { ...body.capabilities };
+    if (!analysisEnabled()) delete declared[ANALYSIS_KIND];
     result(
       await db
         .from("fm_v2_workers")
         .update({
           last_seen: new Date().toISOString(),
-          capabilities: body.capabilities,
+          capabilities: declared,
         })
         .eq("id", w.id)
         .eq("enabled", true),
@@ -72,7 +106,7 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
     // Declarations are not permissions: report what the operator actually granted.
     return reply({
       success: true,
-      grantedCapabilities: grantedKinds(body.capabilities, w.allowed_capabilities),
+      grantedCapabilities: grantedKinds(declared, w.allowed_capabilities),
     });
   }
   if (path.join("/") === "claim") {
@@ -85,6 +119,9 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
       }),
     ) as JobRow | null;
     if (!job) return new Response(null, { status: 204 });
+    const analysisJob = job as JobRow & { analysis_id?: string | null };
+    if (analysisJob.analysis_id)
+      return reply(await analysisEnvelope(w, { ...analysisJob, analysis_id: analysisJob.analysis_id }, protocolRevision));
     const model = result(
       await db
         .from("fm_v2_models")
@@ -218,9 +255,20 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
     await ownedJob(w, jobId, body.leaseToken);
     return reply(await finalizeAsset(w.user_id, body.assetId, jobId));
   }
+  if (action === "result") {
+    const body = await readJson(request, analysisResultRequest);
+    return reply(await analysisResultFromWorker(w, jobId, body));
+  }
   if (action === "input-url") {
     const body = await readJson(request, completeRequest);
-    const job = await ownedJob(w, jobId, body.leaseToken);
+    const job = (await ownedJob(w, jobId, body.leaseToken)) as JobRow & { analysis_id?: string | null };
+    if (job.analysis_id) {
+      const a = required(
+        await db.from("fm_v2_analyses").select("image_asset_id").eq("id", job.analysis_id).eq("user_id", w.user_id).single(),
+      ) as { image_asset_id: string };
+      if (body.assetId !== a.image_asset_id) throw new InputError(403, "ASSET_NOT_IN_JOB");
+      return reply(await signedAsset(w.user_id, a.image_asset_id));
+    }
     const model = result(
       await db
         .from("fm_v2_models")
@@ -260,7 +308,14 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
     return reply({ success: true });
   }
   if (action === "fail") {
-    const body = await readJson(request, failureRequest);
+    const body = await readJson(request, failureRequestQ);
+    // GPU busy / memory admission: requeue without consuming an attempt (analysis jobs only).
+    if ((analysisFailureCodes.retryable as readonly string[]).includes(body.code)) {
+      const deferred = result(
+        await db.rpc("fm_v2_analysis_defer", { p_worker: w.id, p_job: jobId, p_token: body.leaseToken, p_code: body.code }),
+      );
+      if (deferred) return reply({ success: true, deferred: true });
+    }
     const ok = result(
       await db.rpc("fm_v2_transition", {
         p_worker: w.id,
@@ -279,7 +334,7 @@ function grantedKinds(
   declared: Record<string, unknown> | null | undefined,
   allowed: string[] | null | undefined,
 ) {
-  return workerKinds.filter(
+  return allKinds.filter(
     (k) => !!declared && k in declared && (allowed ?? []).includes(k),
   );
 }
@@ -443,6 +498,7 @@ async function handle(
             .from("fm_v2_jobs")
             .select(safeJobFields)
             .eq("user_id", owner)
+            .not("model_id", "is", null)
             .order("created_at", { ascending: false })
             .limit(100),
         ),
@@ -453,6 +509,11 @@ async function handle(
       method === "POST" &&
       ["cancel", "retry", "regenerate"].includes(path[2])
     ) {
+      // Analysis jobs have their own owner actions (analyses/:id/cancel|retry).
+      const kind = result(
+        await db.from("fm_v2_jobs").select("kind").eq("id", uuid(path[1])).eq("user_id", owner).maybeSingle(),
+      ) as { kind: string } | null;
+      if (kind?.kind === ANALYSIS_KIND) throw new InputError(409, "JOB_ACTION_NOT_ALLOWED");
       const ok = result(
         await db.rpc("fm_v2_job_action", {
           p_user: owner,
@@ -462,6 +523,26 @@ async function handle(
       );
       if (!ok) throw new InputError(409, "JOB_ACTION_NOT_ALLOWED");
       return reply({ success: true });
+    }
+    if (path[0] === "analyses") {
+      if (path.length === 1 && method === "GET")
+        return reply({ enabled: analysisEnabled(), analyses: await listAnalyses(owner) });
+      if (path.length === 1 && method === "POST") {
+        if (!analysisEnabled()) throw new InputError(403, "FEATURE_DISABLED");
+        const body = await readJson(request, analysisRequest);
+        const r = await createAnalysis(owner, body.itemId);
+        return reply(r, r.deduped ? 200 : 201);
+      }
+      if (path.length === 3 && method === "POST") {
+        const analysisId = uuid(path[1]);
+        if (path[2] === "confirm") return reply(await confirmAnalysis(owner, analysisId, await readJson(request, analysisConfirmRequest)));
+        if (path[2] === "cancel") return reply({ analysis: await analysisAction(owner, analysisId, "cancel") });
+        if (path[2] === "retry") {
+          if (!analysisEnabled()) throw new InputError(403, "FEATURE_DISABLED");
+          return reply({ analysis: await analysisAction(owner, analysisId, "retry") });
+        }
+      }
+      throw new InputError(404, "NOT_FOUND");
     }
     if (path.join("/") === "compute/status" && method === "GET") {
       const workers = result(
