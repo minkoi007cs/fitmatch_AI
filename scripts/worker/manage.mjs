@@ -8,7 +8,9 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
-const KINDS = ["avatar.reconstruct", "garment.reconstruct", "garment.drape"];
+// Must match fm_v2_workers_allowed_capabilities_check. garment.analyze = Qwen (QINT-C): grant it only on a
+// test server after contract + drain review; the app also needs QWEN_ANALYSIS_ENABLED=1.
+const KINDS = ["avatar.reconstruct", "garment.reconstruct", "garment.drape", "bottom.reconstruct", "bottom.drape", "garment.analyze"];
 const usage =
   "Usage: node --env-file=.env.local scripts/worker/manage.mjs create OWNER [kind...] | grant|ungrant OWNER WORKER kind... | rotate|revoke OWNER WORKER";
 const [command, ownerId, ...rest] = process.argv.slice(2);

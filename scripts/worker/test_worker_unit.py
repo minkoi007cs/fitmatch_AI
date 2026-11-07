@@ -442,5 +442,47 @@ class WindowsJobPlacementTests(unittest.TestCase):
         self.assertIsNotNone(job.handle, 'job handle kept open: the processes stay accounted for')
 
 
+class AnalysisTransportTests(unittest.TestCase):
+    """QINT-C json-v1 helpers (the end-to-end path runs in scripts/test-qwen-http.mjs)."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.binding = {'jobId': JOB_ID, 'analysisId': 'a', 'itemId': 'i', 'imageAssetId': 's', 'imageSha256': 'h'}
+
+    def write(self, value, raw=None):
+        path = self.tmp / 'result.json'
+        path.write_bytes(raw if raw is not None else json.dumps(value).encode())
+        return path
+
+    def test_result_must_be_bounded_bound_and_never_self_approved(self):
+        good = {'contractVersion': worker.ANALYSIS_RESULT, 'approvedForAutoApply': False, 'binding': self.binding}
+        self.assertTrue(worker.json_result_ok(self.write(good), self.binding))
+        self.assertFalse(worker.json_result_ok(self.write({**good, 'approvedForAutoApply': True}), self.binding))
+        self.assertFalse(worker.json_result_ok(self.write({**good, 'binding': {**self.binding, 'itemId': 'x'}}), self.binding))
+        self.assertFalse(worker.json_result_ok(self.write(None, b'{not json'), self.binding))
+        self.assertFalse(worker.json_result_ok(self.write(None, b'[1]'), self.binding))
+        self.assertFalse(worker.json_result_ok(self.write({**good, 'pad': 'x' * 9000}), self.binding), 'over 8192 bytes')
+
+    def test_analysis_exit_codes_only_for_analysis_jobs_and_only_with_matching_record(self):
+        err = self.tmp / 'adapter.err'
+        err.write_text('log\n{"success": false, "code": "GPU_BUSY"}\n')
+        self.assertEqual(worker.classify_exit(75, {}, err, 'garment.analyze'), 'GPU_BUSY')
+        self.assertEqual(worker.classify_exit(75, {}, err, 'avatar.reconstruct'), 'INFERENCE_FAILED')
+        err.write_text('{"success": false, "code": "OOM"}\n')
+        self.assertEqual(worker.classify_exit(75, {}, err, 'garment.analyze'), 'INFERENCE_FAILED', 'code must match exit')
+        err.write_text('{"success": false, "code": "MEMORY_PRESSURE"}\n')
+        self.assertEqual(worker.classify_exit(74, {}, err, 'garment.analyze'), 'MEMORY_PRESSURE')
+
+    def test_3d_input_digest_unchanged_and_analysis_digest_binds_identity(self):
+        j = job()
+        before = hashlib.sha256(json.dumps({'jobId': j['jobId'], 'modelId': j['modelId'], 'kind': j['kind'], 'modelRevision': j['modelRevision'],
+            'params': j['input']['params'], 'assets': sorted((a['role'], a['assetId'], a['sha256'], a['bytes']) for a in j['input']['assets'])},
+            sort_keys=True).encode()).hexdigest()
+        self.assertEqual(worker.input_digest(j), before, 'existing 3D checkpoints stay valid')
+        a = {**j, 'kind': 'garment.analyze', 'modelId': None, 'input': {**j['input'], 'binding': self.binding}}
+        b = {**a, 'input': {**a['input'], 'binding': {**self.binding, 'itemId': 'other'}}}
+        self.assertNotEqual(worker.input_digest(a), worker.input_digest(b))
+
+
 if __name__ == '__main__':
     unittest.main()

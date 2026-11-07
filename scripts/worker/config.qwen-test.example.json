@@ -1,0 +1,16 @@
+{
+  "appUrl": "https://your-test-fitmatch-app.example",
+  "workDir": "C:/FitmatchQwen/worker-data",
+  "pollSeconds": 8,
+  "processContainment": "required",
+  "gpuLock": "default",
+  "engines": {
+    "garment.analyze": {
+      "model": "Qwen/Qwen3-VL-4B-Instruct",
+      "revision": "PIN-THE-40-CHAR-COMMIT-YOU-ACTUALLY-RUN",
+      "command": ["C:/FitmatchQwen/env/Scripts/python.exe", "C:/FitmatchQwen/adapter/run_analysis.py", "{input}", "{output}"],
+      "timeoutSeconds": 120,
+      "drainSeconds": 30
+    }
+  }
+}
