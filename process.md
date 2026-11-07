@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 06/11/2026, America/New_York. Revision: PROC-0016. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 07/11/2026, America/New_York. Revision: PROC-0017. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Trạng thái tiếp nối hiện hành — PROC-0016
 
@@ -414,3 +414,11 @@ Scoped app handoff to Claude CL-POSTAUDIT-01 from7be on branch/worktree riêng: 
 ### L-039 — 06/11/2026 — DISPATCH / END — CX-PROJECT-AUDIT-16
 
 Audit/handoffs published f75290d, links/JSON/fences and secret-pattern scan checked. send_message_to_thread success to both existingPCchats: PC-INT-007 and AI-QUALITY-03 referencing publishedPROC0016; sent is not completion. Claude external toolendpoint absent: user must forward fullprompt, not claimed running. Appsource remains7be869c, untouched; no new fullsuite rerun or live test claimed. Productgate NEEDS CHANGES, weightedestimate46% planningonly. Review ownerCodex; Claude scopedapphandoff Ready/Assigned untilreceipt; PCreceipt/results pending.
+
+
+### L-040 — 07/11/2026 — START — CX-PC-REVIEW-17
+User giao kiểm2PC/nghiệmthu/dispatch tiếp. Đọc onboarding và H-AUDIT-016; publication HEAD/FETCH_HEAD d3f29a5, root dirty được bảo toàn. Scope chỉ docs review/handoff/process/roadmap; app Claude giữ. PR6eb9b009,PR73aacf25,PR81f7da0f report được đọc; live PC host unavailable. Không nhận reports là independent test PASS.
+
+
+### L-041 — 07/11/2026 — REVIEW / ASSIGN — CX-PC-REVIEW-17
+PR6eb9b009/PR73aacf25/PR81f7da0f báo Readyforreview; Claude appremote d17ca355. PC newfindings quiescence launcher/interpreter gap và guard nonfiniteexpiry; chưa production/code independenttest. Report và H-PC-017 giữ personalG1–G3 NOT VERIFIED/firstrelease NEEDS CHANGES; estimate46% unchanged. PC-SAFE-008/AI-QUALITY-04 Assigned, không tự khai running trước receipt. Live PC host unavailable khi snapshot; dispatchresults ghi tiếp. Scope chỉdocs; Claude vẫn giữapp.

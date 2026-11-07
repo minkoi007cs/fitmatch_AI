@@ -293,3 +293,7 @@ Cả hai dùng runtime/cache riêng, không sửa chung repoindex hoặc app fil
 ## 19. Audit và tiếp quản — H-AUDIT-016 / PROC-0016
 
 [Audit và weightedestimate](./docs/reports/review/project-audit-20261106/audit.md), [Claude continuation](./docs/handoffs/prompt-claude-post-audit-20261106.md), [PC continuation](./docs/handoffs/pc-post-audit-20261106.md). Firstrelease chưa nghiệmthu;46% là estimate pháttriển theo6workstreams, không sửa gate. Codex bàn giao app từ7be869c choClaude trên taskbranch riêng; ưu tiên privacy deletionretry, signedURLrefresh, nativeWindows testproposal. PC tiếp actualcapability/retention/strain và groundedQwen. Existing code không làm lại; không animation/latercategories trước realstaticgate.
+
+
+## 20. Tiếp nối PC — PROC-0017
+[Review07/11](./docs/reports/review/pc-progress-20261107.md) và [H-PC-017](./docs/handoffs/pc-next-20261107.md). PC-SAFE-008: guard finite metadata/native quiescence evidence. AI-QUALITY-04: independent guard ACK, selected-runtime fault/unload và bounded corpus. Claude PR8 Ready for review; personalG1–G3 NOT VERIFIED. Estimate46% giữ nguyên, không cộng theo số tests/report.
