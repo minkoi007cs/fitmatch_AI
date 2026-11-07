@@ -434,3 +434,7 @@ Chủ dự án giao PC+Claude tích hợp Qwen vào app chạy thử, serialize 
 
 ### L-044 — 07/11/2026 — ASSIGN — H-QWEN-018
 User explicitly yêu cầu PC+Claude tích hợpAPIQwen chạythử vàserializeGPU. QINT-C AssignedClaude ownappbranch từd17ca355descendant; scoped productiondrainfix mới đượcgiao. QINT-P AssignedPCQwen runtimeadapter; QINT-G AssignedPC3D sharedguard/native; QINT-R Codexreview. Handoff vàClaude fullprompt đãsoạn; featureOFF/testonly/contract+nativegates trướcrealintegratedGPU. Không tự khai dispatched/running/Done. Giữ H-PC-017 safetywork thành prerequisite, allpriorcode/checkpoints/models.
+
+
+### L-045 — 07/11/2026 — HANDOFF — CX-QWEN-INTEGRATION-18
+Published15fd71b / H-QWEN-018 +Claude fullprompt, checked links/fences/diff. DirectPCdispatch call không trả acknowledgement sau boundedwait; dừng orchestration, delivery UNKNOWN (không giả gửithànhcông hoặc gửithấtbại). Vòng gửi sequential nên chatQwen cũng chưa có confirmeddispatch. Không tự retry tránh duplicate; user có thể forward H-QWEN-018. Claudeexternal chưa trực tiếpgửi. Code/GPU/appintegration chưa chạy trong lượt này; tasks Assigned trước receipt.
