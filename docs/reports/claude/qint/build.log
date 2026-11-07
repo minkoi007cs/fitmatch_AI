@@ -1,0 +1,54 @@
+
+> fitmatch-ai@0.1.0 build
+> next build
+
+▲ Next.js 16.4.5 (Turbopack)
+✓ Running next.config.ts took 27ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 758ms
+  Running TypeScript ...
+  Finished TypeScript in 2.6s ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/18) ...
+  Generating static pages using 1 worker (4/18) 
+  Generating static pages using 1 worker (8/18) 
+  Generating static pages using 1 worker (13/18) 
+✓ Generating static pages using 1 worker (18/18) in 405ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/analyze-image
+├ ƒ /api/auth/session
+├ ƒ /api/generate-outfit
+├ ƒ /api/generate-outfit-image
+├ ƒ /api/outfit-image
+├ ƒ /api/outfits
+├ ƒ /api/upload-item
+├ ƒ /api/user/profile
+├ ƒ /api/v2/[...path]
+├ ƒ /api/wardrobe
+├ ƒ /api/wardrobe/[id]
+├ ○ /auth/auth-code-error
+├ ƒ /auth/callback
+├ ƒ /auth/link
+├ ƒ /auth/login
+├ ƒ /auth/logout
+├ ○ /icon.svg
+├ ƒ /login
+├ ○ /looks
+├ ○ /outfits
+├ ○ /prepare
+├ ○ /quiz
+├ ƒ /studio
+└ ○ /wardrobe
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+exit=0

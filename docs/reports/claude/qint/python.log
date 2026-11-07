@@ -1,0 +1,41 @@
+test_3d_input_digest_unchanged_and_analysis_digest_binds_identity (test_worker_unit.AnalysisTransportTests.test_3d_input_digest_unchanged_and_analysis_digest_binds_identity) ... ok
+test_analysis_exit_codes_only_for_analysis_jobs_and_only_with_matching_record (test_worker_unit.AnalysisTransportTests.test_analysis_exit_codes_only_for_analysis_jobs_and_only_with_matching_record) ... ok
+test_result_must_be_bounded_bound_and_never_self_approved (test_worker_unit.AnalysisTransportTests.test_result_must_be_bounded_bound_and_never_self_approved) ... ok
+test_garbage_checkpoint_is_set_aside_not_deleted (test_worker_unit.CheckpointTests.test_garbage_checkpoint_is_set_aside_not_deleted) ... Checkpoint set aside: unreadable or unrecognized checkpoint
+ok
+test_job_id_must_be_uuid (test_worker_unit.CheckpointTests.test_job_id_must_be_uuid) ... ok
+test_other_engine_revision_is_refused (test_worker_unit.CheckpointTests.test_other_engine_revision_is_refused) ... ok
+test_path_outside_job_dir_is_refused (test_worker_unit.CheckpointTests.test_path_outside_job_dir_is_refused) ... ok
+test_tampered_output_is_refused (test_worker_unit.CheckpointTests.test_tampered_output_is_refused) ... ok
+test_unknown_version_is_set_aside (test_worker_unit.CheckpointTests.test_unknown_version_is_set_aside) ... Checkpoint set aside: unreadable or unrecognized checkpoint
+ok
+test_valid_output_is_reused (test_worker_unit.CheckpointTests.test_valid_output_is_reused) ... ok
+test_adapter_environment_drops_secrets (test_worker_unit.ClassificationTests.test_adapter_environment_drops_secrets) ... ok
+test_exit_codes_follow_structured_adapter_contract (test_worker_unit.ClassificationTests.test_exit_codes_follow_structured_adapter_contract) ... ok
+test_job_failure_unknown_code_maps_to_inference_failed (test_worker_unit.ClassificationTests.test_job_failure_unknown_code_maps_to_inference_failed) ... ok
+test_posix_uses_session_and_dirlock (test_worker_unit.ContainmentTests.test_posix_uses_session_and_dirlock) ... ok
+test_unknown_mode_is_rejected_everywhere (test_worker_unit.ContainmentTests.test_unknown_mode_is_rejected_everywhere) ... ok
+test_windows_binding_failure_refuses_to_start (test_worker_unit.ContainmentTests.test_windows_binding_failure_refuses_to_start) ... ok
+test_windows_binding_success (test_worker_unit.ContainmentTests.test_windows_binding_success) ... ok
+test_windows_explicit_disabled_mode_runs_with_warning (test_worker_unit.ContainmentTests.test_windows_explicit_disabled_mode_runs_with_warning) ... WARNING: processContainment=unsafe-disabled. A worker crash can leave an adapter running on the GPU; restart only after checking Task Manager. Reason: OSError
+ok
+test_independent_process_exclusion_and_crash_release (test_worker_unit.GpuLockTests.test_independent_process_exclusion_and_crash_release) ... ok
+test_one_gpu_job_per_host_across_workers (test_worker_unit.GpuLockTests.test_one_gpu_job_per_host_across_workers) ... ok
+test_media_type_wins_and_legacy_roles_still_work (test_worker_unit.InputNameTests.test_media_type_wins_and_legacy_roles_still_work) ... ok
+test_undrained_tree_keeps_lock_and_blocks_claims_until_it_exits (test_worker_unit.QuarantineLoopTests.test_undrained_tree_keeps_lock_and_blocks_claims_until_it_exits) ... Still quarantined: owned adapter processes running; not claiming.
+Quarantined adapter processes have exited; resuming.
+ok
+test_drain_waits_for_and_stops_owned_grandchild_only (test_worker_unit.QuiescenceTests.test_drain_waits_for_and_stops_owned_grandchild_only) ... ok
+test_exited_grandchild_left_as_zombie_counts_as_drained (test_worker_unit.QuiescenceTests.test_exited_grandchild_left_as_zombie_counts_as_drained) ... ok
+test_gpu_lock_is_held_until_the_owned_tree_is_drained (test_worker_unit.QuiescenceTests.test_gpu_lock_is_held_until_the_owned_tree_is_drained) ... ok
+test_old_launcher_poll_reports_done_while_grandchild_runs (test_worker_unit.QuiescenceTests.test_old_launcher_poll_reports_done_while_grandchild_runs) ... ok
+test_sigterm_ignoring_grandchild_is_killed_after_grace (test_worker_unit.QuiescenceTests.test_sigterm_ignoring_grandchild_is_killed_after_grace) ... ok
+test_adapter_starts_suspended_inside_its_own_job (test_worker_unit.WindowsJobPlacementTests.test_adapter_starts_suspended_inside_its_own_job) ... ok
+test_job_that_never_empties_is_reported_undrained (test_worker_unit.WindowsJobPlacementTests.test_job_that_never_empties_is_reported_undrained) ... ok
+test_placement_failure_refuses_to_run_the_adapter (test_worker_unit.WindowsJobPlacementTests.test_placement_failure_refuses_to_run_the_adapter) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 1.299s
+
+OK
+exit=0
