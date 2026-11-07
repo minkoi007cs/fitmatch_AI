@@ -100,7 +100,7 @@ def safe_file(path, root):
         raise Refused('unsafe_or_missing_path') from error
     return path
 
-def read_image(path, root, expected_hash, *, byte_limit=MAX_IMAGE_BYTES):
+def read_image(path, root, expected_hash, *, byte_limit=MAX_IMAGE_BYTES, require_format=None):
     """Read one bounded snapshot; decode exactly the bytes hashed to avoid path replacement races."""
     from io import BytesIO
     from PIL import Image, UnidentifiedImageError
@@ -114,6 +114,8 @@ def read_image(path, root, expected_hash, *, byte_limit=MAX_IMAGE_BYTES):
     try:
         with Image.open(BytesIO(data)) as source:
             if source.format not in {'PNG', 'JPEG'}:
+                raise Refused('image_format')
+            if require_format is not None and source.format!=require_format:
                 raise Refused('image_format')
             if source.width * source.height > MAX_IMAGE_PIXELS or min(source.size) < 16:
                 raise Refused('image_dimensions')

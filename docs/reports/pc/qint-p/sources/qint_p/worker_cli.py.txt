@@ -1,0 +1,55 @@
+"""Direct worker argv PROPOSAL. Default refuses without reviewed local test approval; no guard invocation."""
+import argparse
+import json
+import os
+from pathlib import Path
+import sys
+import time
+
+from boundary import Refused
+import wire
+from worker_admission import verify, WorkerChild, POLICY
+
+def main(argv=None,*,verifier=verify,backend_factory=None):
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--input',type=Path,required=True)
+    parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--policy',type=Path,default=POLICY)
+    args=parser.parse_args(argv)
+    try:
+        value=wire.read_input(args.input)
+        root=args.input.absolute().parent
+        requested=Path(value['outputPath'])
+        if not requested.is_absolute():requested=root/requested
+        output=args.output.absolute()
+        if output!=root/'result.json' or requested!=output or output.exists() or output.is_symlink():
+            raise Refused('INVALID_INPUT')
+        checker=lambda:verifier(args.input,value,args.policy)
+        proof=checker()  # No image decode/model import until trusted parent + slot/lock are proved.
+        image=wire.image_for(value,root)
+        events=root/'qwen-events.jsonl'
+        def event(record):
+            with events.open('a',encoding='utf-8') as stream:
+                stream.write(json.dumps({'monotonic':time.monotonic(),**record})+'\n')
+        event({'phase':'worker_admission',**proof})
+        if backend_factory is None:
+            from runner import SelectedBackend
+            backend=SelectedBackend(checker,event)
+        else:
+            backend=backend_factory(checker,event)
+        result=wire.execute(value,image,backend=backend,lease=WorkerChild(checker))
+        data=json.dumps(result,ensure_ascii=False,separators=(',',':')).encode('utf-8')
+        if len(data)>8192:raise Refused('INVALID_OUTPUT')
+        # New result only, no overwrite. Worker reads it only after full process drain/exit0.
+        with output.open('xb') as stream:
+            stream.write(data);stream.flush();os.fsync(stream.fileno())
+        print(json.dumps({'status':'proposal','approvedForAutoApply':False}))
+        return 0
+    except Refused as error:
+        code=error.code if error.code in wire.EXIT else 'INVALID_INPUT'
+    except Exception:
+        code='INFERENCE_FAILED'
+    print(json.dumps({'success':False,'code':code}),file=sys.stderr,flush=True)
+    return wire.EXIT[code]
+
+if __name__=='__main__':raise SystemExit(main())

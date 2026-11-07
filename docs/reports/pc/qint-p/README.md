@@ -1,5 +1,9 @@
 # QINT-P / AI-QUALITY-04 checkpoint — 07/11/2026
 
+Latest continuation: [direct worker-held adapter/slot bridge](worker-bridge.md),
+130CPUcases/129PASS/1skip. The103-case checkpoint below is preserved as history;
+no real GPU integration has run.
+
 Session PC-QINT-P-20261107-01, operations c5e2429 / PROC-0018.
 Runtime/controller/CPU conformance is **Ready for review**. Integrated GPU is
 **NOT RUN**, not accepted. The app remains owned by Claude and shared guard by QINT-G.

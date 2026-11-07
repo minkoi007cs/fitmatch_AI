@@ -42,10 +42,12 @@ def execute(value, image, *, backend, lease, clock=time.monotonic):
     local = execute_budget(budget,image,backend=backend,lease=lease,project=project,clock=clock)
     if local['status'] != 'requires_human_review':
         errors = {'gpu_busy':'GPU_BUSY','host_memory_admission':'MEMORY_PRESSURE','gpu_memory_admission':'MEMORY_PRESSURE',
+                  'model_unavailable':'MODEL_UNAVAILABLE',
                   'out_of_memory':'OOM','timeout':'TIMEOUT','invalid_output':'INVALID_OUTPUT',
                   'invalid_output_size':'INVALID_OUTPUT','checkpoint_hash_mismatch':'MODEL_UNAVAILABLE',
                   'checkpoint_size_mismatch':'MODEL_UNAVAILABLE','checkpoint_file_set_changed':'MODEL_UNAVAILABLE'}
-        raise Refused(errors.get(local.get('error_code'),'INFERENCE_FAILED'))
+        reason=local.get('error_code')
+        raise Refused(reason if reason in EXIT else errors.get(reason,'INFERENCE_FAILED'))
     parsed = local['proposal']['attributes']
     duration = round((clock()-start)*1000)
     if duration > policy['timeoutSeconds']*1000:
@@ -75,4 +77,4 @@ def image_for(value, job_root):
     if not path.is_absolute(): path = Path(job_root)/path
     path = safe_file(path,job_root)
     if path.stat().st_size != asset['bytes']: raise Refused('INVALID_INPUT')
-    return read_image(path,job_root,asset['sha256'],byte_limit=10*1024**2)
+    return read_image(path,job_root,asset['sha256'],byte_limit=10*1024**2,require_format='JPEG')

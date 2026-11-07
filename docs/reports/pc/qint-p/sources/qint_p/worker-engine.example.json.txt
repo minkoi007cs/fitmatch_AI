@@ -1,0 +1,21 @@
+{
+  "appUrl": "https://dedicated-test-endpoint.invalid",
+  "workDir": "ABSOLUTE_PRIVATE_TEST_WORKDIR_REQUIRED",
+  "processContainment": "required",
+  "gpuLock": "EXACT_COORDINATOR_ABSOLUTE_GPU0_LOCK_PATH_REQUIRED",
+  "engines": {
+    "garment.analyze": {
+      "model": "Qwen/Qwen3-VL-4B-Instruct",
+      "revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+      "command": [
+        "ABSOLUTE_QWEN_ENV_PYTHON_REQUIRED",
+        "ABSOLUTE_WORKER_CLI_PY_REQUIRED",
+        "--input", "{input}", "--output", "{output}",
+        "--policy", "ABSOLUTE_PRIVATE_REVIEWED_APPROVAL_REQUIRED"
+      ],
+      "timeoutSeconds": 240,
+      "drainSeconds": 30,
+      "exitCodes": {"124": "TIMEOUT"}
+    }
+  }
+}

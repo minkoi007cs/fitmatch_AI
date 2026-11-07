@@ -101,7 +101,10 @@ class SelectedBackend:
     def load(self):
         self.verify()
         from checkpoint import verify_checkpoint
-        verify_checkpoint()
+        try:
+            verify_checkpoint()
+        except (OSError,ValueError):
+            raise Refused('model_unavailable') from None
         os.environ.update(CUDA_VISIBLE_DEVICES='0', HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1',
                           HF_HUB_DISABLE_IMPLICIT_TOKEN='1', TOKENIZERS_PARALLELISM='false',
                           HF_ENABLE_PARALLEL_LOADING='false', HF_HOME=str(AI / 'cache' / 'huggingface'))
