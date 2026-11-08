@@ -880,6 +880,9 @@ class Worker:
         self.admission = admission
         self.admission_refusal = None
         self.gpu_busy_logged = False
+        # QREV-STATUS: whether the last claim attempt found the shared GPU taken (lock held elsewhere or the
+        # slot assigned to the other PC owner). Reported in heartbeats; never says whose work it is.
+        self.gpu_busy = False
         self.quarantine = None  # OwnedProcessTree whose drain could not be proven (PC-QUIESCENCE-01)
         self.engines = config.get('engines', {})
         self.capabilities = {}
@@ -908,8 +911,16 @@ class Worker:
         self.admission_refusal = None
         return True
 
+    def set_gpu_busy(self, busy):
+        # Report the transition right away so the owner's UI does not wait a whole poll interval.
+        if busy and not getattr(self, 'gpu_busy', False):
+            self.gpu_busy = True
+            self.worker_heartbeat()
+        self.gpu_busy = busy
+
     def worker_heartbeat(self):
-        reply = self.client.api('heartbeat', {'capabilities': self.capabilities}) or {}
+        reply = self.client.api('heartbeat', {'capabilities': self.capabilities,
+                                              'gpuBusy': bool(getattr(self, 'gpu_busy', False))}) or {}
         granted = set(reply.get('grantedCapabilities', self.capabilities.keys()))
         for kind in self.capabilities.keys() - granted - self.warned:
             print('Capability declared but not granted by the operator:', kind, flush=True)
@@ -1203,12 +1214,15 @@ class Worker:
                     if not self.gpu_busy_logged:
                         print('GPU is busy with another job on this machine; waiting before claiming.', flush=True)
                         self.gpu_busy_logged = True
+                    self.set_gpu_busy(True)
                     job = None
                 elif not self.admitted():
                     self.gpu.release()
+                    self.set_gpu_busy(True)
                     job = None
                 else:
                     self.gpu_busy_logged = False
+                    self.gpu_busy = False
                     try:
                         job = self.claim()
                         if job:

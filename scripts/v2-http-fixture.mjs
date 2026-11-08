@@ -42,7 +42,7 @@ export async function v2Fixture() {
     uploadPaths = new Map(),
     readPaths = new Map(),
     // Fault injection for storage transport tests (counts are consumed per request).
-    faults = { uploadDropAfterStore: 0, uploadExpire: 0, uploads: 0, removeFail: 0, removeCalls: 0, readExpire: 0, reads: 0, expiredObjects: new Set() };
+    faults = { uploadDropAfterStore: 0, uploadExpire: 0, uploads: 0, removeFail: 0, removeCalls: 0, serverUploadFail: 0, beforeRpc: {}, readExpire: 0, reads: 0, expiredObjects: new Set() };
   const sql = (s) =>
     execFileSync(
       "docker",
@@ -126,6 +126,7 @@ export async function v2Fixture() {
       "20261106053812_fitting_generations.sql",
       "20261106150000_source_cleanup_priv01.sql",
       "20261107120000_qwen_analysis_qint.sql",
+      "20261108090000_qwen_review_qrev.sql",
     ])
       sql(
         readFileSync(
@@ -264,6 +265,12 @@ export async function v2Fixture() {
               rawPath.slice("/storage/v1/object/".length),
             );
             if (req.method === "POST") {
+              if (faults.serverUploadFail > 0) {
+                // Storage outage on a server-side upload: nothing stored, the client gets an error.
+                faults.serverUploadFail--;
+                send({ statusCode: "503", error: "Service Unavailable", message: "synthetic storage outage" }, 503);
+                return true;
+              }
               if (objects.has(path)) {
                 send({ message: "exists" }, 409);
                 return true;
@@ -353,11 +360,18 @@ export async function v2Fixture() {
             throw new Error("Service role RPC expected");
           const fn = table.slice(4);
           if (
-            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look|source_retention|source_cleanup_report|source_cleanup_due|analysis_enqueue|analysis_result|analysis_defer|analysis_action|analysis_confirm)$/.test(
+            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look|source_retention|source_cleanup_report|source_cleanup_due|analysis_reserve|analysis_abort|analysis_enqueue|analysis_result|analysis_defer|analysis_action|analysis_confirm)$/.test(
               fn,
             )
           )
             return false;
+          // Deterministic race injection: run SQL just before one RPC (e.g. the item is edited while the
+          // route uploads the snapshot), then forward the RPC unchanged.
+          if (faults.beforeRpc[fn]) {
+            const injected = faults.beforeRpc[fn];
+            delete faults.beforeRpc[fn];
+            sql(injected);
+          }
           const args = Object.entries(body).map(
             ([k, v]) =>
               `${ident(k)} => ${k === "p_inputs" ? `array[${v.map(quote)}]::uuid[]` : k === "p_paths" ? `array[${v.map(quote)}]::text[]` : v !== null && typeof v === "object" ? `${quote(JSON.stringify(v))}::jsonb` : quote(v)}`,

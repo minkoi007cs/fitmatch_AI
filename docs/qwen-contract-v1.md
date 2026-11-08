@@ -8,8 +8,12 @@ Nguồn máy đọc được: `src/lib/v2/qwen.ts` → `schemas/qwen-v1/*.json` 
 
 ```
 browser (owner) ── POST /api/v2/analyses {itemId} ──► server: owner check, flag ON,
-   tải ảnh wardrobe (≤10 MB, JPEG/PNG/WebP → JPEG chuẩn hóa), sha256, lưu snapshot bất biến
-   vào private bucket fitmatch-v2 (fm_v2_assets, kind photo), tạo fm_v2_analyses + fm_v2_jobs(kind garment.analyze)
+   tải ảnh wardrobe (≤10 MB, JPEG/PNG/WebP → JPEG chuẩn hóa), sha256,
+   RPC reserve (dedupe không tốn quota; quota job 50/ngày UTC + 20 active chung với 3D; quota asset 100/24h;
+   ghi asset pending + cleanup intent có hạn 15 phút TRƯỚC khi upload) → upload snapshot bất biến vào private
+   bucket fitmatch-v2 → RPC enqueue (kiểm lại item + quota, finalize asset ready, xóa intent, tạo
+   fm_v2_analyses + fm_v2_jobs kind garment.analyze). Lỗi giữa chừng → RPC abort + xóa object ngay; nếu lỗi tiếp
+   thì intent vẫn còn cho collector (QREV-QUOTA/SNAPSHOT)
 PC worker ── outbound HTTPS, poll ──► POST /api/v2/worker/claim (đang giữ host GPU lock)
    ◄── envelope: input.binding, 1 asset signed URL (chỉ snapshot), outputContract {format: "json-v1"}
 worker: tải + kiểm sha/bytes → input.json → adapter (OwnedProcessTree) → result.json ≤ 8192 B
@@ -18,6 +22,8 @@ server: lease fencing + sha + schema + binding/modelRevision/policy khớp job �
 browser: xem đề xuất, sửa/chấp nhận từng trường → POST /api/v2/analyses/:id/confirm
    → RPC nguyên tử: owner, item còn tồn tại và cùng image_path, result digest, confirmationId replay
 ```
+
+Heartbeat của worker có thêm trường **tùy chọn** `gpuBusy: boolean` (QREV-STATUS, mở rộng của transport app, không đổi schema v1-r2 xuất cho PC adapter): `true` khi lần claim gần nhất thấy GPU dùng chung đang bị giữ (lock bị process khác giữ, hoặc slot đang cấp cho owner PC kia). `GET /api/v2/analyses` trả `gpuBusy` chỉ dựa trên worker online của **chính owner**; UI nói "PC đang bận GPU với việc khác" mà không tiết lộ việc của ai, không tốn attempt.
 
 Không có API công khai trên PC, không cổng inbound, không service-role ở browser. Ảnh là **dữ liệu không tin cậy**, không phải chỉ dẫn (`policy.imageIsUntrustedData: true`): adapter không được thực thi tool call/URL/lệnh nào đọc được trong ảnh.
 

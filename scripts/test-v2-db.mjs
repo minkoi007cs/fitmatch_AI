@@ -865,6 +865,151 @@ try {
     assert.equal(Number(service("select count(*) from fm_v2_jobs;")) - Number(jobsBefore), 3, "A, B and the concurrent one (C deleted with its item)");
     console.log("PASS QINT-C PostgreSQL: additive migration on populated DB; analysis jobs bound to one subject; dedupe incl. racing snapshot tombstone; foreign item/asset/photo-change refused; default-deny grants, 3D-only and foreign workers never claim; GPU_BUSY deferral keeps the attempt and honours backoff; lease/binding/model/policy/digest fencing; result replay idempotent, second result refused; model never writes wardrobe; human confirm writes only approved mapped columns, replay/reuse/decided/photo-changed guarded; late result after source change stays unapplied; owner actions bounded; item delete cascades and schedules snapshot removal; browser roles denied; 8 parallel enqueues -> 1.");
   }
+  {
+    // ---------------- QREV-QUOTA / QREV-SNAPSHOT (Codex review of 95d59ad) ----------------
+    const u = (n) => `9e9e9e9e-${String(n).padStart(4, "0")}-4000-a000-000000000000`;
+    const item = (n) => `8e8e8e8e-${String(n).padStart(4, "0")}-4000-a000-000000000000`;
+    const id = (p, n) => `${p}-${String(n).padStart(4, "0")}-4000-a000-000000000000`;
+    const sha = (c) => c.repeat(64);
+    const [rr, ra, rq, rd, rs, rc, rx] = [1, 2, 3, 4, 5, 6, 7].map(u);
+    sql(`insert into auth.users values('${rr}'),('${ra}'),('${rq}'),('${rd}'),('${rs}'),('${rc}'),('${rx}');
+      insert into fm_wardrobe_items(id,user_id,category,image_path) select ('8e8e8e8e-'||lpad(i::text,4,'0')||'-4000-a000-000000000000')::uuid,
+        (array['${rr}','${ra}','${rq}','${rd}','${rs}','${rc}','${rx}'])[1+(i-1)/10]::uuid,'t-shirt','src-'||i||'.jpg' from generate_series(1,70) i;`);
+    // Items 1-10 belong to rr, 11-20 ra, 21-30 rq, 31-40 rd, 41-50 rs, 51-60 rc, 61-70 rx.
+    const active3d = (user, n, state = "queued", age = "0") => sql(`with m as (insert into fm_v2_models(id,user_id,kind,name)
+      select gen_random_uuid(),'${user}','avatar','qrev-probe' from generate_series(1,${n}) returning id)
+      insert into fm_v2_jobs(id,user_id,model_id,kind,idempotency_key,payload_hash,state,created_at)
+      select gen_random_uuid(),'${user}',id,'avatar.reconstruct',id::text,id::text,'${state}',now()-interval '${age} days' from m;`);
+    const oldEnq = (user, it, asset, s, a, j) => service(`select fm_v2_analysis_enqueue('${user}','${it}','src-${Number(it.slice(9, 13))}.jpg','${asset}','${s}','qint.1','${a}','${j}');`);
+    const readyAsset = (user, asset, s) => sql(`insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes,bytes,sha256) values('${asset}','${user}','photo','ready','${user}/analysis/${asset}.jpg','${user}/analysis/${asset}.jpg',100,100,'${s}');`);
+    // Reproduce on the 95d59ad functions before the fix.
+    active3d(rr, 20);
+    readyAsset(rr, id("7e7e7e7e", 1), sha("a"));
+    assert.equal(JSON.parse(oldEnq(rr, item(1), id("7e7e7e7e", 1), sha("a"), id("6e6e6e6e", 1), id("5e5e5e5e", 1))).deduped, false);
+    assert.equal(service(`select count(*) from fm_v2_jobs where user_id='${rr}' and state in ('queued','running');`), "21", "REPRODUCED QREV-QUOTA: analysis enqueue bypasses the 20 active-job limit");
+    readyAsset(rr, id("7e7e7e7e", 2), sha("b"));
+    sql(`update fm_wardrobe_items set image_path='changed.jpg' where id='${item(2)}';`);
+    assert.throws(() => oldEnq(rr, item(2), id("7e7e7e7e", 2), sha("b"), id("6e6e6e6e", 2), id("5e5e5e5e", 2)), /ITEM_NOT_FOUND/);
+    assert.equal(service(`select state||':'||(select count(*) from fm_v2_source_cleanup where asset_id='${id("7e7e7e7e", 2)}') from fm_v2_assets where id='${id("7e7e7e7e", 2)}';`), "ready:0", "REPRODUCED QREV-SNAPSHOT: failed enqueue leaves an uploaded snapshot with no cleanup intent");
+    console.log("REPRODUCED QREV-QUOTA (21 active after old analysis enqueue) and QREV-SNAPSHOT (ready orphan snapshot, 0 cleanup intents) on 95d59ad functions.");
+
+    sql(readFileSync(new URL("../supabase/migrations/20261108090000_qwen_review_qrev.sql", import.meta.url), "utf8"));
+    const reserve = (user, it, s, asset) => JSON.parse(service(`select fm_v2_analysis_reserve('${user}','${it}','src-${Number(it.slice(9, 13))}.jpg','${s}','qint.1','${asset}',1234);`));
+    const enq = (user, it, asset, s, a, j) => JSON.parse(oldEnq(user, it, asset, s, a, j));
+    const abort = (user, asset) => JSON.parse(service(`select fm_v2_analysis_abort('${user}','${asset}');`));
+    const due = () => JSON.parse(service("select fm_v2_source_cleanup_due(500);")).map((d) => d.path);
+    const pathOf = (user, asset) => `${user}/analysis/${asset}.jpg`;
+    assert.equal(service("select count(*) from fm_v2_workers where gpu_busy;"), "0", "additive column defaults false on populated DB");
+
+    // Happy path: reservation intent is durable but not due during the grace; enqueue finalizes it.
+    const s1 = id("4e4e4e4e", 1);
+    assert.deepEqual(reserve(ra, item(11), sha("1"), s1), { deduped: false, assetId: s1, path: pathOf(ra, s1) });
+    assert.equal(service(`select state||':'||expected_bytes||':'||coalesce(sha256,'-') from fm_v2_assets where id='${s1}';`), "pending:1234:-");
+    assert.equal(service(`select state||':'||(next_attempt_at>now()+interval '14 minutes') from fm_v2_source_cleanup where asset_id='${s1}';`), "pending:true");
+    assert.ok(!due().includes(pathOf(ra, s1)), "not collected during upload grace");
+    const A1 = id("3e3e3e3e", 1), J1 = id("2e2e2e2e", 1);
+    assert.deepEqual(enq(ra, item(11), s1, sha("1"), A1, J1), { analysisId: A1, jobId: J1, deduped: false });
+    assert.equal(service(`select state||':'||bytes||':'||sha256 from fm_v2_assets where id='${s1}';`), `ready:1234:${sha("1")}`);
+    assert.equal(service(`select count(*) from fm_v2_source_cleanup where asset_id='${s1}';`), "0", "finalized snapshot has no removal intent");
+    // Dedupe consumes no quota and creates no asset; replaying enqueue on a finalized asset is refused.
+    const assetsBefore = service(`select count(*) from fm_v2_assets where user_id='${ra}';`);
+    assert.deepEqual(reserve(ra, item(11), sha("1"), id("4e4e4e4e", 2)), { deduped: true, analysisId: A1 });
+    assert.equal(service(`select count(*) from fm_v2_assets where user_id='${ra}';`), assetsBefore);
+    assert.throws(() => enq(ra, item(11), s1, sha("1"), id("3e3e3e3e", 9), id("2e2e2e2e", 9)), /INVALID_ASSET/);
+    assert.deepEqual(abort(ra, s1), [], "abort never touches an asset an analysis uses");
+    assert.equal(service(`select state from fm_v2_assets where id='${s1}';`), "ready");
+    // Foreign / changed item and malformed input refused before any row is written.
+    assert.throws(() => reserve(ra, item(21), sha("1"), id("4e4e4e4e", 3)), /ITEM_NOT_FOUND/, "foreign item");
+    assert.throws(() => service(`select fm_v2_analysis_reserve('${ra}','${item(12)}','src-12.jpg','XYZ','qint.1','${id("4e4e4e4e", 3)}',10);`), /INVALID_INPUT/);
+    assert.throws(() => service(`select fm_v2_analysis_reserve('${ra}','${item(12)}','src-12.jpg','${sha("2")}','qint.1','${id("4e4e4e4e", 3)}',0);`), /INVALID_INPUT/);
+    assert.equal(service(`select count(*) from fm_v2_assets where id='${id("4e4e4e4e", 3)}';`), "0");
+
+    // Active limit (20) shared with 3D jobs, both directions.
+    active3d(rq, 20);
+    assert.throws(() => reserve(rq, item(21), sha("3"), id("4e4e4e4e", 10)), /QUOTA_EXCEEDED/);
+    assert.equal(service(`select count(*) from fm_v2_assets where id='${id("4e4e4e4e", 10)}';`), "0", "refused reservation writes nothing");
+    sql(`update fm_v2_jobs set state='succeeded' where id=(select id from fm_v2_jobs where user_id='${rq}' and state='queued' limit 1);`);
+    const s11 = id("4e4e4e4e", 11);
+    reserve(rq, item(22), sha("4"), s11);
+    active3d(rq, 1); // the user's 3D upload took the last slot while the snapshot uploaded
+    assert.throws(() => enq(rq, item(22), s11, sha("4"), id("3e3e3e3e", 11), id("2e2e2e2e", 11)), /QUOTA_EXCEEDED/);
+    assert.deepEqual(abort(rq, s11), [pathOf(rq, s11)]);
+    assert.equal(service(`select state from fm_v2_assets where id='${s11}';`), "deleted");
+    assert.ok(due().includes(pathOf(rq, s11)), "aborted snapshot removal is due immediately");
+    sql(`update fm_v2_jobs set state='succeeded' where user_id='${rq}' and id in (select id from fm_v2_jobs where user_id='${rq}' and state='queued' limit 1);`);
+    const s12 = id("4e4e4e4e", 12);
+    reserve(rq, item(23), sha("5"), s12);
+    enq(rq, item(23), s12, sha("5"), id("3e3e3e3e", 12), id("2e2e2e2e", 12));
+    assert.equal(service(`select count(*) from fm_v2_jobs where user_id='${rq}' and state in ('queued','running');`), "20");
+    sql(`insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes) values('${id("1e1e1e1e", 1)}','${rq}','photo','ready','qrev-g1','qrev-g1',10),('${id("1e1e1e1e", 2)}','${rq}','photo','ready','qrev-g2','qrev-g2',10);`);
+    assert.throws(() => service(`select fm_v2_enqueue('${rq}','qrev-3d','h','garment','G',array['${id("1e1e1e1e", 1)}','${id("1e1e1e1e", 2)}']::uuid[],'{}','${item(24)}');`), /QUOTA_EXCEEDED/, "analysis job counts against the 3D queue policy");
+    // Retry respects the active limit; the job stays failed.
+    sql(`update fm_v2_jobs set state='failed',error_code='MODEL_UNAVAILABLE',attempt=1 where id='${id("2e2e2e2e", 12)}';
+      update fm_v2_jobs set state='queued' where id=(select id from fm_v2_jobs where user_id='${rq}' and state='succeeded' and kind='avatar.reconstruct' limit 1);`);
+    assert.throws(() => service(`select fm_v2_analysis_action('${rq}','${id("3e3e3e3e", 12)}','retry');`), /QUOTA_EXCEEDED/);
+    assert.equal(service(`select state from fm_v2_jobs where id='${id("2e2e2e2e", 12)}';`), "failed");
+    sql(`update fm_v2_jobs set state='succeeded' where id=(select id from fm_v2_jobs where user_id='${rq}' and state='queued' and kind='avatar.reconstruct' limit 1);`);
+    assert.equal(service(`select fm_v2_analysis_action('${rq}','${id("3e3e3e3e", 12)}','retry');`), "t");
+
+    // Daily limit (50 per UTC day) counts finished jobs; older days do not count.
+    active3d(rd, 50, "succeeded");
+    assert.throws(() => reserve(rd, item(31), sha("6"), id("4e4e4e4e", 20)), /QUOTA_EXCEEDED/);
+    sql(`update fm_v2_jobs set created_at=now()-interval '2 days' where user_id='${rd}';`);
+    reserve(rd, item(31), sha("6"), id("4e4e4e4e", 20));
+    // Asset limit (100 per 24 h) shared with uploads.
+    sql(`insert into fm_v2_assets(id,user_id,kind,path,source_path,expected_bytes) select gen_random_uuid(),'${rs}','photo','qrev-p'||i,'qrev-s'||i,10 from generate_series(1,100) i;`);
+    assert.throws(() => reserve(rs, item(41), sha("7"), id("4e4e4e4e", 21)), /QUOTA_EXCEEDED/);
+
+    // Item changed or deleted while uploading: enqueue refuses, abort tombstones and makes removal due.
+    const s30 = id("4e4e4e4e", 30), s31 = id("4e4e4e4e", 31);
+    reserve(rx, item(61), sha("8"), s30);
+    reserve(rx, item(62), sha("9"), s31);
+    sql(`update fm_wardrobe_items set image_path='edited.jpg' where id='${item(61)}'; delete from fm_wardrobe_items where id='${item(62)}';`);
+    assert.throws(() => enq(rx, item(61), s30, sha("8"), id("3e3e3e3e", 30), id("2e2e2e2e", 30)), /ITEM_NOT_FOUND/);
+    assert.throws(() => enq(rx, item(62), s31, sha("9"), id("3e3e3e3e", 31), id("2e2e2e2e", 31)), /ITEM_NOT_FOUND/);
+    assert.deepEqual(abort(rq, s30), [], "foreign owner cannot abort");
+    assert.equal(service(`select state from fm_v2_assets where id='${s30}';`), "pending");
+    for (const s of [s30, s31]) {
+      assert.deepEqual(abort(rx, s), [pathOf(rx, s)]);
+      assert.deepEqual(abort(rx, s), [pathOf(rx, s)], "abort is idempotent and keeps returning outstanding paths");
+      assert.ok(due().includes(pathOf(rx, s)));
+    }
+    service(`select fm_v2_source_cleanup_report('${rx}',array['${pathOf(rx, s30)}'],true);`);
+    assert.deepEqual(abort(rx, s30), [], "completed removal is never reopened");
+    // Crash after reserve (no enqueue, no abort): the grace elapses, the collector removes the object and
+    // a late enqueue is refused instead of publishing a removed snapshot.
+    const s32 = id("4e4e4e4e", 32);
+    reserve(rx, item(63), sha("c"), s32);
+    sql(`update fm_v2_source_cleanup set next_attempt_at=now()-interval '1 second' where asset_id='${s32}';`);
+    assert.ok(due().includes(pathOf(rx, s32)), "orphan reservation collected after the grace");
+    service(`select fm_v2_source_cleanup_report('${rx}',array['${pathOf(rx, s32)}'],true);`);
+    assert.throws(() => enq(rx, item(63), s32, sha("c"), id("3e3e3e3e", 32), id("2e2e2e2e", 32)), /SNAPSHOT_EXPIRED/);
+    assert.deepEqual(abort(rx, s32), []);
+    assert.equal(service(`select state from fm_v2_assets where id='${s32}';`), "deleted");
+    // Lost race between two reservations of the same pixels: winner untouched, loser removed now.
+    const s40 = id("4e4e4e4e", 40), s41 = id("4e4e4e4e", 41);
+    reserve(rx, item(64), sha("d"), s40);
+    reserve(rx, item(64), sha("d"), s41);
+    const win = enq(rx, item(64), s40, sha("d"), id("3e3e3e3e", 40), id("2e2e2e2e", 40));
+    assert.deepEqual(enq(rx, item(64), s41, sha("d"), id("3e3e3e3e", 41), id("2e2e2e2e", 41)), { ...win, deduped: true });
+    assert.equal(service(`select string_agg(state,',' order by id) from fm_v2_assets where id in ('${s40}','${s41}');`), "ready,deleted");
+    assert.ok(due().includes(pathOf(rx, s41)) && !due().includes(pathOf(rx, s40)));
+
+    // Contention: 17 active + 6 concurrent enqueues of distinct reservations -> exactly 3 admitted.
+    active3d(rc, 17);
+    const cs = [0, 1, 2, 3, 4, 5].map((i) => id("4e4e4e4e", 50 + i));
+    cs.forEach((s, i) => reserve(rc, item(51 + i), sha(String.fromCharCode(97 + i)), s));
+    const runs = await parallel(cs.map((s, i) => `select fm_v2_analysis_enqueue('${rc}','${item(51 + i)}','src-${51 + i}.jpg','${s}','${sha(String.fromCharCode(97 + i))}','qint.1','${id("3e3e3e3e", 50 + i)}','${id("2e2e2e2e", 50 + i)}');`));
+    assert.equal(runs.filter((x) => x.ok).length, 3, JSON.stringify(runs));
+    assert.equal(service(`select count(*) from fm_v2_jobs where user_id='${rc}' and state in ('queued','running');`), "20");
+    assert.equal(service(`select count(*) from fm_v2_assets where id = any(array[${cs.map((x) => `'${x}'`)}]::uuid[]) and state='pending';`), "3", "losers stay reserved until the route aborts them");
+    // Browser roles never reserve or abort.
+    for (const role of ["anon", "authenticated"]) {
+      assert.throws(() => sql(`set role ${role};select fm_v2_analysis_reserve('${ra}','${item(12)}','src-12.jpg','${sha("e")}','qint.1','${id("4e4e4e4e", 90)}',10);`));
+      assert.throws(() => sql(`set role ${role};select fm_v2_analysis_abort('${ra}','${s1}');`));
+    }
+    console.log("PASS QREV PostgreSQL: bugs reproduced on 95d59ad then fixed; additive migration on populated DB; reservation intent durable before upload with 15-min grace; finalize removes intent; dedupe without quota; 20 active / 50 per UTC day / 100 assets per 24h shared with 3D both ways; retry bounded; item changed/deleted and quota-after-upload abort with immediate removal; foreign abort refused; orphan reservation collected then SNAPSHOT_EXPIRED; lost race keeps winner; 6 concurrent enqueues at 17 active -> 3; browser roles denied.");
+  }
   console.log(
     "PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.",
   );

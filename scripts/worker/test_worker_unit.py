@@ -612,5 +612,58 @@ class SharedGpuAdmissionTests(unittest.TestCase):
         self.assertIn('Refusing to start', result.stdout)
 
 
+class GpuBusyReportingTests(unittest.TestCase):
+    """QREV-STATUS: heartbeats say truthfully whether the shared GPU was taken at the last claim attempt."""
+    setUp, config, write_slot = SharedGpuAdmissionTests.setUp, SharedGpuAdmissionTests.config, SharedGpuAdmissionTests.write_slot
+
+    def make_worker(self):
+        w = worker.Worker.__new__(worker.Worker)
+        w.gpu = worker.FileLock(self.lock, create=False)
+        w.admission, w.admission_refusal = worker.SharedGpuAdmission(self.config()), None
+        w.gpu_busy_logged, w.gpu_busy, w.quarantine, w.claims = False, False, None, 0
+        w.capabilities, w.warned, w.sent = {'garment.analyze': {'model': 'm', 'revision': 'r'}}, set(), []
+
+        class Client:
+            def api(self, path, body):
+                w.sent.append((path, dict(body)))
+                return {'grantedCapabilities': ['garment.analyze']}
+        w.client = Client()
+        w.resume_pending = lambda: None
+        w.claim = lambda: setattr(w, 'claims', w.claims + 1)
+        return w
+
+    def beats(self, w):
+        return [b['gpuBusy'] for p, b in w.sent if p == 'heartbeat']
+
+    def test_lock_held_elsewhere_is_reported_busy_at_once_then_cleared(self):
+        self.write_slot('pc-ai')
+        w = self.make_worker()
+        other = worker.FileLock(self.lock, create=False)
+        self.assertTrue(other.acquire(0))
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 0)
+        self.assertEqual(w.claims, 0)
+        self.assertEqual(self.beats(w), [False, True], 'transition reported immediately, not one poll later')
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 0)
+        self.assertEqual(self.beats(w), [False, True, True], 'no extra heartbeat while it stays busy')
+        other.release()
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 0)
+        self.assertEqual(w.claims, 1)
+        w.loop(once=True, poll_seconds=0)
+        self.assertEqual(self.beats(w)[-1], False, 'cleared once the worker could claim')
+
+    def test_slot_for_the_other_owner_is_busy_without_claiming(self):
+        self.write_slot('pc-3d')
+        w = self.make_worker()
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 0)
+        self.assertEqual((w.claims, self.beats(w)), (0, [False, True]))
+        self.assertFalse(w.gpu.held)
+
+    def test_heartbeat_carries_only_a_boolean(self):
+        w = self.make_worker()
+        w.gpu_busy = 'yes'
+        w.worker_heartbeat()
+        self.assertEqual(w.sent[-1][1], {'capabilities': w.capabilities, 'gpuBusy': True})
+
+
 if __name__ == '__main__':
     unittest.main()

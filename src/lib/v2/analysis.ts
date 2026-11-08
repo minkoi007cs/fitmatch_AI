@@ -97,20 +97,25 @@ export async function listAnalyses(owner: string) {
 
 /**
  * True when one of the owner's enabled workers is granted AND currently declares garment.analyze
- * with a heartbeat in the last 90 s (same window claim_r1 uses). Lets the UI say "PC offline"
- * instead of pretending a queued job is about to run.
+ * with a heartbeat in the last 90 s (same window claim_r1 uses). Lets the UI say "PC offline" or
+ * "PC busy with other GPU work" instead of pretending a queued job is about to run.
  */
-export async function analysisWorkerOnline(owner: string) {
+export async function analysisWorkerStatus(owner: string) {
   const since = new Date(Date.now() - 90_000).toISOString();
   const rows = result(
     await createAdminClient()
       .from("fm_v2_workers")
-      .select("capabilities,allowed_capabilities")
+      .select("capabilities,allowed_capabilities,gpu_busy")
       .eq("user_id", owner)
       .eq("enabled", true)
       .gte("last_seen", since),
-  ) as { capabilities: Record<string, unknown> | null; allowed_capabilities: string[] | null }[];
-  return rows.some((w) => !!w.capabilities && ANALYSIS_KIND in w.capabilities && (w.allowed_capabilities ?? []).includes(ANALYSIS_KIND));
+  ) as { capabilities: Record<string, unknown> | null; allowed_capabilities: string[] | null; gpu_busy: boolean | null }[];
+  const usable = rows.filter(
+    (w) => !!w.capabilities && ANALYSIS_KIND in w.capabilities && (w.allowed_capabilities ?? []).includes(ANALYSIS_KIND),
+  );
+  // QREV-STATUS: "busy" only when every one of the owner's own online analysis workers reported the shared
+  // GPU taken at its last heartbeat. It never says whose work holds the GPU.
+  return { workerOnline: usable.length > 0, gpuBusy: usable.length > 0 && usable.every((w) => w.gpu_busy === true) };
 }
 
 async function analysisOf(owner: string, id: string) {
@@ -151,48 +156,74 @@ export async function createAnalysis(owner: string, itemId: string) {
     throw new InputError(400, "INVALID_IMAGE");
   }
   const sha = digest(bytes);
-  // Same item, same pixels, same policy: reuse (never re-run the GPU for a known snapshot).
-  const existing = result(
-    await db
-      .from("fm_v2_analyses")
-      .select("id")
-      .eq("user_id", owner)
-      .eq("item_id", itemId)
-      .eq("image_sha256", sha)
-      .eq("policy_revision", POLICY_REVISION)
-      .maybeSingle(),
-  ) as { id: string } | null;
-  if (existing) return { analysis: await analysisOf(owner, existing.id), deduped: true };
+  // QREV-QUOTA/SNAPSHOT: one atomic step checks dedupe (no quota), the shared job and asset quotas and
+  // durably reserves the snapshot path with a cleanup intent BEFORE any object exists.
   const assetId = randomUUID();
-  const path = `${owner}/analysis/${assetId}.jpg`;
-  const upload = await db.storage.from(bucket).upload(path, bytes, { contentType: "image/jpeg", upsert: false });
-  if (upload.error) throw new InputError(503, "DATA_UNAVAILABLE");
-  result(
-    await db.from("fm_v2_assets").insert({
-      id: assetId,
-      user_id: owner,
-      kind: "photo",
-      state: "ready",
-      path,
-      source_path: path,
-      expected_bytes: bytes.length,
-      bytes: bytes.length,
-      sha256: sha,
-    }),
-  );
-  const r = required(
-    await db.rpc("fm_v2_analysis_enqueue", {
+  const reserved = required(
+    await db.rpc("fm_v2_analysis_reserve", {
       p_user: owner,
       p_item: itemId,
       p_source_path: item.image_path,
-      p_asset: assetId,
       p_sha: sha,
       p_policy: POLICY_REVISION,
-      p_analysis: randomUUID(),
-      p_job: randomUUID(),
+      p_asset: assetId,
+      p_bytes: bytes.length,
     }),
-  ) as { analysisId: string; deduped: boolean };
+  ) as { deduped: true; analysisId: string } | { deduped: false; assetId: string; path: string };
+  // Same item, same pixels, same policy: reuse (never re-run the GPU for a known snapshot).
+  if (reserved.deduped) return { analysis: await analysisOf(owner, reserved.analysisId), deduped: true };
+  if (reserved.path !== `${owner}/analysis/${assetId}.jpg`) throw new InputError(503, "DATA_UNAVAILABLE");
+  const upload = await db.storage.from(bucket).upload(reserved.path, bytes, { contentType: "image/jpeg", upsert: false });
+  if (upload.error) {
+    await discardSnapshot(owner, assetId);
+    throw new InputError(503, "DATA_UNAVAILABLE");
+  }
+  let r: { analysisId: string; deduped: boolean };
+  try {
+    r = required(
+      await db.rpc("fm_v2_analysis_enqueue", {
+        p_user: owner,
+        p_item: itemId,
+        p_source_path: item.image_path,
+        p_asset: assetId,
+        p_sha: sha,
+        p_policy: POLICY_REVISION,
+        p_analysis: randomUUID(),
+        p_job: randomUUID(),
+      }),
+    ) as { analysisId: string; deduped: boolean };
+  } catch (error) {
+    // Quota taken meanwhile, item edited/deleted, expired reservation or a lost reply. If the enqueue
+    // actually committed, abort sees the analysis and leaves the snapshot alone.
+    await discardSnapshot(owner, assetId);
+    throw error;
+  }
+  if (r.deduped) await discardSnapshot(owner, assetId); // lost a race; the winner's snapshot is kept
   return { analysis: await analysisOf(owner, r.analysisId), deduped: r.deduped };
+}
+
+/**
+ * Compensation for a reservation that will not be used: tombstone it (only if no analysis references
+ * it) and try the removal now. Whatever fails here stays a durable CL-PRIV-01 intent that the
+ * collector retries, so a storage or database hiccup never leaves an untracked private copy.
+ */
+async function discardSnapshot(owner: string, assetId: string) {
+  const db = createAdminClient();
+  try {
+    const paths = result(await db.rpc("fm_v2_analysis_abort", { p_user: owner, p_asset: assetId })) as string[];
+    if (!paths?.length) return;
+    const { error } = await db.storage.from(bucket).remove(paths);
+    result(
+      await db.rpc("fm_v2_source_cleanup_report", {
+        p_user: owner,
+        p_paths: paths,
+        p_ok: !error,
+        p_error: error ? "STORAGE_ERROR" : null,
+      }),
+    );
+  } catch {
+    // The reservation intent (due after its grace) remains; the collector removes the object.
+  }
 }
 
 export async function analysisAction(owner: string, id: string, action: "cancel" | "retry") {

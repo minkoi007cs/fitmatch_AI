@@ -4,9 +4,10 @@
  * plumbing and human review, NOT Qwen quality, real GPU timing or native Windows behaviour.
  */
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import sharp from "sharp";
@@ -18,11 +19,29 @@ const jpeg = (rgb) =>
 
 export async function testQwen({ base, request, jar, owner, itemId, v2, asSecond }) {
   const temp = await mkdtemp(join(tmpdir(), "fitmatch-qwen-"));
-  const lockPath = join(temp, "gpu-0.lock");
+  // QREV-LOCK: the integrated worker uses the existing shared lock file, a pinned guard and the PC slot.
+  // These are synthetic stand-ins in a temp dir (the real PC paths/guard are ACKed by PC3D separately).
+  const lockPath = join(temp, "gpu0.lock"), slotPath = join(temp, "gpu0-slot.json"), guardPath = join(temp, "gpu_guard.py");
+  await writeFile(lockPath, "");
+  await writeFile(guardPath, "# synthetic guard for the HTTP test\n");
+  const guardSha = createHash("sha256").update(await readFile(guardPath)).digest("hex");
+  const writeSlot = async (owner) => {
+    const issued = Math.floor(Date.now() / 1000);
+    await writeFile(slotPath, JSON.stringify({ version: 1, owner, issuedAtUtc: new Date(issued * 1000).toISOString(),
+      issuedAtUnix: issued, admitUntilUnix: issued + 1800, policy: "http-test" }));
+  };
+  await writeSlot("pc-ai");
+  const holdLock = async () => {
+    const child = spawn("python3", ["-c",
+      "import fcntl,sys,time;f=open(sys.argv[1],'r+');fcntl.flock(f.fileno(),fcntl.LOCK_EX);print('held',flush=True);time.sleep(120)", lockPath]);
+    await new Promise((ok) => child.stdout.once("data", ok));
+    return () => new Promise((ok) => { child.once("exit", ok); child.kill(); });
+  };
   const runWorker = async (token, mode) => {
     const config = join(temp, "config.json");
     await writeFile(config, JSON.stringify({
       appUrl: base, workDir: join(temp, "data"), gpuLock: lockPath, pollSeconds: 1,
+      gpuSlot: slotPath, gpuSlotOwner: "pc-ai", gpuGuard: { path: guardPath, sha256: guardSha },
       engines: { "garment.analyze": { model: "mock/qwen-cpu", revision: "test-only",
         command: ["python3", resolve("scripts/fixtures/mock_qwen_adapter.py"), "{input}", "{output}"], timeoutSeconds: 60 } },
     }));
@@ -68,9 +87,35 @@ export async function testQwen({ base, request, jar, owner, itemId, v2, asSecond
     const jobId = v2.sql(`select id from fm_v2_jobs where analysis_id='${a.id}';`);
     assert.equal((await request(`/api/v2/jobs/${jobId}/retry`, { method: "POST", body: "{}" })).status, 409);
 
-    // Worker 1st run: GPU busy -> deferred, attempt not consumed, UI says so.
+    // QREV-STATUS: the shared GPU lock is held by other work on the PC. The worker claims nothing, reports
+    // "busy" in its heartbeat and the owner sees a truthful message; no attempt or deferral is consumed.
     const { token } = v2.worker(owner, ["garment.analyze"]);
-    let out = await runWorker(token, "gpu_busy");
+    const release = await holdLock();
+    let out;
+    try {
+      out = await runWorker(token, "proposal");
+    } finally {
+      await release();
+    }
+    assert.match(out, /GPU is busy/);
+    assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals from fm_v2_jobs where id='${jobId}';`), "queued:0:0", "nothing claimed while busy");
+    let status = await (await request("/api/v2/analyses")).json();
+    assert.deepEqual([status.workerOnline, status.gpuBusy], [true, true]);
+    await panel.getByText("PC đang bận GPU với việc khác", { exact: false }).waitFor({ timeout: 15000 });
+    await asSecond(async (req2) => {
+      const other = await (await req2("/api/v2/analyses")).json();
+      assert.deepEqual([other.workerOnline, other.gpuBusy], [false, false], "another owner never sees this PC's GPU state");
+    });
+    // QREV-LOCK end to end: the slot belongs to PC3D -> refused before any claim, also shown as busy.
+    await writeSlot("pc-3d");
+    out = await runWorker(token, "proposal");
+    assert.match(out, /GPU admission refused, not claiming: GPU slot is assigned to another owner/);
+    assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals from fm_v2_jobs where id='${jobId}';`), "queued:0:0");
+    assert.equal((await (await request("/api/v2/analyses")).json()).gpuBusy, true);
+    await writeSlot("pc-ai");
+
+    // Worker run with the slot granted: adapter reports GPU busy -> deferred, attempt not consumed, UI says so.
+    out = await runWorker(token, "gpu_busy");
     assert.doesNotMatch(out, /Completed/);
     assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals||':'||error_code from fm_v2_jobs where id='${jobId}';`), "queued:0:1:GPU_BUSY");
     await panel.getByText("PC đang bận GPU", { exact: false }).waitFor({ timeout: 15000 });
@@ -78,7 +123,8 @@ export async function testQwen({ base, request, jar, owner, itemId, v2, asSecond
     const probe = await promisify(execFile)("python3", ["-c",
       "import fcntl,sys;f=open(sys.argv[1],'a+');fcntl.flock(f.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB);print('free')", lockPath]);
     assert.equal(probe.stdout.trim(), "free");
-    assert.equal((await (await request("/api/v2/analyses")).json()).workerOnline, true, "granted worker heartbeat seen");
+    status = await (await request("/api/v2/analyses")).json();
+    assert.deepEqual([status.workerOnline, status.gpuBusy], [true, false], "granted worker heartbeat seen; GPU no longer busy");
     // Memory admission refused before load: same bounded deferral, distinct message.
     v2.sql(`update fm_v2_jobs set not_before=now() where id='${jobId}';`);
     out = await runWorker(token, "memory");
@@ -134,6 +180,49 @@ export async function testQwen({ base, request, jar, owner, itemId, v2, asSecond
     assert.equal((await again.json()).analysis.state, "confirmed");
     assert.equal(v2.sql(`select count(*) from fm_v2_jobs where analysis_id is not null and user_id='${owner}';`), "1");
 
+    // QREV-SNAPSHOT / QREV-QUOTA through the real route. Each new photo gets its own private copy.
+    const snapshotState = () => JSON.parse(v2.sql(`select coalesce(json_agg(json_build_object('path',a.path,'state',a.state,
+      'cleanup',(select string_agg(c.state,',') from fm_v2_source_cleanup c where c.asset_id=a.id))),'[]') from fm_v2_assets a
+      where a.user_id='${owner}' and a.path like '${owner}/analysis/%' and a.id not in (select image_asset_id from fm_v2_analyses);`));
+    const setItemPhoto = async (name, rgb) => {
+      const p = `${owner}/${name}.jpg`;
+      v2.putObject(`fitmatch-wardrobe/${p}`, await jpeg(rgb));
+      await request(`/api/wardrobe/${itemId}`, { method: "PATCH", body: JSON.stringify({ imagePath: p }) });
+      v2.sql(`update fm_wardrobe_items set image_path='${p}' where id='${itemId}';`);
+      return p;
+    };
+    const analysesBefore = v2.sql(`select count(*) from fm_v2_analyses where user_id='${owner}';`);
+    // (a) Storage fails while uploading the snapshot: 503, no analysis, the reservation is tombstoned and
+    // its removal recorded (nothing orphaned, nothing pending).
+    await setItemPhoto("tee-green", { r: 20, g: 180, b: 40 });
+    v2.faults.serverUploadFail = 1;
+    let failed = await request("/api/v2/analyses", { method: "POST", body: JSON.stringify({ itemId }) });
+    assert.equal(failed.status, 503);
+    let orphans = snapshotState();
+    assert.equal(orphans.length, 1);
+    assert.deepEqual([orphans[0].state, orphans[0].cleanup, v2.hasObject(orphans[0].path)], ["deleted", "completed", false]);
+    // (b) The item is edited while the snapshot uploads: enqueue refuses, the stored copy is removed now.
+    v2.faults.beforeRpc.fm_v2_analysis_enqueue = `update fm_wardrobe_items set image_path='${owner}/edited-meanwhile.jpg' where id='${itemId}';`;
+    failed = await request("/api/v2/analyses", { method: "POST", body: JSON.stringify({ itemId }) });
+    assert.equal(failed.status, 404);
+    assert.equal((await failed.json()).error, "ITEM_NOT_FOUND");
+    orphans = snapshotState();
+    assert.equal(orphans.length, 2);
+    for (const o of orphans) assert.deepEqual([o.state, o.cleanup, v2.hasObject(o.path)], ["deleted", "completed", false], o.path);
+    // (c) Queue full (20 active jobs, shared with 3D): 429 before any upload; nothing written.
+    await setItemPhoto("tee-yellow", { r: 220, g: 210, b: 30 });
+    v2.sql(`with m as (insert into fm_v2_models(id,user_id,kind,name) select gen_random_uuid(),'${owner}','avatar','qrev-filler'
+      from generate_series(1,20 - (select count(*) from fm_v2_jobs where user_id='${owner}' and state in ('queued','running')))
+      returning id) insert into fm_v2_jobs(id,user_id,model_id,kind,idempotency_key,payload_hash)
+      select gen_random_uuid(),'${owner}',id,'avatar.reconstruct',id::text,id::text from m;`);
+    const objectsBefore = snapshotState().length;
+    const full = await request("/api/v2/analyses", { method: "POST", body: JSON.stringify({ itemId }) });
+    assert.equal(full.status, 429);
+    assert.equal((await full.json()).error, "QUOTA_EXCEEDED");
+    assert.equal(snapshotState().length, objectsBefore, "quota refusal reserves and uploads nothing");
+    v2.sql(`delete from fm_v2_jobs where model_id in (select id from fm_v2_models where name='qrev-filler'); delete from fm_v2_models where name='qrev-filler';`);
+    assert.equal(v2.sql(`select count(*) from fm_v2_analyses where user_id='${owner}';`), analysesBefore, "no analysis from refused requests");
+
     // New photo -> new analysis; invalid model output fails closed, retry, then an abstention.
     const path2 = `${owner}/tee-blue.jpg`;
     v2.putObject(`fitmatch-wardrobe/${path2}`, await jpeg({ r: 20, g: 40, b: 200 }));
@@ -166,5 +255,5 @@ export async function testQwen({ base, request, jar, owner, itemId, v2, asSecond
     await browser.close();
     await rm(temp, { recursive: true, force: true });
   }
-  console.log("PASS QINT-C analysis (real routes + PostgreSQL + browser + real worker.py, CPU MOCK adapter): owned photo -> immutable private snapshot -> durable job; dedupe; 3D lists/actions exclude analysis jobs; GPU_BUSY deferral shown as waiting, attempt kept, lock free after drain; proposal stored for review only, result replay idempotent; browser review prefilled except OCR, human confirm writes only reviewed mapped values, persists after reload; same photo reuses confirmed result without a job; self-approving output fails closed, retry, abstention changes nothing; flag-off UI hidden; PC offline and MEMORY_PRESSURE shown distinctly; second account sees/acts on nothing over HTTP. No Qwen quality or real GPU claim.");
+  console.log("PASS QINT-C analysis (real routes + PostgreSQL + browser + real worker.py, CPU MOCK adapter): owned photo -> immutable private snapshot -> durable job; dedupe; 3D lists/actions exclude analysis jobs; GPU_BUSY deferral shown as waiting, attempt kept, lock free after drain; proposal stored for review only, result replay idempotent; browser review prefilled except OCR, human confirm writes only reviewed mapped values, persists after reload; same photo reuses confirmed result without a job; self-approving output fails closed, retry, abstention changes nothing; flag-off UI hidden; PC offline and MEMORY_PRESSURE shown distinctly; second account sees/acts on nothing over HTTP; QREV: shared lock held elsewhere -> no claim, heartbeat gpuBusy shown as 'PC busy with other work' to the owner only, slot of the other PC owner refused before claim, snapshot upload failure and item edit during upload leave no orphan (removal recorded), full queue refused before any upload. No Qwen quality or real GPU claim.");
 }

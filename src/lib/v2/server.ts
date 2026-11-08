@@ -33,6 +33,7 @@ export function result<T>(r: {
       "RESULT_CHANGED",
       "SOURCE_CHANGED",
       "CONFIRMATION_REUSED",
+      "SNAPSHOT_EXPIRED",
     ].find((c) => r.error!.message.includes(c));
     if (known)
       throw new InputError(

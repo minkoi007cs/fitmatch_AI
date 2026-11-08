@@ -4,7 +4,7 @@ Chỉ dành cho **môi trường test dùng một lần**: một Supabase projec
 
 ## 0. Điều kiện trước khi bật
 
-- Codex review contract `docs/qwen-contract-v1.md`, migration `20261107120000_qwen_analysis_qint.sql` và drain fix (PC-QUIESCENCE-01) → kết quả PASS.
+- Codex review contract `docs/qwen-contract-v1.md`, migrations `20261107120000_qwen_analysis_qint.sql` + `20261108090000_qwen_review_qrev.sql`, drain fix (PC-QUIESCENCE-01) và bản sửa QREV (lock/quota/snapshot/status) → kết quả PASS.
 - PC Qwen ACK conformance: `python scripts/check-qwen-contract.py <result.json thật>` đều PASS; exit codes khớp bảng trong contract.
 - PC 3D ACK: hash guard (hiện `47331c56…`), đường dẫn tuyệt đối của lock dùng chung `…/Fitmatch-GPU/coordination/gpu0.lock` (msvcrt byte 0) và slot `gpu0-slot.json` cùng thư mục; worker là lock owner duy nhất cho job tích hợp (không gọi guard lồng bên trong); Python worker tests chạy native trên Windows đúng commit app.
 
@@ -14,7 +14,7 @@ Chưa đủ 3 điều kiện trên thì giữ flag OFF; chỉ chạy CPU/local f
 
 1. Tạo project mới và một bucket **private** `fitmatch-v2`. Bucket `fitmatch-wardrobe` đã có trong schema app gốc.
 2. Áp migrations theo thứ tự (SQL editor hoặc `supabase db push` **trỏ vào test project**):
-   `20261103_app_system_identity` → `20261104_ai_daily_quota` → `20261105_studio_control_plane` → `20261106025506_worker_recovery_r1` → `20261106035951_full_look_c1` → `20261106042143_capture_retention_c2` → `20261106044040_gc_dry_run_c3` → `20261106053812_fitting_generations` → `20261106150000_source_cleanup_priv01` → `20261107120000_qwen_analysis_qint`.
+   `20261103_app_system_identity` → `20261104_ai_daily_quota` → `20261105_studio_control_plane` → `20261106025506_worker_recovery_r1` → `20261106035951_full_look_c1` → `20261106042143_capture_retention_c2` → `20261106044040_gc_dry_run_c3` → `20261106053812_fitting_generations` → `20261106150000_source_cleanup_priv01` → `20261107120000_qwen_analysis_qint` → `20261108090000_qwen_review_qrev`.
 3. Kiểm: `select 1 from fm_v2_analyses limit 1;` không lỗi, và `anon`/`authenticated` không đọc được `fm_v2_analyses` hay `fm_v2_source_cleanup`.
 
 ## 2. App test deploy
@@ -53,9 +53,10 @@ Lệnh in token một lần. Chuyển token cho PC qua kênh riêng và đặt v
 
 1. Tài khoản A: thêm áo thun có ảnh licensed → "Phân tích với AI" → UI hiện lần lượt queued → (waiting GPU nếu 3D đang chạy) → running → review. Duyệt hoặc sửa → "Lưu vào tủ đồ" → kiểm `fm_wardrobe_items` chỉ đổi các trường đã duyệt.
 2. Tài khoản B: không thấy analysis/ảnh/kết quả của A. Gọi `POST /api/v2/analyses/<id của A>/confirm` → 404.
-3. GPU contention cả hai thứ tự (Qwen→3D, 3D→Qwen): log lock + PID tree cho thấy không có khoảng chồng lấn; job phải chờ thì hiện "PC đang bận GPU".
+3. GPU contention cả hai thứ tự (Qwen→3D, 3D→Qwen): log lock + PID tree cho thấy không có khoảng chồng lấn; job còn queued trong lúc 3D giữ lock/slot thì hiện "PC đang bận GPU với việc khác" (heartbeat `gpuBusy`), không claim, attempt vẫn 0.
 4. Đổi ảnh món đồ hoặc xóa món đồ trong lúc job đang chạy → kết quả về muộn bị từ chối (`SOURCE_CHANGED`), wardrobe không đổi; xóa món đồ thì snapshot có cleanup intent (`fm_v2_source_cleanup`).
 5. PC offline: job nằm ở queued, app vẫn dùng bình thường (rules-v1 và sửa tay).
+6. Quota/cleanup: tài khoản đã có 20 job đang chờ/chạy (gồm cả 3D) bấm phân tích → 429 `QUOTA_EXCEEDED`, không có object mới trong `…/analysis/`. Sau khi chạy collector (`scripts/source-cleanup.mjs`), `fm_v2_source_cleanup` không còn intent `pending` quá hạn của snapshot analysis.
 
 ## 6. Dừng / rollback
 

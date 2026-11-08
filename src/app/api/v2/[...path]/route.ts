@@ -39,7 +39,7 @@ import { recommend, type Candidate } from "@/lib/v2/recommend";
 import {
   analysisEnabled,
   listAnalyses,
-  analysisWorkerOnline,
+  analysisWorkerStatus,
   createAnalysis,
   analysisAction,
   confirmAnalysis,
@@ -66,6 +66,8 @@ const workerHeartbeatQ = z
       z.enum(allKinds),
       z.object({ model: z.string().min(1).max(160), revision: z.string().min(1).max(160) }).strict(),
     ),
+    // QREV-STATUS (transport extension, optional): the shared GPU was taken at the last claim attempt.
+    gpuBusy: z.boolean().optional(),
   })
   .strict();
 const failureRequestQ = z
@@ -100,6 +102,7 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
         .update({
           last_seen: new Date().toISOString(),
           capabilities: declared,
+          gpu_busy: body.gpuBusy ?? false,
         })
         .eq("id", w.id)
         .eq("enabled", true),
@@ -529,7 +532,7 @@ async function handle(
       if (path.length === 1 && method === "GET")
         return reply({
           enabled: analysisEnabled(),
-          workerOnline: analysisEnabled() ? await analysisWorkerOnline(owner) : false,
+          ...(analysisEnabled() ? await analysisWorkerStatus(owner) : { workerOnline: false, gpuBusy: false }),
           analyses: await listAnalyses(owner),
         });
       if (path.length === 1 && method === "POST") {

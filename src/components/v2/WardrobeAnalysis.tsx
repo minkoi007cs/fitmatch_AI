@@ -60,12 +60,14 @@ const failureNames: Record<string, string> = {
 export function useWardrobeAnalyses() {
   const [enabled, setEnabled] = useState(false);
   const [workerOnline, setWorkerOnline] = useState(false);
+  const [gpuBusy, setGpuBusy] = useState(false);
   const [byItem, setByItem] = useState<Record<string, AnalysisView>>({});
   const load = useCallback(async () => {
     try {
-      const data = await api<{ enabled: boolean; workerOnline: boolean; analyses: AnalysisView[] }>("analyses");
+      const data = await api<{ enabled: boolean; workerOnline: boolean; gpuBusy?: boolean; analyses: AnalysisView[] }>("analyses");
       setEnabled(data.enabled);
       setWorkerOnline(data.workerOnline);
+      setGpuBusy(data.gpuBusy === true);
       setByItem(Object.fromEntries(data.analyses.map((a) => [a.itemId, a])));
     } catch {
       setEnabled(false);
@@ -83,7 +85,7 @@ export function useWardrobeAnalyses() {
     return () => clearInterval(timer);
   }, [anyActive, load]);
   const put = useCallback((a: AnalysisView) => setByItem((m) => ({ ...m, [a.itemId]: a })), []);
-  return { enabled, workerOnline, byItem, put, reload: load };
+  return { enabled, workerOnline, gpuBusy, byItem, put, reload: load };
 }
 
 export function AnalysisPanel({
@@ -92,10 +94,12 @@ export function AnalysisPanel({
   hasImage,
   analysis,
   workerOnline,
+  gpuBusy = false,
   onUpdate,
   onWardrobeChanged,
 }: {
   workerOnline: boolean;
+  gpuBusy?: boolean;
   itemId: string;
   itemName: string;
   hasImage: boolean;
@@ -147,7 +151,9 @@ export function AnalysisPanel({
             ? "AI đang phân tích trên PC…"
             : !workerOnline
               ? "PC đang offline. Việc vẫn được giữ và sẽ chạy khi PC bật lại; bạn vẫn có thể sửa thông tin món đồ thủ công."
-              : analysis.state === "queued"
+              : analysis.state === "queued" && gpuBusy
+                ? "PC đang bận GPU với việc khác. Việc của bạn vẫn giữ trong hàng đợi và chưa bị tính lượt thử."
+                : analysis.state === "queued"
                 ? "Đang chờ PC nhận việc…"
                 : analysis.errorCode === "MEMORY_PRESSURE"
                   ? "PC đang thiếu bộ nhớ trống, sẽ tự thử lại."
