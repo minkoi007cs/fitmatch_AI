@@ -78,6 +78,15 @@ def worker_ancestor(policy, ancestors):
         raise Refused('GPU_BUSY')
     return matches[0]
 
+def validate_worker_config(config,policy):
+    if (type(config) is not dict or config.get('gpuLock')!=str(LOCK)
+        or config.get('processContainment','required')!='required'
+        or config.get('workDir')!=policy['work_dir']
+        or config.get('gpuSlot')!=str(COORD/'gpu0-slot.json')
+        or config.get('gpuSlotOwner')!='pc-ai'
+        or config.get('gpuGuard')!={'path':str(GUARD),'sha256':GUARD_HASH}):
+        raise Refused('GPU_BUSY')
+
 def lock_is_held():
     """A failed nonblocking byte0 probe is required. An unlocked file is immediately released/refused."""
     if LOCK.stat().st_size<1:
@@ -117,10 +126,7 @@ def verify(manifest,value,policy_path=POLICY):
             path=Path(policy[path_key]);safe_file(path,path.parent)
             if digest(path)!=policy[hash_key]:raise Refused('GPU_BUSY')
         config=read(policy['config_path'])
-        if (type(config) is not dict or config.get('gpuLock')!=str(LOCK)
-            or config.get('processContainment','required')!='required'
-            or config.get('workDir')!=policy['work_dir']):
-            raise Refused('GPU_BUSY')
+        validate_worker_config(config,policy)
         root=job_root_for(manifest,value,policy)
         records=[]
         for process in psutil.Process().parents():

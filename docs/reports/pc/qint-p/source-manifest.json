@@ -308,9 +308,9 @@
     {
       "snapshot": "qint_p/cpu_handoff_smoke.py.txt",
       "restore_to": "ai-service/qint_p/cpu_handoff_smoke.py",
-      "sha256": "87fde3bf26df567dac7cdd73485828020fa7ed10446c786854be883df90787ff",
-      "bytes": 7121,
-      "original_sha256": "87fde3bf26df567dac7cdd73485828020fa7ed10446c786854be883df90787ff",
+      "sha256": "4a1f7f22d0d524ad87082f5301b0a266c0b3e7825a16ee819aa3db6b380596f9",
+      "bytes": 7289,
+      "original_sha256": "4a1f7f22d0d524ad87082f5301b0a266c0b3e7825a16ee819aa3db6b380596f9",
       "normalization": "CRLF to LF only"
     },
     {
@@ -346,6 +346,14 @@
       "normalization": "CRLF to LF only"
     },
     {
+      "snapshot": "qint_p/qrev_final_smoke.py.txt",
+      "restore_to": "ai-service/qint_p/qrev_final_smoke.py",
+      "sha256": "f044991046f62f1f98e3fe4b0be3dd17d894718dc728e9c1192783f5c8b37afa",
+      "bytes": 8082,
+      "original_sha256": "f044991046f62f1f98e3fe4b0be3dd17d894718dc728e9c1192783f5c8b37afa",
+      "normalization": "CRLF to LF only"
+    },
+    {
       "snapshot": "qint_p/retention_probe.py.txt",
       "restore_to": "ai-service/qint_p/retention_probe.py",
       "sha256": "cca4e48421aca711bb7cdd710d252cce3e2b166e1ade5e4b23a1f2cb7beaa162",
@@ -364,9 +372,9 @@
     {
       "snapshot": "qint_p/run_cpu_suite.py.txt",
       "restore_to": "ai-service/qint_p/run_cpu_suite.py",
-      "sha256": "ce1a65b5902383ced603614a3375ea0372e621332320f4e587b7e4e0e4195889",
-      "bytes": 2139,
-      "original_sha256": "ce1a65b5902383ced603614a3375ea0372e621332320f4e587b7e4e0e4195889",
+      "sha256": "c3432343bdfa76c745c6d86a391c29d86c792cc2aee25e666e7e0ae44783d8ca",
+      "bytes": 2286,
+      "original_sha256": "c3432343bdfa76c745c6d86a391c29d86c792cc2aee25e666e7e0ae44783d8ca",
       "normalization": "CRLF to LF only"
     },
     {
@@ -404,9 +412,9 @@
     {
       "snapshot": "qint_p/test_worker_bridge.py.txt",
       "restore_to": "ai-service/qint_p/test_worker_bridge.py",
-      "sha256": "996011c6a0e9fdef45a77ddda69531e6d39b9c16b998c19b167073bafc3a34fe",
-      "bytes": 15564,
-      "original_sha256": "996011c6a0e9fdef45a77ddda69531e6d39b9c16b998c19b167073bafc3a34fe",
+      "sha256": "c0548da898ee52bfa603391fd161d34515eb86dbe39fe25e6aa77d7a690f715b",
+      "bytes": 16345,
+      "original_sha256": "c0548da898ee52bfa603391fd161d34515eb86dbe39fe25e6aa77d7a690f715b",
       "normalization": "CRLF to LF only"
     },
     {
@@ -428,9 +436,9 @@
     {
       "snapshot": "qint_p/worker-engine.example.json.txt",
       "restore_to": "ai-service/qint_p/worker-engine.example.json",
-      "sha256": "257450606d9f3eda636e937b884eb68b6e44f2cef2d6d95c79cfe7b6cbd88d68",
-      "bytes": 702,
-      "original_sha256": "257450606d9f3eda636e937b884eb68b6e44f2cef2d6d95c79cfe7b6cbd88d68",
+      "sha256": "b13869978a4a4e18ea9b19823eaf21ba755cec97a89c20b23832605f88ae9249",
+      "bytes": 964,
+      "original_sha256": "b13869978a4a4e18ea9b19823eaf21ba755cec97a89c20b23832605f88ae9249",
       "normalization": "CRLF to LF only"
     },
     {
@@ -444,9 +452,9 @@
     {
       "snapshot": "qint_p/worker_admission.py.txt",
       "restore_to": "ai-service/qint_p/worker_admission.py",
-      "sha256": "5b7309a3cb4ac24ac0a5e8588dc973bbf45c3024717db06b0ace0881e168ba6f",
-      "bytes": 7095,
-      "original_sha256": "5b7309a3cb4ac24ac0a5e8588dc973bbf45c3024717db06b0ace0881e168ba6f",
+      "sha256": "f80461bce88e4b732cd6865e36f64fe356f33cc0f9de808334ad28b9bb8be059",
+      "bytes": 7353,
+      "original_sha256": "f80461bce88e4b732cd6865e36f64fe356f33cc0f9de808334ad28b9bb8be059",
       "normalization": "CRLF to LF only"
     },
     {
