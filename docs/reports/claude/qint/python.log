@@ -35,7 +35,7 @@ test_job_that_never_empties_is_reported_undrained (test_worker_unit.WindowsJobPl
 test_placement_failure_refuses_to_run_the_adapter (test_worker_unit.WindowsJobPlacementTests.test_placement_failure_refuses_to_run_the_adapter) ... ok
 
 ----------------------------------------------------------------------
-Ran 30 tests in 1.299s
+Ran 30 tests in 0.849s
 
 OK
 exit=0

@@ -63,4 +63,4 @@ Lệnh in token một lần. Chuyển token cho PC qua kênh riêng và đặt v
 
 - Test trong repo dùng **CPU mock adapter**: chứng minh plumbing (queue, lease, fencing, review), không chứng minh chất lượng Qwen, thời gian GPU hay hành vi native Windows.
 - Ánh xạ sang wardrobe: tshirt→`t-shirt`, jeans→`jeans`; pattern solid/striped/printed/checked/other → plain/striped/graphic/plaid/other; màu dùng từ vựng contract. Logo text người dùng xác nhận chỉ lưu trên analysis (wardrobe chưa có cột cho nó).
-- Mock auth của HTTP test không giả lập được hai tài khoản wardrobe độc lập, nên isolation giữa hai tài khoản đang được kiểm ở tầng DB (`test:v2:db`). Isolation ở tầng HTTP với 2 account thật thuộc kịch bản 5.2 trên test env.
+- HTTP test đã kiểm tài khoản thứ hai qua auth mock (không thấy và không thao tác được analysis của người khác), nhưng wardrobe vẫn là fixture; isolation với 2 tài khoản Supabase thật là kịch bản 5.2 trên test env.
