@@ -1,0 +1,4 @@
+$ node --import tsx scripts/export-contract.mjs --check
+sha ad6d1d7f0664f1cf532ce14d98b953f788005bff 2026-11-08T15:35:44Z
+Contract files up to date (48)
+exit 0
