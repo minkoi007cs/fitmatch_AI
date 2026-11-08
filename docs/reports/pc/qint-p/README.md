@@ -1,6 +1,8 @@
 # QINT-P / AI-QUALITY-04 checkpoint — 07/11/2026
 
-Latest continuation: [direct worker-held adapter/slot bridge](worker-bridge.md),
+Latest coordination: [PROC0020 exact-revision CPU handoff](proc20-handoff.md),
+nine refusal cases PASS; final Claude startup/config ACK remains pending.
+Prior continuation: [direct worker-held adapter/slot bridge](worker-bridge.md),
 130CPUcases/129PASS/1skip. The103-case checkpoint below is preserved as history;
 no real GPU integration has run.
 

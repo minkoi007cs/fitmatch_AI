@@ -306,6 +306,14 @@
       "normalization": "CRLF to LF only"
     },
     {
+      "snapshot": "qint_p/cpu_handoff_smoke.py.txt",
+      "restore_to": "ai-service/qint_p/cpu_handoff_smoke.py",
+      "sha256": "87fde3bf26df567dac7cdd73485828020fa7ed10446c786854be883df90787ff",
+      "bytes": 7121,
+      "original_sha256": "87fde3bf26df567dac7cdd73485828020fa7ed10446c786854be883df90787ff",
+      "normalization": "CRLF to LF only"
+    },
+    {
       "snapshot": "qint_p/import_contract.py.txt",
       "restore_to": "ai-service/qint_p/import_contract.py",
       "sha256": "a9e225501f35279f2818ca13ab90788ec61a02b0db05963d3e4f5586d631bcc5",
