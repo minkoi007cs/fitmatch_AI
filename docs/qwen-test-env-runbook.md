@@ -4,7 +4,7 @@ Chỉ dành cho **môi trường test dùng một lần**: một Supabase projec
 
 ## 0. Điều kiện trước khi bật
 
-- Codex review contract `docs/qwen-contract-v1.md`, migrations `20261107120000_qwen_analysis_qint.sql` + `20261108090000_qwen_review_qrev.sql`, drain fix (PC-QUIESCENCE-01) và bản sửa QREV (lock/quota/snapshot/status) → kết quả PASS.
+- Codex review contract `docs/qwen-contract-v1.md`, migrations `20261107120000_qwen_analysis_qint.sql` + `20261108090000_qwen_review_qrev.sql` + `20261108150000_qrev_cleanup_claim.sql`, drain fix (PC-QUIESCENCE-01) và bản sửa QREV (lock/quota/snapshot/status + collector claim QREV-CLEANUP-RACE) → kết quả PASS.
 - PC Qwen ACK conformance: `python scripts/check-qwen-contract.py <result.json thật>` đều PASS; exit codes khớp bảng trong contract.
 - PC 3D ACK: hash guard (hiện `47331c56…`), đường dẫn tuyệt đối của lock dùng chung `…/Fitmatch-GPU/coordination/gpu0.lock` (msvcrt byte 0) và slot `gpu0-slot.json` cùng thư mục; worker là lock owner duy nhất cho job tích hợp (không gọi guard lồng bên trong); Python worker tests chạy native trên Windows đúng commit app.
 
@@ -14,7 +14,7 @@ Chưa đủ 3 điều kiện trên thì giữ flag OFF; chỉ chạy CPU/local f
 
 1. Tạo project mới và một bucket **private** `fitmatch-v2`. Bucket `fitmatch-wardrobe` đã có trong schema app gốc.
 2. Áp migrations theo thứ tự (SQL editor hoặc `supabase db push` **trỏ vào test project**):
-   `20261103_app_system_identity` → `20261104_ai_daily_quota` → `20261105_studio_control_plane` → `20261106025506_worker_recovery_r1` → `20261106035951_full_look_c1` → `20261106042143_capture_retention_c2` → `20261106044040_gc_dry_run_c3` → `20261106053812_fitting_generations` → `20261106150000_source_cleanup_priv01` → `20261107120000_qwen_analysis_qint` → `20261108090000_qwen_review_qrev`.
+   `20261103_app_system_identity` → `20261104_ai_daily_quota` → `20261105_studio_control_plane` → `20261106025506_worker_recovery_r1` → `20261106035951_full_look_c1` → `20261106042143_capture_retention_c2` → `20261106044040_gc_dry_run_c3` → `20261106053812_fitting_generations` → `20261106150000_source_cleanup_priv01` → `20261107120000_qwen_analysis_qint` → `20261108090000_qwen_review_qrev` → `20261108150000_qrev_cleanup_claim`.
 3. Kiểm: `select 1 from fm_v2_analyses limit 1;` không lỗi, và `anon`/`authenticated` không đọc được `fm_v2_analyses` hay `fm_v2_source_cleanup`.
 
 ## 2. App test deploy
@@ -62,7 +62,7 @@ Lệnh in token một lần. Chuyển token cho PC qua kênh riêng và đặt v
 
 - Dừng: đặt `QWEN_ANALYSIS_ENABLED=0` và redeploy; `manage.mjs ungrant <OWNER> <WORKER> garment.analyze`; hoặc `revoke` worker. Lease đang chạy sẽ hết hạn và không ghi được gì nữa.
 - Rollback dữ liệu test: bảng/cột đều additive. Nếu cần gỡ, hủy job analysis đang chạy trước, rồi `drop table fm_v2_analyses cascade` và bỏ cột `analysis_id/not_before/deferrals` trên test project. Production không có gì để rollback vì chưa áp ở đó.
-- Snapshot ảnh: xóa analysis hoặc món đồ sẽ tạo cleanup intent; dọn bằng `node scripts/source-cleanup.mjs` (mặc định dry-run, thêm `--execute` để xóa) **trên test project**. Bản copy trong thư mục job trên PC không được xóa từ app; PC cần có receipt riêng.
+- Snapshot ảnh: xóa analysis hoặc món đồ sẽ tạo cleanup intent; dọn bằng `node scripts/source-cleanup.mjs` (mặc định dry-run không tác dụng phụ; `--execute` trước hết **claim** các intent trong DB — khóa theo owner như enqueue, tombstone reservation bỏ dở để enqueue không thể publish nữa, không bao giờ chọn asset ready/đang được analysis dùng — rồi mới xóa đúng các path đã claim và báo kết quả bằng token; mất báo cáo thì claim hết hạn sau 5 phút và lượt sau làm lại) **trên test project**. Không bật chạy định kỳ khi chưa được duyệt. Bản copy trong thư mục job trên PC không được xóa từ app; PC cần có receipt riêng.
 
 ## 7. Giới hạn đã biết
 
