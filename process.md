@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 08/11/2026, America/New_York. Revision: PROC-0020. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 08/11/2026, America/New_York. Revision: PROC-0021. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Trạng thái tiếp nối hiện hành — PROC-0016
 
@@ -446,3 +446,11 @@ User giao checkpreviewPC vàreviewClaude. PCphotoreport fitting67.63s/privatepre
 
 ### L-047 — 08/11/2026 — REVIEW / HANDOFF — CX-QINT-REVIEW-20
 App95d59ad independent64unit/30MacPython/DB8blocksPASS/export48current. Pythoncontractcheckerblocked missingjsonschema, nofreshHTTP/lint/build/nativeGPU. QREV-LOCK P1defaultsample/runbook lock differs actualPCsharedpath; QREV-QUOTA/SNAPSHOT P2missinganalysisquota and failed-enqueueprivatecopycleanup; QREV-STATUS queuedvsGPUbusy gap. Focusedreview NEEDS CHANGES beforetestgrant; Claude scopedfixprompt publishedwithreport. PCphoto dd80777 reportsactualfit67.63s/debugGLB+previews/noOOM, nolikeness/hair/texture; privateDrivepreview/ZIPmetadata checked notvisualacceptance. PCdirectcontinuation sent success torequestpreviewandcompilerdiagnostic, keepUACpause/OSGPUlock/QwennoCUDA. Sourceapp untouched; realintegration NOT VERIFIED.
+
+
+### L-048 — 08/11/2026 — START — CX-QREV-RECHECK-21
+User giao re-review3fixes/nốiQwen vàface/texturegaps. Read latestonboarding/process/PR12report; review app7631cb0 codebf0b6d7 separateworktree, scope docsreview/tests only. PC9557ae3 report tinyobjloader/xatlasCPU done, nvdiffrastCUDAcompilerblocked; noUI/OSpermissionchanges.
+
+
+### L-049 — 08/11/2026 — RECHECK / HANDOFF — CX-QREV-RECHECK-21
+Claude7631cb0/bf0b6d7 original3fixes addressed: LOCKsourceacceptednativepending, QUOTAfocusedPGPASS, SNAPSHOTorphanfixpartial. Independent64unit/39MacPython/lint/DB9PASS. NewP1collectorfinalizerace deterministicDBrepro: duecachedpath→enqueuesuccess/readyasset/deletedintent→collectorwouldremove/latereport0. Noactualstorageremoval; harnessinitialENOENTfixed. Report/fragment/log+Claudecontinuation ready. Defaultbuildblocked symlinkTurbopackroot, noappregressionclaim; alternate result separate. PC9557ae3 tinyobjloader/xatlasCPU progressed, MSVCSDK/nvdiffrastCUDA and actualidentity/appearance remain. Directmessages bothPCsuccess for exact7631native/bridgeACK; noGPUgrant/testdeploy.

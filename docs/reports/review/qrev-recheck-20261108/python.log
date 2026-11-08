@@ -1,0 +1,52 @@
+test_3d_input_digest_unchanged_and_analysis_digest_binds_identity (test_worker_unit.AnalysisTransportTests) ... ok
+test_analysis_exit_codes_only_for_analysis_jobs_and_only_with_matching_record (test_worker_unit.AnalysisTransportTests) ... ok
+test_result_must_be_bounded_bound_and_never_self_approved (test_worker_unit.AnalysisTransportTests) ... ok
+test_garbage_checkpoint_is_set_aside_not_deleted (test_worker_unit.CheckpointTests) ... Checkpoint set aside: unreadable or unrecognized checkpoint
+ok
+test_job_id_must_be_uuid (test_worker_unit.CheckpointTests) ... ok
+test_other_engine_revision_is_refused (test_worker_unit.CheckpointTests) ... ok
+test_path_outside_job_dir_is_refused (test_worker_unit.CheckpointTests) ... ok
+test_tampered_output_is_refused (test_worker_unit.CheckpointTests) ... ok
+test_unknown_version_is_set_aside (test_worker_unit.CheckpointTests) ... Checkpoint set aside: unreadable or unrecognized checkpoint
+ok
+test_valid_output_is_reused (test_worker_unit.CheckpointTests) ... ok
+test_adapter_environment_drops_secrets (test_worker_unit.ClassificationTests) ... ok
+test_exit_codes_follow_structured_adapter_contract (test_worker_unit.ClassificationTests) ... ok
+test_job_failure_unknown_code_maps_to_inference_failed (test_worker_unit.ClassificationTests) ... ok
+test_posix_uses_session_and_dirlock (test_worker_unit.ContainmentTests) ... ok
+test_unknown_mode_is_rejected_everywhere (test_worker_unit.ContainmentTests) ... ok
+test_windows_binding_failure_refuses_to_start (test_worker_unit.ContainmentTests) ... ok
+test_windows_binding_success (test_worker_unit.ContainmentTests) ... ok
+test_windows_explicit_disabled_mode_runs_with_warning (test_worker_unit.ContainmentTests) ... WARNING: processContainment=unsafe-disabled. A worker crash can leave an adapter running on the GPU; restart only after checking Task Manager. Reason: OSError
+ok
+test_heartbeat_carries_only_a_boolean (test_worker_unit.GpuBusyReportingTests) ... ok
+test_lock_held_elsewhere_is_reported_busy_at_once_then_cleared (test_worker_unit.GpuBusyReportingTests) ... GPU is busy with another job on this machine; waiting before claiming.
+ok
+test_slot_for_the_other_owner_is_busy_without_claiming (test_worker_unit.GpuBusyReportingTests) ... GPU admission refused, not claiming: GPU slot is assigned to another owner
+ok
+test_independent_process_exclusion_and_crash_release (test_worker_unit.GpuLockTests) ... ok
+test_one_gpu_job_per_host_across_workers (test_worker_unit.GpuLockTests) ... ok
+test_media_type_wins_and_legacy_roles_still_work (test_worker_unit.InputNameTests) ... ok
+test_undrained_tree_keeps_lock_and_blocks_claims_until_it_exits (test_worker_unit.QuarantineLoopTests) ... Still quarantined: owned adapter processes running; not claiming.
+Quarantined adapter processes have exited; resuming.
+ok
+test_drain_waits_for_and_stops_owned_grandchild_only (test_worker_unit.QuiescenceTests) ... ok
+test_exited_grandchild_left_as_zombie_counts_as_drained (test_worker_unit.QuiescenceTests) ... ok
+test_gpu_lock_is_held_until_the_owned_tree_is_drained (test_worker_unit.QuiescenceTests) ... ok
+test_old_launcher_poll_reports_done_while_grandchild_runs (test_worker_unit.QuiescenceTests) ... ok
+test_sigterm_ignoring_grandchild_is_killed_after_grace (test_worker_unit.QuiescenceTests) ... ok
+test_analysis_engine_requires_shared_lock (test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_loop_refusal_releases_lock_and_claims_nothing (test_worker_unit.SharedGpuAdmissionTests) ... GPU admission refused, not claiming: No GPU slot file: PC3D-only bootstrap, pc-ai not admitted
+ok
+test_main_refuses_to_start_with_default_lock (test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_slot_rules_match_the_guard (test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_startup_refuses_default_relative_missing_or_unpinned (test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_adapter_starts_suspended_inside_its_own_job (test_worker_unit.WindowsJobPlacementTests) ... ok
+test_job_that_never_empties_is_reported_undrained (test_worker_unit.WindowsJobPlacementTests) ... ok
+test_kernel_zero_is_not_enough_until_tracked_process_objects_are_signaled (test_worker_unit.WindowsJobPlacementTests) ... ok
+test_placement_failure_refuses_to_run_the_adapter (test_worker_unit.WindowsJobPlacementTests) ... ok
+
+----------------------------------------------------------------------
+Ran 39 tests in 1.434s
+
+OK

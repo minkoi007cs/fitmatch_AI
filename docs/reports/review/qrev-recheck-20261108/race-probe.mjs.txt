@@ -1,0 +1,14 @@
+  { // Reviewer-controlled collector/enqueue interleaving, synthetic PG rows only.
+    const U='12345678-1111-4111-a111-123456789001', I='12345678-1111-4111-a111-123456789002', S='12345678-1111-4111-a111-123456789003', A='12345678-1111-4111-a111-123456789004', J='12345678-1111-4111-a111-123456789005', H='f'.repeat(64);
+    sql(`insert into auth.users values('${U}'); insert into fm_wardrobe_items(id,user_id,category,image_path) values('${I}','${U}','t-shirt','${U}/source.jpg');`);
+    const reserved=JSON.parse(service(`select fm_v2_analysis_reserve('${U}','${I}','${U}/source.jpg','${H}','qint.1','${S}',100);`));
+    sql(`update fm_v2_source_cleanup set next_attempt_at=now()-interval '1 second' where asset_id='${S}';`);
+    const dueBefore=JSON.parse(service('select fm_v2_source_cleanup_due(500);'));
+    assert.ok(dueBefore.some(x=>x.path===reserved.path));
+    service(`select fm_v2_analysis_enqueue('${U}','${I}','${U}/source.jpg','${S}','${H}','qint.1','${A}','${J}');`);
+    assert.equal(service(`select state from fm_v2_assets where id='${S}';`),'ready');
+    assert.equal(service(`select count(*) from fm_v2_source_cleanup where asset_id='${S}';`),'0');
+    const report=service(`select fm_v2_source_cleanup_report('${U}',array['${reserved.path}'],true,null);`);
+    console.log('REPRO QREV-SNAPSHOT race: collector cached due path; enqueue promoted asset ready and removed intent; collector still holds removal path; late report='+report);
+  }
+
