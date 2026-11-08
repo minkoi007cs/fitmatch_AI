@@ -200,6 +200,14 @@ export const analysisConfirmRequest = z
 
 export const analysisRequest = z.object({ itemId: uuid }).strict();
 
+/** Capabilities a heartbeat may store: with the flag OFF garment.analyze is dropped, so claim_r1 can never
+ * hand an analysis job to any worker, whatever its grants. */
+export function storableCapabilities<T>(declared: Record<string, T>, enabled: boolean): Record<string, T> {
+  const out = { ...declared };
+  if (!enabled) delete out[ANALYSIS_KIND];
+  return out;
+}
+
 /** Mapping of approved values onto existing wardrobe columns (only on human confirmation). */
 export const wardrobeMapping = {
   category: { tshirt: "t-shirt", jeans: "jeans" },

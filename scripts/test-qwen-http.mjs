@@ -16,7 +16,7 @@ import { analysisResult } from "../src/lib/v2/qwen.ts";
 const jpeg = (rgb) =>
   sharp({ create: { width: 400, height: 480, channels: 3, background: rgb } }).jpeg().toBuffer();
 
-export async function testQwen({ base, request, jar, owner, itemId, v2 }) {
+export async function testQwen({ base, request, jar, owner, itemId, v2, asSecond }) {
   const temp = await mkdtemp(join(tmpdir(), "fitmatch-qwen-"));
   const lockPath = join(temp, "gpu-0.lock");
   const runWorker = async (token, mode) => {
@@ -50,7 +50,9 @@ export async function testQwen({ base, request, jar, owner, itemId, v2 }) {
     await page.goto(base + "/wardrobe");
     const panel = page.getByRole("group", { name: `Phân tích AI cho ${item.name}` });
     await panel.getByRole("button", { name: "Phân tích với AI" }).click();
-    await panel.getByText("Đang chờ PC nhận việc", { exact: false }).waitFor();
+    // No worker granted for analysis is online: say so instead of pretending it is about to run.
+    await panel.getByText("PC đang offline", { exact: false }).waitFor();
+    assert.equal((await (await request("/api/v2/analyses")).json()).workerOnline, false);
     const a = JSON.parse(v2.sql(`select row_to_json(t) from (select id,status,image_asset_id,image_sha256,source_path from fm_v2_analyses where user_id='${owner}' and item_id='${itemId}') t;`));
     assert.equal(a.status, "pending");
     assert.equal(a.source_path, path1);
@@ -76,7 +78,27 @@ export async function testQwen({ base, request, jar, owner, itemId, v2 }) {
     const probe = await promisify(execFile)("python3", ["-c",
       "import fcntl,sys;f=open(sys.argv[1],'a+');fcntl.flock(f.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB);print('free')", lockPath]);
     assert.equal(probe.stdout.trim(), "free");
-    // 2nd run after backoff: proposal stored for review, wardrobe untouched until the human confirms.
+    assert.equal((await (await request("/api/v2/analyses")).json()).workerOnline, true, "granted worker heartbeat seen");
+    // Memory admission refused before load: same bounded deferral, distinct message.
+    v2.sql(`update fm_v2_jobs set not_before=now() where id='${jobId}';`);
+    out = await runWorker(token, "memory");
+    assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals||':'||error_code from fm_v2_jobs where id='${jobId}';`), "queued:0:2:MEMORY_PRESSURE");
+    await panel.getByText("PC đang thiếu bộ nhớ trống", { exact: false }).waitFor({ timeout: 15000 });
+    // 2nd account: sees nothing of this owner's analyses and cannot act on them over HTTP.
+    await asSecond(async (req2, owner2) => {
+      assert.notEqual(owner2, owner);
+      const list = await (await req2("/api/v2/analyses")).json();
+      assert.deepEqual(list.analyses, [], "foreign analyses never listed");
+      assert.equal(list.workerOnline, false, "another owner's worker does not count");
+      for (const action of ["cancel", "retry"])
+        assert.equal((await req2(`/api/v2/analyses/${a.id}/${action}`, { method: "POST", body: "{}" })).status, 404, action);
+      const foreignConfirm = await req2(`/api/v2/analyses/${a.id}/confirm`, { method: "POST", body: JSON.stringify({
+        confirmationId: "99999999-8888-4777-8666-555555555555", expectedResultSha256: "0".repeat(64), decision: "reject", fields: {} }) });
+      assert.equal(foreignConfirm.status, 404);
+      assert.equal((await req2(`/api/v2/jobs/${jobId}/retry`, { method: "POST", body: "{}" })).status, 409, "foreign job action refused");
+    });
+    assert.equal(v2.sql(`select state||':'||deferrals from fm_v2_jobs where id='${jobId}';`), "queued:2", "foreign calls changed nothing");
+    // 3rd run after backoff: proposal stored for review, wardrobe untouched until the human confirms.
     v2.sql(`update fm_v2_jobs set not_before=now() where id='${jobId}';`);
     out = await runWorker(token, "proposal");
     assert.match(out, /Completed analysis job/);
@@ -144,5 +166,5 @@ export async function testQwen({ base, request, jar, owner, itemId, v2 }) {
     await browser.close();
     await rm(temp, { recursive: true, force: true });
   }
-  console.log("PASS QINT-C analysis (real routes + PostgreSQL + browser + real worker.py, CPU MOCK adapter): owned photo -> immutable private snapshot -> durable job; dedupe; 3D lists/actions exclude analysis jobs; GPU_BUSY deferral shown as waiting, attempt kept, lock free after drain; proposal stored for review only, result replay idempotent; browser review prefilled except OCR, human confirm writes only reviewed mapped values, persists after reload; same photo reuses confirmed result without a job; self-approving output fails closed, retry, abstention changes nothing; flag-off UI hidden. No Qwen quality or real GPU claim.");
+  console.log("PASS QINT-C analysis (real routes + PostgreSQL + browser + real worker.py, CPU MOCK adapter): owned photo -> immutable private snapshot -> durable job; dedupe; 3D lists/actions exclude analysis jobs; GPU_BUSY deferral shown as waiting, attempt kept, lock free after drain; proposal stored for review only, result replay idempotent; browser review prefilled except OCR, human confirm writes only reviewed mapped values, persists after reload; same photo reuses confirmed result without a job; self-approving output fails closed, retry, abstention changes nothing; flag-off UI hidden; PC offline and MEMORY_PRESSURE shown distinctly; second account sees/acts on nothing over HTTP. No Qwen quality or real GPU claim.");
 }

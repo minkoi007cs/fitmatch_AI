@@ -534,6 +534,7 @@ export default function WardrobePage() {
                       itemName={item.name}
                       hasImage={!!item.image_path}
                       analysis={analyses.byItem[item.id]}
+                      workerOnline={analyses.workerOnline}
                       onUpdate={analyses.put}
                       onWardrobeChanged={() => setReloadKey((k) => k + 1)}
                     />

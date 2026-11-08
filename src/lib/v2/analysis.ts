@@ -6,6 +6,7 @@ import { normalizeAnalysisImage } from "./image";
 import { bucket, digest, required, result, signedAsset } from "./server";
 import type { JobRow, WorkerRow } from "./contracts";
 import {
+  ANALYSIS_KIND,
   ANALYSIS_CONTRACT,
   POLICY_REVISION,
   RESULT_VERSION,
@@ -92,6 +93,24 @@ export async function listAnalyses(owner: string) {
     : [];
   const byAnalysis = new Map(jobs.map((j) => [j.analysis_id, j]));
   return [...latest.values()].map((a) => view(a, byAnalysis.get(a.id) ?? null));
+}
+
+/**
+ * True when one of the owner's enabled workers is granted AND currently declares garment.analyze
+ * with a heartbeat in the last 90 s (same window claim_r1 uses). Lets the UI say "PC offline"
+ * instead of pretending a queued job is about to run.
+ */
+export async function analysisWorkerOnline(owner: string) {
+  const since = new Date(Date.now() - 90_000).toISOString();
+  const rows = result(
+    await createAdminClient()
+      .from("fm_v2_workers")
+      .select("capabilities,allowed_capabilities")
+      .eq("user_id", owner)
+      .eq("enabled", true)
+      .gte("last_seen", since),
+  ) as { capabilities: Record<string, unknown> | null; allowed_capabilities: string[] | null }[];
+  return rows.some((w) => !!w.capabilities && ANALYSIS_KIND in w.capabilities && (w.allowed_capabilities ?? []).includes(ANALYSIS_KIND));
 }
 
 async function analysisOf(owner: string, id: string) {

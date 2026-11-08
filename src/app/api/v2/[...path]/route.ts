@@ -39,6 +39,7 @@ import { recommend, type Candidate } from "@/lib/v2/recommend";
 import {
   analysisEnabled,
   listAnalyses,
+  analysisWorkerOnline,
   createAnalysis,
   analysisAction,
   confirmAnalysis,
@@ -51,6 +52,7 @@ import {
   analysisConfirmRequest,
   analysisResultRequest,
   analysisFailureCodes,
+  storableCapabilities,
 } from "@/lib/v2/qwen";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -91,8 +93,7 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
   if (method !== "POST") throw new InputError(405, "METHOD_NOT_ALLOWED");
   if (path.join("/") === "heartbeat") {
     const body = await readJson(request, workerHeartbeatQ);
-    const declared: Record<string, unknown> = { ...body.capabilities };
-    if (!analysisEnabled()) delete declared[ANALYSIS_KIND];
+    const declared = storableCapabilities<unknown>(body.capabilities, analysisEnabled());
     result(
       await db
         .from("fm_v2_workers")
@@ -526,7 +527,11 @@ async function handle(
     }
     if (path[0] === "analyses") {
       if (path.length === 1 && method === "GET")
-        return reply({ enabled: analysisEnabled(), analyses: await listAnalyses(owner) });
+        return reply({
+          enabled: analysisEnabled(),
+          workerOnline: analysisEnabled() ? await analysisWorkerOnline(owner) : false,
+          analyses: await listAnalyses(owner),
+        });
       if (path.length === 1 && method === "POST") {
         if (!analysisEnabled()) throw new InputError(403, "FEATURE_DISABLED");
         const body = await readJson(request, analysisRequest);

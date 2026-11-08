@@ -158,7 +158,16 @@ try {
   const signedIn = await request("/api/auth/session"); assert.equal(signedIn.status, 200); const session = await signedIn.json(); assert.equal(session.user.email, "owner@fixture.invalid");
   console.log("PASS: PKCE/state verified; callback bridges user-scoped Supabase session and preserves next/vibe");
   assert.equal((await request("/studio")).status, 200);
-  if (v2) { v2.seed(session.user.id,itemId); const {testV2}=await import("./test-v2-http.mjs"); await testV2({base,fixture,request,jar,owner:session.user.id,itemId,v2}); }
+  // Second account for owner-isolation checks: identity switches only for the duration of fn.
+  const asSecond = async (fn) => {
+    const store = new Map(); subject = "hub-qint-second";
+    try {
+      assert.equal((await complete(await begin(store), store)).status, 303);
+      const second = (await (await request("/api/auth/session", {}, store)).json()).user.id;
+      return await fn((path, options = {}) => request(path, options, store), second);
+    } finally { subject = "hub-a"; }
+  };
+  if (v2) { v2.seed(session.user.id,itemId); const {testV2}=await import("./test-v2-http.mjs"); await testV2({base,fixture,request,jar,owner:session.user.id,itemId,v2,asSecond}); }
   if (process.argv.includes("--studio")) {
     const { testStudio } = await import("./test-studio-browser.mjs");
     await testStudio(base, jar);

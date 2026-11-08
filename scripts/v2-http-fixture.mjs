@@ -296,6 +296,8 @@ export async function v2Fixture() {
               continue;
             if (value.startsWith("eq."))
               filters.push(`${ident(key)}=${quote(value.slice(3))}`);
+            else if (value.startsWith("gte."))
+              filters.push(`${ident(key)}>=${quote(value.slice(4))}`);
             else if (value === "not.is.null")
               filters.push(`${ident(key)} is not null`);
             else if (value === "is.null") filters.push(`${ident(key)} is null`);

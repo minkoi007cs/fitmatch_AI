@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { chromium } from "playwright";
 import { mesh } from "../tests/fixtures/mesh.mjs";
-export async function testV2({ base, fixture, request, jar, owner, itemId, v2 }) {
+export async function testV2({ base, fixture, request, jar, owner, itemId, v2, asSecond }) {
   const { token, workerId } = v2.worker(owner);
   const post = async (path, body, headers = {}) =>
     request("/api/v2/" + path, {
@@ -474,7 +474,7 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2 })
     const { testCaptureRetention } = await import("./test-capture-retention-http.mjs");
     await testCaptureRetention({ base, fixture, request, jar, owner, v2 });
     const { testQwen } = await import("./test-qwen-http.mjs");
-    await testQwen({ base, request, jar, owner, itemId, v2 });
+    await testQwen({ base, request, jar, owner, itemId, v2, asSecond });
     assert.equal(
       (await worker("heartbeat", { capabilities: caps })).status,
       401,

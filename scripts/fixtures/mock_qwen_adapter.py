@@ -2,7 +2,7 @@
 
 Reads the qwen-v1 adapter input, checks the worker's guarantees (one verified image, no credentials,
 worker is the GPU lock owner) and writes a contract result chosen by FAKE_QWEN_MODE:
-  proposal (default) | gpu_busy | invalid | abstain
+  proposal (default) | gpu_busy | memory | invalid | abstain
 """
 import hashlib
 import json
@@ -23,6 +23,9 @@ assert not any(k.startswith('FITMATCH_WORKER') for k in os.environ), 'no worker 
 assert os.environ.get('FITMATCH_GPU_LOCK_HELD_BY') == 'worker', 'single lock owner: do not take the lock again'
 
 mode = os.environ.get('FAKE_QWEN_MODE', 'proposal')
+if mode == 'memory':
+    sys.stderr.write('admission: free RAM below threshold before load\n{"success": false, "code": "MEMORY_PRESSURE"}\n')
+    sys.exit(74)
 if mode == 'gpu_busy':
     sys.stderr.write('admission: another GPU job holds the device\n{"success": false, "code": "GPU_BUSY"}\n')
     sys.exit(75)

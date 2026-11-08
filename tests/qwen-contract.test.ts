@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { analysisResult, analysisAdapterInput, analysisAdapterError, analysisConfirmRequest, analysisLimits, canonicalJson } from "../src/lib/v2/qwen";
+import { analysisResult, analysisAdapterInput, analysisAdapterError, analysisConfirmRequest, analysisLimits, canonicalJson, storableCapabilities } from "../src/lib/v2/qwen";
 import { qwenFixtures } from "./fixtures/qwen-v1.mjs";
 
 const q = qwenFixtures();
@@ -39,4 +39,11 @@ test("qwen v1: human confirmation never accepts unknown or empty approvals", () 
 test("canonical JSON is key-order independent", () => {
   assert.equal(canonicalJson({ b: 1, a: [{ d: 2, c: 3 }] }), canonicalJson({ a: [{ c: 3, d: 2 }], b: 1 }));
   assert.equal(canonicalJson({ b: 1, a: 2 }), '{"a":2,"b":1}');
+});
+
+test("flag OFF: a heartbeat never stores garment.analyze, 3D capabilities untouched", () => {
+  const declared = { "garment.analyze": { model: "q", revision: "r" }, "avatar.reconstruct": { model: "s", revision: "r" } };
+  assert.deepEqual(Object.keys(storableCapabilities(declared, false)), ["avatar.reconstruct"]);
+  assert.deepEqual(Object.keys(storableCapabilities(declared, true)).sort(), ["avatar.reconstruct", "garment.analyze"]);
+  assert.ok("garment.analyze" in declared, "input not mutated");
 });
