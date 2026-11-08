@@ -19,3 +19,6 @@ Ngoài scope: PC guard/runtime, `tools/acceptance/`, process chính, production 
 
 ## Kiểm chứng
 npm test, lint, build, test:v2:db (quota/race/failure cleanup), test:v2 (HTTP/browser auth/source/retry/busy), export-contract, Python worker (Linux). Windows native: NOT RUN — PC chạy final native config/conformance.
+
+## Kết thúc (Ready for review)
+App `codex/qwen-review-fixes`: `a2ffe84` (LOCK), `bf0b6d7` (QUOTA/SNAPSHOT/STATUS, code SHA đã kiểm), `7631cb0` (report + logs). Kết quả và giới hạn: [qrev/report.md](./qrev/report.md); checkpoint cho PC ACK: [qrev/pc-ack-checkpoint.md](./qrev/pc-ack-checkpoint.md). Native Windows, PC ACK, test env HTTPS/credential và Qwen thật vẫn NOT RUN.
