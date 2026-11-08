@@ -1,0 +1,38 @@
+{
+  "finding": "QREV-BIND-02",
+  "status": "BUG_REPRODUCED_NEEDS_CHANGES",
+  "workerSHA256": "5f03f523a78e9cb805850e5d7df8e2a37a5b550c205633a1d2f2ba00fb509604",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "cases": [
+    {
+      "case": "foreign-existing-lock",
+      "constructorAccepted": true,
+      "admissionAccepted": true,
+      "canonicalFixtureLockHeld": true,
+      "differentOSLockAcquiredAtSameTime": true
+    },
+    {
+      "case": "foreign-absolute-slot",
+      "canonicalSlotDeniesOtherOwner": true,
+      "foreignSlotAdmitsOtherOwner": true,
+      "canonicalFixtureLockHeld": true
+    }
+  ],
+  "fixtures": "isolated CPU-only locks/slots, not deployed canonical policy",
+  "workerMainCalled": false,
+  "claimOrAdapterCalled": false,
+  "CUDAImported": false,
+  "sharedCoordinationTouched": false,
+  "grantCreated": false,
+  "next": "New fixed worker may require its new trusted policy fixture; this old-code repro is not final native ACK",
+  "session": "PC-20261108-QFINAL022",
+  "PCSourceCommit": "5b3d57046aac982ec50234716f867b7a52060b8f",
+  "PCBaseline": "059e63cac040d8658724d45b1437e643c511c4e6",
+  "reproSourceSHA256": "8290691756df7c157e5de6905e061aeb11d58544af62748be2bc131113e2f17c",
+  "actualExitCode": 0,
+  "historicalNativeSuiteNotRerun": true,
+  "cleanupClosed": false,
+  "bindingACK": "NEEDS_CHANGES",
+  "dedicatedTestEnvironmentReady": false,
+  "testenvScope": "PC3D presence-only inventory + Qwen metadata checkpoint, no credential values or endpoint requests"
+}

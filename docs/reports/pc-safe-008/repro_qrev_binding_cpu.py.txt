@@ -1,0 +1,95 @@
+"""Portable isolated CPU repro of QREV-BIND-02; does not run worker.main.
+
+Pass the exact reviewed worker and actual ACKed guard bytes. The guard is only
+hashed, never imported/executed/substituted. All lock/slot fixtures are isolated;
+no real coordination files, client, adapter, CUDA or engine are used. Exit0 means
+the old bug was reproduced, NOT a safety PASS or permission for integration.
+"""
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import time
+
+GUARD_SHA256 = '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c'
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--worker', type=Path, required=True)
+    parser.add_argument('--expected-worker-sha256', required=True)
+    parser.add_argument('--guard', type=Path, required=True)
+    parser.add_argument('--output', type=Path, required=True)
+    args = parser.parse_args()
+    worker = args.worker.resolve(strict=True)
+    guard = args.guard.resolve(strict=True)
+    worker_sha = hashlib.sha256(worker.read_bytes()).hexdigest()
+    if worker_sha != args.expected_worker_sha256:
+        parser.error('Worker bytes differ from the explicitly reviewed SHA')
+    if hashlib.sha256(guard.read_bytes()).hexdigest() != GUARD_SHA256:
+        parser.error('Provide the actual ACKed guard47331 bytes; no synthetic replacement')
+    spec = importlib.util.spec_from_file_location('qrev_binding_target', worker)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    output = args.output.resolve()
+    output.mkdir(parents=True, exist_ok=False)
+    canonical = output / 'canonical-gpu.lock'
+    foreign = output / 'foreign-existing.lock'
+    canonical.write_bytes(b'0')
+    foreign.write_bytes(b'0')
+    real_slot = output / 'canonical-slot.json'
+    foreign_slot = output / 'foreign-slot.json'
+    issued = time.time()
+    def slot(owner):
+        return {'version': 1, 'owner': owner,
+                'issuedAtUtc': datetime.fromtimestamp(issued, timezone.utc).isoformat(),
+                'issuedAtUnix': issued, 'admitUntilUnix': issued + 60,
+                'policy': 'Isolated CPU repro only; never a shared GPU admission grant'}
+    real_slot.write_text(json.dumps(slot('pc-3d')))
+    foreign_slot.write_text(json.dumps(slot('pc-ai')))
+    config = {'gpuLock': str(canonical), 'gpuSlot': str(real_slot), 'gpuSlotOwner': 'pc-3d',
+              'gpuGuard': {'path': str(guard), 'sha256': GUARD_SHA256}}
+    canonical_check = module.SharedGpuAdmission(config)
+    canonical_check.check()
+    canonical_lock = module.FileLock(canonical, create=False)
+    foreign_lock = module.FileLock(foreign, create=False)
+    assert canonical_lock.acquire(0)
+    results = []
+    try:
+        other_lock_check = module.SharedGpuAdmission({**config, 'gpuLock': str(foreign)})
+        other_lock_check.check()
+        second_held = foreign_lock.acquire(0)
+        results.append({'case': 'foreign-existing-lock', 'constructorAccepted': True,
+                        'admissionAccepted': True, 'canonicalFixtureLockHeld': canonical_lock.held,
+                        'differentOSLockAcquiredAtSameTime': second_held})
+        assert second_held
+        foreign_lock.release()
+        # A worker of the other owner must fail with the canonical slot.
+        owner_config = {**config, 'gpuSlotOwner': 'pc-ai'}
+        denied = False
+        try:
+            module.SharedGpuAdmission(owner_config).check()
+        except module.AdmissionError:
+            denied = True
+        assert denied
+        # Only the slot path changes; canonical OS lock remains held by this CPU fixture.
+        module.SharedGpuAdmission({**owner_config, 'gpuSlot': str(foreign_slot)}).check()
+        results.append({'case': 'foreign-absolute-slot', 'canonicalSlotDeniesOtherOwner': denied,
+                        'foreignSlotAdmitsOtherOwner': True, 'canonicalFixtureLockHeld': canonical_lock.held})
+    finally:
+        foreign_lock.release()
+        canonical_lock.release()
+    report = {'finding': 'QREV-BIND-02', 'status': 'BUG_REPRODUCED_NEEDS_CHANGES',
+              'workerSHA256': worker_sha, 'guardSHA256': GUARD_SHA256, 'cases': results,
+              'fixtures': 'isolated CPU-only locks/slots, not deployed canonical policy',
+              'workerMainCalled': False, 'claimOrAdapterCalled': False, 'CUDAImported': False,
+              'sharedCoordinationTouched': False, 'grantCreated': False,
+              'next': 'New fixed worker may require its new trusted policy fixture; this old-code repro is not final native ACK'}
+    (output / 'result.json').write_text(json.dumps(report, indent=2) + '\n')
+    print(json.dumps(report, indent=2))
+
+
+if __name__ == '__main__':
+    main()
