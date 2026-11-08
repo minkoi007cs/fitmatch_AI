@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 08/11/2026, America/New_York. Revision: PROC-0021. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 08/11/2026, America/New_York. Revision: PROC-0022. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Trạng thái tiếp nối hiện hành — PROC-0016
 
@@ -454,3 +454,11 @@ User giao re-review3fixes/nốiQwen vàface/texturegaps. Read latestonboarding/p
 
 ### L-049 — 08/11/2026 — RECHECK / HANDOFF — CX-QREV-RECHECK-21
 Claude7631cb0/bf0b6d7 original3fixes addressed: LOCKsourceacceptednativepending, QUOTAfocusedPGPASS, SNAPSHOTorphanfixpartial. Independent64unit/39MacPython/lint/DB9PASS. NewP1collectorfinalizerace deterministicDBrepro: duecachedpath→enqueuesuccess/readyasset/deletedintent→collectorwouldremove/latereport0. Noactualstorageremoval; harnessinitialENOENTfixed. Report/fragment/log+Claudecontinuation ready. Defaultbuildblocked symlinkTurbopackroot, noappregressionclaim; alternate result separate. PC9557ae3 tinyobjloader/xatlasCPU progressed, MSVCSDK/nvdiffrastCUDA and actualidentity/appearance remain. Directmessages bothPCsuccess for exact7631native/bridgeACK; noGPUgrant/testdeploy.
+
+
+### L-050 — 08/11/2026 — START — CX-QRACE-STATUS-22
+User yêu cầu checkcleanup/review/nốiQwen. Remoteallheads checked: app7631cb0unchanged, QRACEdocsceae68b receipt only; nofinalcode toreview. BothPCnativeACK NEEDS CHANGES for arbitraryexistingforeignlock/slot accepted. Scope docsreconciliation/dispatch, noappedit/duplicatepriorfulltests.
+
+
+### L-051 — 08/11/2026 — RECONCILE / HANDOFF — CX-QRACE-STATUS-22
+QRACEreceipt observed ceae68b, source7631cb0unchanged; cleanupfixnotyetpublished. NewnativeQREV-BIND-02 confirmedbothPC: existingforeignlock/slotadmittedwhilecanonicalheld. Earlierlimitedsourceacceptance is supersededby NEEDS CHANGES nativebinding. No redundanttestrerun orclaimnewfixPASS. H-QFINAL-022 ClaudeactiveQRACEcontinuation+scopedtransportbindingcorrection; PCnative/config andlicensedrealtestconditionalongates/testenv. NoGPUgrant/publicport/production. Dispatchresults recordednext.
