@@ -1,0 +1,4 @@
+$ python3 scripts/check-qwen-contract.py
+sha bf0b6d712a50c3aa15a03362a26d32a9aba47eaa 2026-11-08T06:39:13Z
+qwen-v1 conformance: PASS
+exit 0
