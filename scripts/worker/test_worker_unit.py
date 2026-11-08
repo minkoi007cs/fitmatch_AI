@@ -340,6 +340,8 @@ class QuarantineLoopTests(unittest.TestCase):
         w.gpu = worker.FileLock(lock_path)
         w.gpu_busy_logged = False
         w.quarantine = None
+        w.admission = None
+        w.admission_refusal = None
         w.claims = 0
         w.worker_heartbeat = lambda: None
         w.resume_pending = lambda: None
@@ -399,8 +401,15 @@ class WindowsJobPlacementTests(unittest.TestCase):
             return self.returncode
 
     class FakeJob:
-        def __init__(self, fail=False, active=(2, 1, 0)):
+        def __init__(self, fail=False, active=(2, 1, 0), signaled=True):
             self.fail, self.counts, self.terminated, self.handle = fail, list(active), 0, 1
+            self.signaled, self.tracks = signaled, 0
+
+        def track(self):
+            self.tracks += 1
+
+        def wait_tracked(self, seconds):
+            return self.signaled
 
         def assign_and_resume(self, process):
             if self.fail:
@@ -434,6 +443,16 @@ class WindowsJobPlacementTests(unittest.TestCase):
         with self.assertRaises(worker.ContainmentError):
             worker.OwnedProcessTree(['adapter'], platform='nt', popen=popen, job_factory=lambda: job)
         self.assertTrue(made[0].killed, 'suspended adapter killed before it ran')
+
+    def test_kernel_zero_is_not_enough_until_tracked_process_objects_are_signaled(self):
+        # PC-SAFE-008 native finding: ActiveProcesses==0 can precede a descendant's exit signal.
+        job = self.FakeJob(active=(0,), signaled=False)
+        tree = worker.OwnedProcessTree(['adapter'], platform='nt', popen=self.FakeProcess, job_factory=lambda: job)
+        tree.process.returncode = 0
+        self.assertFalse(tree.drain(timeout=0.5), 'not drained while a tracked process object is unsignaled')
+        self.assertGreaterEqual(job.tracks, 1, 'processes tracked before release')
+        job.signaled = True
+        self.assertTrue(tree.drain(timeout=0.5))
 
     def test_job_that_never_empties_is_reported_undrained(self):
         job = self.FakeJob(active=(1,))
@@ -482,6 +501,115 @@ class AnalysisTransportTests(unittest.TestCase):
         a = {**j, 'kind': 'garment.analyze', 'modelId': None, 'input': {**j['input'], 'binding': self.binding}}
         b = {**a, 'input': {**a['input'], 'binding': {**self.binding, 'itemId': 'other'}}}
         self.assertNotEqual(worker.input_digest(a), worker.input_digest(b))
+
+
+class SharedGpuAdmissionTests(unittest.TestCase):
+    """QREV-LOCK: integrated Qwen shares the PC3D lock/guard/slot and fails closed on any mismatch."""
+
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp()) / 'coordination'
+        self.dir.mkdir()
+        self.lock = self.dir / 'gpu0.lock'
+        self.lock.write_bytes(b'')
+        self.guard = self.dir / 'gpu_guard.py'
+        self.guard.write_text('# guard under test\n')
+        self.guard_sha = hashlib.sha256(self.guard.read_bytes()).hexdigest()
+        self.slot = self.dir / 'gpu0-slot.json'
+
+    def config(self, **patch):
+        base = {'gpuLock': str(self.lock), 'gpuGuard': {'path': str(self.guard), 'sha256': self.guard_sha},
+                'engines': {'garment.analyze': {}}}
+        base.update(patch)
+        return base
+
+    def write_slot(self, owner='pc-ai', issued=None, seconds=900, version=1, **extra):
+        issued = time.time() if issued is None else issued
+        slot = {'version': version, 'owner': owner,
+                'issuedAtUtc': worker.datetime.fromtimestamp(issued, worker.timezone.utc).isoformat(),
+                'issuedAtUnix': issued, 'admitUntilUnix': issued + seconds}
+        if version == 0:
+            slot.pop('version'); slot.pop('issuedAtUnix')
+        slot.update(extra)
+        self.slot.write_text(json.dumps(slot))
+
+    def test_analysis_engine_requires_shared_lock(self):
+        self.assertTrue(worker.requires_shared_gpu({'engines': {'garment.analyze': {}}}))
+        self.assertFalse(worker.requires_shared_gpu({'engines': {'avatar.reconstruct': {}}}))
+        self.assertTrue(worker.requires_shared_gpu({'requireSharedGpuLock': True}))
+
+    def test_startup_refuses_default_relative_missing_or_unpinned(self):
+        for patch in ({'gpuLock': 'default'}, {'gpuLock': None}, {'gpuLock': 'coordination/gpu0.lock'},
+                      {'gpuLock': str(self.dir / 'other.lock')},
+                      {'gpuGuard': None}, {'gpuGuard': {'path': str(self.guard)}},
+                      {'gpuGuard': {'path': 'gpu_guard.py', 'sha256': self.guard_sha}},
+                      {'gpuGuard': {'path': str(self.guard), 'sha256': '0' * 64}},
+                      {'gpuGuard': {'path': str(self.dir / 'missing.py'), 'sha256': self.guard_sha}},
+                      {'gpuSlot': 'gpu0-slot.json'}, {'gpuSlotOwner': 'pc-qwen'}):
+            with self.assertRaises(worker.AdmissionError, msg=json.dumps(patch)):
+                worker.SharedGpuAdmission(self.config(**patch))
+        self.assertFalse((self.dir / 'other.lock').exists(), 'a mistyped lock is never created')
+
+    def test_slot_rules_match_the_guard(self):
+        a = worker.SharedGpuAdmission(self.config())
+        with self.assertRaisesRegex(worker.AdmissionError, 'bootstrap'):
+            a.check()  # missing slot file: PC3D only
+        self.write_slot('pc-ai')
+        a.check()
+        self.write_slot('pc-ai', version=0)
+        a.check()  # valid legacy UTC-only slot
+        self.write_slot('pc-ai', seconds=3600)
+        a.check()  # exact maximum window
+        refusals = [
+            dict(owner='pc-3d'), dict(seconds=3601), dict(seconds=0),
+            dict(issued=time.time() - 1000, seconds=900), dict(issued=time.time() + 60),
+            dict(policy='x' * 161), dict(extra_field=1),
+        ]
+        for patch in refusals:
+            extra = {k: v for k, v in patch.items() if k not in ('owner', 'issued', 'seconds', 'version')}
+            core = {k: v for k, v in patch.items() if k in ('owner', 'issued', 'seconds', 'version')}
+            self.write_slot(**core, **extra)
+            with self.assertRaises(worker.AdmissionError, msg=json.dumps(patch)):
+                a.check()
+        for raw in ('{"owner": "pc-ai", "owner": "pc-ai"}', '{"owner": "pc-ai", "admitUntilUnix": NaN}', '[1]', '{bad',
+                    json.dumps({'version': 1, 'owner': 'pc-ai', 'issuedAtUtc': '2026-11-08T10:00:00+07:00',
+                                'issuedAtUnix': time.time(), 'admitUntilUnix': time.time() + 60}),
+                    json.dumps({'version': True, 'owner': 'pc-ai', 'issuedAtUtc': 'x', 'admitUntilUnix': 1})):
+            self.slot.write_text(raw)
+            with self.assertRaises(worker.AdmissionError, msg=raw):
+                a.check()
+        self.slot.write_bytes(b' ' * 70000)
+        with self.assertRaises(worker.AdmissionError):
+            a.check()
+        self.write_slot('pc-ai')
+        self.guard.write_text('# swapped guard\n')
+        with self.assertRaisesRegex(worker.AdmissionError, 'hash'):
+            a.check()
+
+    def test_loop_refusal_releases_lock_and_claims_nothing(self):
+        a = worker.SharedGpuAdmission(self.config())
+        w = worker.Worker.__new__(worker.Worker)
+        w.gpu, w.admission, w.admission_refusal = worker.FileLock(self.lock, create=False), a, None
+        w.gpu_busy_logged, w.quarantine, w.claims = False, None, 0
+        w.worker_heartbeat = lambda: None
+        w.resume_pending = lambda: None
+        w.claim = lambda: setattr(w, 'claims', w.claims + 1)
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 0)
+        self.assertEqual(w.claims, 0, 'no slot: no claim')
+        self.assertFalse(w.gpu.held, 'lock released after refusal')
+        self.write_slot('pc-ai')
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 0)
+        self.assertEqual(w.claims, 1, 'admitted: claims')
+        self.assertFalse(w.gpu.held)
+
+    def test_main_refuses_to_start_with_default_lock(self):
+        work = Path(tempfile.mkdtemp())
+        config = work / 'config.json'
+        config.write_text(json.dumps({'appUrl': 'http://127.0.0.1:9', 'workDir': str(work / 'data'), 'gpuLock': 'default',
+            'processContainment': 'unsafe-disabled', 'engines': {'garment.analyze': {'model': 'm', 'revision': 'r', 'command': ['x']}}}))
+        result = subprocess.run([sys.executable, str(Path(worker.__file__)), '--config', str(config), '--once'],
+                                env={**os.environ, 'FITMATCH_WORKER_TOKEN': 'fmw_test'}, capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 5, result.stdout + result.stderr)
+        self.assertIn('Refusing to start', result.stdout)
 
 
 if __name__ == '__main__':

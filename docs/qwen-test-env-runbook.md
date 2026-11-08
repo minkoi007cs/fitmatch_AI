@@ -6,7 +6,7 @@ Chỉ dành cho **môi trường test dùng một lần**: một Supabase projec
 
 - Codex review contract `docs/qwen-contract-v1.md`, migration `20261107120000_qwen_analysis_qint.sql` và drain fix (PC-QUIESCENCE-01) → kết quả PASS.
 - PC Qwen ACK conformance: `python scripts/check-qwen-contract.py <result.json thật>` đều PASS; exit codes khớp bảng trong contract.
-- PC 3D ACK: hash guard mới, đường dẫn lock tuyệt đối `%PROGRAMDATA%\fitmatch\gpu-0.lock` byte 0; guard không lấy lock lồng khi có `FITMATCH_GPU_LOCK_HELD_BY=worker`; 30 Python worker tests chạy native trên Windows trên đúng commit app.
+- PC 3D ACK: hash guard (hiện `47331c56…`), đường dẫn tuyệt đối của lock dùng chung `…/Fitmatch-GPU/coordination/gpu0.lock` (msvcrt byte 0) và slot `gpu0-slot.json` cùng thư mục; worker là lock owner duy nhất cho job tích hợp (không gọi guard lồng bên trong); Python worker tests chạy native trên Windows đúng commit app.
 
 Chưa đủ 3 điều kiện trên thì giữ flag OFF; chỉ chạy CPU/local fixture.
 
@@ -42,6 +42,10 @@ Lệnh in token một lần. Chuyển token cho PC qua kênh riêng và đặt v
 
 - Config mẫu: `scripts/worker/config.qwen-test.example.json`. Pin `revision` đúng commit model đang chạy, `command` trỏ adapter PC (đọc `{input}` theo `analysis-adapter-input`, ghi `{output}` theo `analysis-result`).
 - Chạy: `python scripts/worker/worker.py --config <config> --once` để thử từng job; bỏ `--once` khi chạy liên tục.
+- Config bắt buộc (worker **từ chối khởi động**, exit 5, nếu thiếu/sai) khi có engine `garment.analyze`:
+  - `gpuLock`: đường dẫn **tuyệt đối** tới lock **đã có sẵn** của PC3D (`…/coordination/gpu0.lock`). Không chấp nhận `default`, đường dẫn tương đối, hay file chưa tồn tại (worker không tự tạo lock, nên gõ sai không thể sinh ra lock thứ hai).
+  - `gpuGuard.path` + `gpuGuard.sha256`: guard dùng chung đúng revision PC đã ACK; mỗi lần trước khi claim, worker kiểm lại hash.
+  - `gpuSlot` (mặc định `gpu0-slot.json` cạnh lock) và `gpuSlotOwner: pc-ai`: trước mỗi lần claim, khi đang giữ lock, worker đọc slot theo đúng quy tắc của guard (owner khớp, chưa hết hạn, cửa sổ ≤3600 s, lệch giờ ≤5 s, không key trùng/NaN). Không có file slot nghĩa là chỉ PC3D được chạy, pc-ai bị từ chối. Bị từ chối thì worker nhả lock và không claim.
 - Worker giữ GPU lock trong suốt claim → adapter → drain toàn cây process. Exit code 4 nghĩa là quarantine: có process owned chưa thoát. Không tự xóa lock hay kill process ngoài cây owned. Kiểm Task Manager rồi để worker tự kiểm lại.
 - Mỗi job ghi log/timestamps lock (acquire/release) và GPU baseline/peak/after (`evidence.gpuMiB`) để Codex đối chiếu không chồng lấn với 3D.
 

@@ -14,6 +14,8 @@ import argparse
 import hashlib
 import http.client
 import json
+from datetime import datetime, timezone
+import math
 import os
 from pathlib import Path
 import random
@@ -330,16 +332,17 @@ class FileLock:
     the process dies. On POSIX the descriptor is inherited by the adapter (pass_fds), so an adapter
     orphaned by a worker crash keeps holding it until it exits."""
 
-    def __init__(self, path):
+    def __init__(self, path, create=True):
         self.path = Path(path)
         self.handle = None
         self.held = False
+        self.create = create  # shared PC lock files are never created or replaced by the worker
 
     def acquire(self, wait_seconds):
         if self.held:
             return True
         if self.handle is None:
-            self.handle = self.path.open('a+')
+            self.handle = self.path.open('a+' if self.create else 'r+')
         deadline = time.monotonic() + wait_seconds
         while True:
             try:
@@ -390,6 +393,141 @@ def default_gpu_lock():
     on this machine that follow the same file-lock protocol: one heavy GPU job at a time."""
     base = os.environ.get('PROGRAMDATA') if os.name == 'nt' else None
     return Path(base or tempfile.gettempdir()) / 'fitmatch' / 'gpu-0.lock'
+
+
+class AdmissionError(RuntimeError):
+    """The shared PC GPU coordination does not admit this worker (QREV-LOCK). Fail closed."""
+
+
+MAX_SLOT_SECONDS = 3600
+SLOT_CLOCK_SKEW_SECONDS = 5
+MAX_TIMESTAMP = 253402300799
+SLOT_OWNERS = ('pc-3d', 'pc-ai')
+
+
+def _finite(value, label, maximum=MAX_TIMESTAMP):
+    if type(value) not in (int, float):
+        raise AdmissionError('Invalid numeric GPU ' + label)
+    try:
+        valid = math.isfinite(value) and 0 < value <= maximum
+    except OverflowError:
+        valid = False
+    if not valid:
+        raise AdmissionError('Invalid finite GPU ' + label)
+    return value
+
+
+def read_strict_json(path):
+    """Same strictness as the PC guard: bounded size, no duplicate keys, no NaN/Infinity."""
+    if path.stat().st_size > 65536:
+        raise AdmissionError('Oversized GPU metadata')
+
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise AdmissionError('Duplicate GPU metadata key')
+            result[key] = value
+        return result
+
+    def constant(_):
+        raise AdmissionError('Nonfinite GPU metadata')
+    try:
+        return json.loads(path.read_text(encoding='utf-8-sig'), object_pairs_hook=pairs, parse_constant=constant)
+    except ValueError as error:
+        raise AdmissionError('Malformed GPU metadata') from error
+
+
+def validate_slot(slot, now):
+    """Port of the PC guard's validate_slot (guard 47331c56..., PC-SAFE-008). Returns the admitted owner."""
+    now = _finite(now, 'clock')
+    allowed = {'version', 'owner', 'issuedAtUtc', 'issuedAtUnix', 'admitUntilUnix', 'policy'}
+    if type(slot) is not dict or set(slot) - allowed or slot.get('owner') not in SLOT_OWNERS:
+        raise AdmissionError('Invalid GPU admission object/owner')
+    version = slot.get('version', 0)
+    if type(version) is not int or version not in (0, 1):
+        raise AdmissionError('Invalid GPU admission revision')
+    issued_text = slot.get('issuedAtUtc')
+    if type(issued_text) is not str or len(issued_text) > 40:
+        raise AdmissionError('Invalid GPU issue time')
+    try:
+        date = datetime.fromisoformat(issued_text.replace('Z', '+00:00'))
+        if date.utcoffset() != timezone.utc.utcoffset(date):
+            raise AdmissionError('GPU issue time must be UTC')
+        issued = _finite(date.timestamp(), 'issue time')
+    except (OverflowError, OSError, ValueError, TypeError) as error:
+        raise AdmissionError('Invalid GPU issue time') from error
+    if version == 1 or 'issuedAtUnix' in slot:
+        numeric_issue = _finite(slot.get('issuedAtUnix'), 'issue time')
+        if abs(numeric_issue - issued) > .001:
+            raise AdmissionError('GPU issue times disagree')
+        issued = numeric_issue
+    expiry = _finite(slot.get('admitUntilUnix'), 'expiry')
+    duration = expiry - issued
+    if not 0 < duration <= MAX_SLOT_SECONDS or issued > now + SLOT_CLOCK_SKEW_SECONDS or expiry <= now:
+        raise AdmissionError('Invalid or expired GPU admission window')
+    if 'policy' in slot and (type(slot['policy']) is not str or len(slot['policy']) > 160):
+        raise AdmissionError('Invalid GPU admission policy')
+    return slot['owner']
+
+
+class SharedGpuAdmission:
+    """QREV-LOCK: the worker is the single lock owner for integrated jobs and shares the PC3D coordination.
+
+    Startup refuses unless the configured lock is the existing absolute shared lock file (never created,
+    never 'default'), the guard source matches the hash both PC chats ACKed, and the slot path is set.
+    Before every claim (while holding the lock) the guard and the finite slot metadata are re-checked:
+    the slot must name this worker's owner, be unexpired and within the guard's window rules. A missing
+    slot file is the PC3D-only bootstrap and never admits pc-ai. Environment variables are not proof.
+    """
+
+    def __init__(self, config):
+        lock = config.get('gpuLock')
+        if not isinstance(lock, str) or lock in ('', 'default') or not Path(lock).is_absolute():
+            raise AdmissionError('gpuLock must be the explicit absolute path of the shared PC lock file')
+        self.lock_path = Path(lock)
+        if not self.lock_path.is_file():
+            raise AdmissionError('Shared GPU lock file does not exist; the worker never creates it')
+        guard = config.get('gpuGuard')
+        if not isinstance(guard, dict) or not isinstance(guard.get('path'), str) or not Path(guard['path']).is_absolute() \
+                or not isinstance(guard.get('sha256'), str) or len(guard['sha256']) != 64:
+            raise AdmissionError('gpuGuard {path (absolute), sha256} must pin the ACKed shared guard')
+        self.guard_path, self.guard_sha = Path(guard['path']), guard['sha256'].lower()
+        slot = config.get('gpuSlot', str(self.lock_path.with_name('gpu0-slot.json')))
+        if not isinstance(slot, str) or not Path(slot).is_absolute():
+            raise AdmissionError('gpuSlot must be an absolute path')
+        self.slot_path = Path(slot)
+        self.owner = config.get('gpuSlotOwner', 'pc-ai')
+        if self.owner not in SLOT_OWNERS:
+            raise AdmissionError('gpuSlotOwner must be pc-ai or pc-3d')
+        self.check_guard()
+
+    def check_guard(self):
+        try:
+            actual = sha256_file(self.guard_path)
+        except OSError as error:
+            raise AdmissionError('Shared GPU guard not readable') from error
+        if actual != self.guard_sha:
+            raise AdmissionError('Shared GPU guard hash differs from the ACKed revision')
+
+    def check(self, now=None):
+        """Raise AdmissionError unless this worker may start GPU work now. Call while holding the lock."""
+        self.check_guard()
+        if not self.slot_path.exists():
+            if self.owner == 'pc-3d':
+                return
+            raise AdmissionError('No GPU slot file: PC3D-only bootstrap, pc-ai not admitted')
+        try:
+            slot = read_strict_json(self.slot_path)
+        except OSError as error:
+            raise AdmissionError('GPU slot not readable') from error
+        if validate_slot(slot, time.time() if now is None else now) != self.owner:
+            raise AdmissionError('GPU slot is assigned to another owner')
+
+
+def requires_shared_gpu(config):
+    """Integrated Qwen analysis always shares the PC3D GPU coordination; it can opt in for other kinds."""
+    return bool(config.get('requireSharedGpuLock')) or 'garment.analyze' in (config.get('engines') or {})
 
 
 class ContainmentError(RuntimeError):
@@ -578,7 +716,51 @@ class _WindowsJob:
     def terminate(self):
         self.k.TerminateJobObject(self.handle, 1)
 
+    def track(self):
+        """Open a SYNCHRONIZE handle to every process currently in the job (verified with IsProcessInJob, so a
+        recycled PID is never adopted). Kernel ActiveProcesses can reach 0 slightly before a process object is
+        signaled (PC-SAFE-008 native finding); release waits for these handles too."""
+        ctypes, wintypes = self.ctypes, self.wintypes
+        if not hasattr(self, 'tracked'):
+            self.tracked = {}
+            self.k.OpenProcess.restype = wintypes.HANDLE
+            self.k.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+            self.k.IsProcessInJob.argtypes = (wintypes.HANDLE, wintypes.HANDLE, ctypes.POINTER(wintypes.BOOL))
+            self.k.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+            self.k.WaitForSingleObject.restype = wintypes.DWORD
+
+        class PidList(ctypes.Structure):
+            _fields_ = [('assigned', wintypes.DWORD), ('listed', wintypes.DWORD), ('ids', ctypes.c_size_t * 256)]
+        info = PidList()
+        if not self.k.QueryInformationJobObject(self.handle, 3, ctypes.byref(info), ctypes.sizeof(info), None):
+            error = ctypes.get_last_error()
+            if error != 234:  # ERROR_MORE_DATA: list truncated; what was returned is still valid
+                raise OSError(error, 'QueryInformationJobObject(process list) failed')
+        for pid in list(info.ids[:min(info.listed, 256)]):
+            if pid in self.tracked:
+                continue
+            handle = self.k.OpenProcess(0x00100000 | 0x1000, False, pid)  # SYNCHRONIZE | QUERY_LIMITED_INFORMATION
+            if not handle:
+                continue  # already gone
+            inside = wintypes.BOOL()
+            if self.k.IsProcessInJob(handle, self.handle, ctypes.byref(inside)) and inside.value:
+                self.tracked[pid] = handle
+            else:
+                self.k.CloseHandle(handle)
+
+    def wait_tracked(self, seconds):
+        deadline = time.monotonic() + max(0.0, seconds)
+        for handle in list(getattr(self, 'tracked', {}).values()):
+            remaining = int(max(0.0, deadline - time.monotonic()) * 1000)
+            if self.k.WaitForSingleObject(handle, remaining) != 0:  # WAIT_OBJECT_0
+                return False
+        return True
+
     def close(self):
+        for handle in getattr(self, 'tracked', {}).values():
+            self.k.CloseHandle(handle)
+        if hasattr(self, 'tracked'):
+            self.tracked = {}
         if self.handle:
             self.k.CloseHandle(self.handle)
             self.handle = None
@@ -622,6 +804,20 @@ class OwnedProcessTree:
     def returncode(self):
         return self.process.returncode
 
+    def track(self):
+        """Called while the adapter runs: remember every owned process (Windows) so drain can wait for them."""
+        if self.job is not None:
+            try:
+                self.job.track()
+            except Exception:
+                pass  # tracking is best effort; drain still requires the kernel count to reach zero
+
+    def _quiet(self, deadline):
+        """Windows: kernel count is zero AND every tracked process object is signaled."""
+        if self.job is None:
+            return True
+        return self.job.wait_tracked(deadline - time.monotonic())
+
     def alive(self):
         if self.job is not None:
             return self.job.active() > 0
@@ -646,18 +842,20 @@ class OwnedProcessTree:
         """Stop every owned process and wait for quiescence. Returns False if it cannot be proven."""
         deadline = time.monotonic() + timeout
         try:
+            self.track()
             if not self.alive():
                 self.process.wait(timeout=1)
-                return True
+                return self._quiet(deadline)
             self.terminate()
             killed = False
             while time.monotonic() < deadline:
+                self.track()
                 try:
                     self.process.wait(timeout=0.2)
                 except subprocess.TimeoutExpired:
                     pass
                 if not self.alive():
-                    return True
+                    return self._quiet(deadline)
                 if not killed and self.job is None and time.monotonic() > deadline - timeout + grace:
                     self._signal_group(signal.SIGKILL)
                     killed = True
@@ -676,9 +874,11 @@ class OwnedProcessTree:
 
 
 class Worker:
-    def __init__(self, config, token, root, lock, gpu=None):
+    def __init__(self, config, token, root, lock, gpu=None, admission=None):
         self.config, self.token, self.root, self.lock = config, token, root, lock
         self.gpu = gpu
+        self.admission = admission
+        self.admission_refusal = None
         self.gpu_busy_logged = False
         self.quarantine = None  # OwnedProcessTree whose drain could not be proven (PC-QUIESCENCE-01)
         self.engines = config.get('engines', {})
@@ -693,6 +893,20 @@ class Worker:
         self.client = Client(config['appUrl'], token, float(config.get('requestTimeoutSeconds', 30)))
         self.instance = str(uuid.uuid4())  # new on every process start; claim redelivery is per instance
         self.warned = set()
+
+    def admitted(self):
+        """Shared PC coordination check while holding the lock; refusals are logged once per reason."""
+        if self.admission is None:
+            return True
+        try:
+            self.admission.check()
+        except AdmissionError as error:
+            if self.admission_refusal != str(error):
+                print('GPU admission refused, not claiming: ' + str(error), flush=True)
+                self.admission_refusal = str(error)
+            return False
+        self.admission_refusal = None
+        return True
 
     def worker_heartbeat(self):
         reply = self.client.api('heartbeat', {'capabilities': self.capabilities}) or {}
@@ -890,6 +1104,7 @@ class Worker:
                 try:
                     started = time.monotonic()
                     while process.poll() is None:
+                        process.track()
                         if lost.wait(1):
                             raise LeaseLost('lease lost during inference')
                         if time.monotonic() - started > engine.get('timeoutSeconds', 1800):
@@ -989,6 +1204,9 @@ class Worker:
                         print('GPU is busy with another job on this machine; waiting before claiming.', flush=True)
                         self.gpu_busy_logged = True
                     job = None
+                elif not self.admitted():
+                    self.gpu.release()
+                    job = None
                 else:
                     self.gpu_busy_logged = False
                     try:
@@ -1030,14 +1248,23 @@ def main():
         return 3
     print(f'Process containment: {containment}', flush=True)
     gpu = None
-    if config.get('gpuLock', 'default') is not None:
+    admission = None
+    if requires_shared_gpu(config):
+        try:
+            admission = SharedGpuAdmission(config)
+        except AdmissionError as error:
+            print('Refusing to start: ' + str(error), flush=True)
+            return 5
+        gpu = FileLock(admission.lock_path, create=False)
+        print(f'Shared host GPU lock (single owner, never nested): {admission.lock_path}', flush=True)
+    elif config.get('gpuLock', 'default') is not None:
         gpu_path = default_gpu_lock() if config.get('gpuLock', 'default') == 'default' else Path(config['gpuLock'])
         gpu_path.parent.mkdir(parents=True, exist_ok=True)
         gpu = FileLock(gpu_path)
         print(f'Host GPU lock: {gpu_path}', flush=True)
     else:
         print('WARNING: gpuLock disabled; another GPU job on this machine may run at the same time.', flush=True)
-    worker = Worker(config, os.environ['FITMATCH_WORKER_TOKEN'], root, lock, gpu)
+    worker = Worker(config, os.environ['FITMATCH_WORKER_TOKEN'], root, lock, gpu, admission)
     return worker.loop(args.once, float(config.get('pollSeconds', 8)))
 
 

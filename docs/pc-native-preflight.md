@@ -28,7 +28,7 @@ On Windows require `windows-job-object`. Do not set `unsafe-disabled` to obtain 
 
 ## 3. Shared GPU coordination
 
-The production worker default is `%PROGRAMDATA%\fitmatch\gpu-0.lock` (fallback temp directory if PROGRAMDATA absent); an explicit `gpuLock` path overrides it. The earlier split prompt used another path as an example. PC 3D and Qwen must ACK the same absolute path and byte-0 msvcrt lock, acquire before GPU load, and hold until GPU children have exited/unloaded. The temporary unit-test lock does not verify Qwen's wrapper. No two simultaneous GPU benchmarks to test exclusion.
+The production worker default is `%PROGRAMDATA%\fitmatch\gpu-0.lock` (fallback temp directory if PROGRAMDATA absent); an explicit `gpuLock` path overrides it. **QREV-LOCK:** for any config with `garment.analyze` (or `requireSharedGpuLock: true`) the default is refused: `gpuLock` must be the existing absolute PC3D `coordination/gpu0.lock`, with `gpuGuard` hash pin and `gpuSlot` admission (see docs/qwen-test-env-runbook.md). The earlier split prompt used another path as an example. PC 3D and Qwen must ACK the same absolute path and byte-0 msvcrt lock, acquire before GPU load, and hold until GPU children have exited/unloaded. The temporary unit-test lock does not verify Qwen's wrapper. No two simultaneous GPU benchmarks to test exclusion.
 
 ## 4. Adapter contract remains a prerequisite
 

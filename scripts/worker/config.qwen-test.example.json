@@ -3,7 +3,13 @@
   "workDir": "C:/FitmatchQwen/worker-data",
   "pollSeconds": 8,
   "processContainment": "required",
-  "gpuLock": "default",
+  "gpuLock": "REPLACE-WITH-ABSOLUTE-PATH/Fitmatch-GPU/coordination/gpu0.lock",
+  "gpuSlot": "REPLACE-WITH-ABSOLUTE-PATH/Fitmatch-GPU/coordination/gpu0-slot.json",
+  "gpuSlotOwner": "pc-ai",
+  "gpuGuard": {
+    "path": "REPLACE-WITH-ABSOLUTE-PATH/Fitmatch-GPU/workers/windows/gpu_guard.py",
+    "sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c"
+  },
   "engines": {
     "garment.analyze": {
       "model": "Qwen/Qwen3-VL-4B-Instruct",
