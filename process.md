@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 07/11/2026, America/New_York. Revision: PROC-0018. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 08/11/2026, America/New_York. Revision: PROC-0020. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Trạng thái tiếp nối hiện hành — PROC-0016
 
@@ -438,3 +438,11 @@ User explicitly yêu cầu PC+Claude tích hợpAPIQwen chạythử vàserialize
 
 ### L-045 — 07/11/2026 — HANDOFF — CX-QWEN-INTEGRATION-18
 Published15fd71b / H-QWEN-018 +Claude fullprompt, checked links/fences/diff. DirectPCdispatch call không trả acknowledgement sau boundedwait; dừng orchestration, delivery UNKNOWN (không giả gửithànhcông hoặc gửithấtbại). Vòng gửi sequential nên chatQwen cũng chưa có confirmeddispatch. Không tự retry tránh duplicate; user có thể forward H-QWEN-018. Claudeexternal chưa trực tiếpgửi. Code/GPU/appintegration chưa chạy trong lượt này; tasks Assigned trước receipt.
+
+
+### L-046 — 08/11/2026 — START — CX-QINT-REVIEW-20
+User giao checkpreviewPC vàreviewClaude. PCphotoreport fitting67.63s/privatepreview debug, chưalikeness/texture; Qwenidle/noCUDA. Review read-only app95d59ad trong worktree riêng; scope docsreview/process và kiểm thử không sửaappClaude.
+
+
+### L-047 — 08/11/2026 — REVIEW / HANDOFF — CX-QINT-REVIEW-20
+App95d59ad independent64unit/30MacPython/DB8blocksPASS/export48current. Pythoncontractcheckerblocked missingjsonschema, nofreshHTTP/lint/build/nativeGPU. QREV-LOCK P1defaultsample/runbook lock differs actualPCsharedpath; QREV-QUOTA/SNAPSHOT P2missinganalysisquota and failed-enqueueprivatecopycleanup; QREV-STATUS queuedvsGPUbusy gap. Focusedreview NEEDS CHANGES beforetestgrant; Claude scopedfixprompt publishedwithreport. PCphoto dd80777 reportsactualfit67.63s/debugGLB+previews/noOOM, nolikeness/hair/texture; privateDrivepreview/ZIPmetadata checked notvisualacceptance. PCdirectcontinuation sent success torequestpreviewandcompilerdiagnostic, keepUACpause/OSGPUlock/QwennoCUDA. Sourceapp untouched; realintegration NOT VERIFIED.

@@ -1,0 +1,7 @@
+# Claude continuation — QREV-LOCK / QUOTA / SNAPSHOT
+
+Chủ dự án yêu cầu sớm nốiQwen thật. Đọc onboarding rồi docs/reports/review/qwen-code-20261108/review.md đầy đủ. Review pin95d59ad trên ownbranch codex/qwen-app-test; giữcheckpoint3/twoaccountHTTPtests và mọipriorfix, không quayvề9311099/d17. Ghi ownreceipt baselineactualSHA/scope trước sửa; descendantbranch riêng codex/qwen-review-fixes nếu cần.
+
+Nhận app/SQL/transport testconfig/runbook và focusedtests: sửa P1sharedabsoluteGPUlock config/startupadmission cùng exactPCguardACK; quota daily/active atomic và retry/dedupe; snapshot upload/assetinsert/enqueuefailure durablecleanup. Không sửa PCguard/runtime của2chat, không tựđổiwire. QREV-STATUS bổ sungtruthfulGPUbusytest/UX, không bịa crossownerstatus. Reproducebugs trước, migrationadditive nếuSQLthayđổi, giữderivedassets/confirmedmetadata. Xuất configcheckpoint đểPC ACK path+singlelockowner và finalnativeworkerconformance. PC đã nhả GPU sau photo-debug; không tựsuy đó là appintegrationPASS.
+
+Run meaningful regression/unit/lint/build,DBquota+race/failurecleanup,HTTPbrowser auth/source/retry/busy; khôngbuildchồngnextstart. Bàn giao actualSHA/diff/log,featureOFFdefault, no prodgrant/deploy/migration. Codex review lại focusedpatch trước testcapability. Testenv/credentials cầnprivatechannel, khônglog/git; nếu chưacó thì báo đúngblocker và hoàn thiện code/tests/runbook độclập. Không mởport/tunnelPC để né thiếuHTTPS.
