@@ -1,6 +1,6 @@
 # Handoff — CL-QINT-20261107-01 (H-QWEN-018 / QINT-C)
 
-Phiên Claude chạy trong cloud Linux. Docs đã đọc: `c5e2429` (PROC-0018). App baseline `d17ca355` (bản post-audit cuối của mình). Nhánh `codex/qwen-app-test`. Source code đã kiểm nằm ở `source-sha.txt` (`86f72fa`); commit chứa report này nằm ngay sau đó trên cùng nhánh. Receipt và các checkpoint được ghi ở nhánh docs `docs/claude-CL-QINT-20261107-01`.
+Phiên Claude chạy trong cloud Linux. Docs đã đọc: `c5e2429` (PROC-0018). App baseline `d17ca355` (bản post-audit cuối của mình). Nhánh `codex/qwen-app-test`. Source code đã kiểm nằm ở `source-sha.txt` (`ef244e1`, checkpoint 3); commit chứa report này nằm ngay sau đó trên cùng nhánh. Receipt và các checkpoint được ghi ở nhánh docs `docs/claude-CL-QINT-20261107-01`.
 
 **Trạng thái: Ready for review (code/CPU/mock). Chưa có tích hợp thật nào.**
 - Chưa chạy Qwen thật, GPU thật, Windows native, hay Supabase/HTTPS test env.
@@ -15,6 +15,7 @@ Phiên Claude chạy trong cloud Linux. Docs đã đọc: `c5e2429` (PROC-0018).
 | `9311099` | Checkpoint 1: proposal contract Qwen v1 + schemas + fixtures |
 | `1f4d01f` | Checkpoint 2: job path JSON-result, API, worker, UI, DB/HTTP/browser tests |
 | `86f72fa` | Unit test worker json-v1, runbook, operator kinds, config mẫu |
+| `ef244e1` | Checkpoint 3: báo PC offline / thiếu bộ nhớ đúng trạng thái, chặn tài khoản thứ hai qua HTTP, unit test khi tắt cờ |
 
 ## 1. PC-QUIESCENCE-01 (P1)
 
@@ -70,11 +71,17 @@ Khác với PR7, có bảng đối chiếu trong doc:
 - **Fallback:** rules-v1 và 3 owned looks dùng metadata wardrobe đã được người duyệt nên không cần sửa. PC offline thì job nằm ở queued, app vẫn dùng được.
 - **Runbook:** `docs/qwen-test-env-runbook.md`, gồm bootstrap, thứ tự migration, enroll, dừng và rollback. Config mẫu không có secret: `scripts/worker/config.qwen-test.example.json`.
 
-## Lệnh và exit code (trên `86f72fa`, log trong thư mục này)
+## Checkpoint 3 (`ef244e1`)
+
+- `GET /api/v2/analyses` trả thêm `workerOnline`: chỉ true khi có worker của chính owner được grant, đang khai `garment.analyze` và có heartbeat trong 90 giây (cùng cửa sổ thời gian `claim_r1` dùng). PC offline thì UI nói rõ "PC đang offline" thay vì "đang chờ"; `MEMORY_PRESSURE` có thông báo riêng.
+- `storableCapabilities()`: khi tắt cờ, heartbeat không bao giờ lưu `garment.analyze`, nên không worker nào claim được job phân tích (có unit test).
+- HTTP test với **tài khoản thứ hai đăng nhập thật** qua auth mock: danh sách rỗng, `cancel`/`retry`/`confirm` trên analysis của người khác → 404, action trên job của người khác → 409, và dữ liệu không đổi.
+
+## Lệnh và exit code (trên `ef244e1`, log trong thư mục này)
 
 | Lệnh | Kết quả |
 |---|---|
-| `npm test` | exit 0 — 63/63 |
+| `npm test` | exit 0 — 64/64 |
 | `npm run lint` | exit 0 |
 | `npm run build` | exit 0, chạy trước test browser, không chạy chồng `next start` |
 | `npm run test:v2:db` (PostgreSQL 16, network none) | exit 0 — 8 block, có block QINT-C |
@@ -91,7 +98,7 @@ Cả hai đều đã sửa và chạy lại PASS.
 
 ## Mock và real
 
-Mọi PASS ở trên đều đến từ CPU, PostgreSQL local và mock adapter. Danh sách **chưa** kiểm: Qwen thật, VRAM/RAM/thời gian, Windows Job Object nested, guard của PC3D, 2 tài khoản qua HTTP (mock auth chỉ có một user; isolation đang kiểm ở tầng DB), Supabase/HTTPS test env.
+Mọi PASS ở trên đều đến từ CPU, PostgreSQL local và mock adapter. Danh sách **chưa** kiểm: Qwen thật, VRAM/RAM/thời gian, Windows Job Object nested, guard của PC3D, Supabase/HTTPS test env. Đã có: 2 tài khoản qua HTTP (checkpoint 3), dù wardrobe của mock vẫn là fixture.
 
 ## Blockers và người nhận tiếp
 
