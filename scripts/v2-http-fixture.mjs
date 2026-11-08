@@ -42,7 +42,7 @@ export async function v2Fixture() {
     uploadPaths = new Map(),
     readPaths = new Map(),
     // Fault injection for storage transport tests (counts are consumed per request).
-    faults = { uploadDropAfterStore: 0, uploadExpire: 0, uploads: 0, removeFail: 0, removeCalls: 0, serverUploadFail: 0, beforeRpc: {}, readExpire: 0, reads: 0, expiredObjects: new Set() };
+    faults = { uploadDropAfterStore: 0, uploadExpire: 0, uploads: 0, removeFail: 0, removeCalls: 0, serverUploadFail: 0, beforeRpc: {}, beforeUpload: null, readExpire: 0, reads: 0, expiredObjects: new Set() };
   const sql = (s) =>
     execFileSync(
       "docker",
@@ -127,6 +127,7 @@ export async function v2Fixture() {
       "20261106150000_source_cleanup_priv01.sql",
       "20261107120000_qwen_analysis_qint.sql",
       "20261108090000_qwen_review_qrev.sql",
+      "20261108150000_qrev_cleanup_claim.sql",
     ])
       sql(
         readFileSync(
@@ -265,6 +266,13 @@ export async function v2Fixture() {
               rawPath.slice("/storage/v1/object/".length),
             );
             if (req.method === "POST") {
+              if (faults.beforeUpload) {
+                // Interleaving hook: something (e.g. the collector) runs while this upload is in flight;
+                // the object lands afterwards ("late upload").
+                const hook = faults.beforeUpload;
+                faults.beforeUpload = null;
+                await hook(path);
+              }
               if (faults.serverUploadFail > 0) {
                 // Storage outage on a server-side upload: nothing stored, the client gets an error.
                 faults.serverUploadFail--;
@@ -360,7 +368,7 @@ export async function v2Fixture() {
             throw new Error("Service role RPC expected");
           const fn = table.slice(4);
           if (
-            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look|source_retention|source_cleanup_report|source_cleanup_due|analysis_reserve|analysis_abort|analysis_enqueue|analysis_result|analysis_defer|analysis_action|analysis_confirm)$/.test(
+            !/^fm_v2_(enqueue|claim|claim_r1|transition|job_action|asset_intent|output_intent|save_look|source_retention|source_cleanup_report|source_cleanup_due|source_cleanup_claim|source_cleanup_claim_report|analysis_reserve|analysis_abort|analysis_enqueue|analysis_result|analysis_defer|analysis_action|analysis_confirm)$/.test(
               fn,
             )
           )
@@ -370,7 +378,8 @@ export async function v2Fixture() {
           if (faults.beforeRpc[fn]) {
             const injected = faults.beforeRpc[fn];
             delete faults.beforeRpc[fn];
-            sql(injected);
+            if (typeof injected === "function") await injected();
+            else sql(injected);
           }
           const args = Object.entries(body).map(
             ([k, v]) =>

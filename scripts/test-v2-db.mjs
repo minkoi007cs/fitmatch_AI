@@ -1010,6 +1010,142 @@ try {
     }
     console.log("PASS QREV PostgreSQL: bugs reproduced on 95d59ad then fixed; additive migration on populated DB; reservation intent durable before upload with 15-min grace; finalize removes intent; dedupe without quota; 20 active / 50 per UTC day / 100 assets per 24h shared with 3D both ways; retry bounded; item changed/deleted and quota-after-upload abort with immediate removal; foreign abort refused; orphan reservation collected then SNAPSHOT_EXPIRED; lost race keeps winner; 6 concurrent enqueues at 17 active -> 3; browser roles denied.");
   }
+  {
+    // ---------------- QREV-CLEANUP-RACE (Codex re-review of 7631cb0) ----------------
+    const u = (n) => `9d9d9d9d-${String(n).padStart(4, "0")}-4000-a000-000000000000`;
+    const item = (n) => `9c9c9c9c-${String(n).padStart(4, "0")}-4000-a000-000000000000`;
+    const id = (p, n) => `${p}-${String(n).padStart(4, "0")}-4000-a000-000000000000`;
+    const sha = (n) => n.toString(16).padStart(64, "0");
+    const [ua, ub] = [1, 2].map(u);
+    sql(`insert into auth.users values('${ua}'),('${ub}');
+      insert into fm_wardrobe_items(id,user_id,category,image_path) select ('9c9c9c9c-'||lpad(i::text,4,'0')||'-4000-a000-000000000000')::uuid,
+        (case when i <= 40 then '${ua}' else '${ub}' end)::uuid,'t-shirt','qr-'||i||'.jpg' from generate_series(1,50) i;`);
+    const src = (it) => `qr-${Number(it.slice(9, 13))}.jpg`;
+    const reserve = (user, it, n, asset) => JSON.parse(service(`select fm_v2_analysis_reserve('${user}','${it}','${src(it)}','${sha(n)}','qint.1','${asset}',100);`));
+    const enqSql = (user, it, n, asset, k) => `select fm_v2_analysis_enqueue('${user}','${it}','${src(it)}','${asset}','${sha(n)}','qint.1','${id("3d3d3d3d", k)}','${id("2d2d2d2d", k)}');`;
+    const enq = (...a) => JSON.parse(service(enqSql(...a)));
+    const makeDue = (asset) => sql(`update fm_v2_source_cleanup set next_attempt_at=now()-interval '1 second' where asset_id='${asset}';`);
+    const pathOf = (user, asset) => `${user}/analysis/${asset}.jpg`;
+
+    // Reviewer fragment on the QREV functions: the due read does not fence, enqueue finalizes, the
+    // collector would still remove the path, and its late report changes nothing.
+    const r0 = id("4d4d4d4d", 0);
+    reserve(ua, item(1), 1, r0);
+    makeDue(r0);
+    assert.ok(JSON.parse(service("select fm_v2_source_cleanup_due(500);")).some((d) => d.path === pathOf(ua, r0)));
+    enq(ua, item(1), 1, r0, 0);
+    assert.equal(service(`select state||':'||(select count(*) from fm_v2_source_cleanup where asset_id='${r0}') from fm_v2_assets where id='${r0}';`), "ready:0");
+    assert.equal(JSON.parse(service(`select fm_v2_source_cleanup_report('${ua}',array['${pathOf(ua, r0)}'],true,null);`)).updated, 0);
+    console.log("REPRODUCED QREV-CLEANUP-RACE on 7631cb0 functions: due path cached, enqueue promoted the snapshot to ready and deleted the intent, collector still held the path, late report updated 0.");
+
+    sql(readFileSync(new URL("../supabase/migrations/20261108150000_qrev_cleanup_claim.sql", import.meta.url), "utf8"));
+    // Isolation: intents left due by earlier blocks (other users) are pushed out so exact path sets can be asserted.
+    sql(`update fm_v2_source_cleanup set next_attempt_at=now()+interval '1 day' where user_id not in ('${ua}','${ub}') and state='pending';`);
+    const T1 = id("1d1d1d1d", 1), T2 = id("1d1d1d1d", 2), T3 = id("1d1d1d1d", 3);
+    const claimed = (token, limit = 500, lease = 300) => JSON.parse(service(`select fm_v2_source_cleanup_claim('${token}',${limit},${lease});`)).map((x) => x.path);
+    const report = (token, user, paths, ok = true) => JSON.parse(service(`select fm_v2_source_cleanup_claim_report('${token}','${user}',array[${paths.map((p) => `'${p}'`)}]::text[],${ok},${ok ? "null" : "'STORAGE_503'"});`)).updated;
+    const row = (asset) => service(`select a.state||':'||coalesce((select string_agg(c.state||':'||(c.claim_token is not null),',') from fm_v2_source_cleanup c where c.asset_id=a.id),'none') from fm_v2_assets a where a.id='${asset}';`);
+    assert.equal(service("select count(*) from fm_v2_source_cleanup where claim_token is not null;"), "0", "additive columns on populated DB");
+    assert.deepEqual(claimed(T1).filter((p) => p === pathOf(ua, r0)), [], "finalized snapshot (ready, referenced) never claimable");
+
+    // Ordering 1 — collector wins: claim fences the reservation BEFORE any remove; enqueue refused.
+    const r1 = id("4d4d4d4d", 1);
+    reserve(ua, item(2), 2, r1);
+    makeDue(r1);
+    const due1 = service("select fm_v2_source_cleanup_due(500);");
+    assert.equal(row(r1), "pending:pending:false", "dry-run read has no effect");
+    assert.equal(service("select fm_v2_source_cleanup_due(500);"), due1);
+    assert.deepEqual(claimed(T1), [pathOf(ua, r1)]);
+    assert.equal(row(r1), "deleted:pending:true", "tombstoned in the claiming transaction");
+    assert.ok(!JSON.parse(service("select fm_v2_source_cleanup_due(500);")).some((d) => d.path === pathOf(ua, r1)), "claimed rows are not due for dry runs");
+    assert.throws(() => enq(ua, item(2), 2, r1, 1), /SNAPSHOT_EXPIRED/);
+    assert.equal(service(`select count(*) from fm_v2_analyses where image_asset_id='${r1}';`), "0");
+    assert.equal(report(T1, ua, [pathOf(ua, r1)]), 1);
+    assert.equal(row(r1), "deleted:completed:false");
+    // Ordering 2 — enqueue wins: the collector never sees (or removes) the finalized snapshot.
+    const r2 = id("4d4d4d4d", 2);
+    reserve(ua, item(3), 3, r2);
+    makeDue(r2);
+    enq(ua, item(3), 3, r2, 2);
+    assert.deepEqual(claimed(T1).filter((p) => p === pathOf(ua, r2)), []);
+    assert.equal(row(r2), "ready:none");
+    // Interleaved for real: 8 reservations, one claim and 8 enqueues all concurrent. Each snapshot
+    // ends up EITHER published (ready, never claimed) OR claimed (tombstoned, enqueue refused).
+    const rs = [10, 11, 12, 13, 14, 15, 16, 17].map((k) => id("4d4d4d4d", k));
+    rs.forEach((r, i) => { reserve(ua, item(10 + i), 10 + i, r); makeDue(r); });
+    const mixed = await parallel([`select fm_v2_source_cleanup_claim('${T2}',500,300);`,
+      ...rs.map((r, i) => enqSql(ua, item(10 + i), 10 + i, r, 10 + i))]);
+    const won = new Set(JSON.parse(mixed[0].value).map((x) => x.path));
+    rs.forEach((r, i) => {
+      const published = mixed[1 + i].ok;
+      assert.notEqual(published, won.has(pathOf(ua, r)), `exactly one winner for ${r}`);
+      assert.equal(row(r), published ? "ready:none" : "deleted:pending:true");
+    });
+    report(T2, ua, [...won]);
+
+    // Duplicate collectors take disjoint rows; an active lease is not re-claimed; after lease expiry
+    // (lost report) the row is re-claimed with a new token and the superseded token's report is ignored.
+    const dup = [20, 21, 22, 23, 24, 25].map((k) => id("4d4d4d4d", k));
+    dup.forEach((r, i) => { reserve(ua, item(20 + i), 20 + i, r); makeDue(r); });
+    const both = await parallel([`select fm_v2_source_cleanup_claim('${T1}',500,300);`, `select fm_v2_source_cleanup_claim('${T3}',500,300);`]);
+    const a1 = JSON.parse(both[0].value).map((x) => x.path), a3 = JSON.parse(both[1].value).map((x) => x.path);
+    assert.equal(a1.filter((p) => a3.includes(p)).length, 0, "no row claimed twice");
+    assert.equal(a1.length + a3.length, dup.length);
+    assert.deepEqual(claimed(T2), [], "active leases are not re-claimed");
+    // Which collector got rows is up to the scheduler; take one that did as the "lost report" claimer.
+    const [lostT, lost, otherT, other] = a1.length ? [T1, a1, T3, a3] : [T3, a3, T1, a1];
+    sql(`update fm_v2_source_cleanup set claimed_until=now()-interval '1 second' where claim_token='${lostT}';`);
+    const again = claimed(T2);
+    assert.deepEqual([...again].sort(), [...lost].sort(), "lost report: retried after the lease");
+    assert.equal(report(lostT, ua, lost), 0, "superseded claim's late report changes nothing");
+    assert.equal(report(T2, ub, again), 0, "owner boundary: another user's paths are not reported");
+    assert.equal(report(T2, ua, again, false), again.length, "failure releases the claim with backoff");
+    assert.equal(service(`select string_agg(distinct state||':'||attempts||':'||(claim_token is null)||':'||(next_attempt_at>now()),',') from fm_v2_source_cleanup where path = any(array[${again.map((p) => `'${p}'`)}]::text[]);`), "pending:1:true:true");
+    if (other.length) assert.equal(report(otherT, ua, other), other.length);
+    assert.throws(() => service(`select fm_v2_source_cleanup_claim(null,10,300);`), /INVALID_INPUT/);
+    assert.throws(() => service(`select fm_v2_source_cleanup_claim('${T1}',10,5);`), /INVALID_INPUT/);
+
+    // Original-source (CL-PRIV-01) intents are still claimed; live assets are never claimed even with
+    // a (defensive, should-not-exist) intent row.
+    const del = id("4d4d4d4d", 30), live = id("4d4d4d4d", 31);
+    sql(`insert into fm_v2_assets(id,user_id,kind,state,path,source_path,expected_bytes,deleted_at) values
+      ('${del}','${ub}','photo','deleted','${ub}/src-del.jpg','${ub}/src-del-o.jpg',10,now()),
+      ('${live}','${ub}','photo','ready','${ub}/src-live.jpg','${ub}/src-live-o.jpg',10,null);
+      insert into fm_v2_source_cleanup(user_id,asset_id,path) values ('${ub}','${del}','${ub}/src-del.jpg'),('${ub}','${del}','${ub}/src-del-o.jpg'),('${ub}','${live}','${ub}/src-live.jpg');`);
+    assert.deepEqual(claimed(T3).sort(), [`${ub}/src-del-o.jpg`, `${ub}/src-del.jpg`]);
+    assert.equal(row(live), "ready:pending:false", "ready asset never claimed");
+    assert.equal(report(T3, ub, [`${ub}/src-del.jpg`, `${ub}/src-del-o.jpg`]), 2);
+
+    // Late upload: the collector already claimed+removed+completed; the route's upload lands later,
+    // enqueue refuses, and abort reopens the removal so the late object is removed too.
+    const r40 = id("4d4d4d4d", 40);
+    reserve(ua, item(30), 30, r40);
+    makeDue(r40);
+    assert.deepEqual(claimed(T1), [pathOf(ua, r40)]);
+    assert.equal(report(T1, ua, [pathOf(ua, r40)]), 1);
+    assert.throws(() => enq(ua, item(30), 30, r40, 40), /SNAPSHOT_EXPIRED/);
+    assert.deepEqual(JSON.parse(service(`select fm_v2_analysis_abort('${ua}','${r40}');`)), [pathOf(ua, r40)]);
+    assert.equal(row(r40), "deleted:pending:false");
+    assert.deepEqual(JSON.parse(service(`select fm_v2_analysis_abort('${ub}','${r40}');`)), [], "other owner cannot reopen");
+    assert.deepEqual(JSON.parse(service(`select fm_v2_analysis_abort('${ub}','${del}');`)), [], "abort only reopens analysis reservations");
+    // Concurrent item delete while uploading; the collector fences, enqueue refuses on the item.
+    const r41 = id("4d4d4d4d", 41);
+    reserve(ua, item(31), 31, r41);
+    makeDue(r41);
+    sql(`delete from fm_wardrobe_items where id='${item(31)}';`);
+    const race2 = await parallel([`select fm_v2_source_cleanup_claim('${T2}',500,300);`, enqSql(ua, item(31), 31, r41, 41)]);
+    assert.equal(race2[1].ok, false);
+    assert.ok(JSON.parse(race2[0].value).some((x) => x.path === pathOf(ua, r41)));
+    assert.equal(row(r41), "deleted:pending:true");
+    // A published analysis whose item is later deleted: tombstone trigger -> claimable original intent.
+    sql(`delete from fm_wardrobe_items where id='${item(3)}';`);
+    assert.ok(claimed(T3).includes(pathOf(ua, r2)), "deleted analysis snapshot becomes claimable");
+    for (const role of ["anon", "authenticated"]) {
+      assert.throws(() => sql(`set role ${role};select fm_v2_source_cleanup_claim('${T1}',10,300);`));
+      assert.throws(() => sql(`set role ${role};select fm_v2_source_cleanup_claim_report('${T1}','${ua}',array['x'],true,null);`));
+    }
+    console.log("PASS QREV-CLEANUP-RACE PostgreSQL: reviewer race reproduced on 7631cb0 then fixed; claim fences reservations under owner locks 73->74 before any remove; collector-wins -> SNAPSHOT_EXPIRED, enqueue-wins -> never claimed; 8 concurrent enqueues vs claim -> exactly one winner each; duplicate collectors disjoint; active lease not re-claimed; lost report retried after lease; superseded/foreign reports ignored; failure releases claim with backoff; CL-PRIV-01 intents still claimed, ready asset never; dry run side-effect free; late upload reopened by abort; concurrent item delete; browser roles denied.");
+  }
   console.log(
     "PASS R1 PostgreSQL: default-deny grants, same-instance claim redelivery (8 parallel, attempt unchanged), no redelivery after progress/other instance/legacy, lease expiry, idempotent output intent, fail refused after publish, concurrent idempotent complete with one receipt, stale/foreign/revoked/canceled refused, reclaim reuses verified output, browser roles denied.",
   );

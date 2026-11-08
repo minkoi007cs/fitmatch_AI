@@ -8,6 +8,8 @@ import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { createClient } from "@supabase/supabase-js";
+import { collectSourceCleanup } from "./source-cleanup.mjs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import sharp from "sharp";
@@ -17,7 +19,7 @@ import { analysisResult } from "../src/lib/v2/qwen.ts";
 const jpeg = (rgb) =>
   sharp({ create: { width: 400, height: 480, channels: 3, background: rgb } }).jpeg().toBuffer();
 
-export async function testQwen({ base, request, jar, owner, itemId, v2, asSecond }) {
+export async function testQwen({ base, fixture, request, jar, owner, itemId, v2, asSecond }) {
   const temp = await mkdtemp(join(tmpdir(), "fitmatch-qwen-"));
   // QREV-LOCK: the integrated worker uses the existing shared lock file, a pinned guard and the PC slot.
   // These are synthetic stand-ins in a temp dir (the real PC paths/guard are ACKed by PC3D separately).
@@ -223,6 +225,53 @@ export async function testQwen({ base, request, jar, owner, itemId, v2, asSecond
     v2.sql(`delete from fm_v2_jobs where model_id in (select id from fm_v2_models where name='qrev-filler'); delete from fm_v2_models where name='qrev-filler';`);
     assert.equal(v2.sql(`select count(*) from fm_v2_analyses where user_id='${owner}';`), analysesBefore, "no analysis from refused requests");
 
+    // QREV-CLEANUP-RACE through the real route and the real collector (claim -> remove -> report).
+    // Other tests' intents are parked for the duration so the collector only sees this owner's
+    // analysis reservations; they are restored unchanged afterwards.
+    const admin = createClient(fixture, "synthetic-service", { auth: { persistSession: false } });
+    v2.sql(`update fm_v2_source_cleanup set next_attempt_at=next_attempt_at+interval '100 years'
+      where state='pending' and path not like '${owner}/analysis/%';`);
+    const collectNow = async () => {
+      v2.sql(`update fm_v2_source_cleanup set next_attempt_at=now()-interval '1 second' where state='pending' and path like '${owner}/analysis/%';`);
+      return collectSourceCleanup(admin, { execute: true });
+    };
+    // (d) Reviewer's interleaving, collector wins: it runs after the upload and before enqueue. The
+    // claim fences the reservation, removes the object, and enqueue is refused (no published analysis
+    // without its snapshot).
+    await setItemPhoto("tee-cyan", { r: 10, g: 200, b: 210 });
+    let pass;
+    v2.faults.beforeRpc.fm_v2_analysis_enqueue = async () => { pass = await collectNow(); };
+    failed = await request("/api/v2/analyses", { method: "POST", body: JSON.stringify({ itemId }) });
+    assert.equal(failed.status, 409);
+    assert.equal((await failed.json()).error, "SNAPSHOT_EXPIRED");
+    assert.deepEqual([pass.removed, pass.failed], [1, 0]);
+    orphans = snapshotState();
+    assert.equal(orphans.length, 3);
+    for (const o of orphans) assert.deepEqual([o.state, o.cleanup, v2.hasObject(o.path)], ["deleted", "completed", false], o.path);
+    // (e) Late upload: the collector claims, removes (nothing there yet) and completes while the upload
+    // is in flight; the object lands afterwards. Enqueue refuses and abort reopens the removal, so the
+    // late object is removed by the route.
+    v2.faults.beforeUpload = async () => { pass = await collectNow(); };
+    failed = await request("/api/v2/analyses", { method: "POST", body: JSON.stringify({ itemId }) });
+    assert.equal(failed.status, 409);
+    assert.equal(pass.removed, 1);
+    orphans = snapshotState();
+    assert.equal(orphans.length, 4);
+    for (const o of orphans) assert.deepEqual([o.state, o.cleanup, v2.hasObject(o.path)], ["deleted", "completed", false], o.path);
+    // (f) Enqueue wins: a successful request, then a collector pass. Published snapshots are never
+    // claimed or removed; an immediate second pass finds nothing.
+    const ok = await request("/api/v2/analyses", { method: "POST", body: JSON.stringify({ itemId }) });
+    assert.equal(ok.status, 201, await ok.clone().text());
+    const okId = (await ok.json()).analysis.id;
+    pass = await collectNow();
+    assert.equal(pass.due, 0, JSON.stringify(pass));
+    const published = JSON.parse(v2.sql(`select coalesce(json_agg(a.path),'[]') from fm_v2_analyses x join fm_v2_assets a on a.id=x.image_asset_id where x.user_id='${owner}';`));
+    assert.ok(published.length >= 2 && published.every((p) => v2.hasObject(p)), "every published analysis keeps its snapshot");
+    assert.equal(v2.sql(`select count(*) from fm_v2_source_cleanup where claim_token is not null;`), "0", "no claim left behind");
+    v2.sql(`update fm_v2_source_cleanup set next_attempt_at=next_attempt_at-interval '100 years' where state='pending' and next_attempt_at > now()+interval '50 years';`);
+    // Keep the later FIFO worker steps deterministic: this extra probe job is canceled (not run).
+    assert.equal((await request(`/api/v2/analyses/${okId}/cancel`, { method: "POST" })).status, 200);
+
     // New photo -> new analysis; invalid model output fails closed, retry, then an abstention.
     const path2 = `${owner}/tee-blue.jpg`;
     v2.putObject(`fitmatch-wardrobe/${path2}`, await jpeg({ r: 20, g: 40, b: 200 }));
@@ -255,5 +304,5 @@ export async function testQwen({ base, request, jar, owner, itemId, v2, asSecond
     await browser.close();
     await rm(temp, { recursive: true, force: true });
   }
-  console.log("PASS QINT-C analysis (real routes + PostgreSQL + browser + real worker.py, CPU MOCK adapter): owned photo -> immutable private snapshot -> durable job; dedupe; 3D lists/actions exclude analysis jobs; GPU_BUSY deferral shown as waiting, attempt kept, lock free after drain; proposal stored for review only, result replay idempotent; browser review prefilled except OCR, human confirm writes only reviewed mapped values, persists after reload; same photo reuses confirmed result without a job; self-approving output fails closed, retry, abstention changes nothing; flag-off UI hidden; PC offline and MEMORY_PRESSURE shown distinctly; second account sees/acts on nothing over HTTP; QREV: shared lock held elsewhere -> no claim, heartbeat gpuBusy shown as 'PC busy with other work' to the owner only, slot of the other PC owner refused before claim, snapshot upload failure and item edit during upload leave no orphan (removal recorded), full queue refused before any upload. No Qwen quality or real GPU claim.");
+  console.log("PASS QINT-C analysis (real routes + PostgreSQL + browser + real worker.py, CPU MOCK adapter): owned photo -> immutable private snapshot -> durable job; dedupe; 3D lists/actions exclude analysis jobs; GPU_BUSY deferral shown as waiting, attempt kept, lock free after drain; proposal stored for review only, result replay idempotent; browser review prefilled except OCR, human confirm writes only reviewed mapped values, persists after reload; same photo reuses confirmed result without a job; self-approving output fails closed, retry, abstention changes nothing; flag-off UI hidden; PC offline and MEMORY_PRESSURE shown distinctly; second account sees/acts on nothing over HTTP; QREV: shared lock held elsewhere -> no claim, heartbeat gpuBusy shown as 'PC busy with other work' to the owner only, slot of the other PC owner refused before claim, snapshot upload failure and item edit during upload leave no orphan (removal recorded), full queue refused before any upload; QREV-CLEANUP-RACE with the real collector: collector between upload and enqueue -> 409 SNAPSHOT_EXPIRED and object removed, late upload after a completed collector pass removed by reopened abort, enqueue-wins snapshot never claimed. No Qwen quality or real GPU claim.");
 }
