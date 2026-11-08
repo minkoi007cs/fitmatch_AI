@@ -13,3 +13,6 @@
 - `scripts/source-cleanup.mjs` dùng claim/claim-report; fixture + DB/HTTP tests các thứ tự xen kẽ.
 
 Ngoài scope: bật collector thật, production, xóa storage ngoài môi trường test, PC adapter/guard, wire worker, `tools/acceptance/`, process chính.
+
+## Kết thúc (Ready for review)
+App `codex/qwen-review-fixes`: `997104f` (fix), `ad6d1d7` (runbook, SHA đã kiểm toàn bộ), `579ece2` (report + logs). Kết quả, kiểm thử và blocker chính xác: [qrace/report.md](./qrace/report.md). Worker `scripts/worker/worker.py` không đổi so với 7631cb0. PC native ACK, test env HTTPS/credential và Qwen thật vẫn NOT RUN.
