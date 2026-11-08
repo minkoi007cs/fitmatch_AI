@@ -346,6 +346,14 @@
       "normalization": "CRLF to LF only"
     },
     {
+      "snapshot": "qint_p/qfinal_inventory.py.txt",
+      "restore_to": "ai-service/qint_p/qfinal_inventory.py",
+      "sha256": "aa38721e4c8cf511569f8c13e8bd6a3974d50a31726690e133a2f8c0da1bd42b",
+      "bytes": 8236,
+      "original_sha256": "aa38721e4c8cf511569f8c13e8bd6a3974d50a31726690e133a2f8c0da1bd42b",
+      "normalization": "CRLF to LF only"
+    },
+    {
       "snapshot": "qint_p/qrev_final_smoke.py.txt",
       "restore_to": "ai-service/qint_p/qrev_final_smoke.py",
       "sha256": "f044991046f62f1f98e3fe4b0be3dd17d894718dc728e9c1192783f5c8b37afa",
