@@ -490,3 +490,11 @@ User giao quyền chọnbackendchính/bỏsmoke ổnđịnh. Canonicalfitmatch-a
 
 ### L-058 — 09/11/2026 — PUBLISHED / DISPATCH — BACKEND-024
 2ee6f25canonicaldocs published; PCQwen sendconfirmed; PC3D dispatch returned config/read timeout, receipt unconfirmed. JSON/fences/diffchecked, noactualconnectorOAuth/projectdeletion/DBmigration orGPUrun. Rootrules/process/roadmapsyncedexplicitfiles; Claudeexternalownerforwardprompt.
+
+
+### L-059 — 09/11/2026 — START — CX-CANON-REVIEW-25
+User giao nối lại connector canonical, gửi hai PC và review khóa GPU. Scope Codex: connector UI, docs/reports/review/canonical-binding-20261109 và process; app f80749a read-only trong worktree riêng. Giữ source Claude/canonical Studio, không migrate cloud hoặc cấp GPU trước native ACK và preflight. Baseline docs7b247ba, appf80749a/worker ef25136b…; bắt đầu independent tests và PC native verification.
+
+
+### L-060 — 09/11/2026 — REVIEW / CHECKPOINT — CX-CANON-REVIEW-25
+Claude f80749a/2a40f48 newpolicy binding/backendidentity source reviewed, independent Mac72unit/56Python/lintPASS. QREV-BIND focusedsourceaccepted, nativeWindowsNOTVERIFIED; noGPUgrant. CleanupfocusedPASS retained; nofreshDB/HTTP/build. Report docs/reports/review/canonical-binding-20261109/review.md includes supplementaryschema comparatorchecks needed beforecloudreconciliation. BothPCdirectfollowups attemptedindividually butnoACK withinboundedwait; terminatedcalls, deliveryUNKNOWN. ScopedPC/Claudecontinuations availableinreport; notclaimedrunning. ConnectorReconnect reachedOAuth correctlyselectedminkoi007cs'sOrg; org-wideaccessincludeslifedashboard soaction-timeconfirmationpending. NoOAuthAuthorize/cloudmigration/deploy/GPUjob. Next: userconfirmsOAuth, verifyconnectorgohaccessread-only, PCnativeACK/policy, canonicalinventory/recovery andHTTPSrevision beforeliveQwen.
