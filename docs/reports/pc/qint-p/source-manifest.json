@@ -10,6 +10,22 @@
       "normalization": "CRLF to LF only"
     },
     {
+      "snapshot": "qint_p/backend-environments.pin.json.txt",
+      "restore_to": "ai-service/qint_p/backend-environments.pin.json",
+      "sha256": "73b583a69016dbfcf9c2d24a658d6e1dc4844ccb062e6ff3976abb05b1584015",
+      "bytes": 325,
+      "original_sha256": "3e5338d47faf6590774c7f94f1f279e7bdf3255dbc22bd68aaa2d695fde01786",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/backend-environments.snapshot.json.txt",
+      "restore_to": "ai-service/qint_p/backend-environments.snapshot.json",
+      "sha256": "5ea746851bf4f52819953c41c0446fde92604859eed6bafbc5848a5635d13e7c",
+      "bytes": 1279,
+      "original_sha256": "5ea746851bf4f52819953c41c0446fde92604859eed6bafbc5848a5635d13e7c",
+      "normalization": "CRLF to LF only"
+    },
+    {
       "snapshot": "qint_p/boundary.py.txt",
       "restore_to": "ai-service/qint_p/boundary.py",
       "sha256": "34c3dae15a7c1087c0f7a93b2698660d291be65f01a869a4e7e55eb68e4a3657",
@@ -330,6 +346,14 @@
       "normalization": "CRLF to LF only"
     },
     {
+      "snapshot": "qint_p/prepare_backend024.py.txt",
+      "restore_to": "ai-service/qint_p/prepare_backend024.py",
+      "sha256": "72415a74212d2e539621c324a7883ba9f54410567e705938027cd4096eb77b29",
+      "bytes": 4395,
+      "original_sha256": "72415a74212d2e539621c324a7883ba9f54410567e705938027cd4096eb77b29",
+      "normalization": "CRLF to LF only"
+    },
+    {
       "snapshot": "qint_p/prepare_evidence.py.txt",
       "restore_to": "ai-service/qint_p/prepare_evidence.py",
       "sha256": "f8d9e238c0017474475e7a4e9aa31d0fa8430865a61c6230470c87eb26c9296c",
@@ -348,9 +372,9 @@
     {
       "snapshot": "qint_p/qfinal_inventory.py.txt",
       "restore_to": "ai-service/qint_p/qfinal_inventory.py",
-      "sha256": "885375f77d82acfe6ad948b78721fa8fc27743f9ea8e785e351c23e2eb1a9dc5",
-      "bytes": 9872,
-      "original_sha256": "885375f77d82acfe6ad948b78721fa8fc27743f9ea8e785e351c23e2eb1a9dc5",
+      "sha256": "b3050637252045cc5d517cbf52e7cfe1061284ececa5082954974f3305c28772",
+      "bytes": 11985,
+      "original_sha256": "b3050637252045cc5d517cbf52e7cfe1061284ececa5082954974f3305c28772",
       "normalization": "CRLF to LF only"
     },
     {

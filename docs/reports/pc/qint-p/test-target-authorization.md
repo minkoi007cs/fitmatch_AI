@@ -1,5 +1,10 @@
 # Owner-authorized backend target — PC-QINT-P-20261108-07
 
+**Historical, superseded by BACKEND-024 on 2026-11-09.** The current canonical
+backend is [fitmatch-ai for main/pilot](backend024-canonical.md). Smoke is deprecated
+for FitMatch, without deleting its cloud project. Do not reuse its keys/tokens or
+perform a URL-only credential swap. The previous authorization below is inactive.
+
 The owner has confirmed **smoke-supabase** may be used for FitMatch tests and is
 not the production target. This supersedes the earlier purpose-pending designation.
 Authorization and nonsecret project/API metadata were received through Codex's

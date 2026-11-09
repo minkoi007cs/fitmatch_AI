@@ -1,0 +1,46 @@
+{
+  "version": "qint-p.canonical-checkpoint.v1",
+  "kind": "metadata only, not an installed worker config",
+  "session": "PC-QINT-P-20261109-08",
+  "backendDecision": "BACKEND-024",
+  "backendRegistrySource": {
+    "source_revision": "7b247ba6cb0e08f3360f42a3cda56825dfbfcde1",
+    "source_path": "docs/infrastructure/backend-environments.json",
+    "sha256": "5ea746851bf4f52819953c41c0446fde92604859eed6bafbc5848a5635d13e7c",
+    "authority": "Operations environment manifest; this file is a pinned metadata copy, not a second authority"
+  },
+  "canonicalBackend": {
+    "provider": "supabase",
+    "projectName": "fitmatch-ai",
+    "projectRef": "gohczmqykjkrgdblgbog",
+    "apiUrl": "https://gohczmqykjkrgdblgbog.supabase.co",
+    "purpose": "main/pilot backend; preserve existing data",
+    "dataIsolation": "No destructive tests or automatic cleanup on main"
+  },
+  "expectedConfig": {
+    "gpuLock": "<GPU_ROOT>/coordination/gpu0.lock",
+    "gpuSlot": "<GPU_ROOT>/coordination/gpu0-slot.json",
+    "gpuSlotOwner": "pc-ai",
+    "gpuGuard": {
+      "path": "<GPU_ROOT>/fitmatch_AI/workers/windows/gpu_guard.py",
+      "sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c"
+    }
+  },
+  "placement": "worker sole byte0 owner, direct Qwen adapter; no nested guard/env-only proof",
+  "modelRevision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "latestAppUnderReview": "579ece2f4d7eb1b5336fec1469d5965ab9d8f919",
+  "finalApprovedTransport": null,
+  "startupBindingACK": "WITHHELD QREV-BIND-02",
+  "cleanupGate": "FOCUSED PASS by Codex PROC0023 on579ece2; not whole privacy/integration acceptance",
+  "knownCleanupLimit": "long upload plus app death after grace remains documented",
+  "canonicalBackendOwnerAuthorized": true,
+  "controlledPilotReady": false,
+  "QwenSlotGranted": false,
+  "operatorApprovalInstalled": false,
+  "reuseSmokeCredentials": false,
+  "URLOnlyCredentialsSwap": false,
+  "beforeMainMigration": "canonical access+existing-data inventory+private recovery route/snapshot+schema reconciliation; none performed by PC Qwen",
+  "GPUStarted": false,
+  "personalImageRead": false,
+  "recordedAtUtc": "2026-11-09T06:18:19.944586+00:00"
+}

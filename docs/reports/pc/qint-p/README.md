@@ -1,7 +1,9 @@
 # QINT-P / AI-QUALITY-04 checkpoint — 07/11/2026
 
-Latest target: [owner authorizes smoke-supabase for FitMatch test](test-target-authorization.md).
-Nonsecret backend metadata recorded; app HTTPS/scoped token and binding gates remain open.
+Latest target: [BACKEND-024 canonical fitmatch-ai main/pilot](backend024-canonical.md).
+The former smoke target is deprecated for FitMatch; old credentials cannot be reused.
+App HTTPS/scoped canonical token and binding gates remain open; no SQL or GPU started.
+Historical target: [superseded smoke authorization](test-target-authorization.md).
 Prior gates: [PROC0023 focused cleanup PASS / binding still open](qfinal023-status.md).
 Published portable repro is reused; no unchanged suite/benchmark repeated.
 Prior readiness: [H-QFINAL-022 environment inventory and conditional slice](qfinal022-readiness.md).
