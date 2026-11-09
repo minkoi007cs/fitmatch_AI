@@ -13,3 +13,6 @@
 3. Bộ truy vấn chỉ-đọc + quy trình đối chiếu schema/RLS/storage/migration và khôi phục cho project chính; **chạy khi có quyền truy cập đúng** — không xin secret trong chat, không sửa mật khẩu DB, không migration cloud.
 
 Ngoài scope: deploy, migration cloud, cấp quyền worker/GPU, PC guard/runtime/adapter, `tools/acceptance`, process chính.
+
+## Kết thúc (Ready for review)
+App `codex/qwen-review-fixes`: `8c297fe` (binding + backend identity, checkpoint sớm), `2d629a3` (công cụ kiểm kê schema), `2a40f48` (kiểm tra binding an toàn trên Windows — SHA đã kiểm toàn bộ), `f80749a` (report + logs). Worker sha256 `ef25136b…16b6`. Kết quả/blocker: [canon/report.md](./canon/report.md); checkpoint cho PC ACK native: [canon/pc-binding-checkpoint.md](./canon/pc-binding-checkpoint.md). Native Windows, kiểm kê project chính (chưa có quyền truy cập đúng), HTTPS đúng revision + token và Qwen thật vẫn NOT RUN.
