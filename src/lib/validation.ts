@@ -54,7 +54,24 @@ export const outfitSchema = z.object({
   colorExplanation: text, styleExplanation: text, confidenceScore: z.number().finite().min(0).max(100),
   occasion: optionalText, imagePath: z.string().min(1).max(1024).optional(),
 });
-export const saveOutfitSchema = z.object({ sourceItemId: z.string().uuid().nullable().optional(), data: z.array(outfitSchema).min(1).max(5) });
+export const saveOutfitSchema = z.object({
+  sourceItemId: z.string().uuid().nullable().optional(),
+  data: z.array(outfitSchema).min(1).max(5),
+  // Optional, must agree with data: the archive row's fm_outfits.style_category (CL-MIGRATION-26).
+  styleCategory: z.enum(STYLE_CATEGORIES).optional(),
+});
+
+/**
+ * fm_outfits.style_category for one saved archive row (legacy column: NOT NULL, no default). Truthful rule:
+ * a row holds outfits of ONE style, so the column states that style; mixed-style payloads are refused
+ * (save them separately) rather than labelled with an arbitrary or invented category.
+ */
+export function archiveStyleCategory(body: z.infer<typeof saveOutfitSchema>) {
+  const styles = [...new Set(body.data.map(outfit => outfit.styleCategory))];
+  if (styles.length !== 1) throw new InputError(400, "MIXED_STYLE_ARCHIVE");
+  if (body.styleCategory && body.styleCategory !== styles[0]) throw new InputError(400, "STYLE_CATEGORY_MISMATCH");
+  return styles[0];
+}
 export const generateSchema = z.object({ analysis: analysisSchema, styleProfile: profileSchema.optional(), vibeOverride: z.enum(STYLE_CATEGORIES).optional(), count: z.number().int().min(3).max(5).optional() });
 export const imagePromptSchema = z.object({ outfitName: shortText.optional(), styleCategory: z.enum(STYLE_CATEGORIES).optional(), occasion: optionalText, colorExplanation: text.optional(), items: z.array(partSchema).min(2).max(20), accessories: z.array(partSchema).max(15).optional() });
 export const analyzeSchema = z.object({ imageBase64: z.string().min(4).max(4_000_000).regex(/^[A-Za-z0-9+/]+={0,2}$/), persist: z.boolean().optional(), storagePath: z.string().min(1).max(1024).optional() });

@@ -97,7 +97,9 @@ const mock = createServer(async (req, res) => {
   }
   if (url.pathname === "/rest/v1/fm_outfits") {
     if (req.method === "POST") {
-      const record = { id: "33333333-3333-4333-a333-333333333333", created_at: new Date().toISOString(), ...body };
+      // Canonical legacy shape (CL-MIGRATION-26): style_category is NOT NULL without default.
+      if (typeof body.style_category !== "string") return send({ code: "23502", message: 'null value in column "style_category" violates not-null constraint' }, 400);
+      const record = { id: "33333333-3333-4333-a333-333333333333", created_at: new Date().toISOString(), is_saved: false, ...body };
       savedOutfits.push(record); return send(record, 201);
     }
     if (req.method === "DELETE") {
@@ -185,6 +187,14 @@ try {
   const look = { id: "look-1", name: "Minimal look", styleCategory: "minimal", confidenceScore: 90, colorExplanation: "Balanced colors", styleExplanation: "Clean styling", items: [{ category: "shirt", description: "Cotton shirt", suggestedColor: "White" }, { category: "pants", description: "Straight trousers", suggestedColor: "Black" }], accessories: [], imagePath: `${imageOwner}/looks/test.png`, imageUrl: "https://untrusted.invalid/image" };
   assert.equal((await request("/api/outfits", { method: "POST", body: JSON.stringify({ data: [look] }) })).status, 200);
   assert.equal(savedOutfits[0].data_json[0].imageUrl, undefined, "never persist a caller-supplied signed URL");
+  assert.equal(savedOutfits[0].style_category, "minimal", "legacy NOT NULL style_category written from the look's own style");
+  assert.equal(savedOutfits[0].is_saved, true, "explicit save action marks the archive row saved");
+  const mixed = await request("/api/outfits", { method: "POST", body: JSON.stringify({ data: [look, { ...look, id: "look-2", styleCategory: "casual" }] }) });
+  assert.equal(mixed.status, 400); assert.match(await mixed.text(), /MIXED_STYLE_ARCHIVE/);
+  const contradict = await request("/api/outfits", { method: "POST", body: JSON.stringify({ styleCategory: "formal", data: [look] }) });
+  assert.equal(contradict.status, 400); assert.match(await contradict.text(), /STYLE_CATEGORY_MISMATCH/);
+  assert.equal(savedOutfits.length, 1, "refused payloads write nothing");
+  console.log("PASS: outfit archive writes legacy style_category/is_saved; mixed or contradicting style refused before any write");
   const restored = await (await request("/api/outfits")).json();
   assert.equal(restored.outfits[0].data_json[0].imagePath, look.imagePath);
   assert.ok(restored.outfits[0].data_json[0].imageUrl.includes("synthetic"), "reload signs the stored owned image path");

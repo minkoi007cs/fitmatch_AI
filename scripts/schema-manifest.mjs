@@ -1,6 +1,6 @@
 /**
  * ENV-CANON-01: build the EXPECTED schema manifest from the reviewed SQL chain, in a disposable Docker
- * PostgreSQL 16 with a minimal Supabase-like stub (roles, auth.uid/users, storage.buckets/objects/foldername)
+ * PostgreSQL 17 (hosted major) with a minimal Supabase-like stub (roles, pgcrypto in schema extensions, auth.uid/users, storage.buckets/objects/foldername)
  * and no network. Applies supabase/schema.sql then every migration in filename order, running the same
  * read-only inventory query (scripts/schema-inventory.sql) after each step, and records which objects each
  * step adds or changes. Output contains schema shape only (no data, no secrets):
@@ -23,6 +23,11 @@ const sha = (text) => createHash("sha256").update(text).digest("hex");
 
 const STUB = `
 create role anon; create role authenticated; create role service_role bypassrls;
+create schema extensions; create extension pgcrypto schema extensions; -- hosted Supabase placement
+grant usage on schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role; -- hosted Supabase defaults
 create schema auth; grant usage on schema auth to authenticated, anon;
 create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
 create table auth.users(id uuid primary key, email text, raw_user_meta_data jsonb);
@@ -45,7 +50,7 @@ for (const f of readdirSync(new URL("supabase/migrations/", root)).filter((f) =>
   files.push([`supabase/migrations/${f}`, readFileSync(new URL(`supabase/migrations/${f}`, root), "utf8")]);
 
 try {
-  execFileSync("docker", ["run", "--rm", "--detach", "--network", "none", "--name", container, "-e", "POSTGRES_HOST_AUTH_METHOD=trust", "postgres:16-alpine"], { stdio: "pipe" });
+  execFileSync("docker", ["run", "--rm", "--detach", "--network", "none", "--name", container, "-e", "POSTGRES_HOST_AUTH_METHOD=trust", "postgres:17-alpine"], { stdio: "pipe" });
   for (let i = 0; i < 60; i++) {
     try {
       execFileSync("docker", ["exec", container, "pg_isready", "-h", "127.0.0.1", "-U", "postgres"], { stdio: "pipe" });
@@ -72,7 +77,7 @@ try {
   }
   const manifest = {
     format: "fitmatch.schema-manifest.v1",
-    note: "Expected shape from the reviewed SQL chain applied to a Supabase-like stub in disposable Docker PG16. Schema only, no data. Policy/constraint text is compared by md5/definition and may differ by server version: inspect before concluding.",
+    note: "Expected shape from the reviewed SQL chain applied to a Supabase-like stub in disposable Docker PG17 (hosted major), pgcrypto in schema extensions. Schema only, no data. Policy/constraint text is compared by md5/definition and may differ by server version: inspect before concluding.",
     stub: sha(STUB),
     inventorySql: sha(inventorySql),
     steps,

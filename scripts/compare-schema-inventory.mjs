@@ -21,15 +21,20 @@ if (Array.isArray(raw)) raw = raw[0]; // dashboard exports a row array
 if (raw && raw.inventory) raw = raw.inventory;
 const result = compareInventory(manifest, flattenInventory(raw));
 for (const s of result.steps)
-  console.log(`${s.status.padEnd(16)} ${s.file}  (${s.equal}/${s.objects} equal${s.missing.length ? `, ${s.missing.length} missing` : ""}${s.different.length ? `, ${s.different.length} different` : ""})`);
+  console.log(`${s.status.padEnd(25)} ${s.file}  (${s.equal}/${s.objects} ok${s.equivalent.length ? `, ${s.equivalent.length} equivalent under legacy names` : ""}${s.missing.length ? `, ${s.missing.length} missing` : ""}${s.different.length ? `, ${s.different.length} different` : ""})`);
 const show = (title, list) => {
   console.log(`\n${title}: ${list.length}`);
-  for (const k of list.slice(0, 200)) console.log("  " + k);
+  for (const line of list.slice(0, 300)) console.log("  " + line);
 };
-for (const s of result.steps.filter((s) => s.missing.length || s.different.length)) {
+for (const s of result.steps.filter((s) => s.missing.length || s.different.length || s.equivalent.length)) {
+  const detail = (k) => `${k}${s.findings[k].detail ? `  -- ${s.findings[k].detail}` : ""}`;
   show(`missing for ${s.file}`, s.missing);
-  show(`different for ${s.file}`, s.different);
+  show(`different for ${s.file} (keep the existing definition unless a reviewed change says otherwise)`, s.different.map(detail));
+  show(`equivalent under another name for ${s.file} (do NOT create a duplicate)`, s.equivalent.map(detail));
 }
 show("objects in the project that the reviewed chain does not create (do NOT drop; reconcile)", result.extra);
 show("public tables with RLS disabled", result.rlsOff);
+show("public tables where anon has write privileges", result.anonWritable);
+show("commands covered by more than one PERMISSIVE policy (OR-ed: the broadest one wins)", result.overlappingPolicies.map((o) => `${o.slot}: ${o.policies.join(", ")}`));
 show("public buckets", result.publicBuckets);
+show("extensions in an unexpected schema (hosted Supabase installs pgcrypto in `extensions`)", result.extensions.map((e) => `${e.name}: expected ${e.expected}, found ${e.found ?? "not installed"}`));

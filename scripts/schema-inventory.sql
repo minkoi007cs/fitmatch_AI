@@ -1,6 +1,7 @@
 -- ENV-CANON-01 — READ-ONLY schema inventory (BACKEND-024 preflight). Returns ONE json value.
 -- Run on the canonical project from the Supabase Dashboard SQL editor (or psql with a read-only role).
--- It reads system catalogs only: no user rows, no object names inside buckets, no secrets.
+-- It reads system catalogs only: no user rows, no object names inside buckets, no secrets. Policy
+-- expressions and column default expressions are schema text (needed to compare effective access).
 -- Row counts are planner estimates (pg_class.reltuples), bucket figures are aggregate counts/bytes.
 -- Save the result PRIVATELY (never GitHub/Drive public); compare with
 --   node scripts/compare-schema-inventory.mjs docs/infrastructure/schema-manifest.json <saved.json>
@@ -16,8 +17,9 @@ tables as (
 cols as (
   select t.schema, t.name, jsonb_agg(jsonb_build_object(
            'name', a.attname, 'type', format_type(a.atttypid, a.atttypmod), 'notNull', a.attnotnull,
-           'hasDefault', a.atthasdef) order by a.attnum) as columns
+           'hasDefault', a.atthasdef, 'default', pg_get_expr(d.adbin, d.adrelid)) order by a.attnum) as columns
   from tables t join pg_attribute a on a.attrelid = t.oid and a.attnum > 0 and not a.attisdropped
+  left join pg_attrdef d on d.adrelid = a.attrelid and d.adnum = a.attnum
   group by t.schema, t.name
 ),
 cons as (
@@ -35,7 +37,9 @@ funcs as (
            'returns', pg_get_function_result(p.oid), 'securityDefiner', p.prosecdef,
            'bodyMd5', md5(coalesce(p.prosrc, '')),
            'anonExecute', has_function_privilege('anon', p.oid, 'EXECUTE'),
-           'authenticatedExecute', has_function_privilege('authenticated', p.oid, 'EXECUTE'))
+           'authenticatedExecute', has_function_privilege('authenticated', p.oid, 'EXECUTE'),
+           'extension', (select e.extname from pg_depend dp join pg_extension e on e.oid = dp.refobjid
+                         where dp.classid = 'pg_proc'::regclass and dp.objid = p.oid and dp.deptype = 'e' limit 1))
          order by n.nspname, p.proname, pg_get_function_identity_arguments(p.oid)) as v
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and p.prokind = 'f'
@@ -43,7 +47,8 @@ funcs as (
 pols as (
   select jsonb_agg(jsonb_build_object('schema', schemaname, 'table', tablename, 'name', policyname,
            'cmd', cmd, 'roles', roles, 'permissive', permissive,
-           'usingMd5', md5(coalesce(qual, '')), 'checkMd5', md5(coalesce(with_check, '')))
+           'usingMd5', md5(coalesce(qual, '')), 'checkMd5', md5(coalesce(with_check, '')),
+           'using', qual, 'check', with_check)
          order by schemaname, tablename, policyname) as v
   from pg_policies where schemaname in ('public', 'storage')
 ),
@@ -55,13 +60,18 @@ trigs as (
 ),
 grants as (
   select jsonb_agg(jsonb_build_object('table', t.name, 'anon', has_table_privilege('anon', t.oid, 'SELECT'),
-           'authenticated', has_table_privilege('authenticated', t.oid, 'SELECT')) order by t.name) as v
+           'authenticated', has_table_privilege('authenticated', t.oid, 'SELECT'),
+           'privileges', (select jsonb_object_agg(r.role, (select coalesce(jsonb_agg(pr.priv order by pr.priv), '[]'::jsonb)
+                            from unnest(array['SELECT','INSERT','UPDATE','DELETE']) pr(priv)
+                            where has_table_privilege(r.role, t.oid, pr.priv)))
+                          from unnest(array['anon','authenticated']) r(role))) order by t.name) as v
   from tables t where t.schema = 'public'
 )
 select jsonb_build_object(
   'format', 'fitmatch.schema-inventory.v1',
   'serverVersion', current_setting('server_version'),
-  'extensions', (select jsonb_agg(jsonb_build_object('name', extname, 'version', extversion) order by extname) from pg_extension),
+  'extensions', (select jsonb_agg(jsonb_build_object('name', e.extname, 'version', e.extversion, 'schema', n.nspname) order by e.extname)
+                 from pg_extension e join pg_namespace n on n.oid = e.extnamespace),
   'tables', (select jsonb_agg(jsonb_build_object('schema', t.schema, 'name', t.name, 'rls', t.rls, 'rlsForced', t.rls_forced,
                  'estRows', t.est_rows, 'columns', cols.columns, 'constraints', coalesce(cons.constraints, '[]'::jsonb),
                  'indexes', coalesce(idx.indexes, '[]'::jsonb)) order by t.schema, t.name)

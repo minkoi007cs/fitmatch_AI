@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { readJson, requestError, saveOutfitSchema, outfitSchema } from "@/lib/validation";
+import { archiveStyleCategory, readJson, requestError, saveOutfitSchema, outfitSchema } from "@/lib/validation";
 import { ownsImagePath } from "@/lib/auth/session";
 import { authenticateRequest } from "@/lib/auth/request";
 
@@ -61,6 +61,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await readJson(request, saveOutfitSchema);
+    const styleCategory = archiveStyleCategory(body);
     if (body.data.some(outfit => outfit.imagePath && !ownsImagePath(outfit.imagePath, user.id))) return NextResponse.json({ success: false, error: "Invalid image owner" }, { status: 400 });
     if (body.sourceItemId) {
       const source = await supabase.from("fm_wardrobe_items").select("id").eq("id", body.sourceItemId).eq("user_id", user.id).maybeSingle();
@@ -72,6 +73,11 @@ export async function POST(request: Request) {
         user_id: user.id,
         source_item_id: body.sourceItemId ?? null,
         data_json: body.data,
+        // Legacy canonical schema: style_category NOT NULL (no default), is_saved default false. This route
+        // is the explicit "save to collection" action, so the row is saved. Fresh schemas gain both
+        // columns from migration 20261109093355_legacy_compat_auth_outfits.
+        style_category: styleCategory,
+        is_saved: true,
       })
       .select("*")
       .single();

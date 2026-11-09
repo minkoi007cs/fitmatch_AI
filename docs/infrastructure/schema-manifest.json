@@ -1,527 +1,298 @@
 {
  "format": "fitmatch.schema-manifest.v1",
- "note": "Expected shape from the reviewed SQL chain applied to a Supabase-like stub in disposable Docker PG16. Schema only, no data. Policy/constraint text is compared by md5/definition and may differ by server version: inspect before concluding.",
- "stub": "294819ce7bae44bd9e4eea04fd5357c9be54f6f6667582c4886e77eb89acbbef",
- "inventorySql": "7bf229c6d3bc00ed49181ef04a45135cb0a29a9c10ca32854f71f1c5de5c7072",
+ "note": "Expected shape from the reviewed SQL chain applied to a Supabase-like stub in disposable Docker PG17 (hosted major), pgcrypto in schema extensions. Schema only, no data. Policy/constraint text is compared by md5/definition and may differ by server version: inspect before concluding.",
+ "stub": "553138082ef5963e090a48cd8535833694a8a88852fbce0875e21026fe6e8b01",
+ "inventorySql": "658b785dc520403748ed3cd9326b77a11056825fe30a53cb3261469a3f3feadd",
  "steps": [
   {
    "file": "supabase/schema.sql",
    "sha256": "0bc065d36ab7e116f65da71f4b4ab2ca285775bcbd158126430662f774663118",
    "adds": {
     "table:public.fm_outfits": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_outfits.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": true
+     "default": "gen_random_uuid()"
     },
     "column:public.fm_outfits.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_outfits.source_item_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_outfits.data_json": {
      "type": "jsonb",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_outfits.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_outfits.fm_outfits_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_outfits"
     },
     "constraint:public.fm_outfits.fm_outfits_source_item_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (source_item_id) REFERENCES fm_wardrobe_items(id) ON DELETE SET NULL"
+     "def": "FOREIGN KEY (source_item_id) REFERENCES fm_wardrobe_items(id) ON DELETE SET NULL",
+     "table": "public.fm_outfits"
     },
     "constraint:public.fm_outfits.fm_outfits_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_outfits"
     },
     "index:public.fm_outfits.fm_outfits_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_outfits_pkey ON public.fm_outfits USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_outfits_pkey ON public.fm_outfits USING btree (id)",
+     "table": "public.fm_outfits"
     },
     "index:public.fm_outfits.fm_outfits_user_id_idx": {
-     "def": "CREATE INDEX fm_outfits_user_id_idx ON public.fm_outfits USING btree (user_id)"
+     "def": "CREATE INDEX fm_outfits_user_id_idx ON public.fm_outfits USING btree (user_id)",
+     "table": "public.fm_outfits"
     },
     "table:public.fm_uploaded_items": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_uploaded_items.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": true
+     "default": "gen_random_uuid()"
     },
     "column:public.fm_uploaded_items.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_uploaded_items.image_path": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_uploaded_items.detected_type": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_uploaded_items.detected_color": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_uploaded_items.detected_style": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_uploaded_items.detected_pattern": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_uploaded_items.metadata_json": {
      "type": "jsonb",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_uploaded_items.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_uploaded_items.fm_uploaded_items_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_uploaded_items"
     },
     "constraint:public.fm_uploaded_items.fm_uploaded_items_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_uploaded_items"
     },
     "index:public.fm_uploaded_items.fm_uploaded_items_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_uploaded_items_pkey ON public.fm_uploaded_items USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_uploaded_items_pkey ON public.fm_uploaded_items USING btree (id)",
+     "table": "public.fm_uploaded_items"
     },
     "index:public.fm_uploaded_items.fm_uploaded_items_user_id_idx": {
-     "def": "CREATE INDEX fm_uploaded_items_user_id_idx ON public.fm_uploaded_items USING btree (user_id)"
+     "def": "CREATE INDEX fm_uploaded_items_user_id_idx ON public.fm_uploaded_items USING btree (user_id)",
+     "table": "public.fm_uploaded_items"
     },
     "table:public.fm_users": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_users.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_users.email": {
      "type": "text",
      "notNull": true,
-     "hasDefault": true
+     "default": "''::text"
     },
     "column:public.fm_users.style_profile": {
      "type": "jsonb",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_users.quiz_answers": {
      "type": "jsonb",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_users.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "column:public.fm_users.updated_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_users.fm_users_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_users"
     },
     "constraint:public.fm_users.fm_users_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_users"
     },
     "index:public.fm_users.fm_users_email_idx": {
-     "def": "CREATE INDEX fm_users_email_idx ON public.fm_users USING btree (email)"
+     "def": "CREATE INDEX fm_users_email_idx ON public.fm_users USING btree (email)",
+     "table": "public.fm_users"
     },
     "index:public.fm_users.fm_users_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_users_pkey ON public.fm_users USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_users_pkey ON public.fm_users USING btree (id)",
+     "table": "public.fm_users"
     },
     "table:public.fm_wardrobe_items": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_wardrobe_items.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": true
+     "default": "gen_random_uuid()"
     },
     "column:public.fm_wardrobe_items.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.name": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.category": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.color": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.secondary_color": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.style": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.pattern": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.material": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.description": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.notes": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.image_path": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.image_url": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_wardrobe_items.is_favorite": {
      "type": "boolean",
      "notNull": true,
-     "hasDefault": true
+     "default": "false"
     },
     "column:public.fm_wardrobe_items.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "column:public.fm_wardrobe_items.updated_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_wardrobe_items.fm_wardrobe_items_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_wardrobe_items"
     },
     "constraint:public.fm_wardrobe_items.fm_wardrobe_items_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_wardrobe_items"
     },
     "index:public.fm_wardrobe_items.fm_wardrobe_items_category_idx": {
-     "def": "CREATE INDEX fm_wardrobe_items_category_idx ON public.fm_wardrobe_items USING btree (category)"
+     "def": "CREATE INDEX fm_wardrobe_items_category_idx ON public.fm_wardrobe_items USING btree (category)",
+     "table": "public.fm_wardrobe_items"
     },
     "index:public.fm_wardrobe_items.fm_wardrobe_items_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_wardrobe_items_pkey ON public.fm_wardrobe_items USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_wardrobe_items_pkey ON public.fm_wardrobe_items USING btree (id)",
+     "table": "public.fm_wardrobe_items"
     },
     "index:public.fm_wardrobe_items.fm_wardrobe_items_style_idx": {
-     "def": "CREATE INDEX fm_wardrobe_items_style_idx ON public.fm_wardrobe_items USING btree (style)"
+     "def": "CREATE INDEX fm_wardrobe_items_style_idx ON public.fm_wardrobe_items USING btree (style)",
+     "table": "public.fm_wardrobe_items"
     },
     "index:public.fm_wardrobe_items.fm_wardrobe_items_user_id_idx": {
-     "def": "CREATE INDEX fm_wardrobe_items_user_id_idx ON public.fm_wardrobe_items USING btree (user_id)"
-    },
-    "function:public.armor(bytea)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "a45f37224c831b79e0dfc3d8c6feb4e0",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.armor(bytea, text[], text[])": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "a45f37224c831b79e0dfc3d8c6feb4e0",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.crypt(text, text)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "ea9cb21d4668638c79f471dc607df1b4",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.dearmor(text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "698d71f03c675ff58762990312109ea6",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.decrypt(bytea, bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "fa3fd67f1c168f498eab6165f27bdb1b",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.decrypt_iv(bytea, bytea, bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "00048a7838901c86900226f25d8fd1ef",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.digest(bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "926ba3fbdb45dc078b3e3cafddc392cc",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.digest(text, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "926ba3fbdb45dc078b3e3cafddc392cc",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.encrypt(bytea, bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "a865200e3e17395d9b3774d4e7a19832",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.encrypt_iv(bytea, bytea, bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "17a521e43efce20dd4703e9d243d4f4d",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.gen_random_bytes(integer)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "393a992bef3cadec88b224bd3dace51c",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.gen_random_uuid()": {
-     "returns": "uuid",
-     "securityDefiner": false,
-     "bodyMd5": "b2825f0b165931d2f718b16cd4dc7cb1",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.gen_salt(text)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "83471500bcebc23b61302a74e64e0613",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.gen_salt(text, integer)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "1ceb3513947cb5b72265001042040f51",
-     "anonExecute": true,
-     "authenticatedExecute": true
+     "def": "CREATE INDEX fm_wardrobe_items_user_id_idx ON public.fm_wardrobe_items USING btree (user_id)",
+     "table": "public.fm_wardrobe_items"
     },
     "function:public.handle_new_user()": {
      "returns": "trigger",
      "securityDefiner": true,
      "bodyMd5": "16d75989f7a9155c2b3fe7ce243872f0",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.hmac(bytea, bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "439ec46f1dc8e4c4b39837540788374e",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.hmac(text, text, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "439ec46f1dc8e4c4b39837540788374e",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_armor_headers(text, OUT key text, OUT value text)": {
-     "returns": "SETOF record",
-     "securityDefiner": false,
-     "bodyMd5": "3954d7fda83ff251e09f7301df4decfe",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_key_id(bytea)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "4b72a26a9f6422f60ea2f6d4f053e2be",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_decrypt(bytea, bytea)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "dd08bd1c245bc68b737103263d12bf24",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_decrypt(bytea, bytea, text)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "dd08bd1c245bc68b737103263d12bf24",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_decrypt(bytea, bytea, text, text)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "dd08bd1c245bc68b737103263d12bf24",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_decrypt_bytea(bytea, bytea)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "7e9d4fce9c6b6c044e314c928d957e9d",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_decrypt_bytea(bytea, bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "7e9d4fce9c6b6c044e314c928d957e9d",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_decrypt_bytea(bytea, bytea, text, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "7e9d4fce9c6b6c044e314c928d957e9d",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_encrypt(text, bytea)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "7472cedacad809d059f35b3823e16d62",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_encrypt(text, bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "7472cedacad809d059f35b3823e16d62",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_encrypt_bytea(bytea, bytea)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "fb27931d690d0cbd38dfc1d2269d8167",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_pub_encrypt_bytea(bytea, bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "fb27931d690d0cbd38dfc1d2269d8167",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_sym_decrypt(bytea, text)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "00337fc8a344a450412a6e8501b90406",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_sym_decrypt(bytea, text, text)": {
-     "returns": "text",
-     "securityDefiner": false,
-     "bodyMd5": "00337fc8a344a450412a6e8501b90406",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_sym_decrypt_bytea(bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "ae33cd2d0dea9f8d3899631bdfcc3bcc",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_sym_decrypt_bytea(bytea, text, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "ae33cd2d0dea9f8d3899631bdfcc3bcc",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_sym_encrypt(text, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "a911e6ce3232c550abbafb7ba5c13d70",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_sym_encrypt(text, text, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "a911e6ce3232c550abbafb7ba5c13d70",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_sym_encrypt_bytea(bytea, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "f5f1ad766d41dae19429bb6d8a8bc093",
-     "anonExecute": true,
-     "authenticatedExecute": true
-    },
-    "function:public.pgp_sym_encrypt_bytea(bytea, text, text)": {
-     "returns": "bytea",
-     "securityDefiner": false,
-     "bodyMd5": "f5f1ad766d41dae19429bb6d8a8bc093",
      "anonExecute": true,
      "authenticatedExecute": true
     },
@@ -533,141 +304,264 @@
      "authenticatedExecute": true
     },
     "policy:public.fm_outfits.fm_outfits_delete_own": {
+     "table": "public.fm_outfits",
      "cmd": "DELETE",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(auth.uid() = user_id)",
+     "check": null,
      "usingMd5": "19300d155780585259ede73ac370586c",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_outfits.fm_outfits_insert_own": {
+     "table": "public.fm_outfits",
      "cmd": "INSERT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": null,
+     "check": "(auth.uid() = user_id)",
      "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
      "checkMd5": "19300d155780585259ede73ac370586c"
     },
     "policy:public.fm_outfits.fm_outfits_select_own": {
+     "table": "public.fm_outfits",
      "cmd": "SELECT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(auth.uid() = user_id)",
+     "check": null,
      "usingMd5": "19300d155780585259ede73ac370586c",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_uploaded_items.fm_uploaded_insert_own": {
+     "table": "public.fm_uploaded_items",
      "cmd": "INSERT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": null,
+     "check": "(auth.uid() = user_id)",
      "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
      "checkMd5": "19300d155780585259ede73ac370586c"
     },
     "policy:public.fm_uploaded_items.fm_uploaded_select_own": {
+     "table": "public.fm_uploaded_items",
      "cmd": "SELECT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(auth.uid() = user_id)",
+     "check": null,
      "usingMd5": "19300d155780585259ede73ac370586c",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_users.fm_users_insert_own": {
+     "table": "public.fm_users",
      "cmd": "INSERT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": null,
+     "check": "(auth.uid() = id)",
      "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
      "checkMd5": "bc9c729a84690340789a4e4f01175335"
     },
     "policy:public.fm_users.fm_users_select_own": {
+     "table": "public.fm_users",
      "cmd": "SELECT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(auth.uid() = id)",
+     "check": null,
      "usingMd5": "bc9c729a84690340789a4e4f01175335",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_users.fm_users_update_own": {
+     "table": "public.fm_users",
      "cmd": "UPDATE",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(auth.uid() = id)",
+     "check": "(auth.uid() = id)",
      "usingMd5": "bc9c729a84690340789a4e4f01175335",
      "checkMd5": "bc9c729a84690340789a4e4f01175335"
     },
     "policy:public.fm_wardrobe_items.fm_wardrobe_delete_own": {
+     "table": "public.fm_wardrobe_items",
      "cmd": "DELETE",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(auth.uid() = user_id)",
+     "check": null,
      "usingMd5": "19300d155780585259ede73ac370586c",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_wardrobe_items.fm_wardrobe_insert_own": {
+     "table": "public.fm_wardrobe_items",
      "cmd": "INSERT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": null,
+     "check": "(auth.uid() = user_id)",
      "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
      "checkMd5": "19300d155780585259ede73ac370586c"
     },
     "policy:public.fm_wardrobe_items.fm_wardrobe_select_own": {
+     "table": "public.fm_wardrobe_items",
      "cmd": "SELECT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(auth.uid() = user_id)",
+     "check": null,
      "usingMd5": "19300d155780585259ede73ac370586c",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_wardrobe_items.fm_wardrobe_update_own": {
+     "table": "public.fm_wardrobe_items",
      "cmd": "UPDATE",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(auth.uid() = user_id)",
+     "check": "(auth.uid() = user_id)",
      "usingMd5": "19300d155780585259ede73ac370586c",
      "checkMd5": "19300d155780585259ede73ac370586c"
     },
     "policy:storage.objects.storage_delete_own": {
+     "table": "storage.objects",
      "cmd": "DELETE",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+     "check": null,
      "usingMd5": "56e6f236613c47a110bae36632f12e3e",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:storage.objects.storage_insert_own": {
+     "table": "storage.objects",
      "cmd": "INSERT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": null,
+     "check": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
      "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
      "checkMd5": "56e6f236613c47a110bae36632f12e3e"
     },
     "policy:storage.objects.storage_select_own": {
+     "table": "storage.objects",
      "cmd": "SELECT",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+     "check": null,
      "usingMd5": "56e6f236613c47a110bae36632f12e3e",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:storage.objects.storage_update_own": {
+     "table": "storage.objects",
      "cmd": "UPDATE",
      "roles": [
       "public"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+     "check": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
      "usingMd5": "56e6f236613c47a110bae36632f12e3e",
      "checkMd5": "56e6f236613c47a110bae36632f12e3e"
     },
     "trigger:auth.users.on_auth_user_created": {
-     "def": "CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()"
+     "def": "CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()",
+     "table": "auth.users"
     },
     "trigger:public.fm_users.set_fm_users_updated_at": {
-     "def": "CREATE TRIGGER set_fm_users_updated_at BEFORE UPDATE ON public.fm_users FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+     "def": "CREATE TRIGGER set_fm_users_updated_at BEFORE UPDATE ON public.fm_users FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+     "table": "public.fm_users"
     },
     "trigger:public.fm_wardrobe_items.set_fm_wardrobe_items_updated_at": {
-     "def": "CREATE TRIGGER set_fm_wardrobe_items_updated_at BEFORE UPDATE ON public.fm_wardrobe_items FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+     "def": "CREATE TRIGGER set_fm_wardrobe_items_updated_at BEFORE UPDATE ON public.fm_wardrobe_items FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+     "table": "public.fm_wardrobe_items"
+    },
+    "grant:public.fm_outfits": {
+     "anon": [
+      "DELETE",
+      "INSERT",
+      "SELECT",
+      "UPDATE"
+     ],
+     "authenticated": [
+      "DELETE",
+      "INSERT",
+      "SELECT",
+      "UPDATE"
+     ]
+    },
+    "grant:public.fm_uploaded_items": {
+     "anon": [
+      "DELETE",
+      "INSERT",
+      "SELECT",
+      "UPDATE"
+     ],
+     "authenticated": [
+      "DELETE",
+      "INSERT",
+      "SELECT",
+      "UPDATE"
+     ]
+    },
+    "grant:public.fm_users": {
+     "anon": [
+      "DELETE",
+      "INSERT",
+      "SELECT",
+      "UPDATE"
+     ],
+     "authenticated": [
+      "DELETE",
+      "INSERT",
+      "SELECT",
+      "UPDATE"
+     ]
+    },
+    "grant:public.fm_wardrobe_items": {
+     "anon": [
+      "DELETE",
+      "INSERT",
+      "SELECT",
+      "UPDATE"
+     ],
+     "authenticated": [
+      "DELETE",
+      "INSERT",
+      "SELECT",
+      "UPDATE"
+     ]
     },
     "bucket:fitmatch-wardrobe": {
      "public": false,
@@ -683,84 +577,94 @@
    "sha256": "6779f230da489dc034c1afad7399bafd2f15ac336d50fcb48ed5475d82063734",
    "adds": {
     "table:public.fm_auth_identities": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_auth_identities.issuer": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_auth_identities.app_id": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_auth_identities.subject": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_auth_identities.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_auth_identities.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_auth_identities.fm_auth_identities_issuer_app_id_user_id_key": {
      "type": "u",
-     "def": "UNIQUE (issuer, app_id, user_id)"
+     "def": "UNIQUE (issuer, app_id, user_id)",
+     "table": "public.fm_auth_identities"
     },
     "constraint:public.fm_auth_identities.fm_auth_identities_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (issuer, app_id, subject)"
+     "def": "PRIMARY KEY (issuer, app_id, subject)",
+     "table": "public.fm_auth_identities"
     },
     "constraint:public.fm_auth_identities.fm_auth_identities_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_auth_identities"
     },
     "index:public.fm_auth_identities.fm_auth_identities_issuer_app_id_user_id_key": {
-     "def": "CREATE UNIQUE INDEX fm_auth_identities_issuer_app_id_user_id_key ON public.fm_auth_identities USING btree (issuer, app_id, user_id)"
+     "def": "CREATE UNIQUE INDEX fm_auth_identities_issuer_app_id_user_id_key ON public.fm_auth_identities USING btree (issuer, app_id, user_id)",
+     "table": "public.fm_auth_identities"
     },
     "index:public.fm_auth_identities.fm_auth_identities_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_auth_identities_pkey ON public.fm_auth_identities USING btree (issuer, app_id, subject)"
+     "def": "CREATE UNIQUE INDEX fm_auth_identities_pkey ON public.fm_auth_identities USING btree (issuer, app_id, subject)",
+     "table": "public.fm_auth_identities"
     },
     "table:public.fm_auth_refreshes": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_auth_refreshes.refresh_hash": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_auth_refreshes.owner_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_auth_refreshes.sealed_result": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_auth_refreshes.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_auth_refreshes.fm_auth_refreshes_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (refresh_hash)"
+     "def": "PRIMARY KEY (refresh_hash)",
+     "table": "public.fm_auth_refreshes"
     },
     "constraint:public.fm_auth_refreshes.fm_auth_refreshes_refresh_hash_check": {
      "type": "c",
-     "def": "CHECK ((refresh_hash ~ '^[0-9a-f]{64}$'::text))"
+     "def": "CHECK ((refresh_hash ~ '^[0-9a-f]{64}$'::text))",
+     "table": "public.fm_auth_refreshes"
     },
     "index:public.fm_auth_refreshes.fm_auth_refreshes_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_auth_refreshes_pkey ON public.fm_auth_refreshes USING btree (refresh_hash)"
+     "def": "CREATE UNIQUE INDEX fm_auth_refreshes_pkey ON public.fm_auth_refreshes USING btree (refresh_hash)",
+     "table": "public.fm_auth_refreshes"
     },
     "function:public.fm_begin_auth_refresh(p_hash text, p_owner uuid)": {
      "returns": "TABLE(is_owner boolean, sealed_result text)",
@@ -775,6 +679,14 @@
      "bodyMd5": "653930b90c73519794c04b7fc8675dac",
      "anonExecute": false,
      "authenticatedExecute": false
+    },
+    "grant:public.fm_auth_identities": {
+     "anon": [],
+     "authenticated": []
+    },
+    "grant:public.fm_auth_refreshes": {
+     "anon": [],
+     "authenticated": []
     }
    },
    "changes": {},
@@ -785,37 +697,42 @@
    "sha256": "72c898950bab0a8740547f03dbe052871999b40f2373a534a701b38bdb59e434",
    "adds": {
     "table:public.fm_ai_daily_usage": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_ai_daily_usage.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_ai_daily_usage.usage_day": {
      "type": "date",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_ai_daily_usage.units": {
      "type": "integer",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_ai_daily_usage.fm_ai_daily_usage_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (user_id, usage_day)"
+     "def": "PRIMARY KEY (user_id, usage_day)",
+     "table": "public.fm_ai_daily_usage"
     },
     "constraint:public.fm_ai_daily_usage.fm_ai_daily_usage_units_check": {
      "type": "c",
-     "def": "CHECK ((units >= 0))"
+     "def": "CHECK ((units >= 0))",
+     "table": "public.fm_ai_daily_usage"
     },
     "constraint:public.fm_ai_daily_usage.fm_ai_daily_usage_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_ai_daily_usage"
     },
     "index:public.fm_ai_daily_usage.fm_ai_daily_usage_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_ai_daily_usage_pkey ON public.fm_ai_daily_usage USING btree (user_id, usage_day)"
+     "def": "CREATE UNIQUE INDEX fm_ai_daily_usage_pkey ON public.fm_ai_daily_usage USING btree (user_id, usage_day)",
+     "table": "public.fm_ai_daily_usage"
     },
     "function:public.fm_consume_ai_units(p_user_id uuid, p_units integer, p_limit integer)": {
      "returns": "boolean",
@@ -823,6 +740,10 @@
      "bodyMd5": "770850895f5a23565e22cf269a9f5724",
      "anonExecute": false,
      "authenticatedExecute": false
+    },
+    "grant:public.fm_ai_daily_usage": {
+     "anon": [],
+     "authenticated": []
     }
    },
    "changes": {},
@@ -833,592 +754,662 @@
    "sha256": "149fbcbf3d729870f0abd961cf9989594af4c298623c54fff4ec1ec6b5a07a8d",
    "adds": {
     "table:public.fm_v2_assets": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_assets.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.kind": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.state": {
      "type": "text",
      "notNull": true,
-     "hasDefault": true
+     "default": "'pending'::text"
     },
     "column:public.fm_v2_assets.path": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.source_path": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.expected_bytes": {
      "type": "bigint",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.bytes": {
      "type": "bigint",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.sha256": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.job_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_assets.fm_v2_asset_job": {
      "type": "f",
-     "def": "FOREIGN KEY (job_id) REFERENCES fm_v2_jobs(id)"
+     "def": "FOREIGN KEY (job_id) REFERENCES fm_v2_jobs(id)",
+     "table": "public.fm_v2_assets"
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_expected_bytes_check": {
      "type": "c",
-     "def": "CHECK (((expected_bytes >= 1) AND (expected_bytes <= 41943040)))"
+     "def": "CHECK (((expected_bytes >= 1) AND (expected_bytes <= 41943040)))",
+     "table": "public.fm_v2_assets"
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_kind_check": {
      "type": "c",
-     "def": "CHECK ((kind = ANY (ARRAY['photo'::text, 'glb'::text])))"
+     "def": "CHECK ((kind = ANY (ARRAY['photo'::text, 'glb'::text])))",
+     "table": "public.fm_v2_assets"
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_path_key": {
      "type": "u",
-     "def": "UNIQUE (path)"
+     "def": "UNIQUE (path)",
+     "table": "public.fm_v2_assets"
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_v2_assets"
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_source_path_key": {
      "type": "u",
-     "def": "UNIQUE (source_path)"
+     "def": "UNIQUE (source_path)",
+     "table": "public.fm_v2_assets"
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_state_check": {
      "type": "c",
-     "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'ready'::text])))"
+     "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'ready'::text])))",
+     "table": "public.fm_v2_assets"
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_assets"
     },
     "index:public.fm_v2_assets.fm_v2_assets_owner": {
-     "def": "CREATE INDEX fm_v2_assets_owner ON public.fm_v2_assets USING btree (user_id, created_at DESC)"
+     "def": "CREATE INDEX fm_v2_assets_owner ON public.fm_v2_assets USING btree (user_id, created_at DESC)",
+     "table": "public.fm_v2_assets"
     },
     "index:public.fm_v2_assets.fm_v2_assets_path_key": {
-     "def": "CREATE UNIQUE INDEX fm_v2_assets_path_key ON public.fm_v2_assets USING btree (path)"
+     "def": "CREATE UNIQUE INDEX fm_v2_assets_path_key ON public.fm_v2_assets USING btree (path)",
+     "table": "public.fm_v2_assets"
     },
     "index:public.fm_v2_assets.fm_v2_assets_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_assets_pkey ON public.fm_v2_assets USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_assets_pkey ON public.fm_v2_assets USING btree (id)",
+     "table": "public.fm_v2_assets"
     },
     "index:public.fm_v2_assets.fm_v2_assets_source_path_key": {
-     "def": "CREATE UNIQUE INDEX fm_v2_assets_source_path_key ON public.fm_v2_assets USING btree (source_path)"
+     "def": "CREATE UNIQUE INDEX fm_v2_assets_source_path_key ON public.fm_v2_assets USING btree (source_path)",
+     "table": "public.fm_v2_assets"
     },
     "table:public.fm_v2_feedback": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_feedback.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_feedback.item_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_feedback.recommendation_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_feedback.value": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_feedback.updated_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_feedback.fm_v2_feedback_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (user_id, item_id)"
+     "def": "PRIMARY KEY (user_id, item_id)",
+     "table": "public.fm_v2_feedback"
     },
     "constraint:public.fm_v2_feedback.fm_v2_feedback_recommendation_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (recommendation_id) REFERENCES fm_v2_recommendations(id)"
+     "def": "FOREIGN KEY (recommendation_id) REFERENCES fm_v2_recommendations(id)",
+     "table": "public.fm_v2_feedback"
     },
     "constraint:public.fm_v2_feedback.fm_v2_feedback_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_feedback"
     },
     "constraint:public.fm_v2_feedback.fm_v2_feedback_value_check": {
      "type": "c",
-     "def": "CHECK ((value = ANY (ARRAY['like'::text, 'skip'::text])))"
+     "def": "CHECK ((value = ANY (ARRAY['like'::text, 'skip'::text])))",
+     "table": "public.fm_v2_feedback"
     },
     "index:public.fm_v2_feedback.fm_v2_feedback_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_feedback_pkey ON public.fm_v2_feedback USING btree (user_id, item_id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_feedback_pkey ON public.fm_v2_feedback USING btree (user_id, item_id)",
+     "table": "public.fm_v2_feedback"
     },
     "table:public.fm_v2_jobs": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_jobs.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.model_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.kind": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.state": {
      "type": "text",
      "notNull": true,
-     "hasDefault": true
+     "default": "'queued'::text"
     },
     "column:public.fm_v2_jobs.idempotency_key": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.payload_hash": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.worker_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.lease_token": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.lease_until": {
      "type": "timestamp with time zone",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.attempt": {
      "type": "integer",
      "notNull": true,
-     "hasDefault": true
+     "default": "0"
     },
     "column:public.fm_v2_jobs.error_code": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.stage": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.engine": {
      "type": "jsonb",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "column:public.fm_v2_jobs.updated_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_model_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (model_id) REFERENCES fm_v2_models(id)"
+     "def": "FOREIGN KEY (model_id) REFERENCES fm_v2_models(id)",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_model_id_key": {
      "type": "u",
-     "def": "UNIQUE (model_id)"
+     "def": "UNIQUE (model_id)",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_state_check": {
      "type": "c",
-     "def": "CHECK ((state = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'canceled'::text])))"
+     "def": "CHECK ((state = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'canceled'::text])))",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_user_id_idempotency_key_key": {
      "type": "u",
-     "def": "UNIQUE (user_id, idempotency_key)"
+     "def": "UNIQUE (user_id, idempotency_key)",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_worker_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (worker_id) REFERENCES fm_v2_workers(id)"
+     "def": "FOREIGN KEY (worker_id) REFERENCES fm_v2_workers(id)",
+     "table": "public.fm_v2_jobs"
     },
     "index:public.fm_v2_jobs.fm_v2_jobs_lease": {
-     "def": "CREATE INDEX fm_v2_jobs_lease ON public.fm_v2_jobs USING btree (lease_until) WHERE (state = 'running'::text)"
+     "def": "CREATE INDEX fm_v2_jobs_lease ON public.fm_v2_jobs USING btree (lease_until) WHERE (state = 'running'::text)",
+     "table": "public.fm_v2_jobs"
     },
     "index:public.fm_v2_jobs.fm_v2_jobs_model_id_key": {
-     "def": "CREATE UNIQUE INDEX fm_v2_jobs_model_id_key ON public.fm_v2_jobs USING btree (model_id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_jobs_model_id_key ON public.fm_v2_jobs USING btree (model_id)",
+     "table": "public.fm_v2_jobs"
     },
     "index:public.fm_v2_jobs.fm_v2_jobs_owner": {
-     "def": "CREATE INDEX fm_v2_jobs_owner ON public.fm_v2_jobs USING btree (user_id, created_at DESC)"
+     "def": "CREATE INDEX fm_v2_jobs_owner ON public.fm_v2_jobs USING btree (user_id, created_at DESC)",
+     "table": "public.fm_v2_jobs"
     },
     "index:public.fm_v2_jobs.fm_v2_jobs_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_jobs_pkey ON public.fm_v2_jobs USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_jobs_pkey ON public.fm_v2_jobs USING btree (id)",
+     "table": "public.fm_v2_jobs"
     },
     "index:public.fm_v2_jobs.fm_v2_jobs_queue": {
-     "def": "CREATE INDEX fm_v2_jobs_queue ON public.fm_v2_jobs USING btree (user_id, created_at, id) WHERE (state = 'queued'::text)"
+     "def": "CREATE INDEX fm_v2_jobs_queue ON public.fm_v2_jobs USING btree (user_id, created_at, id) WHERE (state = 'queued'::text)",
+     "table": "public.fm_v2_jobs"
     },
     "index:public.fm_v2_jobs.fm_v2_jobs_user_id_idempotency_key_key": {
-     "def": "CREATE UNIQUE INDEX fm_v2_jobs_user_id_idempotency_key_key ON public.fm_v2_jobs USING btree (user_id, idempotency_key)"
+     "def": "CREATE UNIQUE INDEX fm_v2_jobs_user_id_idempotency_key_key ON public.fm_v2_jobs USING btree (user_id, idempotency_key)",
+     "table": "public.fm_v2_jobs"
     },
     "table:public.fm_v2_looks": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_looks.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_looks.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_looks.name": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_looks.avatar_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_looks.fitting_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_looks.recommendation_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_looks.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_looks.fm_v2_looks_avatar_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (avatar_id) REFERENCES fm_v2_models(id)"
+     "def": "FOREIGN KEY (avatar_id) REFERENCES fm_v2_models(id)",
+     "table": "public.fm_v2_looks"
     },
     "constraint:public.fm_v2_looks.fm_v2_looks_fitting_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (fitting_id) REFERENCES fm_v2_models(id)"
+     "def": "FOREIGN KEY (fitting_id) REFERENCES fm_v2_models(id)",
+     "table": "public.fm_v2_looks"
     },
     "constraint:public.fm_v2_looks.fm_v2_looks_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_v2_looks"
     },
     "constraint:public.fm_v2_looks.fm_v2_looks_recommendation_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (recommendation_id) REFERENCES fm_v2_recommendations(id)"
+     "def": "FOREIGN KEY (recommendation_id) REFERENCES fm_v2_recommendations(id)",
+     "table": "public.fm_v2_looks"
     },
     "constraint:public.fm_v2_looks.fm_v2_looks_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_looks"
     },
     "index:public.fm_v2_looks.fm_v2_looks_owner": {
-     "def": "CREATE INDEX fm_v2_looks_owner ON public.fm_v2_looks USING btree (user_id, created_at DESC)"
+     "def": "CREATE INDEX fm_v2_looks_owner ON public.fm_v2_looks USING btree (user_id, created_at DESC)",
+     "table": "public.fm_v2_looks"
     },
     "index:public.fm_v2_looks.fm_v2_looks_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_looks_pkey ON public.fm_v2_looks USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_looks_pkey ON public.fm_v2_looks USING btree (id)",
+     "table": "public.fm_v2_looks"
     },
     "table:public.fm_v2_models": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_models.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.kind": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.name": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.wardrobe_item_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.avatar_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.garment_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.input_assets": {
      "type": "uuid[]",
      "notNull": true,
-     "hasDefault": true
+     "default": "'{}'::uuid[]"
     },
     "column:public.fm_v2_models.params": {
      "type": "jsonb",
      "notNull": true,
-     "hasDefault": true
+     "default": "'{}'::jsonb"
     },
     "column:public.fm_v2_models.output_asset_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_models.fm_v2_models_avatar_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (avatar_id) REFERENCES fm_v2_models(id)"
+     "def": "FOREIGN KEY (avatar_id) REFERENCES fm_v2_models(id)",
+     "table": "public.fm_v2_models"
     },
     "constraint:public.fm_v2_models.fm_v2_models_garment_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (garment_id) REFERENCES fm_v2_models(id)"
+     "def": "FOREIGN KEY (garment_id) REFERENCES fm_v2_models(id)",
+     "table": "public.fm_v2_models"
     },
     "constraint:public.fm_v2_models.fm_v2_models_kind_check": {
      "type": "c",
-     "def": "CHECK ((kind = ANY (ARRAY['avatar'::text, 'garment'::text, 'fitting'::text])))"
+     "def": "CHECK ((kind = ANY (ARRAY['avatar'::text, 'garment'::text, 'fitting'::text])))",
+     "table": "public.fm_v2_models"
     },
     "constraint:public.fm_v2_models.fm_v2_models_output_asset_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (output_asset_id) REFERENCES fm_v2_assets(id)"
+     "def": "FOREIGN KEY (output_asset_id) REFERENCES fm_v2_assets(id)",
+     "table": "public.fm_v2_models"
     },
     "constraint:public.fm_v2_models.fm_v2_models_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_v2_models"
     },
     "constraint:public.fm_v2_models.fm_v2_models_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_models"
     },
     "index:public.fm_v2_models.fm_v2_fitting_cache": {
-     "def": "CREATE UNIQUE INDEX fm_v2_fitting_cache ON public.fm_v2_models USING btree (user_id, avatar_id, garment_id) WHERE (kind = 'fitting'::text)"
+     "def": "CREATE UNIQUE INDEX fm_v2_fitting_cache ON public.fm_v2_models USING btree (user_id, avatar_id, garment_id) WHERE (kind = 'fitting'::text)",
+     "table": "public.fm_v2_models"
     },
     "index:public.fm_v2_models.fm_v2_models_owner": {
-     "def": "CREATE INDEX fm_v2_models_owner ON public.fm_v2_models USING btree (user_id, created_at DESC)"
+     "def": "CREATE INDEX fm_v2_models_owner ON public.fm_v2_models USING btree (user_id, created_at DESC)",
+     "table": "public.fm_v2_models"
     },
     "index:public.fm_v2_models.fm_v2_models_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_models_pkey ON public.fm_v2_models USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_models_pkey ON public.fm_v2_models USING btree (id)",
+     "table": "public.fm_v2_models"
     },
     "index:public.fm_v2_models.fm_v2_models_wardrobe": {
-     "def": "CREATE INDEX fm_v2_models_wardrobe ON public.fm_v2_models USING btree (user_id, wardrobe_item_id)"
+     "def": "CREATE INDEX fm_v2_models_wardrobe ON public.fm_v2_models USING btree (user_id, wardrobe_item_id)",
+     "table": "public.fm_v2_models"
     },
     "table:public.fm_v2_profiles": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_profiles.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_profiles.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_profiles.answers": {
      "type": "jsonb",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_profiles.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_profiles.fm_v2_profiles_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_v2_profiles"
     },
     "constraint:public.fm_v2_profiles.fm_v2_profiles_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_profiles"
     },
     "index:public.fm_v2_profiles.fm_v2_profiles_owner": {
-     "def": "CREATE INDEX fm_v2_profiles_owner ON public.fm_v2_profiles USING btree (user_id, created_at DESC, id DESC)"
+     "def": "CREATE INDEX fm_v2_profiles_owner ON public.fm_v2_profiles USING btree (user_id, created_at DESC, id DESC)",
+     "table": "public.fm_v2_profiles"
     },
     "index:public.fm_v2_profiles.fm_v2_profiles_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_profiles_pkey ON public.fm_v2_profiles USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_profiles_pkey ON public.fm_v2_profiles USING btree (id)",
+     "table": "public.fm_v2_profiles"
     },
     "table:public.fm_v2_recommendations": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_recommendations.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_recommendations.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_recommendations.profile_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_recommendations.snapshot_hash": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_recommendations.data": {
      "type": "jsonb",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_recommendations.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_recommendations.fm_v2_recommendations_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_v2_recommendations"
     },
     "constraint:public.fm_v2_recommendations.fm_v2_recommendations_profile_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (profile_id) REFERENCES fm_v2_profiles(id)"
+     "def": "FOREIGN KEY (profile_id) REFERENCES fm_v2_profiles(id)",
+     "table": "public.fm_v2_recommendations"
     },
     "constraint:public.fm_v2_recommendations.fm_v2_recommendations_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_recommendations"
     },
     "index:public.fm_v2_recommendations.fm_v2_recommendations_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_recommendations_pkey ON public.fm_v2_recommendations USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_recommendations_pkey ON public.fm_v2_recommendations USING btree (id)",
+     "table": "public.fm_v2_recommendations"
     },
     "index:public.fm_v2_recommendations.fm_v2_recs_owner": {
-     "def": "CREATE INDEX fm_v2_recs_owner ON public.fm_v2_recommendations USING btree (user_id, created_at DESC)"
+     "def": "CREATE INDEX fm_v2_recs_owner ON public.fm_v2_recommendations USING btree (user_id, created_at DESC)",
+     "table": "public.fm_v2_recommendations"
     },
     "table:public.fm_v2_workers": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_workers.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_workers.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_workers.token_hash": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_workers.name": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_workers.capabilities": {
      "type": "jsonb",
      "notNull": true,
-     "hasDefault": true
+     "default": "'{}'::jsonb"
     },
     "column:public.fm_v2_workers.enabled": {
      "type": "boolean",
      "notNull": true,
-     "hasDefault": true
+     "default": "true"
     },
     "column:public.fm_v2_workers.last_seen": {
      "type": "timestamp with time zone",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_workers.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_workers.fm_v2_workers_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_v2_workers"
     },
     "constraint:public.fm_v2_workers.fm_v2_workers_token_hash_key": {
      "type": "u",
-     "def": "UNIQUE (token_hash)"
+     "def": "UNIQUE (token_hash)",
+     "table": "public.fm_v2_workers"
     },
     "constraint:public.fm_v2_workers.fm_v2_workers_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_workers"
     },
     "index:public.fm_v2_workers.fm_v2_workers_owner": {
-     "def": "CREATE INDEX fm_v2_workers_owner ON public.fm_v2_workers USING btree (user_id)"
+     "def": "CREATE INDEX fm_v2_workers_owner ON public.fm_v2_workers USING btree (user_id)",
+     "table": "public.fm_v2_workers"
     },
     "index:public.fm_v2_workers.fm_v2_workers_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_workers_pkey ON public.fm_v2_workers USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_workers_pkey ON public.fm_v2_workers USING btree (id)",
+     "table": "public.fm_v2_workers"
     },
     "index:public.fm_v2_workers.fm_v2_workers_token_hash_key": {
-     "def": "CREATE UNIQUE INDEX fm_v2_workers_token_hash_key ON public.fm_v2_workers USING btree (token_hash)"
+     "def": "CREATE UNIQUE INDEX fm_v2_workers_token_hash_key ON public.fm_v2_workers USING btree (token_hash)",
+     "table": "public.fm_v2_workers"
     },
     "function:public.fm_v2_asset_intent(p_user uuid, p_id uuid, p_kind text, p_bytes bigint, p_source text, p_path text, p_job uuid)": {
      "returns": "boolean",
@@ -1456,52 +1447,120 @@
      "authenticatedExecute": false
     },
     "policy:public.fm_v2_assets.owner_read": {
+     "table": "public.fm_v2_assets",
      "cmd": "SELECT",
      "roles": [
       "authenticated"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(( SELECT auth.uid() AS uid) = user_id)",
+     "check": null,
      "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_v2_feedback.owner_read": {
+     "table": "public.fm_v2_feedback",
      "cmd": "SELECT",
      "roles": [
       "authenticated"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(( SELECT auth.uid() AS uid) = user_id)",
+     "check": null,
      "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_v2_looks.owner_read": {
+     "table": "public.fm_v2_looks",
      "cmd": "SELECT",
      "roles": [
       "authenticated"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(( SELECT auth.uid() AS uid) = user_id)",
+     "check": null,
      "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_v2_models.owner_read": {
+     "table": "public.fm_v2_models",
      "cmd": "SELECT",
      "roles": [
       "authenticated"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(( SELECT auth.uid() AS uid) = user_id)",
+     "check": null,
      "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_v2_profiles.owner_read": {
+     "table": "public.fm_v2_profiles",
      "cmd": "SELECT",
      "roles": [
       "authenticated"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(( SELECT auth.uid() AS uid) = user_id)",
+     "check": null,
      "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
     },
     "policy:public.fm_v2_recommendations.owner_read": {
+     "table": "public.fm_v2_recommendations",
      "cmd": "SELECT",
      "roles": [
       "authenticated"
      ],
+     "permissive": "PERMISSIVE",
+     "using": "(( SELECT auth.uid() AS uid) = user_id)",
+     "check": null,
      "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
      "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "grant:public.fm_v2_assets": {
+     "anon": [],
+     "authenticated": [
+      "SELECT"
+     ]
+    },
+    "grant:public.fm_v2_feedback": {
+     "anon": [],
+     "authenticated": [
+      "SELECT"
+     ]
+    },
+    "grant:public.fm_v2_jobs": {
+     "anon": [],
+     "authenticated": []
+    },
+    "grant:public.fm_v2_looks": {
+     "anon": [],
+     "authenticated": [
+      "SELECT"
+     ]
+    },
+    "grant:public.fm_v2_models": {
+     "anon": [],
+     "authenticated": [
+      "SELECT"
+     ]
+    },
+    "grant:public.fm_v2_profiles": {
+     "anon": [],
+     "authenticated": [
+      "SELECT"
+     ]
+    },
+    "grant:public.fm_v2_recommendations": {
+     "anon": [],
+     "authenticated": [
+      "SELECT"
+     ]
+    },
+    "grant:public.fm_v2_workers": {
+     "anon": [],
+     "authenticated": []
     },
     "bucket:fitmatch-v2": {
      "public": false,
@@ -1525,99 +1584,109 @@
     "column:public.fm_v2_assets.expected_sha256": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_assets.job_attempt": {
      "type": "integer",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_expected_sha256_check": {
      "type": "c",
-     "def": "CHECK ((expected_sha256 ~ '^[0-9a-f]{64}$'::text))"
+     "def": "CHECK ((expected_sha256 ~ '^[0-9a-f]{64}$'::text))",
+     "table": "public.fm_v2_assets"
     },
     "index:public.fm_v2_assets.fm_v2_assets_job_output": {
-     "def": "CREATE INDEX fm_v2_assets_job_output ON public.fm_v2_assets USING btree (job_id, expected_sha256) WHERE (kind = 'glb'::text)"
+     "def": "CREATE INDEX fm_v2_assets_job_output ON public.fm_v2_assets USING btree (job_id, expected_sha256) WHERE (kind = 'glb'::text)",
+     "table": "public.fm_v2_assets"
     },
     "table:public.fm_v2_job_receipts": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_job_receipts.job_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_job_receipts.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_job_receipts.worker_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_job_receipts.attempt": {
      "type": "integer",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_job_receipts.lease_token": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_job_receipts.asset_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_job_receipts.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_asset_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (asset_id) REFERENCES fm_v2_assets(id)"
+     "def": "FOREIGN KEY (asset_id) REFERENCES fm_v2_assets(id)",
+     "table": "public.fm_v2_job_receipts"
     },
     "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_job_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (job_id) REFERENCES fm_v2_jobs(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (job_id) REFERENCES fm_v2_jobs(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_job_receipts"
     },
     "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (job_id)"
+     "def": "PRIMARY KEY (job_id)",
+     "table": "public.fm_v2_job_receipts"
     },
     "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_job_receipts"
     },
     "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_worker_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (worker_id) REFERENCES fm_v2_workers(id)"
+     "def": "FOREIGN KEY (worker_id) REFERENCES fm_v2_workers(id)",
+     "table": "public.fm_v2_job_receipts"
     },
     "index:public.fm_v2_job_receipts.fm_v2_job_receipts_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_job_receipts_pkey ON public.fm_v2_job_receipts USING btree (job_id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_job_receipts_pkey ON public.fm_v2_job_receipts USING btree (job_id)",
+     "table": "public.fm_v2_job_receipts"
     },
     "column:public.fm_v2_jobs.claim_instance": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.claim_request": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_workers.allowed_capabilities": {
      "type": "text[]",
      "notNull": true,
-     "hasDefault": true
+     "default": "'{}'::text[]"
     },
     "constraint:public.fm_v2_workers.fm_v2_workers_allowed_capabilities_check": {
      "type": "c",
-     "def": "CHECK ((allowed_capabilities <@ ARRAY['avatar.reconstruct'::text, 'garment.reconstruct'::text, 'garment.drape'::text]))"
+     "def": "CHECK ((allowed_capabilities <@ ARRAY['avatar.reconstruct'::text, 'garment.reconstruct'::text, 'garment.drape'::text]))",
+     "table": "public.fm_v2_workers"
     },
     "function:public.fm_v2_claim_r1(p_worker uuid, p_instance uuid, p_request uuid)": {
      "returns": "jsonb",
@@ -1632,12 +1701,17 @@
      "bodyMd5": "660986be85f278b622d3bb38665f9132",
      "anonExecute": false,
      "authenticatedExecute": false
+    },
+    "grant:public.fm_v2_job_receipts": {
+     "anon": [],
+     "authenticated": []
     }
    },
    "changes": {
     "constraint:public.fm_v2_assets.fm_v2_assets_state_check": {
      "type": "c",
-     "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'ready'::text, 'rejected'::text])))"
+     "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'ready'::text, 'rejected'::text])))",
+     "table": "public.fm_v2_assets"
     },
     "function:public.fm_v2_claim(p_worker uuid)": {
      "returns": "jsonb",
@@ -1663,46 +1737,51 @@
     "column:public.fm_v2_looks.top_fitting_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_looks.bottom_fitting_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_looks.camera": {
      "type": "jsonb",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_looks.snapshot": {
      "type": "jsonb",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_v2_looks.fm_v2_looks_bottom_fitting_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (bottom_fitting_id) REFERENCES fm_v2_models(id)"
+     "def": "FOREIGN KEY (bottom_fitting_id) REFERENCES fm_v2_models(id)",
+     "table": "public.fm_v2_looks"
     },
     "constraint:public.fm_v2_looks.fm_v2_looks_top_fitting_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (top_fitting_id) REFERENCES fm_v2_models(id)"
+     "def": "FOREIGN KEY (top_fitting_id) REFERENCES fm_v2_models(id)",
+     "table": "public.fm_v2_looks"
     },
     "column:public.fm_v2_models.slot": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_v2_models.fm_v2_models_slot_check": {
      "type": "c",
-     "def": "CHECK ((slot = ANY (ARRAY['top'::text, 'bottom'::text])))"
+     "def": "CHECK ((slot = ANY (ARRAY['top'::text, 'bottom'::text])))",
+     "table": "public.fm_v2_models"
     },
     "constraint:public.fm_v2_models.fm_v2_models_slot_kind": {
      "type": "c",
-     "def": "CHECK ((((kind = 'avatar'::text) AND (slot IS NULL)) OR ((kind = ANY (ARRAY['garment'::text, 'fitting'::text])) AND (slot IS NOT NULL))))"
+     "def": "CHECK ((((kind = 'avatar'::text) AND (slot IS NULL)) OR ((kind = ANY (ARRAY['garment'::text, 'fitting'::text])) AND (slot IS NOT NULL))))",
+     "table": "public.fm_v2_models"
     },
     "index:public.fm_v2_models.fm_v2_models_slot": {
-     "def": "CREATE INDEX fm_v2_models_slot ON public.fm_v2_models USING btree (user_id, avatar_id, slot) WHERE (kind = 'fitting'::text)"
+     "def": "CREATE INDEX fm_v2_models_slot ON public.fm_v2_models USING btree (user_id, avatar_id, slot) WHERE (kind = 'fitting'::text)",
+     "table": "public.fm_v2_models"
     },
     "function:public.fm_v2_save_look(p_user uuid, p_name text, p_avatar uuid, p_top uuid, p_bottom uuid, p_camera jsonb, p_recommendation uuid)": {
      "returns": "jsonb",
@@ -1715,7 +1794,8 @@
    "changes": {
     "constraint:public.fm_v2_workers.fm_v2_workers_allowed_capabilities_check": {
      "type": "c",
-     "def": "CHECK ((allowed_capabilities <@ ARRAY['avatar.reconstruct'::text, 'garment.reconstruct'::text, 'garment.drape'::text, 'bottom.reconstruct'::text, 'bottom.drape'::text]))"
+     "def": "CHECK ((allowed_capabilities <@ ARRAY['avatar.reconstruct'::text, 'garment.reconstruct'::text, 'garment.drape'::text, 'bottom.reconstruct'::text, 'bottom.drape'::text]))",
+     "table": "public.fm_v2_workers"
     },
     "function:public.fm_v2_enqueue(p_user uuid, p_key text, p_hash text, p_kind text, p_name text, p_inputs uuid[], p_params jsonb, p_wardrobe uuid, p_avatar uuid, p_garment uuid)": {
      "returns": "jsonb",
@@ -1734,21 +1814,22 @@
     "column:public.fm_v2_assets.deleted_at": {
      "type": "timestamp with time zone",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.accepted_at": {
      "type": "timestamp with time zone",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_models.source_retention": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_v2_models.fm_v2_models_source_retention_check": {
      "type": "c",
-     "def": "CHECK ((source_retention = ANY (ARRAY['keep'::text, 'deleted'::text])))"
+     "def": "CHECK ((source_retention = ANY (ARRAY['keep'::text, 'deleted'::text])))",
+     "table": "public.fm_v2_models"
     },
     "function:public.fm_v2_source_retention(p_user uuid, p_model uuid, p_action text)": {
      "returns": "jsonb",
@@ -1761,15 +1842,18 @@
    "changes": {
     "constraint:public.fm_v2_assets.fm_v2_assets_expected_bytes_check": {
      "type": "c",
-     "def": "CHECK (((expected_bytes >= 1) AND (expected_bytes <=\nCASE\n    WHEN (kind = 'video'::text) THEN 157286400\n    ELSE 41943040\nEND)))"
+     "def": "CHECK (((expected_bytes >= 1) AND (expected_bytes <=\nCASE\n    WHEN (kind = 'video'::text) THEN 157286400\n    ELSE 41943040\nEND)))",
+     "table": "public.fm_v2_assets"
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_kind_check": {
      "type": "c",
-     "def": "CHECK ((kind = ANY (ARRAY['photo'::text, 'glb'::text, 'video'::text])))"
+     "def": "CHECK ((kind = ANY (ARRAY['photo'::text, 'glb'::text, 'video'::text])))",
+     "table": "public.fm_v2_assets"
     },
     "constraint:public.fm_v2_assets.fm_v2_assets_state_check": {
      "type": "c",
-     "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'ready'::text, 'rejected'::text, 'deleted'::text])))"
+     "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'ready'::text, 'rejected'::text, 'deleted'::text])))",
+     "table": "public.fm_v2_assets"
     },
     "function:public.fm_v2_enqueue(p_user uuid, p_key text, p_hash text, p_kind text, p_name text, p_inputs uuid[], p_params jsonb, p_wardrobe uuid, p_avatar uuid, p_garment uuid)": {
      "returns": "jsonb",
@@ -1824,11 +1908,12 @@
     "column:public.fm_v2_models.superseded_by": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_v2_models.fm_v2_models_superseded_by_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (superseded_by) REFERENCES fm_v2_models(id) DEFERRABLE INITIALLY DEFERRED"
+     "def": "FOREIGN KEY (superseded_by) REFERENCES fm_v2_models(id) DEFERRABLE INITIALLY DEFERRED",
+     "table": "public.fm_v2_models"
     },
     "function:public.fm_v2_job_action_legacy(p_user uuid, p_job uuid, p_action text)": {
      "returns": "boolean",
@@ -1840,7 +1925,8 @@
    },
    "changes": {
     "index:public.fm_v2_models.fm_v2_fitting_cache": {
-     "def": "CREATE UNIQUE INDEX fm_v2_fitting_cache ON public.fm_v2_models USING btree (user_id, avatar_id, garment_id) WHERE ((kind = 'fitting'::text) AND (superseded_by IS NULL))"
+     "def": "CREATE UNIQUE INDEX fm_v2_fitting_cache ON public.fm_v2_models USING btree (user_id, avatar_id, garment_id) WHERE ((kind = 'fitting'::text) AND (superseded_by IS NULL))",
+     "table": "public.fm_v2_models"
     },
     "function:public.fm_v2_enqueue(p_user uuid, p_key text, p_hash text, p_kind text, p_name text, p_inputs uuid[], p_params jsonb, p_wardrobe uuid, p_avatar uuid, p_garment uuid)": {
      "returns": "jsonb",
@@ -1866,126 +1952,142 @@
     "column:public.fm_v2_models.source_cleanup": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_v2_models.fm_v2_models_source_cleanup_check": {
      "type": "c",
-     "def": "CHECK ((source_cleanup = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))"
+     "def": "CHECK ((source_cleanup = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))",
+     "table": "public.fm_v2_models"
     },
     "table:public.fm_v2_source_cleanup": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_source_cleanup.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": true
+     "default": "gen_random_uuid()"
     },
     "column:public.fm_v2_source_cleanup.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_source_cleanup.asset_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_source_cleanup.path": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_source_cleanup.state": {
      "type": "text",
      "notNull": true,
-     "hasDefault": true
+     "default": "'pending'::text"
     },
     "column:public.fm_v2_source_cleanup.attempts": {
      "type": "integer",
      "notNull": true,
-     "hasDefault": true
+     "default": "0"
     },
     "column:public.fm_v2_source_cleanup.last_error": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_source_cleanup.requested_by_model": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_source_cleanup.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "column:public.fm_v2_source_cleanup.updated_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "column:public.fm_v2_source_cleanup.next_attempt_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "column:public.fm_v2_source_cleanup.completed_at": {
      "type": "timestamp with time zone",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_asset_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (asset_id) REFERENCES fm_v2_assets(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (asset_id) REFERENCES fm_v2_assets(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_source_cleanup"
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_asset_id_path_key": {
      "type": "u",
-     "def": "UNIQUE (asset_id, path)"
+     "def": "UNIQUE (asset_id, path)",
+     "table": "public.fm_v2_source_cleanup"
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_attempts_check": {
      "type": "c",
-     "def": "CHECK ((attempts >= 0))"
+     "def": "CHECK ((attempts >= 0))",
+     "table": "public.fm_v2_source_cleanup"
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_check": {
      "type": "c",
-     "def": "CHECK (((state = 'completed'::text) = (completed_at IS NOT NULL)))"
+     "def": "CHECK (((state = 'completed'::text) = (completed_at IS NOT NULL)))",
+     "table": "public.fm_v2_source_cleanup"
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_last_error_check": {
      "type": "c",
-     "def": "CHECK (((last_error IS NULL) OR (length(last_error) <= 200)))"
+     "def": "CHECK (((last_error IS NULL) OR (length(last_error) <= 200)))",
+     "table": "public.fm_v2_source_cleanup"
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_path_check": {
      "type": "c",
-     "def": "CHECK (((length(path) >= 1) AND (length(path) <= 300)))"
+     "def": "CHECK (((length(path) >= 1) AND (length(path) <= 300)))",
+     "table": "public.fm_v2_source_cleanup"
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_v2_source_cleanup"
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_requested_by_model_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (requested_by_model) REFERENCES fm_v2_models(id) ON DELETE SET NULL"
+     "def": "FOREIGN KEY (requested_by_model) REFERENCES fm_v2_models(id) ON DELETE SET NULL",
+     "table": "public.fm_v2_source_cleanup"
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_state_check": {
      "type": "c",
-     "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))"
+     "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))",
+     "table": "public.fm_v2_source_cleanup"
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_source_cleanup"
     },
     "index:public.fm_v2_source_cleanup.fm_v2_source_cleanup_asset_id_path_key": {
-     "def": "CREATE UNIQUE INDEX fm_v2_source_cleanup_asset_id_path_key ON public.fm_v2_source_cleanup USING btree (asset_id, path)"
+     "def": "CREATE UNIQUE INDEX fm_v2_source_cleanup_asset_id_path_key ON public.fm_v2_source_cleanup USING btree (asset_id, path)",
+     "table": "public.fm_v2_source_cleanup"
     },
     "index:public.fm_v2_source_cleanup.fm_v2_source_cleanup_due": {
-     "def": "CREATE INDEX fm_v2_source_cleanup_due ON public.fm_v2_source_cleanup USING btree (next_attempt_at) WHERE (state = 'pending'::text)"
+     "def": "CREATE INDEX fm_v2_source_cleanup_due ON public.fm_v2_source_cleanup USING btree (next_attempt_at) WHERE (state = 'pending'::text)",
+     "table": "public.fm_v2_source_cleanup"
     },
     "index:public.fm_v2_source_cleanup.fm_v2_source_cleanup_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_source_cleanup_pkey ON public.fm_v2_source_cleanup USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_source_cleanup_pkey ON public.fm_v2_source_cleanup USING btree (id)",
+     "table": "public.fm_v2_source_cleanup"
     },
     "index:public.fm_v2_source_cleanup.fm_v2_source_cleanup_user": {
-     "def": "CREATE INDEX fm_v2_source_cleanup_user ON public.fm_v2_source_cleanup USING btree (user_id, asset_id)"
+     "def": "CREATE INDEX fm_v2_source_cleanup_user ON public.fm_v2_source_cleanup USING btree (user_id, asset_id)",
+     "table": "public.fm_v2_source_cleanup"
     },
     "function:public.fm_v2_source_cleanup_due(p_limit integer)": {
      "returns": "jsonb",
@@ -2007,6 +2109,10 @@
      "bodyMd5": "fa3ece110f45b4160c3e288859cfd228",
      "anonExecute": false,
      "authenticatedExecute": false
+    },
+    "grant:public.fm_v2_source_cleanup": {
+     "anon": [],
+     "authenticated": []
     }
    },
    "changes": {
@@ -2025,226 +2131,253 @@
    "sha256": "0440dccc8044035ab129adbb9b3d64fe1403ee8c488f2cda295b7d6ba793de80",
    "adds": {
     "table:public.fm_v2_analyses": {
-     "rls": true
+     "rls": true,
+     "rlsForced": false
     },
     "column:public.fm_v2_analyses.id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.user_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.item_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.source_path": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.image_asset_id": {
      "type": "uuid",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.image_sha256": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.policy_revision": {
      "type": "text",
      "notNull": true,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.status": {
      "type": "text",
      "notNull": true,
-     "hasDefault": true
+     "default": "'pending'::text"
     },
     "column:public.fm_v2_analyses.result_json": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.result": {
      "type": "jsonb",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.result_sha256": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.model_revision": {
      "type": "jsonb",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.result_worker": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.result_lease_token": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.result_at": {
      "type": "timestamp with time zone",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.confirmation_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.confirmation_digest": {
      "type": "text",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.confirmed_fields": {
      "type": "jsonb",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.confirmed_at": {
      "type": "timestamp with time zone",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_analyses.created_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "column:public.fm_v2_analyses.updated_at": {
      "type": "timestamp with time zone",
      "notNull": true,
-     "hasDefault": true
+     "default": "now()"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_check": {
      "type": "c",
-     "def": "CHECK (((result_json IS NULL) = (result_sha256 IS NULL)))"
+     "def": "CHECK (((result_json IS NULL) = (result_sha256 IS NULL)))",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_check1": {
      "type": "c",
-     "def": "CHECK (((status = ANY (ARRAY['review'::text, 'confirmed'::text, 'rejected'::text])) <= (result_json IS NOT NULL)))"
+     "def": "CHECK (((status = ANY (ARRAY['review'::text, 'confirmed'::text, 'rejected'::text])) <= (result_json IS NOT NULL)))",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_check2": {
      "type": "c",
-     "def": "CHECK (((status = ANY (ARRAY['confirmed'::text, 'rejected'::text])) = (confirmation_id IS NOT NULL)))"
+     "def": "CHECK (((status = ANY (ARRAY['confirmed'::text, 'rejected'::text])) = (confirmation_id IS NOT NULL)))",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_confirmation_id_key": {
      "type": "u",
-     "def": "UNIQUE (confirmation_id)"
+     "def": "UNIQUE (confirmation_id)",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_image_asset_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (image_asset_id) REFERENCES fm_v2_assets(id)"
+     "def": "FOREIGN KEY (image_asset_id) REFERENCES fm_v2_assets(id)",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_image_sha256_check": {
      "type": "c",
-     "def": "CHECK ((image_sha256 ~ '^[0-9a-f]{64}$'::text))"
+     "def": "CHECK ((image_sha256 ~ '^[0-9a-f]{64}$'::text))",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_item_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (item_id) REFERENCES fm_wardrobe_items(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (item_id) REFERENCES fm_wardrobe_items(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_pkey": {
      "type": "p",
-     "def": "PRIMARY KEY (id)"
+     "def": "PRIMARY KEY (id)",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_policy_revision_check": {
      "type": "c",
-     "def": "CHECK (((length(policy_revision) >= 1) AND (length(policy_revision) <= 40)))"
+     "def": "CHECK (((length(policy_revision) >= 1) AND (length(policy_revision) <= 40)))",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_result_json_check": {
      "type": "c",
-     "def": "CHECK (((result_json IS NULL) OR (octet_length(result_json) <= 8192)))"
+     "def": "CHECK (((result_json IS NULL) OR (octet_length(result_json) <= 8192)))",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_result_sha256_check": {
      "type": "c",
-     "def": "CHECK (((result_sha256 IS NULL) OR (result_sha256 ~ '^[0-9a-f]{64}$'::text)))"
+     "def": "CHECK (((result_sha256 IS NULL) OR (result_sha256 ~ '^[0-9a-f]{64}$'::text)))",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_result_worker_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (result_worker) REFERENCES fm_v2_workers(id) ON DELETE SET NULL"
+     "def": "FOREIGN KEY (result_worker) REFERENCES fm_v2_workers(id) ON DELETE SET NULL",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_source_path_check": {
      "type": "c",
-     "def": "CHECK (((length(source_path) >= 1) AND (length(source_path) <= 1024)))"
+     "def": "CHECK (((length(source_path) >= 1) AND (length(source_path) <= 1024)))",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_status_check": {
      "type": "c",
-     "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'review'::text, 'confirmed'::text, 'rejected'::text, 'stale'::text])))"
+     "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'review'::text, 'confirmed'::text, 'rejected'::text, 'stale'::text])))",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_user_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_analyses"
     },
     "constraint:public.fm_v2_analyses.fm_v2_analyses_user_id_item_id_image_sha256_policy_revision_key": {
      "type": "u",
-     "def": "UNIQUE (user_id, item_id, image_sha256, policy_revision)"
+     "def": "UNIQUE (user_id, item_id, image_sha256, policy_revision)",
+     "table": "public.fm_v2_analyses"
     },
     "index:public.fm_v2_analyses.fm_v2_analyses_confirmation_id_key": {
-     "def": "CREATE UNIQUE INDEX fm_v2_analyses_confirmation_id_key ON public.fm_v2_analyses USING btree (confirmation_id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_analyses_confirmation_id_key ON public.fm_v2_analyses USING btree (confirmation_id)",
+     "table": "public.fm_v2_analyses"
     },
     "index:public.fm_v2_analyses.fm_v2_analyses_item": {
-     "def": "CREATE INDEX fm_v2_analyses_item ON public.fm_v2_analyses USING btree (user_id, item_id, created_at DESC)"
+     "def": "CREATE INDEX fm_v2_analyses_item ON public.fm_v2_analyses USING btree (user_id, item_id, created_at DESC)",
+     "table": "public.fm_v2_analyses"
     },
     "index:public.fm_v2_analyses.fm_v2_analyses_pkey": {
-     "def": "CREATE UNIQUE INDEX fm_v2_analyses_pkey ON public.fm_v2_analyses USING btree (id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_analyses_pkey ON public.fm_v2_analyses USING btree (id)",
+     "table": "public.fm_v2_analyses"
     },
     "index:public.fm_v2_analyses.fm_v2_analyses_user_id_item_id_image_sha256_policy_revision_key": {
-     "def": "CREATE UNIQUE INDEX fm_v2_analyses_user_id_item_id_image_sha256_policy_revision_key ON public.fm_v2_analyses USING btree (user_id, item_id, image_sha256, policy_revision)"
+     "def": "CREATE UNIQUE INDEX fm_v2_analyses_user_id_item_id_image_sha256_policy_revision_key ON public.fm_v2_analyses USING btree (user_id, item_id, image_sha256, policy_revision)",
+     "table": "public.fm_v2_analyses"
     },
     "column:public.fm_v2_jobs.analysis_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.not_before": {
      "type": "timestamp with time zone",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_jobs.deferrals": {
      "type": "integer",
      "notNull": true,
-     "hasDefault": true
+     "default": "0"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_analysis_id_fkey": {
      "type": "f",
-     "def": "FOREIGN KEY (analysis_id) REFERENCES fm_v2_analyses(id) ON DELETE CASCADE"
+     "def": "FOREIGN KEY (analysis_id) REFERENCES fm_v2_analyses(id) ON DELETE CASCADE",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_analysis_id_key": {
      "type": "u",
-     "def": "UNIQUE (analysis_id)"
+     "def": "UNIQUE (analysis_id)",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_analysis_kind": {
      "type": "c",
-     "def": "CHECK (((analysis_id IS NOT NULL) = (kind = 'garment.analyze'::text)))"
+     "def": "CHECK (((analysis_id IS NOT NULL) = (kind = 'garment.analyze'::text)))",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_deferrals_check": {
      "type": "c",
-     "def": "CHECK ((deferrals >= 0))"
+     "def": "CHECK ((deferrals >= 0))",
+     "table": "public.fm_v2_jobs"
     },
     "constraint:public.fm_v2_jobs.fm_v2_jobs_subject": {
      "type": "c",
-     "def": "CHECK (((model_id IS NULL) <> (analysis_id IS NULL)))"
+     "def": "CHECK (((model_id IS NULL) <> (analysis_id IS NULL)))",
+     "table": "public.fm_v2_jobs"
     },
     "index:public.fm_v2_jobs.fm_v2_jobs_analysis_id_key": {
-     "def": "CREATE UNIQUE INDEX fm_v2_jobs_analysis_id_key ON public.fm_v2_jobs USING btree (analysis_id)"
+     "def": "CREATE UNIQUE INDEX fm_v2_jobs_analysis_id_key ON public.fm_v2_jobs USING btree (analysis_id)",
+     "table": "public.fm_v2_jobs"
     },
     "function:public.fm_v2_analysis_action(p_user uuid, p_analysis uuid, p_action text)": {
      "returns": "boolean",
@@ -2289,18 +2422,24 @@
      "authenticatedExecute": false
     },
     "trigger:public.fm_v2_analyses.fm_v2_analysis_tombstone": {
-     "def": "CREATE TRIGGER fm_v2_analysis_tombstone AFTER DELETE ON public.fm_v2_analyses FOR EACH ROW EXECUTE FUNCTION fm_v2_analysis_tombstone()"
+     "def": "CREATE TRIGGER fm_v2_analysis_tombstone AFTER DELETE ON public.fm_v2_analyses FOR EACH ROW EXECUTE FUNCTION fm_v2_analysis_tombstone()",
+     "table": "public.fm_v2_analyses"
+    },
+    "grant:public.fm_v2_analyses": {
+     "anon": [],
+     "authenticated": []
     }
    },
    "changes": {
     "column:public.fm_v2_jobs.model_id": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_v2_workers.fm_v2_workers_allowed_capabilities_check": {
      "type": "c",
-     "def": "CHECK ((allowed_capabilities <@ ARRAY['avatar.reconstruct'::text, 'garment.reconstruct'::text, 'garment.drape'::text, 'bottom.reconstruct'::text, 'bottom.drape'::text, 'garment.analyze'::text]))"
+     "def": "CHECK ((allowed_capabilities <@ ARRAY['avatar.reconstruct'::text, 'garment.reconstruct'::text, 'garment.drape'::text, 'bottom.reconstruct'::text, 'bottom.drape'::text, 'garment.analyze'::text]))",
+     "table": "public.fm_v2_workers"
     },
     "function:public.fm_v2_claim_r1(p_worker uuid, p_instance uuid, p_request uuid)": {
      "returns": "jsonb",
@@ -2319,7 +2458,7 @@
     "column:public.fm_v2_workers.gpu_busy": {
      "type": "boolean",
      "notNull": true,
-     "hasDefault": true
+     "default": "false"
     },
     "function:public.fm_v2_analysis_abort(p_user uuid, p_asset uuid)": {
      "returns": "jsonb",
@@ -2361,16 +2500,17 @@
     "column:public.fm_v2_source_cleanup.claim_token": {
      "type": "uuid",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "column:public.fm_v2_source_cleanup.claimed_until": {
      "type": "timestamp with time zone",
      "notNull": false,
-     "hasDefault": false
+     "default": null
     },
     "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_claim_pair": {
      "type": "c",
-     "def": "CHECK (((claim_token IS NULL) = (claimed_until IS NULL)))"
+     "def": "CHECK (((claim_token IS NULL) = (claimed_until IS NULL)))",
+     "table": "public.fm_v2_source_cleanup"
     },
     "function:public.fm_v2_source_cleanup_claim(p_token uuid, p_limit integer, p_lease_seconds integer)": {
      "returns": "jsonb",
@@ -2411,1577 +2551,1714 @@
     }
    },
    "removes": []
+  },
+  {
+   "file": "supabase/migrations/20261109093355_legacy_compat_auth_outfits.sql",
+   "sha256": "00a1e82284ccda61fa14b35fb90e20329851913c4320994e21632522a9dfa495",
+   "adds": {
+    "column:public.fm_outfits.style_category": {
+     "type": "text",
+     "notNull": false,
+     "default": null
+    },
+    "column:public.fm_outfits.is_saved": {
+     "type": "boolean",
+     "notNull": true,
+     "default": "false"
+    }
+   },
+   "changes": {
+    "function:public.handle_new_user()": {
+     "returns": "trigger",
+     "securityDefiner": true,
+     "bodyMd5": "777f338b874fa14bd467c846bfb9b988",
+     "anonExecute": false,
+     "authenticatedExecute": false
+    }
+   },
+   "removes": []
   }
  ],
  "final": {
   "table:public.fm_ai_daily_usage": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_ai_daily_usage.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_ai_daily_usage.usage_day": {
    "type": "date",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_ai_daily_usage.units": {
    "type": "integer",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "constraint:public.fm_ai_daily_usage.fm_ai_daily_usage_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (user_id, usage_day)"
+   "def": "PRIMARY KEY (user_id, usage_day)",
+   "table": "public.fm_ai_daily_usage"
   },
   "constraint:public.fm_ai_daily_usage.fm_ai_daily_usage_units_check": {
    "type": "c",
-   "def": "CHECK ((units >= 0))"
+   "def": "CHECK ((units >= 0))",
+   "table": "public.fm_ai_daily_usage"
   },
   "constraint:public.fm_ai_daily_usage.fm_ai_daily_usage_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_ai_daily_usage"
   },
   "index:public.fm_ai_daily_usage.fm_ai_daily_usage_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_ai_daily_usage_pkey ON public.fm_ai_daily_usage USING btree (user_id, usage_day)"
+   "def": "CREATE UNIQUE INDEX fm_ai_daily_usage_pkey ON public.fm_ai_daily_usage USING btree (user_id, usage_day)",
+   "table": "public.fm_ai_daily_usage"
   },
   "table:public.fm_auth_identities": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_auth_identities.issuer": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_auth_identities.app_id": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_auth_identities.subject": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_auth_identities.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_auth_identities.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_auth_identities.fm_auth_identities_issuer_app_id_user_id_key": {
    "type": "u",
-   "def": "UNIQUE (issuer, app_id, user_id)"
+   "def": "UNIQUE (issuer, app_id, user_id)",
+   "table": "public.fm_auth_identities"
   },
   "constraint:public.fm_auth_identities.fm_auth_identities_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (issuer, app_id, subject)"
+   "def": "PRIMARY KEY (issuer, app_id, subject)",
+   "table": "public.fm_auth_identities"
   },
   "constraint:public.fm_auth_identities.fm_auth_identities_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_auth_identities"
   },
   "index:public.fm_auth_identities.fm_auth_identities_issuer_app_id_user_id_key": {
-   "def": "CREATE UNIQUE INDEX fm_auth_identities_issuer_app_id_user_id_key ON public.fm_auth_identities USING btree (issuer, app_id, user_id)"
+   "def": "CREATE UNIQUE INDEX fm_auth_identities_issuer_app_id_user_id_key ON public.fm_auth_identities USING btree (issuer, app_id, user_id)",
+   "table": "public.fm_auth_identities"
   },
   "index:public.fm_auth_identities.fm_auth_identities_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_auth_identities_pkey ON public.fm_auth_identities USING btree (issuer, app_id, subject)"
+   "def": "CREATE UNIQUE INDEX fm_auth_identities_pkey ON public.fm_auth_identities USING btree (issuer, app_id, subject)",
+   "table": "public.fm_auth_identities"
   },
   "table:public.fm_auth_refreshes": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_auth_refreshes.refresh_hash": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_auth_refreshes.owner_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_auth_refreshes.sealed_result": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_auth_refreshes.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_auth_refreshes.fm_auth_refreshes_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (refresh_hash)"
+   "def": "PRIMARY KEY (refresh_hash)",
+   "table": "public.fm_auth_refreshes"
   },
   "constraint:public.fm_auth_refreshes.fm_auth_refreshes_refresh_hash_check": {
    "type": "c",
-   "def": "CHECK ((refresh_hash ~ '^[0-9a-f]{64}$'::text))"
+   "def": "CHECK ((refresh_hash ~ '^[0-9a-f]{64}$'::text))",
+   "table": "public.fm_auth_refreshes"
   },
   "index:public.fm_auth_refreshes.fm_auth_refreshes_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_auth_refreshes_pkey ON public.fm_auth_refreshes USING btree (refresh_hash)"
+   "def": "CREATE UNIQUE INDEX fm_auth_refreshes_pkey ON public.fm_auth_refreshes USING btree (refresh_hash)",
+   "table": "public.fm_auth_refreshes"
   },
   "table:public.fm_outfits": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_outfits.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": true
+   "default": "gen_random_uuid()"
   },
   "column:public.fm_outfits.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_outfits.source_item_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_outfits.data_json": {
    "type": "jsonb",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_outfits.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
+  },
+  "column:public.fm_outfits.style_category": {
+   "type": "text",
+   "notNull": false,
+   "default": null
+  },
+  "column:public.fm_outfits.is_saved": {
+   "type": "boolean",
+   "notNull": true,
+   "default": "false"
   },
   "constraint:public.fm_outfits.fm_outfits_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_outfits"
   },
   "constraint:public.fm_outfits.fm_outfits_source_item_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (source_item_id) REFERENCES fm_wardrobe_items(id) ON DELETE SET NULL"
+   "def": "FOREIGN KEY (source_item_id) REFERENCES fm_wardrobe_items(id) ON DELETE SET NULL",
+   "table": "public.fm_outfits"
   },
   "constraint:public.fm_outfits.fm_outfits_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_outfits"
   },
   "index:public.fm_outfits.fm_outfits_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_outfits_pkey ON public.fm_outfits USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_outfits_pkey ON public.fm_outfits USING btree (id)",
+   "table": "public.fm_outfits"
   },
   "index:public.fm_outfits.fm_outfits_user_id_idx": {
-   "def": "CREATE INDEX fm_outfits_user_id_idx ON public.fm_outfits USING btree (user_id)"
+   "def": "CREATE INDEX fm_outfits_user_id_idx ON public.fm_outfits USING btree (user_id)",
+   "table": "public.fm_outfits"
   },
   "table:public.fm_uploaded_items": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_uploaded_items.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": true
+   "default": "gen_random_uuid()"
   },
   "column:public.fm_uploaded_items.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_uploaded_items.image_path": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_uploaded_items.detected_type": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_uploaded_items.detected_color": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_uploaded_items.detected_style": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_uploaded_items.detected_pattern": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_uploaded_items.metadata_json": {
    "type": "jsonb",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_uploaded_items.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_uploaded_items.fm_uploaded_items_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_uploaded_items"
   },
   "constraint:public.fm_uploaded_items.fm_uploaded_items_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_uploaded_items"
   },
   "index:public.fm_uploaded_items.fm_uploaded_items_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_uploaded_items_pkey ON public.fm_uploaded_items USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_uploaded_items_pkey ON public.fm_uploaded_items USING btree (id)",
+   "table": "public.fm_uploaded_items"
   },
   "index:public.fm_uploaded_items.fm_uploaded_items_user_id_idx": {
-   "def": "CREATE INDEX fm_uploaded_items_user_id_idx ON public.fm_uploaded_items USING btree (user_id)"
+   "def": "CREATE INDEX fm_uploaded_items_user_id_idx ON public.fm_uploaded_items USING btree (user_id)",
+   "table": "public.fm_uploaded_items"
   },
   "table:public.fm_users": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_users.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_users.email": {
    "type": "text",
    "notNull": true,
-   "hasDefault": true
+   "default": "''::text"
   },
   "column:public.fm_users.style_profile": {
    "type": "jsonb",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_users.quiz_answers": {
    "type": "jsonb",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_users.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_users.updated_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_users.fm_users_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_users"
   },
   "constraint:public.fm_users.fm_users_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_users"
   },
   "index:public.fm_users.fm_users_email_idx": {
-   "def": "CREATE INDEX fm_users_email_idx ON public.fm_users USING btree (email)"
+   "def": "CREATE INDEX fm_users_email_idx ON public.fm_users USING btree (email)",
+   "table": "public.fm_users"
   },
   "index:public.fm_users.fm_users_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_users_pkey ON public.fm_users USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_users_pkey ON public.fm_users USING btree (id)",
+   "table": "public.fm_users"
   },
   "table:public.fm_v2_analyses": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_analyses.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.item_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.source_path": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.image_asset_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.image_sha256": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.policy_revision": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.status": {
    "type": "text",
    "notNull": true,
-   "hasDefault": true
+   "default": "'pending'::text"
   },
   "column:public.fm_v2_analyses.result_json": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.result": {
    "type": "jsonb",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.result_sha256": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.model_revision": {
    "type": "jsonb",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.result_worker": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.result_lease_token": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.result_at": {
    "type": "timestamp with time zone",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.confirmation_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.confirmation_digest": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.confirmed_fields": {
    "type": "jsonb",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.confirmed_at": {
    "type": "timestamp with time zone",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_analyses.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_analyses.updated_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_check": {
    "type": "c",
-   "def": "CHECK (((result_json IS NULL) = (result_sha256 IS NULL)))"
+   "def": "CHECK (((result_json IS NULL) = (result_sha256 IS NULL)))",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_check1": {
    "type": "c",
-   "def": "CHECK (((status = ANY (ARRAY['review'::text, 'confirmed'::text, 'rejected'::text])) <= (result_json IS NOT NULL)))"
+   "def": "CHECK (((status = ANY (ARRAY['review'::text, 'confirmed'::text, 'rejected'::text])) <= (result_json IS NOT NULL)))",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_check2": {
    "type": "c",
-   "def": "CHECK (((status = ANY (ARRAY['confirmed'::text, 'rejected'::text])) = (confirmation_id IS NOT NULL)))"
+   "def": "CHECK (((status = ANY (ARRAY['confirmed'::text, 'rejected'::text])) = (confirmation_id IS NOT NULL)))",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_confirmation_id_key": {
    "type": "u",
-   "def": "UNIQUE (confirmation_id)"
+   "def": "UNIQUE (confirmation_id)",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_image_asset_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (image_asset_id) REFERENCES fm_v2_assets(id)"
+   "def": "FOREIGN KEY (image_asset_id) REFERENCES fm_v2_assets(id)",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_image_sha256_check": {
    "type": "c",
-   "def": "CHECK ((image_sha256 ~ '^[0-9a-f]{64}$'::text))"
+   "def": "CHECK ((image_sha256 ~ '^[0-9a-f]{64}$'::text))",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_item_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (item_id) REFERENCES fm_wardrobe_items(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (item_id) REFERENCES fm_wardrobe_items(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_policy_revision_check": {
    "type": "c",
-   "def": "CHECK (((length(policy_revision) >= 1) AND (length(policy_revision) <= 40)))"
+   "def": "CHECK (((length(policy_revision) >= 1) AND (length(policy_revision) <= 40)))",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_result_json_check": {
    "type": "c",
-   "def": "CHECK (((result_json IS NULL) OR (octet_length(result_json) <= 8192)))"
+   "def": "CHECK (((result_json IS NULL) OR (octet_length(result_json) <= 8192)))",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_result_sha256_check": {
    "type": "c",
-   "def": "CHECK (((result_sha256 IS NULL) OR (result_sha256 ~ '^[0-9a-f]{64}$'::text)))"
+   "def": "CHECK (((result_sha256 IS NULL) OR (result_sha256 ~ '^[0-9a-f]{64}$'::text)))",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_result_worker_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (result_worker) REFERENCES fm_v2_workers(id) ON DELETE SET NULL"
+   "def": "FOREIGN KEY (result_worker) REFERENCES fm_v2_workers(id) ON DELETE SET NULL",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_source_path_check": {
    "type": "c",
-   "def": "CHECK (((length(source_path) >= 1) AND (length(source_path) <= 1024)))"
+   "def": "CHECK (((length(source_path) >= 1) AND (length(source_path) <= 1024)))",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_status_check": {
    "type": "c",
-   "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'review'::text, 'confirmed'::text, 'rejected'::text, 'stale'::text])))"
+   "def": "CHECK ((status = ANY (ARRAY['pending'::text, 'review'::text, 'confirmed'::text, 'rejected'::text, 'stale'::text])))",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_analyses"
   },
   "constraint:public.fm_v2_analyses.fm_v2_analyses_user_id_item_id_image_sha256_policy_revision_key": {
    "type": "u",
-   "def": "UNIQUE (user_id, item_id, image_sha256, policy_revision)"
+   "def": "UNIQUE (user_id, item_id, image_sha256, policy_revision)",
+   "table": "public.fm_v2_analyses"
   },
   "index:public.fm_v2_analyses.fm_v2_analyses_confirmation_id_key": {
-   "def": "CREATE UNIQUE INDEX fm_v2_analyses_confirmation_id_key ON public.fm_v2_analyses USING btree (confirmation_id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_analyses_confirmation_id_key ON public.fm_v2_analyses USING btree (confirmation_id)",
+   "table": "public.fm_v2_analyses"
   },
   "index:public.fm_v2_analyses.fm_v2_analyses_item": {
-   "def": "CREATE INDEX fm_v2_analyses_item ON public.fm_v2_analyses USING btree (user_id, item_id, created_at DESC)"
+   "def": "CREATE INDEX fm_v2_analyses_item ON public.fm_v2_analyses USING btree (user_id, item_id, created_at DESC)",
+   "table": "public.fm_v2_analyses"
   },
   "index:public.fm_v2_analyses.fm_v2_analyses_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_analyses_pkey ON public.fm_v2_analyses USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_analyses_pkey ON public.fm_v2_analyses USING btree (id)",
+   "table": "public.fm_v2_analyses"
   },
   "index:public.fm_v2_analyses.fm_v2_analyses_user_id_item_id_image_sha256_policy_revision_key": {
-   "def": "CREATE UNIQUE INDEX fm_v2_analyses_user_id_item_id_image_sha256_policy_revision_key ON public.fm_v2_analyses USING btree (user_id, item_id, image_sha256, policy_revision)"
+   "def": "CREATE UNIQUE INDEX fm_v2_analyses_user_id_item_id_image_sha256_policy_revision_key ON public.fm_v2_analyses USING btree (user_id, item_id, image_sha256, policy_revision)",
+   "table": "public.fm_v2_analyses"
   },
   "table:public.fm_v2_assets": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_assets.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.kind": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.state": {
    "type": "text",
    "notNull": true,
-   "hasDefault": true
+   "default": "'pending'::text"
   },
   "column:public.fm_v2_assets.path": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.source_path": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.expected_bytes": {
    "type": "bigint",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.bytes": {
    "type": "bigint",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.sha256": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.job_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_assets.expected_sha256": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.job_attempt": {
    "type": "integer",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_assets.deleted_at": {
    "type": "timestamp with time zone",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "constraint:public.fm_v2_assets.fm_v2_asset_job": {
    "type": "f",
-   "def": "FOREIGN KEY (job_id) REFERENCES fm_v2_jobs(id)"
+   "def": "FOREIGN KEY (job_id) REFERENCES fm_v2_jobs(id)",
+   "table": "public.fm_v2_assets"
   },
   "constraint:public.fm_v2_assets.fm_v2_assets_expected_bytes_check": {
    "type": "c",
-   "def": "CHECK (((expected_bytes >= 1) AND (expected_bytes <=\nCASE\n    WHEN (kind = 'video'::text) THEN 157286400\n    ELSE 41943040\nEND)))"
+   "def": "CHECK (((expected_bytes >= 1) AND (expected_bytes <=\nCASE\n    WHEN (kind = 'video'::text) THEN 157286400\n    ELSE 41943040\nEND)))",
+   "table": "public.fm_v2_assets"
   },
   "constraint:public.fm_v2_assets.fm_v2_assets_expected_sha256_check": {
    "type": "c",
-   "def": "CHECK ((expected_sha256 ~ '^[0-9a-f]{64}$'::text))"
+   "def": "CHECK ((expected_sha256 ~ '^[0-9a-f]{64}$'::text))",
+   "table": "public.fm_v2_assets"
   },
   "constraint:public.fm_v2_assets.fm_v2_assets_kind_check": {
    "type": "c",
-   "def": "CHECK ((kind = ANY (ARRAY['photo'::text, 'glb'::text, 'video'::text])))"
+   "def": "CHECK ((kind = ANY (ARRAY['photo'::text, 'glb'::text, 'video'::text])))",
+   "table": "public.fm_v2_assets"
   },
   "constraint:public.fm_v2_assets.fm_v2_assets_path_key": {
    "type": "u",
-   "def": "UNIQUE (path)"
+   "def": "UNIQUE (path)",
+   "table": "public.fm_v2_assets"
   },
   "constraint:public.fm_v2_assets.fm_v2_assets_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_v2_assets"
   },
   "constraint:public.fm_v2_assets.fm_v2_assets_source_path_key": {
    "type": "u",
-   "def": "UNIQUE (source_path)"
+   "def": "UNIQUE (source_path)",
+   "table": "public.fm_v2_assets"
   },
   "constraint:public.fm_v2_assets.fm_v2_assets_state_check": {
    "type": "c",
-   "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'ready'::text, 'rejected'::text, 'deleted'::text])))"
+   "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'ready'::text, 'rejected'::text, 'deleted'::text])))",
+   "table": "public.fm_v2_assets"
   },
   "constraint:public.fm_v2_assets.fm_v2_assets_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_assets"
   },
   "index:public.fm_v2_assets.fm_v2_assets_job_output": {
-   "def": "CREATE INDEX fm_v2_assets_job_output ON public.fm_v2_assets USING btree (job_id, expected_sha256) WHERE (kind = 'glb'::text)"
+   "def": "CREATE INDEX fm_v2_assets_job_output ON public.fm_v2_assets USING btree (job_id, expected_sha256) WHERE (kind = 'glb'::text)",
+   "table": "public.fm_v2_assets"
   },
   "index:public.fm_v2_assets.fm_v2_assets_owner": {
-   "def": "CREATE INDEX fm_v2_assets_owner ON public.fm_v2_assets USING btree (user_id, created_at DESC)"
+   "def": "CREATE INDEX fm_v2_assets_owner ON public.fm_v2_assets USING btree (user_id, created_at DESC)",
+   "table": "public.fm_v2_assets"
   },
   "index:public.fm_v2_assets.fm_v2_assets_path_key": {
-   "def": "CREATE UNIQUE INDEX fm_v2_assets_path_key ON public.fm_v2_assets USING btree (path)"
+   "def": "CREATE UNIQUE INDEX fm_v2_assets_path_key ON public.fm_v2_assets USING btree (path)",
+   "table": "public.fm_v2_assets"
   },
   "index:public.fm_v2_assets.fm_v2_assets_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_assets_pkey ON public.fm_v2_assets USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_assets_pkey ON public.fm_v2_assets USING btree (id)",
+   "table": "public.fm_v2_assets"
   },
   "index:public.fm_v2_assets.fm_v2_assets_source_path_key": {
-   "def": "CREATE UNIQUE INDEX fm_v2_assets_source_path_key ON public.fm_v2_assets USING btree (source_path)"
+   "def": "CREATE UNIQUE INDEX fm_v2_assets_source_path_key ON public.fm_v2_assets USING btree (source_path)",
+   "table": "public.fm_v2_assets"
   },
   "table:public.fm_v2_feedback": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_feedback.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_feedback.item_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_feedback.recommendation_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_feedback.value": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_feedback.updated_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_v2_feedback.fm_v2_feedback_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (user_id, item_id)"
+   "def": "PRIMARY KEY (user_id, item_id)",
+   "table": "public.fm_v2_feedback"
   },
   "constraint:public.fm_v2_feedback.fm_v2_feedback_recommendation_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (recommendation_id) REFERENCES fm_v2_recommendations(id)"
+   "def": "FOREIGN KEY (recommendation_id) REFERENCES fm_v2_recommendations(id)",
+   "table": "public.fm_v2_feedback"
   },
   "constraint:public.fm_v2_feedback.fm_v2_feedback_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_feedback"
   },
   "constraint:public.fm_v2_feedback.fm_v2_feedback_value_check": {
    "type": "c",
-   "def": "CHECK ((value = ANY (ARRAY['like'::text, 'skip'::text])))"
+   "def": "CHECK ((value = ANY (ARRAY['like'::text, 'skip'::text])))",
+   "table": "public.fm_v2_feedback"
   },
   "index:public.fm_v2_feedback.fm_v2_feedback_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_feedback_pkey ON public.fm_v2_feedback USING btree (user_id, item_id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_feedback_pkey ON public.fm_v2_feedback USING btree (user_id, item_id)",
+   "table": "public.fm_v2_feedback"
   },
   "table:public.fm_v2_job_receipts": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_job_receipts.job_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_job_receipts.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_job_receipts.worker_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_job_receipts.attempt": {
    "type": "integer",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_job_receipts.lease_token": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_job_receipts.asset_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_job_receipts.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_asset_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (asset_id) REFERENCES fm_v2_assets(id)"
+   "def": "FOREIGN KEY (asset_id) REFERENCES fm_v2_assets(id)",
+   "table": "public.fm_v2_job_receipts"
   },
   "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_job_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (job_id) REFERENCES fm_v2_jobs(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (job_id) REFERENCES fm_v2_jobs(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_job_receipts"
   },
   "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (job_id)"
+   "def": "PRIMARY KEY (job_id)",
+   "table": "public.fm_v2_job_receipts"
   },
   "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_job_receipts"
   },
   "constraint:public.fm_v2_job_receipts.fm_v2_job_receipts_worker_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (worker_id) REFERENCES fm_v2_workers(id)"
+   "def": "FOREIGN KEY (worker_id) REFERENCES fm_v2_workers(id)",
+   "table": "public.fm_v2_job_receipts"
   },
   "index:public.fm_v2_job_receipts.fm_v2_job_receipts_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_job_receipts_pkey ON public.fm_v2_job_receipts USING btree (job_id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_job_receipts_pkey ON public.fm_v2_job_receipts USING btree (job_id)",
+   "table": "public.fm_v2_job_receipts"
   },
   "table:public.fm_v2_jobs": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_jobs.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.model_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.kind": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.state": {
    "type": "text",
    "notNull": true,
-   "hasDefault": true
+   "default": "'queued'::text"
   },
   "column:public.fm_v2_jobs.idempotency_key": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.payload_hash": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.worker_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.lease_token": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.lease_until": {
    "type": "timestamp with time zone",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.attempt": {
    "type": "integer",
    "notNull": true,
-   "hasDefault": true
+   "default": "0"
   },
   "column:public.fm_v2_jobs.error_code": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.stage": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.engine": {
    "type": "jsonb",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_jobs.updated_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_jobs.claim_instance": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.claim_request": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.analysis_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.not_before": {
    "type": "timestamp with time zone",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_jobs.deferrals": {
    "type": "integer",
    "notNull": true,
-   "hasDefault": true
+   "default": "0"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_analysis_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (analysis_id) REFERENCES fm_v2_analyses(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (analysis_id) REFERENCES fm_v2_analyses(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_analysis_id_key": {
    "type": "u",
-   "def": "UNIQUE (analysis_id)"
+   "def": "UNIQUE (analysis_id)",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_analysis_kind": {
    "type": "c",
-   "def": "CHECK (((analysis_id IS NOT NULL) = (kind = 'garment.analyze'::text)))"
+   "def": "CHECK (((analysis_id IS NOT NULL) = (kind = 'garment.analyze'::text)))",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_deferrals_check": {
    "type": "c",
-   "def": "CHECK ((deferrals >= 0))"
+   "def": "CHECK ((deferrals >= 0))",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_model_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (model_id) REFERENCES fm_v2_models(id)"
+   "def": "FOREIGN KEY (model_id) REFERENCES fm_v2_models(id)",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_model_id_key": {
    "type": "u",
-   "def": "UNIQUE (model_id)"
+   "def": "UNIQUE (model_id)",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_state_check": {
    "type": "c",
-   "def": "CHECK ((state = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'canceled'::text])))"
+   "def": "CHECK ((state = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'canceled'::text])))",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_subject": {
    "type": "c",
-   "def": "CHECK (((model_id IS NULL) <> (analysis_id IS NULL)))"
+   "def": "CHECK (((model_id IS NULL) <> (analysis_id IS NULL)))",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_user_id_idempotency_key_key": {
    "type": "u",
-   "def": "UNIQUE (user_id, idempotency_key)"
+   "def": "UNIQUE (user_id, idempotency_key)",
+   "table": "public.fm_v2_jobs"
   },
   "constraint:public.fm_v2_jobs.fm_v2_jobs_worker_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (worker_id) REFERENCES fm_v2_workers(id)"
+   "def": "FOREIGN KEY (worker_id) REFERENCES fm_v2_workers(id)",
+   "table": "public.fm_v2_jobs"
   },
   "index:public.fm_v2_jobs.fm_v2_jobs_analysis_id_key": {
-   "def": "CREATE UNIQUE INDEX fm_v2_jobs_analysis_id_key ON public.fm_v2_jobs USING btree (analysis_id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_jobs_analysis_id_key ON public.fm_v2_jobs USING btree (analysis_id)",
+   "table": "public.fm_v2_jobs"
   },
   "index:public.fm_v2_jobs.fm_v2_jobs_lease": {
-   "def": "CREATE INDEX fm_v2_jobs_lease ON public.fm_v2_jobs USING btree (lease_until) WHERE (state = 'running'::text)"
+   "def": "CREATE INDEX fm_v2_jobs_lease ON public.fm_v2_jobs USING btree (lease_until) WHERE (state = 'running'::text)",
+   "table": "public.fm_v2_jobs"
   },
   "index:public.fm_v2_jobs.fm_v2_jobs_model_id_key": {
-   "def": "CREATE UNIQUE INDEX fm_v2_jobs_model_id_key ON public.fm_v2_jobs USING btree (model_id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_jobs_model_id_key ON public.fm_v2_jobs USING btree (model_id)",
+   "table": "public.fm_v2_jobs"
   },
   "index:public.fm_v2_jobs.fm_v2_jobs_owner": {
-   "def": "CREATE INDEX fm_v2_jobs_owner ON public.fm_v2_jobs USING btree (user_id, created_at DESC)"
+   "def": "CREATE INDEX fm_v2_jobs_owner ON public.fm_v2_jobs USING btree (user_id, created_at DESC)",
+   "table": "public.fm_v2_jobs"
   },
   "index:public.fm_v2_jobs.fm_v2_jobs_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_jobs_pkey ON public.fm_v2_jobs USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_jobs_pkey ON public.fm_v2_jobs USING btree (id)",
+   "table": "public.fm_v2_jobs"
   },
   "index:public.fm_v2_jobs.fm_v2_jobs_queue": {
-   "def": "CREATE INDEX fm_v2_jobs_queue ON public.fm_v2_jobs USING btree (user_id, created_at, id) WHERE (state = 'queued'::text)"
+   "def": "CREATE INDEX fm_v2_jobs_queue ON public.fm_v2_jobs USING btree (user_id, created_at, id) WHERE (state = 'queued'::text)",
+   "table": "public.fm_v2_jobs"
   },
   "index:public.fm_v2_jobs.fm_v2_jobs_user_id_idempotency_key_key": {
-   "def": "CREATE UNIQUE INDEX fm_v2_jobs_user_id_idempotency_key_key ON public.fm_v2_jobs USING btree (user_id, idempotency_key)"
+   "def": "CREATE UNIQUE INDEX fm_v2_jobs_user_id_idempotency_key_key ON public.fm_v2_jobs USING btree (user_id, idempotency_key)",
+   "table": "public.fm_v2_jobs"
   },
   "table:public.fm_v2_looks": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_looks.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_looks.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_looks.name": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_looks.avatar_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_looks.fitting_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_looks.recommendation_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_looks.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_looks.top_fitting_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_looks.bottom_fitting_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_looks.camera": {
    "type": "jsonb",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_looks.snapshot": {
    "type": "jsonb",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "constraint:public.fm_v2_looks.fm_v2_looks_avatar_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (avatar_id) REFERENCES fm_v2_models(id)"
+   "def": "FOREIGN KEY (avatar_id) REFERENCES fm_v2_models(id)",
+   "table": "public.fm_v2_looks"
   },
   "constraint:public.fm_v2_looks.fm_v2_looks_bottom_fitting_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (bottom_fitting_id) REFERENCES fm_v2_models(id)"
+   "def": "FOREIGN KEY (bottom_fitting_id) REFERENCES fm_v2_models(id)",
+   "table": "public.fm_v2_looks"
   },
   "constraint:public.fm_v2_looks.fm_v2_looks_fitting_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (fitting_id) REFERENCES fm_v2_models(id)"
+   "def": "FOREIGN KEY (fitting_id) REFERENCES fm_v2_models(id)",
+   "table": "public.fm_v2_looks"
   },
   "constraint:public.fm_v2_looks.fm_v2_looks_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_v2_looks"
   },
   "constraint:public.fm_v2_looks.fm_v2_looks_recommendation_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (recommendation_id) REFERENCES fm_v2_recommendations(id)"
+   "def": "FOREIGN KEY (recommendation_id) REFERENCES fm_v2_recommendations(id)",
+   "table": "public.fm_v2_looks"
   },
   "constraint:public.fm_v2_looks.fm_v2_looks_top_fitting_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (top_fitting_id) REFERENCES fm_v2_models(id)"
+   "def": "FOREIGN KEY (top_fitting_id) REFERENCES fm_v2_models(id)",
+   "table": "public.fm_v2_looks"
   },
   "constraint:public.fm_v2_looks.fm_v2_looks_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_looks"
   },
   "index:public.fm_v2_looks.fm_v2_looks_owner": {
-   "def": "CREATE INDEX fm_v2_looks_owner ON public.fm_v2_looks USING btree (user_id, created_at DESC)"
+   "def": "CREATE INDEX fm_v2_looks_owner ON public.fm_v2_looks USING btree (user_id, created_at DESC)",
+   "table": "public.fm_v2_looks"
   },
   "index:public.fm_v2_looks.fm_v2_looks_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_looks_pkey ON public.fm_v2_looks USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_looks_pkey ON public.fm_v2_looks USING btree (id)",
+   "table": "public.fm_v2_looks"
   },
   "table:public.fm_v2_models": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_models.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.kind": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.name": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.wardrobe_item_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.avatar_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.garment_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.input_assets": {
    "type": "uuid[]",
    "notNull": true,
-   "hasDefault": true
+   "default": "'{}'::uuid[]"
   },
   "column:public.fm_v2_models.params": {
    "type": "jsonb",
    "notNull": true,
-   "hasDefault": true
+   "default": "'{}'::jsonb"
   },
   "column:public.fm_v2_models.output_asset_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_models.slot": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.accepted_at": {
    "type": "timestamp with time zone",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.source_retention": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.superseded_by": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_models.source_cleanup": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "constraint:public.fm_v2_models.fm_v2_models_avatar_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (avatar_id) REFERENCES fm_v2_models(id)"
+   "def": "FOREIGN KEY (avatar_id) REFERENCES fm_v2_models(id)",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_garment_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (garment_id) REFERENCES fm_v2_models(id)"
+   "def": "FOREIGN KEY (garment_id) REFERENCES fm_v2_models(id)",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_kind_check": {
    "type": "c",
-   "def": "CHECK ((kind = ANY (ARRAY['avatar'::text, 'garment'::text, 'fitting'::text])))"
+   "def": "CHECK ((kind = ANY (ARRAY['avatar'::text, 'garment'::text, 'fitting'::text])))",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_output_asset_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (output_asset_id) REFERENCES fm_v2_assets(id)"
+   "def": "FOREIGN KEY (output_asset_id) REFERENCES fm_v2_assets(id)",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_slot_check": {
    "type": "c",
-   "def": "CHECK ((slot = ANY (ARRAY['top'::text, 'bottom'::text])))"
+   "def": "CHECK ((slot = ANY (ARRAY['top'::text, 'bottom'::text])))",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_slot_kind": {
    "type": "c",
-   "def": "CHECK ((((kind = 'avatar'::text) AND (slot IS NULL)) OR ((kind = ANY (ARRAY['garment'::text, 'fitting'::text])) AND (slot IS NOT NULL))))"
+   "def": "CHECK ((((kind = 'avatar'::text) AND (slot IS NULL)) OR ((kind = ANY (ARRAY['garment'::text, 'fitting'::text])) AND (slot IS NOT NULL))))",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_source_cleanup_check": {
    "type": "c",
-   "def": "CHECK ((source_cleanup = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))"
+   "def": "CHECK ((source_cleanup = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_source_retention_check": {
    "type": "c",
-   "def": "CHECK ((source_retention = ANY (ARRAY['keep'::text, 'deleted'::text])))"
+   "def": "CHECK ((source_retention = ANY (ARRAY['keep'::text, 'deleted'::text])))",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_superseded_by_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (superseded_by) REFERENCES fm_v2_models(id) DEFERRABLE INITIALLY DEFERRED"
+   "def": "FOREIGN KEY (superseded_by) REFERENCES fm_v2_models(id) DEFERRABLE INITIALLY DEFERRED",
+   "table": "public.fm_v2_models"
   },
   "constraint:public.fm_v2_models.fm_v2_models_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_models"
   },
   "index:public.fm_v2_models.fm_v2_fitting_cache": {
-   "def": "CREATE UNIQUE INDEX fm_v2_fitting_cache ON public.fm_v2_models USING btree (user_id, avatar_id, garment_id) WHERE ((kind = 'fitting'::text) AND (superseded_by IS NULL))"
+   "def": "CREATE UNIQUE INDEX fm_v2_fitting_cache ON public.fm_v2_models USING btree (user_id, avatar_id, garment_id) WHERE ((kind = 'fitting'::text) AND (superseded_by IS NULL))",
+   "table": "public.fm_v2_models"
   },
   "index:public.fm_v2_models.fm_v2_models_owner": {
-   "def": "CREATE INDEX fm_v2_models_owner ON public.fm_v2_models USING btree (user_id, created_at DESC)"
+   "def": "CREATE INDEX fm_v2_models_owner ON public.fm_v2_models USING btree (user_id, created_at DESC)",
+   "table": "public.fm_v2_models"
   },
   "index:public.fm_v2_models.fm_v2_models_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_models_pkey ON public.fm_v2_models USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_models_pkey ON public.fm_v2_models USING btree (id)",
+   "table": "public.fm_v2_models"
   },
   "index:public.fm_v2_models.fm_v2_models_slot": {
-   "def": "CREATE INDEX fm_v2_models_slot ON public.fm_v2_models USING btree (user_id, avatar_id, slot) WHERE (kind = 'fitting'::text)"
+   "def": "CREATE INDEX fm_v2_models_slot ON public.fm_v2_models USING btree (user_id, avatar_id, slot) WHERE (kind = 'fitting'::text)",
+   "table": "public.fm_v2_models"
   },
   "index:public.fm_v2_models.fm_v2_models_wardrobe": {
-   "def": "CREATE INDEX fm_v2_models_wardrobe ON public.fm_v2_models USING btree (user_id, wardrobe_item_id)"
+   "def": "CREATE INDEX fm_v2_models_wardrobe ON public.fm_v2_models USING btree (user_id, wardrobe_item_id)",
+   "table": "public.fm_v2_models"
   },
   "table:public.fm_v2_profiles": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_profiles.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_profiles.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_profiles.answers": {
    "type": "jsonb",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_profiles.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_v2_profiles.fm_v2_profiles_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_v2_profiles"
   },
   "constraint:public.fm_v2_profiles.fm_v2_profiles_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_profiles"
   },
   "index:public.fm_v2_profiles.fm_v2_profiles_owner": {
-   "def": "CREATE INDEX fm_v2_profiles_owner ON public.fm_v2_profiles USING btree (user_id, created_at DESC, id DESC)"
+   "def": "CREATE INDEX fm_v2_profiles_owner ON public.fm_v2_profiles USING btree (user_id, created_at DESC, id DESC)",
+   "table": "public.fm_v2_profiles"
   },
   "index:public.fm_v2_profiles.fm_v2_profiles_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_profiles_pkey ON public.fm_v2_profiles USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_profiles_pkey ON public.fm_v2_profiles USING btree (id)",
+   "table": "public.fm_v2_profiles"
   },
   "table:public.fm_v2_recommendations": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_recommendations.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_recommendations.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_recommendations.profile_id": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_recommendations.snapshot_hash": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_recommendations.data": {
    "type": "jsonb",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_recommendations.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_v2_recommendations.fm_v2_recommendations_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_v2_recommendations"
   },
   "constraint:public.fm_v2_recommendations.fm_v2_recommendations_profile_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (profile_id) REFERENCES fm_v2_profiles(id)"
+   "def": "FOREIGN KEY (profile_id) REFERENCES fm_v2_profiles(id)",
+   "table": "public.fm_v2_recommendations"
   },
   "constraint:public.fm_v2_recommendations.fm_v2_recommendations_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_recommendations"
   },
   "index:public.fm_v2_recommendations.fm_v2_recommendations_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_recommendations_pkey ON public.fm_v2_recommendations USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_recommendations_pkey ON public.fm_v2_recommendations USING btree (id)",
+   "table": "public.fm_v2_recommendations"
   },
   "index:public.fm_v2_recommendations.fm_v2_recs_owner": {
-   "def": "CREATE INDEX fm_v2_recs_owner ON public.fm_v2_recommendations USING btree (user_id, created_at DESC)"
+   "def": "CREATE INDEX fm_v2_recs_owner ON public.fm_v2_recommendations USING btree (user_id, created_at DESC)",
+   "table": "public.fm_v2_recommendations"
   },
   "table:public.fm_v2_source_cleanup": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_source_cleanup.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": true
+   "default": "gen_random_uuid()"
   },
   "column:public.fm_v2_source_cleanup.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_source_cleanup.asset_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_source_cleanup.path": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_source_cleanup.state": {
    "type": "text",
    "notNull": true,
-   "hasDefault": true
+   "default": "'pending'::text"
   },
   "column:public.fm_v2_source_cleanup.attempts": {
    "type": "integer",
    "notNull": true,
-   "hasDefault": true
+   "default": "0"
   },
   "column:public.fm_v2_source_cleanup.last_error": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_source_cleanup.requested_by_model": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_source_cleanup.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_source_cleanup.updated_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_source_cleanup.next_attempt_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_source_cleanup.completed_at": {
    "type": "timestamp with time zone",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_source_cleanup.claim_token": {
    "type": "uuid",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_source_cleanup.claimed_until": {
    "type": "timestamp with time zone",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_asset_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (asset_id) REFERENCES fm_v2_assets(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (asset_id) REFERENCES fm_v2_assets(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_asset_id_path_key": {
    "type": "u",
-   "def": "UNIQUE (asset_id, path)"
+   "def": "UNIQUE (asset_id, path)",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_attempts_check": {
    "type": "c",
-   "def": "CHECK ((attempts >= 0))"
+   "def": "CHECK ((attempts >= 0))",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_check": {
    "type": "c",
-   "def": "CHECK (((state = 'completed'::text) = (completed_at IS NOT NULL)))"
+   "def": "CHECK (((state = 'completed'::text) = (completed_at IS NOT NULL)))",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_claim_pair": {
    "type": "c",
-   "def": "CHECK (((claim_token IS NULL) = (claimed_until IS NULL)))"
+   "def": "CHECK (((claim_token IS NULL) = (claimed_until IS NULL)))",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_last_error_check": {
    "type": "c",
-   "def": "CHECK (((last_error IS NULL) OR (length(last_error) <= 200)))"
+   "def": "CHECK (((last_error IS NULL) OR (length(last_error) <= 200)))",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_path_check": {
    "type": "c",
-   "def": "CHECK (((length(path) >= 1) AND (length(path) <= 300)))"
+   "def": "CHECK (((length(path) >= 1) AND (length(path) <= 300)))",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_requested_by_model_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (requested_by_model) REFERENCES fm_v2_models(id) ON DELETE SET NULL"
+   "def": "FOREIGN KEY (requested_by_model) REFERENCES fm_v2_models(id) ON DELETE SET NULL",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_state_check": {
    "type": "c",
-   "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))"
+   "def": "CHECK ((state = ANY (ARRAY['pending'::text, 'completed'::text, 'failed'::text])))",
+   "table": "public.fm_v2_source_cleanup"
   },
   "constraint:public.fm_v2_source_cleanup.fm_v2_source_cleanup_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_source_cleanup"
   },
   "index:public.fm_v2_source_cleanup.fm_v2_source_cleanup_asset_id_path_key": {
-   "def": "CREATE UNIQUE INDEX fm_v2_source_cleanup_asset_id_path_key ON public.fm_v2_source_cleanup USING btree (asset_id, path)"
+   "def": "CREATE UNIQUE INDEX fm_v2_source_cleanup_asset_id_path_key ON public.fm_v2_source_cleanup USING btree (asset_id, path)",
+   "table": "public.fm_v2_source_cleanup"
   },
   "index:public.fm_v2_source_cleanup.fm_v2_source_cleanup_due": {
-   "def": "CREATE INDEX fm_v2_source_cleanup_due ON public.fm_v2_source_cleanup USING btree (next_attempt_at) WHERE (state = 'pending'::text)"
+   "def": "CREATE INDEX fm_v2_source_cleanup_due ON public.fm_v2_source_cleanup USING btree (next_attempt_at) WHERE (state = 'pending'::text)",
+   "table": "public.fm_v2_source_cleanup"
   },
   "index:public.fm_v2_source_cleanup.fm_v2_source_cleanup_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_source_cleanup_pkey ON public.fm_v2_source_cleanup USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_source_cleanup_pkey ON public.fm_v2_source_cleanup USING btree (id)",
+   "table": "public.fm_v2_source_cleanup"
   },
   "index:public.fm_v2_source_cleanup.fm_v2_source_cleanup_user": {
-   "def": "CREATE INDEX fm_v2_source_cleanup_user ON public.fm_v2_source_cleanup USING btree (user_id, asset_id)"
+   "def": "CREATE INDEX fm_v2_source_cleanup_user ON public.fm_v2_source_cleanup USING btree (user_id, asset_id)",
+   "table": "public.fm_v2_source_cleanup"
   },
   "table:public.fm_v2_workers": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_v2_workers.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_workers.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_workers.token_hash": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_workers.name": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_workers.capabilities": {
    "type": "jsonb",
    "notNull": true,
-   "hasDefault": true
+   "default": "'{}'::jsonb"
   },
   "column:public.fm_v2_workers.enabled": {
    "type": "boolean",
    "notNull": true,
-   "hasDefault": true
+   "default": "true"
   },
   "column:public.fm_v2_workers.last_seen": {
    "type": "timestamp with time zone",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_v2_workers.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_v2_workers.allowed_capabilities": {
    "type": "text[]",
    "notNull": true,
-   "hasDefault": true
+   "default": "'{}'::text[]"
   },
   "column:public.fm_v2_workers.gpu_busy": {
    "type": "boolean",
    "notNull": true,
-   "hasDefault": true
+   "default": "false"
   },
   "constraint:public.fm_v2_workers.fm_v2_workers_allowed_capabilities_check": {
    "type": "c",
-   "def": "CHECK ((allowed_capabilities <@ ARRAY['avatar.reconstruct'::text, 'garment.reconstruct'::text, 'garment.drape'::text, 'bottom.reconstruct'::text, 'bottom.drape'::text, 'garment.analyze'::text]))"
+   "def": "CHECK ((allowed_capabilities <@ ARRAY['avatar.reconstruct'::text, 'garment.reconstruct'::text, 'garment.drape'::text, 'bottom.reconstruct'::text, 'bottom.drape'::text, 'garment.analyze'::text]))",
+   "table": "public.fm_v2_workers"
   },
   "constraint:public.fm_v2_workers.fm_v2_workers_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_v2_workers"
   },
   "constraint:public.fm_v2_workers.fm_v2_workers_token_hash_key": {
    "type": "u",
-   "def": "UNIQUE (token_hash)"
+   "def": "UNIQUE (token_hash)",
+   "table": "public.fm_v2_workers"
   },
   "constraint:public.fm_v2_workers.fm_v2_workers_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_v2_workers"
   },
   "index:public.fm_v2_workers.fm_v2_workers_owner": {
-   "def": "CREATE INDEX fm_v2_workers_owner ON public.fm_v2_workers USING btree (user_id)"
+   "def": "CREATE INDEX fm_v2_workers_owner ON public.fm_v2_workers USING btree (user_id)",
+   "table": "public.fm_v2_workers"
   },
   "index:public.fm_v2_workers.fm_v2_workers_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_v2_workers_pkey ON public.fm_v2_workers USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_v2_workers_pkey ON public.fm_v2_workers USING btree (id)",
+   "table": "public.fm_v2_workers"
   },
   "index:public.fm_v2_workers.fm_v2_workers_token_hash_key": {
-   "def": "CREATE UNIQUE INDEX fm_v2_workers_token_hash_key ON public.fm_v2_workers USING btree (token_hash)"
+   "def": "CREATE UNIQUE INDEX fm_v2_workers_token_hash_key ON public.fm_v2_workers USING btree (token_hash)",
+   "table": "public.fm_v2_workers"
   },
   "table:public.fm_wardrobe_items": {
-   "rls": true
+   "rls": true,
+   "rlsForced": false
   },
   "column:public.fm_wardrobe_items.id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": true
+   "default": "gen_random_uuid()"
   },
   "column:public.fm_wardrobe_items.user_id": {
    "type": "uuid",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.name": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.category": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.color": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.secondary_color": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.style": {
    "type": "text",
    "notNull": true,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.pattern": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.material": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.description": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.notes": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.image_path": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.image_url": {
    "type": "text",
    "notNull": false,
-   "hasDefault": false
+   "default": null
   },
   "column:public.fm_wardrobe_items.is_favorite": {
    "type": "boolean",
    "notNull": true,
-   "hasDefault": true
+   "default": "false"
   },
   "column:public.fm_wardrobe_items.created_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "column:public.fm_wardrobe_items.updated_at": {
    "type": "timestamp with time zone",
    "notNull": true,
-   "hasDefault": true
+   "default": "now()"
   },
   "constraint:public.fm_wardrobe_items.fm_wardrobe_items_pkey": {
    "type": "p",
-   "def": "PRIMARY KEY (id)"
+   "def": "PRIMARY KEY (id)",
+   "table": "public.fm_wardrobe_items"
   },
   "constraint:public.fm_wardrobe_items.fm_wardrobe_items_user_id_fkey": {
    "type": "f",
-   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
+   "def": "FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE",
+   "table": "public.fm_wardrobe_items"
   },
   "index:public.fm_wardrobe_items.fm_wardrobe_items_category_idx": {
-   "def": "CREATE INDEX fm_wardrobe_items_category_idx ON public.fm_wardrobe_items USING btree (category)"
+   "def": "CREATE INDEX fm_wardrobe_items_category_idx ON public.fm_wardrobe_items USING btree (category)",
+   "table": "public.fm_wardrobe_items"
   },
   "index:public.fm_wardrobe_items.fm_wardrobe_items_pkey": {
-   "def": "CREATE UNIQUE INDEX fm_wardrobe_items_pkey ON public.fm_wardrobe_items USING btree (id)"
+   "def": "CREATE UNIQUE INDEX fm_wardrobe_items_pkey ON public.fm_wardrobe_items USING btree (id)",
+   "table": "public.fm_wardrobe_items"
   },
   "index:public.fm_wardrobe_items.fm_wardrobe_items_style_idx": {
-   "def": "CREATE INDEX fm_wardrobe_items_style_idx ON public.fm_wardrobe_items USING btree (style)"
+   "def": "CREATE INDEX fm_wardrobe_items_style_idx ON public.fm_wardrobe_items USING btree (style)",
+   "table": "public.fm_wardrobe_items"
   },
   "index:public.fm_wardrobe_items.fm_wardrobe_items_user_id_idx": {
-   "def": "CREATE INDEX fm_wardrobe_items_user_id_idx ON public.fm_wardrobe_items USING btree (user_id)"
+   "def": "CREATE INDEX fm_wardrobe_items_user_id_idx ON public.fm_wardrobe_items USING btree (user_id)",
+   "table": "public.fm_wardrobe_items"
   },
   "table:storage.buckets": {
-   "rls": false
+   "rls": false,
+   "rlsForced": false
   },
   "table:storage.objects": {
-   "rls": true
-  },
-  "function:public.armor(bytea)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "a45f37224c831b79e0dfc3d8c6feb4e0",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.armor(bytea, text[], text[])": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "a45f37224c831b79e0dfc3d8c6feb4e0",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.crypt(text, text)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "ea9cb21d4668638c79f471dc607df1b4",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.dearmor(text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "698d71f03c675ff58762990312109ea6",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.decrypt(bytea, bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "fa3fd67f1c168f498eab6165f27bdb1b",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.decrypt_iv(bytea, bytea, bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "00048a7838901c86900226f25d8fd1ef",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.digest(bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "926ba3fbdb45dc078b3e3cafddc392cc",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.digest(text, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "926ba3fbdb45dc078b3e3cafddc392cc",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.encrypt(bytea, bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "a865200e3e17395d9b3774d4e7a19832",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.encrypt_iv(bytea, bytea, bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "17a521e43efce20dd4703e9d243d4f4d",
-   "anonExecute": true,
-   "authenticatedExecute": true
+   "rls": true,
+   "rlsForced": false
   },
   "function:public.fm_begin_auth_refresh(p_hash text, p_owner uuid)": {
    "returns": "TABLE(is_owner boolean, sealed_result text)",
@@ -4172,194 +4449,12 @@
    "anonExecute": false,
    "authenticatedExecute": false
   },
-  "function:public.gen_random_bytes(integer)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "393a992bef3cadec88b224bd3dace51c",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.gen_random_uuid()": {
-   "returns": "uuid",
-   "securityDefiner": false,
-   "bodyMd5": "b2825f0b165931d2f718b16cd4dc7cb1",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.gen_salt(text)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "83471500bcebc23b61302a74e64e0613",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.gen_salt(text, integer)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "1ceb3513947cb5b72265001042040f51",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
   "function:public.handle_new_user()": {
    "returns": "trigger",
    "securityDefiner": true,
-   "bodyMd5": "16d75989f7a9155c2b3fe7ce243872f0",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.hmac(bytea, bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "439ec46f1dc8e4c4b39837540788374e",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.hmac(text, text, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "439ec46f1dc8e4c4b39837540788374e",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_armor_headers(text, OUT key text, OUT value text)": {
-   "returns": "SETOF record",
-   "securityDefiner": false,
-   "bodyMd5": "3954d7fda83ff251e09f7301df4decfe",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_key_id(bytea)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "4b72a26a9f6422f60ea2f6d4f053e2be",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_decrypt(bytea, bytea)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "dd08bd1c245bc68b737103263d12bf24",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_decrypt(bytea, bytea, text)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "dd08bd1c245bc68b737103263d12bf24",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_decrypt(bytea, bytea, text, text)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "dd08bd1c245bc68b737103263d12bf24",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_decrypt_bytea(bytea, bytea)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "7e9d4fce9c6b6c044e314c928d957e9d",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_decrypt_bytea(bytea, bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "7e9d4fce9c6b6c044e314c928d957e9d",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_decrypt_bytea(bytea, bytea, text, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "7e9d4fce9c6b6c044e314c928d957e9d",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_encrypt(text, bytea)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "7472cedacad809d059f35b3823e16d62",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_encrypt(text, bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "7472cedacad809d059f35b3823e16d62",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_encrypt_bytea(bytea, bytea)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "fb27931d690d0cbd38dfc1d2269d8167",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_pub_encrypt_bytea(bytea, bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "fb27931d690d0cbd38dfc1d2269d8167",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_sym_decrypt(bytea, text)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "00337fc8a344a450412a6e8501b90406",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_sym_decrypt(bytea, text, text)": {
-   "returns": "text",
-   "securityDefiner": false,
-   "bodyMd5": "00337fc8a344a450412a6e8501b90406",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_sym_decrypt_bytea(bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "ae33cd2d0dea9f8d3899631bdfcc3bcc",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_sym_decrypt_bytea(bytea, text, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "ae33cd2d0dea9f8d3899631bdfcc3bcc",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_sym_encrypt(text, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "a911e6ce3232c550abbafb7ba5c13d70",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_sym_encrypt(text, text, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "a911e6ce3232c550abbafb7ba5c13d70",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_sym_encrypt_bytea(bytea, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "f5f1ad766d41dae19429bb6d8a8bc093",
-   "anonExecute": true,
-   "authenticatedExecute": true
-  },
-  "function:public.pgp_sym_encrypt_bytea(bytea, text, text)": {
-   "returns": "bytea",
-   "securityDefiner": false,
-   "bodyMd5": "f5f1ad766d41dae19429bb6d8a8bc093",
-   "anonExecute": true,
-   "authenticatedExecute": true
+   "bodyMd5": "777f338b874fa14bd467c846bfb9b988",
+   "anonExecute": false,
+   "authenticatedExecute": false
   },
   "function:public.set_updated_at()": {
    "returns": "trigger",
@@ -4369,192 +4464,411 @@
    "authenticatedExecute": true
   },
   "policy:public.fm_outfits.fm_outfits_delete_own": {
+   "table": "public.fm_outfits",
    "cmd": "DELETE",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(auth.uid() = user_id)",
+   "check": null,
    "usingMd5": "19300d155780585259ede73ac370586c",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_outfits.fm_outfits_insert_own": {
+   "table": "public.fm_outfits",
    "cmd": "INSERT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": null,
+   "check": "(auth.uid() = user_id)",
    "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
    "checkMd5": "19300d155780585259ede73ac370586c"
   },
   "policy:public.fm_outfits.fm_outfits_select_own": {
+   "table": "public.fm_outfits",
    "cmd": "SELECT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(auth.uid() = user_id)",
+   "check": null,
    "usingMd5": "19300d155780585259ede73ac370586c",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_uploaded_items.fm_uploaded_insert_own": {
+   "table": "public.fm_uploaded_items",
    "cmd": "INSERT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": null,
+   "check": "(auth.uid() = user_id)",
    "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
    "checkMd5": "19300d155780585259ede73ac370586c"
   },
   "policy:public.fm_uploaded_items.fm_uploaded_select_own": {
+   "table": "public.fm_uploaded_items",
    "cmd": "SELECT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(auth.uid() = user_id)",
+   "check": null,
    "usingMd5": "19300d155780585259ede73ac370586c",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_users.fm_users_insert_own": {
+   "table": "public.fm_users",
    "cmd": "INSERT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": null,
+   "check": "(auth.uid() = id)",
    "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
    "checkMd5": "bc9c729a84690340789a4e4f01175335"
   },
   "policy:public.fm_users.fm_users_select_own": {
+   "table": "public.fm_users",
    "cmd": "SELECT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(auth.uid() = id)",
+   "check": null,
    "usingMd5": "bc9c729a84690340789a4e4f01175335",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_users.fm_users_update_own": {
+   "table": "public.fm_users",
    "cmd": "UPDATE",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(auth.uid() = id)",
+   "check": "(auth.uid() = id)",
    "usingMd5": "bc9c729a84690340789a4e4f01175335",
    "checkMd5": "bc9c729a84690340789a4e4f01175335"
   },
   "policy:public.fm_v2_assets.owner_read": {
+   "table": "public.fm_v2_assets",
    "cmd": "SELECT",
    "roles": [
     "authenticated"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(( SELECT auth.uid() AS uid) = user_id)",
+   "check": null,
    "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_v2_feedback.owner_read": {
+   "table": "public.fm_v2_feedback",
    "cmd": "SELECT",
    "roles": [
     "authenticated"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(( SELECT auth.uid() AS uid) = user_id)",
+   "check": null,
    "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_v2_looks.owner_read": {
+   "table": "public.fm_v2_looks",
    "cmd": "SELECT",
    "roles": [
     "authenticated"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(( SELECT auth.uid() AS uid) = user_id)",
+   "check": null,
    "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_v2_models.owner_read": {
+   "table": "public.fm_v2_models",
    "cmd": "SELECT",
    "roles": [
     "authenticated"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(( SELECT auth.uid() AS uid) = user_id)",
+   "check": null,
    "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_v2_profiles.owner_read": {
+   "table": "public.fm_v2_profiles",
    "cmd": "SELECT",
    "roles": [
     "authenticated"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(( SELECT auth.uid() AS uid) = user_id)",
+   "check": null,
    "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_v2_recommendations.owner_read": {
+   "table": "public.fm_v2_recommendations",
    "cmd": "SELECT",
    "roles": [
     "authenticated"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(( SELECT auth.uid() AS uid) = user_id)",
+   "check": null,
    "usingMd5": "ff452c766f1dd1d84c376129b36406c1",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_wardrobe_items.fm_wardrobe_delete_own": {
+   "table": "public.fm_wardrobe_items",
    "cmd": "DELETE",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(auth.uid() = user_id)",
+   "check": null,
    "usingMd5": "19300d155780585259ede73ac370586c",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_wardrobe_items.fm_wardrobe_insert_own": {
+   "table": "public.fm_wardrobe_items",
    "cmd": "INSERT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": null,
+   "check": "(auth.uid() = user_id)",
    "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
    "checkMd5": "19300d155780585259ede73ac370586c"
   },
   "policy:public.fm_wardrobe_items.fm_wardrobe_select_own": {
+   "table": "public.fm_wardrobe_items",
    "cmd": "SELECT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(auth.uid() = user_id)",
+   "check": null,
    "usingMd5": "19300d155780585259ede73ac370586c",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:public.fm_wardrobe_items.fm_wardrobe_update_own": {
+   "table": "public.fm_wardrobe_items",
    "cmd": "UPDATE",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "(auth.uid() = user_id)",
+   "check": "(auth.uid() = user_id)",
    "usingMd5": "19300d155780585259ede73ac370586c",
    "checkMd5": "19300d155780585259ede73ac370586c"
   },
   "policy:storage.objects.storage_delete_own": {
+   "table": "storage.objects",
    "cmd": "DELETE",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+   "check": null,
    "usingMd5": "56e6f236613c47a110bae36632f12e3e",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:storage.objects.storage_insert_own": {
+   "table": "storage.objects",
    "cmd": "INSERT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": null,
+   "check": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
    "usingMd5": "d41d8cd98f00b204e9800998ecf8427e",
    "checkMd5": "56e6f236613c47a110bae36632f12e3e"
   },
   "policy:storage.objects.storage_select_own": {
+   "table": "storage.objects",
    "cmd": "SELECT",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+   "check": null,
    "usingMd5": "56e6f236613c47a110bae36632f12e3e",
    "checkMd5": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "policy:storage.objects.storage_update_own": {
+   "table": "storage.objects",
    "cmd": "UPDATE",
    "roles": [
     "public"
    ],
+   "permissive": "PERMISSIVE",
+   "using": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+   "check": "((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
    "usingMd5": "56e6f236613c47a110bae36632f12e3e",
    "checkMd5": "56e6f236613c47a110bae36632f12e3e"
   },
   "trigger:auth.users.on_auth_user_created": {
-   "def": "CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()"
+   "def": "CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()",
+   "table": "auth.users"
   },
   "trigger:public.fm_users.set_fm_users_updated_at": {
-   "def": "CREATE TRIGGER set_fm_users_updated_at BEFORE UPDATE ON public.fm_users FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+   "def": "CREATE TRIGGER set_fm_users_updated_at BEFORE UPDATE ON public.fm_users FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+   "table": "public.fm_users"
   },
   "trigger:public.fm_v2_analyses.fm_v2_analysis_tombstone": {
-   "def": "CREATE TRIGGER fm_v2_analysis_tombstone AFTER DELETE ON public.fm_v2_analyses FOR EACH ROW EXECUTE FUNCTION fm_v2_analysis_tombstone()"
+   "def": "CREATE TRIGGER fm_v2_analysis_tombstone AFTER DELETE ON public.fm_v2_analyses FOR EACH ROW EXECUTE FUNCTION fm_v2_analysis_tombstone()",
+   "table": "public.fm_v2_analyses"
   },
   "trigger:public.fm_wardrobe_items.set_fm_wardrobe_items_updated_at": {
-   "def": "CREATE TRIGGER set_fm_wardrobe_items_updated_at BEFORE UPDATE ON public.fm_wardrobe_items FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+   "def": "CREATE TRIGGER set_fm_wardrobe_items_updated_at BEFORE UPDATE ON public.fm_wardrobe_items FOR EACH ROW EXECUTE FUNCTION set_updated_at()",
+   "table": "public.fm_wardrobe_items"
+  },
+  "grant:public.fm_ai_daily_usage": {
+   "anon": [],
+   "authenticated": []
+  },
+  "grant:public.fm_auth_identities": {
+   "anon": [],
+   "authenticated": []
+  },
+  "grant:public.fm_auth_refreshes": {
+   "anon": [],
+   "authenticated": []
+  },
+  "grant:public.fm_outfits": {
+   "anon": [
+    "DELETE",
+    "INSERT",
+    "SELECT",
+    "UPDATE"
+   ],
+   "authenticated": [
+    "DELETE",
+    "INSERT",
+    "SELECT",
+    "UPDATE"
+   ]
+  },
+  "grant:public.fm_uploaded_items": {
+   "anon": [
+    "DELETE",
+    "INSERT",
+    "SELECT",
+    "UPDATE"
+   ],
+   "authenticated": [
+    "DELETE",
+    "INSERT",
+    "SELECT",
+    "UPDATE"
+   ]
+  },
+  "grant:public.fm_users": {
+   "anon": [
+    "DELETE",
+    "INSERT",
+    "SELECT",
+    "UPDATE"
+   ],
+   "authenticated": [
+    "DELETE",
+    "INSERT",
+    "SELECT",
+    "UPDATE"
+   ]
+  },
+  "grant:public.fm_v2_analyses": {
+   "anon": [],
+   "authenticated": []
+  },
+  "grant:public.fm_v2_assets": {
+   "anon": [],
+   "authenticated": [
+    "SELECT"
+   ]
+  },
+  "grant:public.fm_v2_feedback": {
+   "anon": [],
+   "authenticated": [
+    "SELECT"
+   ]
+  },
+  "grant:public.fm_v2_job_receipts": {
+   "anon": [],
+   "authenticated": []
+  },
+  "grant:public.fm_v2_jobs": {
+   "anon": [],
+   "authenticated": []
+  },
+  "grant:public.fm_v2_looks": {
+   "anon": [],
+   "authenticated": [
+    "SELECT"
+   ]
+  },
+  "grant:public.fm_v2_models": {
+   "anon": [],
+   "authenticated": [
+    "SELECT"
+   ]
+  },
+  "grant:public.fm_v2_profiles": {
+   "anon": [],
+   "authenticated": [
+    "SELECT"
+   ]
+  },
+  "grant:public.fm_v2_recommendations": {
+   "anon": [],
+   "authenticated": [
+    "SELECT"
+   ]
+  },
+  "grant:public.fm_v2_source_cleanup": {
+   "anon": [],
+   "authenticated": []
+  },
+  "grant:public.fm_v2_workers": {
+   "anon": [],
+   "authenticated": []
+  },
+  "grant:public.fm_wardrobe_items": {
+   "anon": [
+    "DELETE",
+    "INSERT",
+    "SELECT",
+    "UPDATE"
+   ],
+   "authenticated": [
+    "DELETE",
+    "INSERT",
+    "SELECT",
+    "UPDATE"
+   ]
+  },
+  "extension:pgcrypto": {
+   "schema": "extensions"
   },
   "bucket:fitmatch-v2": {
    "public": false,
