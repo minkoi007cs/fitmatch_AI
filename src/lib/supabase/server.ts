@@ -1,11 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { resolveBackendIdentity } from "@/lib/backend-identity.mjs";
 
 export async function createClient() {
+  const identity = resolveBackendIdentity(process.env); // ENV-CANON-01: fail closed before any request
   const cookieStore = await cookies();
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    identity.url,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {

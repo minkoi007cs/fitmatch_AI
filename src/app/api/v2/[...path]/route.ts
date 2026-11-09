@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { authenticateRequest } from "@/lib/auth/request";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { BackendIdentityError, resolveBackendIdentity } from "@/lib/backend-identity.mjs";
 import { InputError, readJson } from "@/lib/validation";
 import {
   id,
@@ -111,6 +112,8 @@ async function workerRoute(request: Request, path: string[], w: WorkerRow) {
     return reply({
       success: true,
       grantedCapabilities: grantedKinds(declared, w.allowed_capabilities),
+      // ENV-CANON-01: lets the worker refuse to claim from an app bound to an unexpected backend.
+      backend: { projectRef: resolveBackendIdentity(process.env).projectRef },
     });
   }
   if (path.join("/") === "claim") {
@@ -805,7 +808,11 @@ async function handle(
   } catch (error) {
     const status = error instanceof InputError ? error.status : 503;
     const code =
-      error instanceof InputError ? error.message : "SERVICE_UNAVAILABLE";
+      error instanceof InputError
+        ? error.message
+        : error instanceof BackendIdentityError
+          ? "BACKEND_IDENTITY_MISMATCH"
+          : "SERVICE_UNAVAILABLE";
     return Response.json(
       { success: false, error: code, requestId },
       {

@@ -124,6 +124,8 @@ const app = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start",
   OPENAI_API_KEY: "", FITMATCH_AUTH_PROVIDER: "app-system", APP_URL: base, NEXT_PUBLIC_INFRA_URL: fixture,
   INFRA_APP_ID: "test-fitmatch", NEXT_PUBLIC_INFRA_PUBLISHABLE_KEY: "pk_synthetic", INFRA_SECRET_KEY: "sk_synthetic",
   NEXT_PUBLIC_SUPABASE_URL: fixture, NEXT_PUBLIC_SUPABASE_ANON_KEY: "synthetic-anon", SUPABASE_SERVICE_ROLE_KEY: "synthetic-service", QWEN_ANALYSIS_ENABLED: "1",
+  // ENV-CANON-01: loopback fixture only; this mode refuses any *.supabase.co URL.
+  FITMATCH_BACKEND_MODE: "isolated-test",
 }, stdio: ["ignore", "pipe", "pipe"] });
 let output = ""; app.stdout.on("data", part => output += part); app.stderr.on("data", part => output += part);
 const jar = new Map();

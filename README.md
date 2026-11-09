@@ -24,7 +24,8 @@ FitMatch AI is a production-ready Next.js App Router MVP for AI-powered fashion 
 Copy `.env.local.example` to `.env.local` and fill in:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_URL=https://gohczmqykjkrgdblgbog.supabase.co
+FITMATCH_EXPECTED_SUPABASE_REF=gohczmqykjkrgdblgbog
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 OPENAI_API_KEY=
@@ -32,6 +33,8 @@ OPENAI_TEXT_MODEL=gpt-4o-mini
 OPENAI_VISION_MODEL=gpt-4o-mini
 OPENAI_IMAGE_MODEL=gpt-image-1
 ```
+
+The server refuses every Supabase client unless the URL, keys and `FITMATCH_EXPECTED_SUPABASE_REF` all name the approved project (`fitmatch-ai`, BACKEND-024); `smoke-supabase` is always refused. Automated tests use `FITMATCH_BACKEND_MODE=isolated-test`, which accepts only a loopback URL. See `docs/infrastructure/canonical-schema-reconciliation.md` before changing the cloud schema.
 
 ## Supabase setup
 

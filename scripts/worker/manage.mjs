@@ -8,6 +8,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
+import { resolveBackendIdentity, BackendIdentityError } from "../../src/lib/backend-identity.mjs";
 // Must match fm_v2_workers_allowed_capabilities_check. garment.analyze = Qwen (QINT-C): grant it only on a
 // test server after contract + drain review; the app also needs QWEN_ANALYSIS_ENABLED=1.
 const KINDS = ["avatar.reconstruct", "garment.reconstruct", "garment.drape", "bottom.reconstruct", "bottom.drape", "garment.analyze"];
@@ -17,8 +18,18 @@ const [command, ownerId, ...rest] = process.argv.slice(2);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 if (!["create", "grant", "ungrant", "rotate", "revoke"].includes(command) || !uuid.test(ownerId ?? ""))
   throw new Error(usage);
+// ENV-CANON-01: enrollment/grants only against the approved project (BACKEND-024); never smoke or a
+// mismatched URL/key pair. Prints only the project ref (public), never key material.
+let identity;
+try {
+  identity = resolveBackendIdentity(process.env, { requireServiceKey: true });
+} catch (error) {
+  console.error(error instanceof BackendIdentityError ? `BACKEND_IDENTITY_MISMATCH: ${error.reason}` : "Backend configuration error");
+  process.exit(5);
+}
+console.error(`Operator target: ${identity.mode === "isolated-test" ? "isolated local test backend" : `project ${identity.projectRef}`}`);
 const db = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  identity.url,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
   { auth: { persistSession: false } },
 );

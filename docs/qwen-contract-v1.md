@@ -54,7 +54,7 @@ Giống v1-r2 (`protocolVersion` 1, `lease`, `modelRevision` = capability đã g
 
 ## GPU: một lock owner
 
-Worker là **lock owner duy nhất** cho mỗi lần thực thi GPU: nó chỉ claim khi đã giữ đúng lock dùng chung của PC3D (đường dẫn tuyệt đối có sẵn `…/coordination/gpu0.lock`, msvcrt byte 0; với `garment.analyze` worker từ chối khởi động nếu dùng `default`/đường dẫn tương đối/file chưa tồn tại), guard khớp hash đã ACK và slot `gpu0-slot.json` đang cấp cho `pc-ai`, và chỉ nhả sau khi `OwnedProcessTree.drain()` chứng minh launcher, interpreter thật và mọi descendant đã exit (PC-QUIESCENCE-01). Không chứng minh được thì worker **quarantine**: giữ lock, không claim, kiểm lại mỗi chu kỳ. Adapter nhận `FITMATCH_GPU_LOCK_HELD_BY=worker` và `FITMATCH_GPU_LOCK_PATH`: shared guard/runner của PC3D phải thấy biến này và **không** lấy lại cùng lock (tránh deadlock lồng). Qwen load chỉ sau khi đã có lock và qua admission RAM/VRAM; unload trước khi exit; không resident sau job. PC3D cần ACK đường dẫn lock tuyệt đối + byte 0 + hash guard mới.
+Worker là **lock owner duy nhất** cho mỗi lần thực thi GPU: nó chỉ claim khi đã giữ đúng lock dùng chung của PC3D (`<workspace>/coordination/gpu0.lock`, msvcrt byte 0) — được **ràng buộc** qua policy của điều phối viên `gpu-coordinator.json` (pin sha256) ghi danh tính file của lock; config không được khai đường dẫn lock/slot/guard (QREV-BIND-02) — guard khớp hash trong policy và slot `gpu0-slot.json` cùng thư mục đang cấp cho `pc-ai`, và chỉ nhả sau khi `OwnedProcessTree.drain()` chứng minh launcher, interpreter thật và mọi descendant đã exit (PC-QUIESCENCE-01). Không chứng minh được thì worker **quarantine**: giữ lock, không claim, kiểm lại mỗi chu kỳ. Adapter nhận `FITMATCH_GPU_LOCK_HELD_BY=worker` và `FITMATCH_GPU_LOCK_PATH`: shared guard/runner của PC3D phải thấy biến này và **không** lấy lại cùng lock (tránh deadlock lồng). Qwen load chỉ sau khi đã có lock và qua admission RAM/VRAM; unload trước khi exit; không resident sau job. PC3D cần ACK file policy (sha256), danh tính lock + byte 0 + hash guard.
 
 ## Kết quả và xác nhận của người
 
@@ -76,5 +76,5 @@ Worker là **lock owner duy nhất** cho mỗi lần thực thi GPU: nó chỉ c
 ## Checklist ACK
 
 - [ ] PC Qwen: adapter đọc `analysis-adapter-input`, ghi `analysis-result`, chạy `check-qwen-contract.py` trên output thật/synthetic, exit codes như bảng; gửi source+hash.
-- [ ] PC 3D: guard không nest khi `FITMATCH_GPU_LOCK_HELD_BY=worker`; ACK đường dẫn lock + byte 0 + hash guard mới; chạy native drain tests trên nhánh này.
+- [ ] PC 3D: guard không nest khi `FITMATCH_GPU_LOCK_HELD_BY=worker`; tạo `gpu-coordinator.json` bằng `scripts/worker/gpu_coordinator_policy.py write`, ACK sha256 policy + danh tính lock + byte 0 + hash guard; chạy native drain + binding tests trên nhánh này.
 - [ ] Codex: review contract, migration, drain fix trước khi grant capability trên test server.

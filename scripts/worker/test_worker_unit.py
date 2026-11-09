@@ -7,6 +7,7 @@ from pathlib import Path
 import struct
 import subprocess
 import sys
+import shutil
 import tempfile
 import time
 import unittest
@@ -504,25 +505,45 @@ class AnalysisTransportTests(unittest.TestCase):
 
 
 class SharedGpuAdmissionTests(unittest.TestCase):
-    """QREV-LOCK: integrated Qwen shares the PC3D lock/guard/slot and fails closed on any mismatch."""
+    """QREV-LOCK + QREV-BIND-02: integrated Qwen is bound to the PC3D coordinator's canonical lock/slot/guard."""
+
+    GUARD_REL = 'fitmatch_AI/workers/windows/gpu_guard.py'
 
     def setUp(self):
-        self.dir = Path(tempfile.mkdtemp()) / 'coordination'
-        self.dir.mkdir()
+        self.ws = Path(tempfile.mkdtemp()) / 'Fitmatch-GPU'
+        self.dir = self.ws / 'coordination'
+        self.dir.mkdir(parents=True)
         self.lock = self.dir / 'gpu0.lock'
-        self.lock.write_bytes(b'')
-        self.guard = self.dir / 'gpu_guard.py'
+        self.lock.write_bytes(b'0')
+        self.guard = self.ws.joinpath(*self.GUARD_REL.split('/'))
+        self.guard.parent.mkdir(parents=True)
         self.guard.write_text('# guard under test\n')
         self.guard_sha = hashlib.sha256(self.guard.read_bytes()).hexdigest()
         self.slot = self.dir / 'gpu0-slot.json'
+        self.policy = self.dir / 'gpu-coordinator.json'
+        self.policy_sha = self.write_policy()
+
+    def policy_doc(self, lock_path=None, **patch):
+        st = os.stat(lock_path or self.lock)
+        doc = {'kind': 'fitmatch.gpu-coordinator.v1', 'coordinator': 'pc-3d', 'owners': ['pc-3d', 'pc-ai'],
+               'lock': {'name': 'gpu0.lock', 'volume': st.st_dev, 'fileId': st.st_ino},
+               'slot': {'name': 'gpu0-slot.json'},
+               'guard': {'relativeToWorkspace': self.GUARD_REL, 'sha256': self.guard_sha},
+               'issuedAtUtc': '2026-11-09T06:00:00+00:00'}
+        doc.update(patch)
+        return doc
+
+    def write_policy(self, path=None, **patch):
+        path = path or self.policy
+        path.write_text(json.dumps(self.policy_doc(**patch)))
+        return hashlib.sha256(path.read_bytes()).hexdigest()
 
     def config(self, **patch):
-        base = {'gpuLock': str(self.lock), 'gpuGuard': {'path': str(self.guard), 'sha256': self.guard_sha},
-                'engines': {'garment.analyze': {}}}
+        base = {'gpuCoordinator': {'path': str(self.policy), 'sha256': self.policy_sha}, 'engines': {'garment.analyze': {}}}
         base.update(patch)
         return base
 
-    def write_slot(self, owner='pc-ai', issued=None, seconds=900, version=1, **extra):
+    def write_slot(self, owner='pc-ai', issued=None, seconds=900, version=1, path=None, **extra):
         issued = time.time() if issued is None else issued
         slot = {'version': version, 'owner': owner,
                 'issuedAtUtc': worker.datetime.fromtimestamp(issued, worker.timezone.utc).isoformat(),
@@ -530,24 +551,192 @@ class SharedGpuAdmissionTests(unittest.TestCase):
         if version == 0:
             slot.pop('version'); slot.pop('issuedAtUnix')
         slot.update(extra)
-        self.slot.write_text(json.dumps(slot))
+        (path or self.slot).write_text(json.dumps(slot))
+
+    def copy_workspace(self, name='Copied-GPU'):
+        """A second coordination tree with byte-identical policy and guard, as if copied or restored elsewhere."""
+        other = self.ws.parent / name
+        shutil.copytree(self.ws, other)
+        return other
 
     def test_analysis_engine_requires_shared_lock(self):
         self.assertTrue(worker.requires_shared_gpu({'engines': {'garment.analyze': {}}}))
         self.assertFalse(worker.requires_shared_gpu({'engines': {'avatar.reconstruct': {}}}))
         self.assertTrue(worker.requires_shared_gpu({'requireSharedGpuLock': True}))
 
-    def test_startup_refuses_default_relative_missing_or_unpinned(self):
-        for patch in ({'gpuLock': 'default'}, {'gpuLock': None}, {'gpuLock': 'coordination/gpu0.lock'},
-                      {'gpuLock': str(self.dir / 'other.lock')},
-                      {'gpuGuard': None}, {'gpuGuard': {'path': str(self.guard)}},
-                      {'gpuGuard': {'path': 'gpu_guard.py', 'sha256': self.guard_sha}},
-                      {'gpuGuard': {'path': str(self.guard), 'sha256': '0' * 64}},
-                      {'gpuGuard': {'path': str(self.dir / 'missing.py'), 'sha256': self.guard_sha}},
-                      {'gpuSlot': 'gpu0-slot.json'}, {'gpuSlotOwner': 'pc-qwen'}):
+    def test_valid_binding_derives_canonical_paths(self):
+        a = worker.SharedGpuAdmission(self.config())
+        self.assertEqual((a.lock_path, a.slot_path, a.guard_path),
+                         (Path(os.path.realpath(self.lock)), Path(os.path.realpath(self.slot)), self.guard.resolve()))
+        self.assertEqual(a.lock_identity, worker.file_identity(os.stat(self.lock)))
+
+    def test_config_cannot_name_lock_slot_or_guard(self):
+        """QREV-BIND-02: an existing foreign absolute lock/slot or a self-declared guard is never trusted."""
+        foreign = self.ws.parent / 'foreign-existing.lock'
+        foreign.write_bytes(b'0')
+        forged = self.ws.parent / 'forged-slot.json'
+        self.write_slot('pc-ai', path=forged)
+        for patch in ({'gpuLock': str(foreign)}, {'gpuLock': str(self.lock)}, {'gpuLock': 'default'},
+                      {'gpuSlot': str(forged)}, {'gpuGuard': {'path': str(self.guard), 'sha256': self.guard_sha}}):
+            with self.assertRaisesRegex(worker.AdmissionError, 'only from', msg=json.dumps(patch)):
+                worker.SharedGpuAdmission(self.config(**patch))
+
+    def test_pin_and_location_refusals(self):
+        alt = self.dir / 'other.json'
+        alt.write_text(self.policy.read_text())
+        for patch in ({'gpuCoordinator': None}, {'gpuCoordinator': {'path': str(self.policy)}},
+                      {'gpuCoordinator': {'path': 'coordination/gpu-coordinator.json', 'sha256': self.policy_sha}},
+                      {'gpuCoordinator': {'path': str(self.policy), 'sha256': '0' * 64}},
+                      {'gpuCoordinator': {'path': str(self.policy), 'sha256': self.policy_sha, 'extra': 1}},
+                      {'gpuCoordinator': {'path': str(alt), 'sha256': self.policy_sha}},
+                      {'gpuCoordinator': {'path': str(self.dir / 'missing' / 'gpu-coordinator.json'), 'sha256': self.policy_sha}},
+                      {'gpuSlotOwner': 'pc-qwen'}):
             with self.assertRaises(worker.AdmissionError, msg=json.dumps(patch)):
                 worker.SharedGpuAdmission(self.config(**patch))
-        self.assertFalse((self.dir / 'other.lock').exists(), 'a mistyped lock is never created')
+
+    def test_policy_content_refusals(self):
+        bad = [dict(kind='other'), dict(coordinator='pc-ai'), dict(owners=['pc-ai']), dict(slot={'name': 'x.json'}),
+               dict(extra=1),
+               dict(lock={'name': 'gpu1.lock', 'volume': 1, 'fileId': 1}),
+               dict(lock={'name': 'gpu0.lock', 'volume': True, 'fileId': 1}),
+               dict(lock={'name': 'gpu0.lock', 'volume': 1, 'fileId': -1}),
+               dict(guard={'relativeToWorkspace': '/abs/gpu_guard.py', 'sha256': self.guard_sha}),
+               dict(guard={'relativeToWorkspace': '../outside/gpu_guard.py', 'sha256': self.guard_sha}),
+               dict(guard={'relativeToWorkspace': 'a\\b.py', 'sha256': self.guard_sha}),
+               dict(guard={'relativeToWorkspace': 'C:/x.py', 'sha256': self.guard_sha}),
+               dict(guard={'relativeToWorkspace': self.GUARD_REL, 'sha256': '1' * 64})]
+        for patch in bad:
+            sha = self.write_policy(**patch)
+            with self.assertRaises(worker.AdmissionError, msg=json.dumps(patch)):
+                worker.SharedGpuAdmission(self.config(gpuCoordinator={'path': str(self.policy), 'sha256': sha}))
+        for raw in ('{"kind": 1, "kind": 2}', '{"kind": NaN}', '[1]', '{bad'):
+            self.policy.write_text(raw)
+            sha = hashlib.sha256(self.policy.read_bytes()).hexdigest()
+            with self.assertRaises(worker.AdmissionError, msg=raw):
+                worker.SharedGpuAdmission(self.config(gpuCoordinator={'path': str(self.policy), 'sha256': sha}))
+
+    def test_guard_link_escaping_workspace_refused(self):
+        outside = self.ws.parent / 'elsewhere.py'
+        outside.write_bytes(self.guard.read_bytes())
+        self.guard.unlink()
+        self.guard.symlink_to(outside)
+        with self.assertRaisesRegex(worker.AdmissionError, 'outside the workspace'):
+            worker.SharedGpuAdmission(self.config())
+
+    def test_copied_coordination_with_identical_policy_refused_while_canonical_held(self):
+        """QFINAL-022 case 1, fixed: another existing lock cannot be admitted even with byte-identical policy."""
+        holder = worker.FileLock(self.lock, create=False)
+        self.assertTrue(holder.acquire(0))
+        try:
+            other = self.copy_workspace()
+            pinned = {'path': str(other / 'coordination' / 'gpu-coordinator.json'), 'sha256': self.policy_sha}
+            with self.assertRaisesRegex(worker.AdmissionError, 'identity'):
+                worker.SharedGpuAdmission(self.config(gpuCoordinator=pinned))
+            second = worker.FileLock(other / 'coordination' / 'gpu0.lock', create=False)
+            self.assertTrue(second.acquire(0), 'a split lock would be free: the refusal is what prevents overlap')
+            second.release()
+        finally:
+            holder.release()
+
+    def test_forged_or_linked_slot_cannot_admit_other_owner(self):
+        """QFINAL-022 case 2, fixed: the canonical slot alone decides; a link to a forged slot is refused."""
+        holder = worker.FileLock(self.lock, create=False)
+        self.assertTrue(holder.acquire(0))
+        try:
+            self.write_slot('pc-3d')
+            a = worker.SharedGpuAdmission(self.config())
+            with self.assertRaisesRegex(worker.AdmissionError, 'another owner'):
+                a.check()
+            forged = self.ws.parent / 'forged-slot.json'
+            self.write_slot('pc-ai', path=forged)
+            self.slot.unlink()
+            self.slot.symlink_to(forged)
+            with self.assertRaisesRegex(worker.AdmissionError, 'link'):
+                a.check()
+            with self.assertRaisesRegex(worker.AdmissionError, 'link'):
+                worker.SharedGpuAdmission(self.config())
+        finally:
+            holder.release()
+
+    def test_linked_lock_or_policy_refused(self):
+        real = self.ws.parent / 'real.lock'
+        real.write_bytes(b'0')
+        self.lock.unlink()
+        self.lock.symlink_to(real)
+        sha = self.write_policy(lock_path=real)
+        with self.assertRaisesRegex(worker.AdmissionError, 'link'):
+            worker.SharedGpuAdmission(self.config(gpuCoordinator={'path': str(self.policy), 'sha256': sha}))
+        self.lock.unlink()
+        self.lock.write_bytes(b'0')
+        sha = self.write_policy()
+        target = self.dir / 'real-policy.json'
+        os.replace(self.policy, target)
+        self.policy.symlink_to(target)
+        with self.assertRaisesRegex(worker.AdmissionError, 'link'):
+            worker.SharedGpuAdmission(self.config(gpuCoordinator={'path': str(self.policy), 'sha256': sha}))
+
+    def test_aliased_workspace_resolves_to_the_same_exclusive_lock(self):
+        alias = self.ws.parent / 'alias-of-workspace'
+        alias.symlink_to(self.ws, target_is_directory=True)
+        a = worker.SharedGpuAdmission(self.config(gpuCoordinator={
+            'path': str(alias / 'coordination' / 'gpu-coordinator.json'), 'sha256': self.policy_sha}))
+        self.assertEqual(a.lock_path, Path(os.path.realpath(self.lock)))
+        holder = worker.FileLock(self.lock, create=False)
+        self.assertTrue(holder.acquire(0))
+        try:
+            self.assertFalse(a.make_lock().acquire(0), 'same file through an alias: still exclusive')
+        finally:
+            holder.release()
+
+    def test_lock_replaced_after_startup_refused_on_open_and_loop_exits(self):
+        a = worker.SharedGpuAdmission(self.config())
+        keep = open(self.lock, 'rb')  # keeps the old inode alive so the replacement gets a new identity
+        try:
+            fresh = self.dir / 'fresh.lock'
+            fresh.write_bytes(b'0')
+            os.replace(fresh, self.lock)
+            with self.assertRaisesRegex(worker.AdmissionError, 'identity'):
+                a.make_lock().acquire(0)
+            w = worker.Worker.__new__(worker.Worker)
+            w.gpu, w.admission, w.admission_refusal = a.make_lock(), a, None
+            w.gpu_busy_logged, w.gpu_busy, w.quarantine, w.claims = False, False, None, 0
+            w.worker_heartbeat = lambda: None
+            w.resume_pending = lambda: None
+            w.claim = lambda: setattr(w, 'claims', w.claims + 1)
+            self.write_slot('pc-ai')
+            self.assertEqual(w.loop(once=True, poll_seconds=0), 5)
+            self.assertEqual(w.claims, 0)
+        finally:
+            keep.close()
+
+    def test_check_rejects_a_held_lock_that_is_not_canonical(self):
+        a = worker.SharedGpuAdmission(self.config())
+        self.write_slot('pc-ai')
+        other = self.ws.parent / 'x.lock'
+        other.write_bytes(b'0')
+        wrong = worker.FileLock(other, create=False)
+        self.assertTrue(wrong.acquire(0))
+        try:
+            with self.assertRaisesRegex(worker.AdmissionError, 'canonical'):
+                a.check(lock=wrong)
+        finally:
+            wrong.release()
+        right = a.make_lock()
+        self.assertTrue(right.acquire(0))
+        try:
+            a.check(lock=right)
+        finally:
+            right.release()
+        with self.assertRaisesRegex(worker.AdmissionError, 'canonical'):
+            a.check(lock=right)  # not held
+
+    def test_policy_edit_after_startup_refused_before_claim(self):
+        a = worker.SharedGpuAdmission(self.config())
+        self.write_slot('pc-ai')
+        a.check()
+        self.write_policy(issuedAtUtc='2026-11-10T00:00:00+00:00')
+        with self.assertRaisesRegex(worker.AdmissionError, 'ACKed revision'):
+            a.check()
 
     def test_slot_rules_match_the_guard(self):
         a = worker.SharedGpuAdmission(self.config())
@@ -588,8 +777,8 @@ class SharedGpuAdmissionTests(unittest.TestCase):
     def test_loop_refusal_releases_lock_and_claims_nothing(self):
         a = worker.SharedGpuAdmission(self.config())
         w = worker.Worker.__new__(worker.Worker)
-        w.gpu, w.admission, w.admission_refusal = worker.FileLock(self.lock, create=False), a, None
-        w.gpu_busy_logged, w.quarantine, w.claims = False, None, 0
+        w.gpu, w.admission, w.admission_refusal = a.make_lock(), a, None
+        w.gpu_busy_logged, w.gpu_busy, w.quarantine, w.claims = False, False, None, 0
         w.worker_heartbeat = lambda: None
         w.resume_pending = lambda: None
         w.claim = lambda: setattr(w, 'claims', w.claims + 1)
@@ -601,25 +790,35 @@ class SharedGpuAdmissionTests(unittest.TestCase):
         self.assertEqual(w.claims, 1, 'admitted: claims')
         self.assertFalse(w.gpu.held)
 
-    def test_main_refuses_to_start_with_default_lock(self):
+    def run_main(self, config_doc):
         work = Path(tempfile.mkdtemp())
         config = work / 'config.json'
-        config.write_text(json.dumps({'appUrl': 'http://127.0.0.1:9', 'workDir': str(work / 'data'), 'gpuLock': 'default',
-            'processContainment': 'unsafe-disabled', 'engines': {'garment.analyze': {'model': 'm', 'revision': 'r', 'command': ['x']}}}))
-        result = subprocess.run([sys.executable, str(Path(worker.__file__)), '--config', str(config), '--once'],
-                                env={**os.environ, 'FITMATCH_WORKER_TOKEN': 'fmw_test'}, capture_output=True, text=True, timeout=60)
+        config.write_text(json.dumps({'appUrl': 'http://127.0.0.1:9', 'workDir': str(work / 'data'),
+            'processContainment': 'unsafe-disabled',
+            'engines': {'garment.analyze': {'model': 'm', 'revision': 'r', 'command': ['x']}}, **config_doc}))
+        return subprocess.run([sys.executable, str(Path(worker.__file__)), '--config', str(config), '--once'],
+                              env={**os.environ, 'FITMATCH_WORKER_TOKEN': 'fmw_test'}, capture_output=True, text=True, timeout=60)
+
+    def test_main_refuses_to_start_with_legacy_or_foreign_binding(self):
+        result = self.run_main({'gpuLock': 'default'})
         self.assertEqual(result.returncode, 5, result.stdout + result.stderr)
         self.assertIn('Refusing to start', result.stdout)
+        other = self.copy_workspace('Main-Copy')
+        result = self.run_main({'gpuCoordinator': {'path': str(other / 'coordination' / 'gpu-coordinator.json'), 'sha256': self.policy_sha}})
+        self.assertEqual(result.returncode, 5, result.stdout + result.stderr)
+        self.assertIn('identity', result.stdout)
 
 
 class GpuBusyReportingTests(unittest.TestCase):
     """QREV-STATUS: heartbeats say truthfully whether the shared GPU was taken at the last claim attempt."""
+    GUARD_REL = SharedGpuAdmissionTests.GUARD_REL
     setUp, config, write_slot = SharedGpuAdmissionTests.setUp, SharedGpuAdmissionTests.config, SharedGpuAdmissionTests.write_slot
+    policy_doc, write_policy = SharedGpuAdmissionTests.policy_doc, SharedGpuAdmissionTests.write_policy
 
     def make_worker(self):
         w = worker.Worker.__new__(worker.Worker)
-        w.gpu = worker.FileLock(self.lock, create=False)
         w.admission, w.admission_refusal = worker.SharedGpuAdmission(self.config()), None
+        w.gpu = w.admission.make_lock()
         w.gpu_busy_logged, w.gpu_busy, w.quarantine, w.claims = False, False, None, 0
         w.capabilities, w.warned, w.sent = {'garment.analyze': {'model': 'm', 'revision': 'r'}}, set(), []
 
@@ -663,6 +862,112 @@ class GpuBusyReportingTests(unittest.TestCase):
         w.gpu_busy = 'yes'
         w.worker_heartbeat()
         self.assertEqual(w.sent[-1][1], {'capabilities': w.capabilities, 'gpuBusy': True})
+
+
+class CoordinatorPolicyHelperTests(unittest.TestCase):
+    """The PC3D helper writes exactly what the worker binding accepts and never creates the lock."""
+
+    def setUp(self):
+        spec = importlib.util.spec_from_file_location('gpu_policy', Path(worker.__file__).with_name('gpu_coordinator_policy.py'))
+        self.helper = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(self.helper)
+        self.ws = Path(tempfile.mkdtemp()) / 'Fitmatch-GPU'
+        (self.ws / 'coordination').mkdir(parents=True)
+        guard = self.ws / 'fitmatch_AI' / 'workers' / 'windows' / 'gpu_guard.py'
+        guard.parent.mkdir(parents=True)
+        guard.write_text('# guard\n')
+        self.guard_sha = hashlib.sha256(guard.read_bytes()).hexdigest()
+
+    def run_helper(self, *argv):
+        import contextlib, io
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = self.helper.main(list(argv))
+        return code, out.getvalue()
+
+    def test_write_requires_existing_lock_and_never_creates_it(self):
+        with self.assertRaises(SystemExit):
+            self.run_helper('write', '--workspace', str(self.ws))
+        self.assertFalse((self.ws / 'coordination' / 'gpu0.lock').exists())
+
+    def test_write_then_verify_round_trip(self):
+        (self.ws / 'coordination' / 'gpu0.lock').write_bytes(b'0')
+        with self.assertRaises(SystemExit):
+            self.run_helper('write', '--workspace', str(self.ws), '--expected-guard-sha256', '0' * 64)
+        code, out = self.run_helper('write', '--workspace', str(self.ws), '--expected-guard-sha256', self.guard_sha)
+        written = json.loads(out)
+        with self.assertRaises(SystemExit):
+            self.run_helper('write', '--workspace', str(self.ws))  # existing policy needs --replace
+        config = self.ws.parent / 'config.json'
+        config.write_text(json.dumps({'gpuCoordinator': {'path': written['policy'], 'sha256': written['sha256']},
+                                      'gpuSlotOwner': 'pc-ai'}))
+        code, out = self.run_helper('verify', '--config', str(config))
+        self.assertEqual(code, 0, out)
+        self.assertTrue(json.loads(out)['admitted'])
+        config.write_text(json.dumps({'gpuCoordinator': {'path': written['policy'], 'sha256': written['sha256']},
+                                      'gpuLock': str(self.ws / 'coordination' / 'gpu0.lock')}))
+        code, out = self.run_helper('verify', '--config', str(config))
+        self.assertEqual(code, 5)
+        self.assertIn('only from', json.loads(out)['refusal'])
+
+
+class BackendBindingTests(unittest.TestCase):
+    """ENV-CANON-01: the worker only claims from the app origin + backend project it was enrolled for."""
+    CANON = 'gohczmqykjkrgdblgbog'
+
+    def cfg(self, app='https://fitmatch.example', **expected):
+        doc = {'appUrl': app}
+        if expected:
+            doc['expectedBackend'] = expected
+        return doc
+
+    def test_valid_bindings(self):
+        self.assertEqual(worker.backend_binding(self.cfg(projectRef=self.CANON, appOrigin='https://fitmatch.example'), True), self.CANON)
+        self.assertEqual(worker.backend_binding(self.cfg(projectRef=self.CANON, appOrigin='HTTPS://FitMatch.example/'), True), self.CANON)
+        self.assertEqual(worker.backend_binding(self.cfg('http://127.0.0.1:3000', projectRef='isolated-test', appOrigin='http://127.0.0.1:3000'), True), 'isolated-test')
+        self.assertIsNone(worker.backend_binding(self.cfg(), False), '3D-only worker without binding stays as before')
+
+    def test_refusals(self):
+        bad = [
+            (self.cfg(), True),  # required for integrated GPU work
+            (self.cfg(projectRef='wqbwwusrhertqktwsxsl', appOrigin='https://fitmatch.example'), False),  # retired smoke
+            (self.cfg(projectRef='NOT-A-REF', appOrigin='https://fitmatch.example'), False),
+            (self.cfg(projectRef=self.CANON, appOrigin='https://other.example'), False),
+            (self.cfg(projectRef=self.CANON, appOrigin='https://fitmatch.example:8443'), False),
+            (self.cfg('http://fitmatch.example', projectRef=self.CANON, appOrigin='http://fitmatch.example'), False),
+            (self.cfg(projectRef='isolated-test', appOrigin='https://fitmatch.example'), False),
+            ({'appUrl': 'https://fitmatch.example', 'expectedBackend': {'projectRef': self.CANON}}, False),
+            ({'appUrl': 'https://fitmatch.example', 'expectedBackend': {'projectRef': self.CANON, 'appOrigin': 'https://fitmatch.example', 'x': 1}}, False),
+        ]
+        for config, required in bad:
+            with self.assertRaises(worker.BackendMismatch, msg=json.dumps(config)):
+                worker.backend_binding(config, required)
+
+    def make_worker(self, reply):
+        w = worker.Worker.__new__(worker.Worker)
+        w.capabilities, w.warned, w.gpu_busy = {'garment.analyze': {'model': 'm', 'revision': 'r'}}, set(), False
+        w.expected_backend = self.CANON
+
+        class Client:
+            def api(self, path, body):
+                return reply
+        w.client = Client()
+        return w
+
+    def test_heartbeat_reply_must_name_the_expected_project(self):
+        self.make_worker({'grantedCapabilities': [], 'backend': {'projectRef': self.CANON}}).worker_heartbeat()
+        for reply in ({'grantedCapabilities': []}, {'backend': {'projectRef': 'wqbwwusrhertqktwsxsl'}},
+                      {'backend': 'gohczmqykjkrgdblgbog'}, {'backend': {'projectRef': 'isolated-test'}}):
+            with self.assertRaises(worker.BackendMismatch, msg=json.dumps(reply)):
+                self.make_worker(reply).worker_heartbeat()
+
+    def test_loop_exits_before_claim_on_backend_mismatch(self):
+        w = self.make_worker({'grantedCapabilities': ['garment.analyze'], 'backend': {'projectRef': 'abcdefghijabcdefghij'}})
+        w.gpu, w.admission, w.quarantine, w.claims = None, None, None, 0
+        w.resume_pending = lambda: None
+        w.claim = lambda: setattr(w, 'claims', w.claims + 1)
+        self.assertEqual(w.loop(once=True, poll_seconds=0), 5)
+        self.assertEqual(w.claims, 0)
 
 
 if __name__ == '__main__':

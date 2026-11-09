@@ -352,13 +352,17 @@ writeFileSync(output,Buffer.from('${mesh([0.2, 0.6, 0.4, 1]).toString("base64")}
     const manage = (...args) =>
       new Promise((res, rej) => {
         const c = spawn(process.execPath, [resolve("scripts/worker/manage.mjs"), ...args], {
-          env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:3221", SUPABASE_SERVICE_ROLE_KEY: "synthetic-service" },
+          env: { ...process.env, NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:3221", SUPABASE_SERVICE_ROLE_KEY: "synthetic-service", FITMATCH_BACKEND_MODE: "isolated-test" },
           stdio: ["ignore", "pipe", "pipe"],
         });
-        let out = "";
+        let out = "", err = "";
         c.stdout.on("data", (d) => (out += d));
-        c.stderr.on("data", (d) => (out += d));
-        c.on("exit", (code) => (code === 0 ? res(out) : rej(new Error("manage failed: " + out))));
+        c.stderr.on("data", (d) => (err += d));
+        c.on("exit", (code) => {
+          if (code !== 0) return rej(new Error("manage failed: " + out + err));
+          assert.match(err, /Operator target: isolated local test backend/, "operator sees which backend it writes to");
+          res(out);
+        });
       });
     const created = JSON.parse(await manage("create", owner, KIND));
     assert.deepEqual(created.allowedCapabilities, [KIND]);

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { refreshHubToken } from "@/lib/auth/refresh";
 import { updateSession } from "@/lib/supabase/middleware";
+import { resolveBackendIdentity } from "@/lib/backend-identity.mjs";
 import { authConfig, hubEnabled } from "@/lib/auth/config";
 import { AuthFailure, verifyHubValue } from "@/lib/auth/hub";
 import { cookieOptions, decodeSession, seal, SESSION_AGE, SESSION_COOKIE, REFRESH_WINDOW } from "@/lib/auth/session";
@@ -11,6 +12,15 @@ function login(request: NextRequest) {
   const url = new URL("/login", request.url);
   url.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
   return NextResponse.redirect(url, 303);
+}
+
+function backendBound() {
+  try {
+    resolveBackendIdentity(process.env);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function unavailable() {
@@ -41,6 +51,9 @@ export async function proxy(request: NextRequest) {
       }
     }
     // Public marketing pages do not depend on Supabase being configured locally.
+    // ENV-CANON-01: a wrong/retired backend never receives session traffic; public pages still render,
+    // protected pages fail closed (503) through updateSession's identity check.
+    if (!protectedPage && !backendBound()) return NextResponse.next();
     const result = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
       ? await updateSession(request) : { response: NextResponse.next(), user: null, error: null };
     const response = result.response;

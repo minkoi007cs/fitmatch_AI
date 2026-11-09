@@ -2,7 +2,7 @@
 // "Xóa ảnh gốc" (fm_v2_source_cleanup intents in state pending, backoff elapsed, < 5 attempts).
 // It never selects objects on its own and never touches derived avatars/fittings/looks.
 // DRY RUN by default; pass --execute to claim and remove. Run against a test project first.
-// Usage: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/source-cleanup.mjs [--execute] [--limit=100]
+// Usage: NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... FITMATCH_EXPECTED_SUPABASE_REF=... node scripts/source-cleanup.mjs [--execute] [--limit=100]
 import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
@@ -57,12 +57,29 @@ export async function collectSourceCleanup(db, { execute = false, limit = 100, l
   return summary;
 }
 
+/** ENV-CANON-01: the same backend identity rule as the app. Never smoke, never a mismatched URL/key. */
+function operatorBackend(identityModule) {
+  const env = { ...process.env };
+  if (env.SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_URL !== env.NEXT_PUBLIC_SUPABASE_URL) {
+    console.error("BACKEND_IDENTITY_MISMATCH: SUPABASE_URL and NEXT_PUBLIC_SUPABASE_URL differ. Nothing was done.");
+    process.exit(5);
+  }
+  env.NEXT_PUBLIC_SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
+  try {
+    return identityModule.resolveBackendIdentity(env, { requireServiceKey: true });
+  } catch (error) {
+    console.error(`BACKEND_IDENTITY_MISMATCH: ${error.reason ?? "invalid configuration"}. Nothing was done.`);
+    process.exit(5);
+  }
+}
+
 async function main() {
-  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    console.error("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (test project). Nothing was done.");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL) || !key) {
+    console.error("Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY and FITMATCH_EXPECTED_SUPABASE_REF. Nothing was done.");
     process.exit(2);
   }
+  const { url } = operatorBackend(await import("../src/lib/backend-identity.mjs"));
   const limitArg = process.argv.find((a) => a.startsWith("--limit="));
   const limit = limitArg ? Number(limitArg.slice(8)) : 100;
   if (!Number.isInteger(limit) || limit < 1 || limit > 500) {

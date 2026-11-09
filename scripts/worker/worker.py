@@ -21,6 +21,7 @@ from pathlib import Path
 import random
 import re
 import signal
+import stat
 import struct
 import subprocess
 import sys
@@ -332,17 +333,24 @@ class FileLock:
     the process dies. On POSIX the descriptor is inherited by the adapter (pass_fds), so an adapter
     orphaned by a worker crash keeps holding it until it exits."""
 
-    def __init__(self, path, create=True):
+    def __init__(self, path, create=True, identity=None):
         self.path = Path(path)
         self.handle = None
         self.held = False
         self.create = create  # shared PC lock files are never created or replaced by the worker
+        # QREV-BIND-02: when set, the OPENED handle must be this exact file (volume + file id). Checked on
+        # the handle itself, so an alias, junction, copy or a file swapped in after startup is refused.
+        self.identity = identity
 
     def acquire(self, wait_seconds):
         if self.held:
             return True
         if self.handle is None:
             self.handle = self.path.open('a+' if self.create else 'r+')
+            if self.identity is not None and file_identity(os.fstat(self.handle.fileno())) != self.identity:
+                self.handle.close()
+                self.handle = None
+                raise AdmissionError('Opened GPU lock is not the coordinator\'s canonical lock file (identity changed)')
         deadline = time.monotonic() + wait_seconds
         while True:
             try:
@@ -471,36 +479,114 @@ def validate_slot(slot, now):
     return slot['owner']
 
 
-class SharedGpuAdmission:
-    """QREV-LOCK: the worker is the single lock owner for integrated jobs and shares the PC3D coordination.
+COORDINATOR_KIND = 'fitmatch.gpu-coordinator.v1'
+COORDINATOR_FILE = 'gpu-coordinator.json'
+COORDINATION_DIR = 'coordination'
+CANONICAL_LOCK_NAME = 'gpu0.lock'
+CANONICAL_SLOT_NAME = 'gpu0-slot.json'
+LEGACY_SHARED_KEYS = ('gpuLock', 'gpuSlot', 'gpuGuard')
 
-    Startup refuses unless the configured lock is the existing absolute shared lock file (never created,
-    never 'default'), the guard source matches the hash both PC chats ACKed, and the slot path is set.
-    Before every claim (while holding the lock) the guard and the finite slot metadata are re-checked:
-    the slot must name this worker's owner, be unexpired and within the guard's window rules. A missing
-    slot file is the PC3D-only bootstrap and never admits pc-ai. Environment variables are not proof.
+
+def file_identity(stat_result):
+    """(volume, file id): st_dev/st_ino on POSIX; volume serial + NTFS/ReFS file index on Windows."""
+    return (int(stat_result.st_dev), int(stat_result.st_ino))
+
+
+def _is_link(path):
+    st = os.lstat(path)
+    reparse = getattr(st, 'st_file_attributes', 0) & 0x400  # FILE_ATTRIBUTE_REPARSE_POINT (Windows)
+    return stat.S_ISLNK(st.st_mode) or bool(reparse)
+
+
+def _nonneg_int(value, label):
+    if type(value) is not int or value < 0:
+        raise AdmissionError('Invalid coordinator ' + label)
+    return value
+
+
+class SharedGpuAdmission:
+    """QREV-LOCK + QREV-BIND-02: the worker is the single lock owner for integrated jobs and is BOUND to the
+    PC3D coordinator's canonical lock, slot and guard. Config cannot name them.
+
+    The only input is the coordinator policy file (``<workspace>/coordination/gpu-coordinator.json``,
+    written by the PC3D coordinator) pinned by the sha256 both PC chats ACKed. From it:
+      * lock  = the policy's own directory / gpu0.lock, and the file actually opened must have the
+                volume + file id recorded in the policy (an alias, junction, copied directory or a
+                replaced file has another identity and is refused);
+      * slot  = the same directory / gpu0-slot.json, never a link;
+      * guard = <workspace>/<relative path from the policy>, inside the workspace, matching the policy hash.
+    Startup refuses on any mismatch; before every claim, while holding the lock, the policy, guard, lock
+    handle identity and the finite slot are re-checked. A missing slot file is the PC3D-only bootstrap.
+    Environment variables are never proof; the worker never nests the guard's lock.
     """
 
     def __init__(self, config):
-        lock = config.get('gpuLock')
-        if not isinstance(lock, str) or lock in ('', 'default') or not Path(lock).is_absolute():
-            raise AdmissionError('gpuLock must be the explicit absolute path of the shared PC lock file')
-        self.lock_path = Path(lock)
-        if not self.lock_path.is_file():
-            raise AdmissionError('Shared GPU lock file does not exist; the worker never creates it')
-        guard = config.get('gpuGuard')
-        if not isinstance(guard, dict) or not isinstance(guard.get('path'), str) or not Path(guard['path']).is_absolute() \
-                or not isinstance(guard.get('sha256'), str) or len(guard['sha256']) != 64:
-            raise AdmissionError('gpuGuard {path (absolute), sha256} must pin the ACKed shared guard')
-        self.guard_path, self.guard_sha = Path(guard['path']), guard['sha256'].lower()
-        slot = config.get('gpuSlot', str(self.lock_path.with_name('gpu0-slot.json')))
-        if not isinstance(slot, str) or not Path(slot).is_absolute():
-            raise AdmissionError('gpuSlot must be an absolute path')
-        self.slot_path = Path(slot)
+        present = [key for key in LEGACY_SHARED_KEYS if key in config]
+        if present:
+            raise AdmissionError('Remove ' + '/'.join(present) + ': the shared GPU lock, slot and guard come only from '
+                                 'the pinned PC3D coordinator policy (gpuCoordinator)')
+        pin = config.get('gpuCoordinator')
+        if not isinstance(pin, dict) or set(pin) != {'path', 'sha256'} or not isinstance(pin.get('path'), str) \
+                or not Path(pin['path']).is_absolute() or not isinstance(pin.get('sha256'), str) \
+                or not re.fullmatch(r'[0-9a-fA-F]{64}', pin['sha256']):
+            raise AdmissionError('gpuCoordinator {path (absolute), sha256} must pin the ACKed PC3D coordinator policy')
+        self.policy_path, self.policy_sha = Path(pin['path']), pin['sha256'].lower()
         self.owner = config.get('gpuSlotOwner', 'pc-ai')
         if self.owner not in SLOT_OWNERS:
             raise AdmissionError('gpuSlotOwner must be pc-ai or pc-3d')
+        if self.policy_path.name != COORDINATOR_FILE or self.policy_path.parent.name != COORDINATION_DIR:
+            raise AdmissionError('Coordinator policy must be <workspace>/coordination/gpu-coordinator.json')
+        try:
+            if _is_link(self.policy_path):
+                raise AdmissionError('Coordinator policy must not be a link')
+        except OSError as error:
+            raise AdmissionError('Coordinator policy not found') from error
+        policy = self._read_policy()
+        self.coordination_dir = Path(os.path.realpath(self.policy_path.parent))
+        self.workspace = self.coordination_dir.parent
+        self.lock_path = self.coordination_dir / CANONICAL_LOCK_NAME
+        self.slot_path = self.coordination_dir / CANONICAL_SLOT_NAME
+        lock = policy['lock']
+        self.lock_identity = (_nonneg_int(lock.get('volume'), 'lock volume'), _nonneg_int(lock.get('fileId'), 'lock file id'))
+        guard = policy['guard']
+        rel = guard.get('relativeToWorkspace')
+        if not isinstance(rel, str) or not rel or Path(rel).is_absolute() or '\\' in rel \
+                or any(part in ('', '.', '..') for part in rel.split('/')) or ':' in rel:
+            raise AdmissionError('Invalid coordinator guard path')
+        self.guard_path = self.workspace.joinpath(*rel.split('/'))
+        real_guard = Path(os.path.realpath(self.guard_path))
+        if os.path.commonpath([str(real_guard), str(self.workspace)]) != str(self.workspace):
+            raise AdmissionError('Coordinator guard resolves outside the workspace')
+        self.guard_sha = guard['sha256'].lower()
+        try:
+            if _is_link(self.lock_path):
+                raise AdmissionError('Canonical GPU lock must not be a link')
+            if file_identity(os.stat(self.lock_path)) != self.lock_identity:
+                raise AdmissionError('GPU lock is not the coordinator\'s canonical lock file (file identity differs '
+                                     'from the policy; copied or replaced coordination directory)')
+        except OSError as error:
+            raise AdmissionError('Canonical GPU lock file does not exist; the worker never creates it') from error
         self.check_guard()
+        self.check_slot_file()
+
+    def _read_policy(self):
+        try:
+            if sha256_file(self.policy_path) != self.policy_sha:
+                raise AdmissionError('Coordinator policy differs from the ACKed revision')
+            policy = read_strict_json(self.policy_path)
+        except OSError as error:
+            raise AdmissionError('Coordinator policy not readable') from error
+        if type(policy) is not dict or set(policy) - {'kind', 'coordinator', 'lock', 'slot', 'guard', 'owners', 'issuedAtUtc', 'note'} \
+                or policy.get('kind') != COORDINATOR_KIND or policy.get('coordinator') != 'pc-3d' \
+                or sorted(policy.get('owners') or []) != sorted(SLOT_OWNERS) \
+                or type(policy.get('lock')) is not dict or set(policy['lock']) != {'name', 'volume', 'fileId'} \
+                or policy['lock'].get('name') != CANONICAL_LOCK_NAME \
+                or policy.get('slot') != {'name': CANONICAL_SLOT_NAME} \
+                or type(policy.get('guard')) is not dict or set(policy['guard']) != {'relativeToWorkspace', 'sha256'} \
+                or not isinstance(policy['guard'].get('sha256'), str) \
+                or not re.fullmatch(r'[0-9a-fA-F]{64}', policy['guard']['sha256']):
+            raise AdmissionError('Invalid coordinator policy')
+        return policy
 
     def check_guard(self):
         try:
@@ -510,9 +596,25 @@ class SharedGpuAdmission:
         if actual != self.guard_sha:
             raise AdmissionError('Shared GPU guard hash differs from the ACKed revision')
 
-    def check(self, now=None):
+    def check_slot_file(self):
+        try:
+            if os.path.lexists(self.slot_path) and _is_link(self.slot_path):
+                raise AdmissionError('GPU slot must not be a link')
+        except OSError as error:
+            raise AdmissionError('GPU slot not readable') from error
+
+    def make_lock(self):
+        """The one FileLock for integrated jobs: never created, bound to the canonical file identity."""
+        return FileLock(self.lock_path, create=False, identity=self.lock_identity)
+
+    def check(self, now=None, lock=None):
         """Raise AdmissionError unless this worker may start GPU work now. Call while holding the lock."""
+        self._read_policy()
         self.check_guard()
+        if lock is not None and (not lock.held or lock.handle is None
+                                 or file_identity(os.fstat(lock.handle.fileno())) != self.lock_identity):
+            raise AdmissionError('Held GPU lock is not the coordinator\'s canonical lock')
+        self.check_slot_file()
         if not self.slot_path.exists():
             if self.owner == 'pc-3d':
                 return
@@ -523,6 +625,45 @@ class SharedGpuAdmission:
             raise AdmissionError('GPU slot not readable') from error
         if validate_slot(slot, time.time() if now is None else now) != self.owner:
             raise AdmissionError('GPU slot is assigned to another owner')
+
+
+RETIRED_PROJECT_REFS = ('wqbwwusrhertqktwsxsl',)  # smoke-supabase: never a FitMatch backend (BACKEND-024)
+ISOLATED_TEST_REF = 'isolated-test'
+LOOPBACK_HOSTS = ('127.0.0.1', 'localhost', '::1')
+
+
+class BackendMismatch(RuntimeError):
+    """ENV-CANON-01: app origin or backend project differs from what this worker was enrolled for."""
+
+
+def backend_binding(config, required):
+    """Validate ``expectedBackend {projectRef, appOrigin}`` against appUrl. Returns the expected project ref
+    (checked against every heartbeat reply before any claim) or None when absent and not required."""
+    expected = config.get('expectedBackend')
+    if expected is None:
+        if required:
+            raise BackendMismatch('expectedBackend {projectRef, appOrigin} is required for integrated GPU work')
+        return None
+    if not isinstance(expected, dict) or set(expected) != {'projectRef', 'appOrigin'} \
+            or not isinstance(expected.get('projectRef'), str) or not isinstance(expected.get('appOrigin'), str):
+        raise BackendMismatch('expectedBackend must be {projectRef, appOrigin}')
+    ref = expected['projectRef']
+    if ref in RETIRED_PROJECT_REFS:
+        raise BackendMismatch('Retired project (smoke-supabase) is not a FitMatch backend')
+    if ref != ISOLATED_TEST_REF and not re.fullmatch(r'[a-z0-9]{20}', ref):
+        raise BackendMismatch('expectedBackend.projectRef is not a project ref')
+    app = urllib.parse.urlsplit(str(config.get('appUrl', '')))
+    origin = urllib.parse.urlsplit(expected['appOrigin'])
+    def norm(u):
+        return (u.scheme.lower(), (u.hostname or '').lower(), u.port)
+    if not app.scheme or norm(app) != norm(origin) or origin.path not in ('', '/') or origin.query or origin.username:
+        raise BackendMismatch('appUrl origin differs from expectedBackend.appOrigin')
+    loopback = (app.hostname or '').lower() in LOOPBACK_HOSTS
+    if ref == ISOLATED_TEST_REF and not loopback:
+        raise BackendMismatch('isolated-test backend is only valid for a loopback app')
+    if not loopback and app.scheme.lower() != 'https':
+        raise BackendMismatch('appUrl must be HTTPS')
+    return ref
 
 
 def requires_shared_gpu(config):
@@ -902,7 +1043,7 @@ class Worker:
         if self.admission is None:
             return True
         try:
-            self.admission.check()
+            self.admission.check(lock=self.gpu)
         except AdmissionError as error:
             if self.admission_refusal != str(error):
                 print('GPU admission refused, not claiming: ' + str(error), flush=True)
@@ -921,6 +1062,13 @@ class Worker:
     def worker_heartbeat(self):
         reply = self.client.api('heartbeat', {'capabilities': self.capabilities,
                                               'gpuBusy': bool(getattr(self, 'gpu_busy', False))}) or {}
+        expected = getattr(self, 'expected_backend', None)
+        if expected is not None:
+            backend = reply.get('backend')
+            got = backend.get('projectRef') if isinstance(backend, dict) else None
+            if got != expected:
+                raise BackendMismatch('App reports a different backend than this worker is bound to '
+                                      '(expected ' + expected + '); not claiming')
         granted = set(reply.get('grantedCapabilities', self.capabilities.keys()))
         for kind in self.capabilities.keys() - granted - self.warned:
             print('Capability declared but not granted by the operator:', kind, flush=True)
@@ -1210,7 +1358,13 @@ class Worker:
                         time.sleep(poll_seconds)
                         continue
                 # Claim only while holding the host GPU lock, so no lease runs out while waiting for the GPU.
-                if self.gpu and not self.gpu.acquire(0):
+                try:
+                    acquired = not self.gpu or self.gpu.acquire(0)
+                except AdmissionError as error:
+                    # The canonical lock file was replaced/aliased after startup: fail closed, claim nothing.
+                    print('Refusing to continue: ' + str(error), flush=True)
+                    return 5
+                if not acquired:
                     if not self.gpu_busy_logged:
                         print('GPU is busy with another job on this machine; waiting before claiming.', flush=True)
                         self.gpu_busy_logged = True
@@ -1236,6 +1390,10 @@ class Worker:
                     return 4 if self.quarantine is not None else 0
             except KeyboardInterrupt:
                 return 0
+            except BackendMismatch as error:
+                # ENV-CANON-01: the app is not bound to the backend this worker was enrolled for.
+                print('Refusing to continue: ' + str(error), flush=True)
+                return 5
             except Exception as error:
                 print('Worker connection unavailable:', type(error).__name__, flush=True)
                 if once:
@@ -1269,8 +1427,8 @@ def main():
         except AdmissionError as error:
             print('Refusing to start: ' + str(error), flush=True)
             return 5
-        gpu = FileLock(admission.lock_path, create=False)
-        print(f'Shared host GPU lock (single owner, never nested): {admission.lock_path}', flush=True)
+        gpu = admission.make_lock()
+        print(f'Shared host GPU lock bound to the PC3D coordinator (single owner, never nested): {admission.lock_path}', flush=True)
     elif config.get('gpuLock', 'default') is not None:
         gpu_path = default_gpu_lock() if config.get('gpuLock', 'default') == 'default' else Path(config['gpuLock'])
         gpu_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1278,7 +1436,13 @@ def main():
         print(f'Host GPU lock: {gpu_path}', flush=True)
     else:
         print('WARNING: gpuLock disabled; another GPU job on this machine may run at the same time.', flush=True)
+    try:
+        expected_backend = backend_binding(config, required=requires_shared_gpu(config))
+    except BackendMismatch as error:
+        print('Refusing to start: ' + str(error), flush=True)
+        return 5
     worker = Worker(config, os.environ['FITMATCH_WORKER_TOKEN'], root, lock, gpu, admission)
+    worker.expected_backend = expected_backend
     return worker.loop(args.once, float(config.get('pollSeconds', 8)))
 
 

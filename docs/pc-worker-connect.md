@@ -5,7 +5,7 @@ Cập nhật: 05/11/2026, America/New_York. Mã ở nhánh `codex/3d-studio-work
 ## Điều kiện trên web
 
 1. Review và áp dụng migration `supabase/migrations/20261105_studio_control_plane.sql` vào môi trường thử nghiệm trước. Migration thêm bảng/RPC/bucket riêng; không xóa wardrobe, quiz hoặc outfit cũ. Test cục bộ dùng PostgreSQL 16 trong Docker, chưa chứng minh migration trên project Supabase thật.
-2. Cấu hình Supabase URL, anon key và `SUPABASE_SERVICE_ROLE_KEY` trên server. Giữ cấu hình đăng nhập hiện có. Không đưa service-role key sang PC hoặc vào biến `NEXT_PUBLIC_*`.
+2. Cấu hình Supabase URL, anon key, `SUPABASE_SERVICE_ROLE_KEY` và `FITMATCH_EXPECTED_SUPABASE_REF` trên server (BACKEND-024: chỉ project `fitmatch-ai`/`gohczmqykjkrgdblgbog`; sai project hoặc smoke thì server từ chối mọi truy cập Supabase, `manage.mjs` thoát 5). Trước khi áp migration lên project chính, xem `docs/infrastructure/canonical-schema-reconciliation.md`. Giữ cấu hình đăng nhập hiện có. Không đưa service-role key sang PC hoặc vào biến `NEXT_PUBLIC_*`.
 3. Chạy web bằng URL HTTPS mà PC truy cập được. PC chỉ gọi outbound HTTPS, không cần mở port GPU ra Internet. Không dùng `localhost` của Mac làm địa chỉ cho PC.
 4. Dùng UUID tài khoản Supabase sau khi đăng nhập (không phải email hay hub subject). Trên máy quản trị đáng tin cậy, chạy:
 

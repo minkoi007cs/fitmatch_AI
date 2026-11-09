@@ -1,13 +1,30 @@
 // GC DRY RUN: prints what a future collector could remove after the grace period. Deletes nothing.
-// Usage: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/gc-dry-run.mjs [graceDays=7]
+// Usage: NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... FITMATCH_EXPECTED_SUPABASE_REF=... node scripts/gc-dry-run.mjs [graceDays=7]
 // Run only against a test project; never paste the service key into the browser or a report.
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!url || !key) {
-  console.error("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (test project). Nothing was done.");
+/** ENV-CANON-01: the same backend identity rule as the app. Never smoke, never a mismatched URL/key. */
+function operatorBackend(identityModule) {
+  const env = { ...process.env };
+  if (env.SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_URL && env.SUPABASE_URL !== env.NEXT_PUBLIC_SUPABASE_URL) {
+    console.error("BACKEND_IDENTITY_MISMATCH: SUPABASE_URL and NEXT_PUBLIC_SUPABASE_URL differ. Nothing was done.");
+    process.exit(5);
+  }
+  env.NEXT_PUBLIC_SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
+  try {
+    return identityModule.resolveBackendIdentity(env, { requireServiceKey: true });
+  } catch (error) {
+    console.error(`BACKEND_IDENTITY_MISMATCH: ${error.reason ?? "invalid configuration"}. Nothing was done.`);
+    process.exit(5);
+  }
+}
+
+const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL) || !key) {
+  console.error("Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL), SUPABASE_SERVICE_ROLE_KEY and FITMATCH_EXPECTED_SUPABASE_REF. Nothing was done.");
   process.exit(2);
 }
+const { url } = operatorBackend(await import("../src/lib/backend-identity.mjs"));
 const days = Number(process.argv[2] ?? 7);
 if (!Number.isFinite(days) || days < 1) {
   console.error("graceDays must be >= 1");

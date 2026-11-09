@@ -6,12 +6,12 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { collectSourceCleanup } from "./source-cleanup.mjs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import sharp from "sharp";
 import { chromium } from "playwright";
 import { analysisResult } from "../src/lib/v2/qwen.ts";
@@ -21,12 +21,19 @@ const jpeg = (rgb) =>
 
 export async function testQwen({ base, fixture, request, jar, owner, itemId, v2, asSecond }) {
   const temp = await mkdtemp(join(tmpdir(), "fitmatch-qwen-"));
-  // QREV-LOCK: the integrated worker uses the existing shared lock file, a pinned guard and the PC slot.
-  // These are synthetic stand-ins in a temp dir (the real PC paths/guard are ACKed by PC3D separately).
-  const lockPath = join(temp, "gpu0.lock"), slotPath = join(temp, "gpu0-slot.json"), guardPath = join(temp, "gpu_guard.py");
-  await writeFile(lockPath, "");
+  // QREV-LOCK + QREV-BIND-02: the integrated worker is bound to a PC3D coordinator policy that pins the
+  // canonical lock's file identity and the guard. Synthetic workspace in a temp dir, written with the PC3D
+  // helper (the real PC paths/guard/policy hash are ACKed by PC3D separately).
+  const gpuWs = join(temp, "Fitmatch-GPU"), coordination = join(gpuWs, "coordination");
+  const lockPath = join(coordination, "gpu0.lock"), slotPath = join(coordination, "gpu0-slot.json");
+  const guardPath = join(gpuWs, "fitmatch_AI", "workers", "windows", "gpu_guard.py");
+  await mkdir(coordination, { recursive: true });
+  await mkdir(dirname(guardPath), { recursive: true });
+  await writeFile(lockPath, "0");
   await writeFile(guardPath, "# synthetic guard for the HTTP test\n");
   const guardSha = createHash("sha256").update(await readFile(guardPath)).digest("hex");
+  const policy = JSON.parse((await promisify(execFile)("python3", [resolve("scripts/worker/gpu_coordinator_policy.py"), "write",
+    "--workspace", gpuWs, "--expected-guard-sha256", guardSha])).stdout);
   const writeSlot = async (owner) => {
     const issued = Math.floor(Date.now() / 1000);
     await writeFile(slotPath, JSON.stringify({ version: 1, owner, issuedAtUtc: new Date(issued * 1000).toISOString(),
@@ -39,11 +46,13 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     await new Promise((ok) => child.stdout.once("data", ok));
     return () => new Promise((ok) => { child.once("exit", ok); child.kill(); });
   };
+  let backendRef = "isolated-test";
   const runWorker = async (token, mode) => {
     const config = join(temp, "config.json");
     await writeFile(config, JSON.stringify({
-      appUrl: base, workDir: join(temp, "data"), gpuLock: lockPath, pollSeconds: 1,
-      gpuSlot: slotPath, gpuSlotOwner: "pc-ai", gpuGuard: { path: guardPath, sha256: guardSha },
+      appUrl: base, workDir: join(temp, "data"), pollSeconds: 1, gpuSlotOwner: "pc-ai",
+      gpuCoordinator: { path: policy.policy, sha256: policy.sha256 },
+      expectedBackend: { projectRef: backendRef, appOrigin: new URL(base).origin },
       engines: { "garment.analyze": { model: "mock/qwen-cpu", revision: "test-only",
         command: ["python3", resolve("scripts/fixtures/mock_qwen_adapter.py"), "{input}", "{output}"], timeoutSeconds: 60 } },
     }));
@@ -92,6 +101,15 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     // QREV-STATUS: the shared GPU lock is held by other work on the PC. The worker claims nothing, reports
     // "busy" in its heartbeat and the owner sees a truthful message; no attempt or deferral is consumed.
     const { token } = v2.worker(owner, ["garment.analyze"]);
+    // ENV-CANON-01: a worker enrolled for the canonical project refuses an app bound to another backend
+    // (here the isolated test server) before any claim, spawn or GPU work.
+    backendRef = "gohczmqykjkrgdblgbog";
+    const mismatch = await runWorker(token, "proposal").then(() => null, (error) => error);
+    backendRef = "isolated-test";
+    assert.equal(mismatch?.code, 5, String(mismatch?.stdout));
+    assert.match(mismatch.stdout, /different backend than this worker is bound to/);
+    assert.doesNotMatch(mismatch.stdout, /Claim reply|Completed|Reported failure|running adapter/);
+    assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals from fm_v2_jobs where id='${jobId}';`), "queued:0:0", "nothing claimed on backend mismatch");
     const release = await holdLock();
     let out;
     try {
@@ -304,5 +322,5 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     await browser.close();
     await rm(temp, { recursive: true, force: true });
   }
-  console.log("PASS QINT-C analysis (real routes + PostgreSQL + browser + real worker.py, CPU MOCK adapter): owned photo -> immutable private snapshot -> durable job; dedupe; 3D lists/actions exclude analysis jobs; GPU_BUSY deferral shown as waiting, attempt kept, lock free after drain; proposal stored for review only, result replay idempotent; browser review prefilled except OCR, human confirm writes only reviewed mapped values, persists after reload; same photo reuses confirmed result without a job; self-approving output fails closed, retry, abstention changes nothing; flag-off UI hidden; PC offline and MEMORY_PRESSURE shown distinctly; second account sees/acts on nothing over HTTP; QREV: shared lock held elsewhere -> no claim, heartbeat gpuBusy shown as 'PC busy with other work' to the owner only, slot of the other PC owner refused before claim, snapshot upload failure and item edit during upload leave no orphan (removal recorded), full queue refused before any upload; QREV-CLEANUP-RACE with the real collector: collector between upload and enqueue -> 409 SNAPSHOT_EXPIRED and object removed, late upload after a completed collector pass removed by reopened abort, enqueue-wins snapshot never claimed. No Qwen quality or real GPU claim.");
+  console.log("PASS QINT-C analysis (real routes + PostgreSQL + browser + real worker.py, CPU MOCK adapter): owned photo -> immutable private snapshot -> durable job; dedupe; 3D lists/actions exclude analysis jobs; GPU_BUSY deferral shown as waiting, attempt kept, lock free after drain; proposal stored for review only, result replay idempotent; browser review prefilled except OCR, human confirm writes only reviewed mapped values, persists after reload; same photo reuses confirmed result without a job; self-approving output fails closed, retry, abstention changes nothing; flag-off UI hidden; PC offline and MEMORY_PRESSURE shown distinctly; second account sees/acts on nothing over HTTP; QREV: shared lock held elsewhere -> no claim, heartbeat gpuBusy shown as 'PC busy with other work' to the owner only, slot of the other PC owner refused before claim, snapshot upload failure and item edit during upload leave no orphan (removal recorded), full queue refused before any upload; ENV-CANON-01 worker bound to another backend exits 5 before claim; QREV-BIND-02 coordinator-bound lock/slot/guard via the PC3D policy helper; QREV-CLEANUP-RACE with the real collector: collector between upload and enqueue -> 409 SNAPSHOT_EXPIRED and object removed, late upload after a completed collector pass removed by reopened abort, enqueue-wins snapshot never claimed. No Qwen quality or real GPU claim.");
 }
