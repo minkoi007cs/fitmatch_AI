@@ -486,3 +486,7 @@ User giao chọnSupabasechính vàbỏsmoke đểổnđịnhtươnglai. Scope ca
 
 ### L-057 — 09/11/2026 — DECISION / HANDOFF — BACKEND-024
 User giao quyền chọnbackendchính/bỏsmoke ổnđịnh. Canonicalfitmatch-ai/gohcz…selected, existingroot.envURLalreadycorrect; noenvsecret/sourceappmutation. Smokewqb deprecatedforFitMatch(notdeleted). Browsermainaccessible; connectorgohlisttablespermissiondeniedconfirmed, wrongorgconnectionnotfixedbyDBpasswordreset. Manifest/rules/roadmap andClaudeENV-CANON-01promptcreated. Maincloudmutationneedsinventory/recoverysnapshot/SQLreconciliation first; noautomaticdestructivetest orpaidsubscription. GPUbinding579ece2stillpending; PCconfighandoff CPUonly. Correctconnectoraccountauthorizationstillneedsuserconnectionflow; cannotclaimOAuthretargeted.
+
+
+### L-058 — 09/11/2026 — PUBLISHED / DISPATCH — BACKEND-024
+2ee6f25canonicaldocs published; bothPCsendconfirmed. JSON/fences/diffchecked, noactualconnectorOAuth/projectdeletion/DBmigration orGPUrun. Rootrules/process/roadmapsyncedexplicitfiles; Claudeexternalownerforwardprompt.
