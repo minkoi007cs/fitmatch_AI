@@ -504,6 +504,14 @@ class AnalysisTransportTests(unittest.TestCase):
         self.assertNotEqual(worker.input_digest(a), worker.input_digest(b))
 
 
+def symlink_or_skip(test, link, target, directory=False):
+    """Windows needs Developer Mode/privilege for symlinks; skip there instead of failing the native run."""
+    try:
+        link.symlink_to(target, target_is_directory=directory)
+    except (OSError, NotImplementedError) as error:
+        test.skipTest('symlinks not permitted here: ' + type(error).__name__)
+
+
 class SharedGpuAdmissionTests(unittest.TestCase):
     """QREV-LOCK + QREV-BIND-02: integrated Qwen is bound to the PC3D coordinator's canonical lock/slot/guard."""
 
@@ -619,7 +627,7 @@ class SharedGpuAdmissionTests(unittest.TestCase):
         outside = self.ws.parent / 'elsewhere.py'
         outside.write_bytes(self.guard.read_bytes())
         self.guard.unlink()
-        self.guard.symlink_to(outside)
+        symlink_or_skip(self, self.guard, outside)
         with self.assertRaisesRegex(worker.AdmissionError, 'outside the workspace'):
             worker.SharedGpuAdmission(self.config())
 
@@ -650,7 +658,7 @@ class SharedGpuAdmissionTests(unittest.TestCase):
             forged = self.ws.parent / 'forged-slot.json'
             self.write_slot('pc-ai', path=forged)
             self.slot.unlink()
-            self.slot.symlink_to(forged)
+            symlink_or_skip(self, self.slot, forged)
             with self.assertRaisesRegex(worker.AdmissionError, 'link'):
                 a.check()
             with self.assertRaisesRegex(worker.AdmissionError, 'link'):
@@ -662,7 +670,7 @@ class SharedGpuAdmissionTests(unittest.TestCase):
         real = self.ws.parent / 'real.lock'
         real.write_bytes(b'0')
         self.lock.unlink()
-        self.lock.symlink_to(real)
+        symlink_or_skip(self, self.lock, real)
         sha = self.write_policy(lock_path=real)
         with self.assertRaisesRegex(worker.AdmissionError, 'link'):
             worker.SharedGpuAdmission(self.config(gpuCoordinator={'path': str(self.policy), 'sha256': sha}))
@@ -671,13 +679,13 @@ class SharedGpuAdmissionTests(unittest.TestCase):
         sha = self.write_policy()
         target = self.dir / 'real-policy.json'
         os.replace(self.policy, target)
-        self.policy.symlink_to(target)
+        symlink_or_skip(self, self.policy, target)
         with self.assertRaisesRegex(worker.AdmissionError, 'link'):
             worker.SharedGpuAdmission(self.config(gpuCoordinator={'path': str(self.policy), 'sha256': sha}))
 
     def test_aliased_workspace_resolves_to_the_same_exclusive_lock(self):
         alias = self.ws.parent / 'alias-of-workspace'
-        alias.symlink_to(self.ws, target_is_directory=True)
+        symlink_or_skip(self, alias, self.ws, directory=True)
         a = worker.SharedGpuAdmission(self.config(gpuCoordinator={
             'path': str(alias / 'coordination' / 'gpu-coordinator.json'), 'sha256': self.policy_sha}))
         self.assertEqual(a.lock_path, Path(os.path.realpath(self.lock)))
@@ -690,7 +698,9 @@ class SharedGpuAdmissionTests(unittest.TestCase):
 
     def test_lock_replaced_after_startup_refused_on_open_and_loop_exits(self):
         a = worker.SharedGpuAdmission(self.config())
-        keep = open(self.lock, 'rb')  # keeps the old inode alive so the replacement gets a new identity
+        # POSIX: keep the old inode alive so the replacement cannot reuse its number. Windows cannot replace
+        # an open file; NTFS file ids carry a sequence number, so a new file gets a new identity anyway.
+        keep = open(self.lock, 'rb') if os.name != 'nt' else None
         try:
             fresh = self.dir / 'fresh.lock'
             fresh.write_bytes(b'0')
@@ -707,7 +717,8 @@ class SharedGpuAdmissionTests(unittest.TestCase):
             self.assertEqual(w.loop(once=True, poll_seconds=0), 5)
             self.assertEqual(w.claims, 0)
         finally:
-            keep.close()
+            if keep:
+                keep.close()
 
     def test_check_rejects_a_held_lock_that_is_not_canonical(self):
         a = worker.SharedGpuAdmission(self.config())

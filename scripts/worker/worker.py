@@ -492,10 +492,13 @@ def file_identity(stat_result):
     return (int(stat_result.st_dev), int(stat_result.st_ino))
 
 
+_LINK_REPARSE_TAGS = (0xA000000C, 0xA0000003)  # IO_REPARSE_TAG_SYMLINK, IO_REPARSE_TAG_MOUNT_POINT (junction)
+
+
 def _is_link(path):
+    """Symlink or Windows junction. Other reparse points (e.g. OneDrive placeholders) are not links."""
     st = os.lstat(path)
-    reparse = getattr(st, 'st_file_attributes', 0) & 0x400  # FILE_ATTRIBUTE_REPARSE_POINT (Windows)
-    return stat.S_ISLNK(st.st_mode) or bool(reparse)
+    return stat.S_ISLNK(st.st_mode) or getattr(st, 'st_reparse_tag', 0) in _LINK_REPARSE_TAGS
 
 
 def _nonneg_int(value, label):
@@ -534,7 +537,8 @@ class SharedGpuAdmission:
         self.owner = config.get('gpuSlotOwner', 'pc-ai')
         if self.owner not in SLOT_OWNERS:
             raise AdmissionError('gpuSlotOwner must be pc-ai or pc-3d')
-        if self.policy_path.name != COORDINATOR_FILE or self.policy_path.parent.name != COORDINATION_DIR:
+        fold = (lambda text: text.lower()) if os.name == 'nt' else (lambda text: text)
+        if fold(self.policy_path.name) != COORDINATOR_FILE or fold(self.policy_path.parent.name) != COORDINATION_DIR:
             raise AdmissionError('Coordinator policy must be <workspace>/coordination/gpu-coordinator.json')
         try:
             if _is_link(self.policy_path):
