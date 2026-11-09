@@ -1,0 +1,5 @@
+# Final remaining code gate: QREV-BIND-02
+
+Read onboarding then docs/reports/review/qrace-acceptance-20261108/review.md and H-QFINAL-022. Cleanup579ece2 nowfocusedPASS65unit/10DBblocks independently; keepit. Workerunchanged4035abe… stillfailsnativecanonicalbinding. Continue ownbranch actualdescendant, receipt scope productionworker/config/tests/runbook, preserveallpriorcommits.
+
+Implement QREV-BIND-02 from qwen-final-gates-20261108.md: bind actualcanonicalcoordinatorlock/slot/guard, notanyexistingabsoluteconfigfile, exactpathidentity/approvedreceipt with3D/QwenACK; testrealcanonicalheld +alternateexistinglock/forgedslot refuses BEFOREclaim/spawn/CUDA. Do nottrustenvmarkeralone/nestlock. AskPCforsanitizedrepro alreadyrequested; doCPUfix/tests now. Publishsourcecheckpoint fornativePCcheck, thenfinalSHA/log. NochangeadapterwireunlessjointACK. NoGPUgrant/deploy/prodmigration. Testenvselectionownerquestionpending; nosecretsinreport. Goalafterbindingreview/nativePASS isone licensedphoto browser→PCQwenreal→humanconfirm, no3Doverlap.
