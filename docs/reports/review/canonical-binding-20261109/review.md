@@ -41,3 +41,13 @@ Keep model/env/checkpoints. Test exact worker f80749a natively; verify 3D-issued
 ### Claude — next independent task
 
 Keep f80749a and cleanup fixes. Preserve source ownership. Extend schema inventory/comparison to cover default expressions, forced RLS, policy permissiveness and relevant table grants, with a regression proving differences cannot report full equivalence. Prepare an inventory/reconciliation proposal after canonical read-only access is restored; do not apply migrations blindly. Receive PC binding repros/ACKs and change transport only for evidence-backed failures. Prepare the real-Qwen smoke checklist with flag rollback and exact serving revision; do not call CPU mock evidence real inference.
+
+## OAuth and canonical inventory update - 09/11/2026
+
+Owner explicitly approved organization-wide access. Reconnect completed after replacing the expired OAuth request. Connector lists canonical fitmatch-ai healthy; read-only SQL succeeds. The wrong-organization blocker is resolved. No cloud writes or GPU jobs.
+
+Private catalog inventory and bucket metadata are saved outside Git with restricted permissions. Initial wrapper parsing failed, corrected and the read-only query rerun. Comparison reports base schema partial, app identity migration applied, eleven subsequent migrations absent. Canonical has zero fm_v2 tables, no CLI migration history table and an existing private wardrobe bucket. These are concrete blockers to real Qwen through this cloud app. Reconcile missing/different base objects, preserve existing data and prove private backup restores before applying reviewed additive migrations. Comparator limitations above still apply.
+
+Confirmed separately: 27 public tables outside FitMatch have RLS disabled, anon SELECT and at least one anon write privilege. Existing cross-application exposure was not modified. Resolve with their owners and appropriate policies; do not enable RLS blindly.
+
+Both PC compact snapshots returned host unavailable; native ACK and direct delivery remain unconfirmed. Claude can continue supplementary inventory comparison and prepare an additive reconciliation proposal against the private inventory. Do not call successful connection or CPU mocks real-Qwen PASS.
