@@ -11,7 +11,7 @@ from boundary import MODEL_REVISION
 from worker_admission import GPU,COORD,GUARD,LOCK,GUARD_HASH,POLICY
 
 AI=GPU/'ai-service'
-REPORT=GPU/'reports/ai/qint_p/qfinal023'
+REPORT=GPU/'reports/ai/qint_p/test-target'
 ENDPOINT_KEYS={'FITMATCH_TEST_APP_URL','FITMATCH_QWEN_TEST_ENDPOINT','QWEN_TEST_APP_URL','FITMATCH_APP_URL'}
 TOKEN_KEYS={'FITMATCH_WORKER_TOKEN','FITMATCH_TEST_WORKER_TOKEN','FITMATCH_QWEN_WORKER_TOKEN'}
 LABEL_KEYS={'FITMATCH_TEST_PROJECT_LABEL','FITMATCH_ENVIRONMENT','FITMATCH_TEST_LABEL'}
@@ -94,18 +94,20 @@ def inventory():
     dedicated=any(s['endpoint_candidate_present'] and s['explicit_test_designation_present'] for s in sources)
     endpoint_any=any(s['endpoint_candidate_present'] for s in sources)
     token_any=any(s['worker_token_candidate_present'] for s in sources)
-    return {'session':'PC-QINT-P-20261108-06','scope':'named own/shared worker configs and targeted process/user/machine environment only',
+    return {'session':'PC-QINT-P-20261108-07','scope':'named own/shared worker configs and targeted process/user/machine environment only',
         'dedicated_test_HTTPS_endpoint':'present with explicit test designation; unverified' if dedicated else 'not found in inspected sources',
         'any_unclassified_HTTPS_candidate_present':endpoint_any,
         'scoped_worker_token':'candidate present; scope/test binding unverified' if token_any else 'not found in inspected sources',
-        'dedicated_project_test_label':'known test designation present' if dedicated else 'missing or unverified',
+        'dedicated_project_test_label':'smoke-supabase: owner-confirmed FitMatch test backend; deployment still unverified',
+        'application_endpoint_kind':'FitMatch HTTPS application; Supabase project API is not counted as worker appUrl',
+        'authorized_backend_target_metadata_present':(COORD/'qint-p-authorized-test-target.json').is_file(),
         'sources':sources,'named_file_states':file_states,'credential_or_URL_values_emitted':False,
         'reviewed_worker_approval_policy_present':POLICY.is_file(),
         'worker_owner_bridge_source_present':(AI/'qint_p/worker_cli.py').is_file(),
         'reviewed_worker_owner_config_ready':False,
         'external_secret_stores_or_other_user_folders_inspected':False,'network_or_auth_probe':False,
         'test_environment_ready':False,'production_environment_assumed_authorized':False,
-        'remote_project_note':'Codex reports smoke-supabase exists; owner-purpose confirmation pending; not accepted as dedicated test environment',
+        'remote_project_note':'Owner authorizes smoke-supabase for FitMatch test; read-only connector authentication failed as reported; no PC Qwen DB retry or key read',
         'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
 
 if __name__=='__main__':
@@ -114,16 +116,26 @@ if __name__=='__main__':
     guard=hashlib.sha256(GUARD.read_bytes()).hexdigest()
     if guard!=GUARD_HASH:raise RuntimeError('Guard revision changed; checkpoint withheld')
     checkpoint={'version':'qint-p.canonical-checkpoint.v1','kind':'metadata only, not an installed worker config',
-        'session':'PC-QINT-P-20261108-06','expectedConfig':{'gpuLock':str(LOCK),'gpuSlot':str(COORD/'gpu0-slot.json'),
+        'session':'PC-QINT-P-20261108-07','expectedConfig':{'gpuLock':str(LOCK),'gpuSlot':str(COORD/'gpu0-slot.json'),
             'gpuSlotOwner':'pc-ai','gpuGuard':{'path':str(GUARD),'sha256':guard}},
         'placement':'worker sole byte0 owner, direct Qwen adapter; no nested guard/env-only proof',
         'modelRevision':MODEL_REVISION,'latestAppUnderReview':'579ece2f4d7eb1b5336fec1469d5965ab9d8f919',
         'finalApprovedTransport':None,'startupBindingACK':'WITHHELD QREV-BIND-02',
         'cleanupGate':'FOCUSED PASS by Codex PROC0023 on579ece2; not whole privacy/integration acceptance',
         'knownCleanupLimit':'long upload plus app death after grace remains documented',
-        'dedicatedTestEnvironmentReady':False,'QwenSlotGranted':False,'operatorApprovalInstalled':POLICY.exists(),
+        'backendTargetOwnerAuthorized':True,'dedicatedTestEnvironmentReady':False,'QwenSlotGranted':False,'operatorApprovalInstalled':POLICY.exists(),
         'GPUStarted':False,'personalImageRead':False,'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
-    (COORD/'qint-p-qfinal023-canonical-checkpoint.json').write_text(json.dumps(checkpoint,indent=2)+'\n')
+    (COORD/'qint-p-test-target-canonical-checkpoint.json').write_text(json.dumps(checkpoint,indent=2)+'\n')
+    prepared={'session':'PC-QINT-P-20261108-07','kind':'nonsecret target/preparation summary; no environment install',
+        'backend_project_label':'smoke-supabase','owner_authorized_for_FitMatch_test':True,'production':False,
+        'project_ref_and_backend_API_recorded_privately':True,'backend_API_or_project_ref_emitted':False,
+        'FitMatch_application_HTTPS_endpoint':result['dedicated_test_HTTPS_endpoint'],
+        'scoped_worker_token':result['scoped_worker_token'],'actual_credentials_read_or_stored':False,
+        'connector_status':'Codex reported read-only inventory authentication failure28P01; not retried by PC Qwen',
+        'DB_role_or_password_modified':False,'SQL_migration_or_enrollment':False,
+        'cleanup_gate':'Codex focused PASS579ece2','canonical_binding_gate':'NEEDS CHANGES; startup ACK WITHHELD',
+        'app_environment_installed':False,'test_capability_granted':False,'Qwen_slot_granted':False,'GPU_started':False}
+    (REPORT/'preparation-summary.json').write_text(json.dumps(prepared,indent=2)+'\n')
     print(json.dumps({key:result[key] for key in ['dedicated_test_HTTPS_endpoint','scoped_worker_token',
         'dedicated_project_test_label','any_unclassified_HTTPS_candidate_present','test_environment_ready',
         'credential_or_URL_values_emitted','network_or_auth_probe']}))

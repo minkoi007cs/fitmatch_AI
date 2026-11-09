@@ -1,6 +1,8 @@
 # QINT-P / AI-QUALITY-04 checkpoint — 07/11/2026
 
-Latest gates: [PROC0023 focused cleanup PASS / binding still open](qfinal023-status.md).
+Latest target: [owner authorizes smoke-supabase for FitMatch test](test-target-authorization.md).
+Nonsecret backend metadata recorded; app HTTPS/scoped token and binding gates remain open.
+Prior gates: [PROC0023 focused cleanup PASS / binding still open](qfinal023-status.md).
 Published portable repro is reused; no unchanged suite/benchmark repeated.
 Prior readiness: [H-QFINAL-022 environment inventory and conditional slice](qfinal022-readiness.md).
 Dedicated test endpoint/token/label were not found in bounded local sources; cleanup
