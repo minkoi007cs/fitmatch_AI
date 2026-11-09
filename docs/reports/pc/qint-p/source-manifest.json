@@ -348,9 +348,9 @@
     {
       "snapshot": "qint_p/qfinal_inventory.py.txt",
       "restore_to": "ai-service/qint_p/qfinal_inventory.py",
-      "sha256": "aa38721e4c8cf511569f8c13e8bd6a3974d50a31726690e133a2f8c0da1bd42b",
-      "bytes": 8236,
-      "original_sha256": "aa38721e4c8cf511569f8c13e8bd6a3974d50a31726690e133a2f8c0da1bd42b",
+      "sha256": "c3af88ca758b52376548a4e2cf0bb5b6dbfa031115f53951cb8dc654e11a30ca",
+      "bytes": 8523,
+      "original_sha256": "c3af88ca758b52376548a4e2cf0bb5b6dbfa031115f53951cb8dc654e11a30ca",
       "normalization": "CRLF to LF only"
     },
     {

@@ -1,6 +1,8 @@
 # QINT-P / AI-QUALITY-04 checkpoint — 07/11/2026
 
-Latest readiness: [H-QFINAL-022 environment inventory and conditional slice](qfinal022-readiness.md).
+Latest gates: [PROC0023 focused cleanup PASS / binding still open](qfinal023-status.md).
+Published portable repro is reused; no unchanged suite/benchmark repeated.
+Prior readiness: [H-QFINAL-022 environment inventory and conditional slice](qfinal022-readiness.md).
 Dedicated test endpoint/token/label were not found in bounded local sources; cleanup
 and canonical binding remain open. No repeated benchmark, CUDA or fake integration.
 Prior: [Claude7631 final CPU inspection](qrev-final.md),131cases/130PASS/1skip;

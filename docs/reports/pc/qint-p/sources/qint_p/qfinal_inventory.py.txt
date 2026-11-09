@@ -11,7 +11,7 @@ from boundary import MODEL_REVISION
 from worker_admission import GPU,COORD,GUARD,LOCK,GUARD_HASH,POLICY
 
 AI=GPU/'ai-service'
-REPORT=GPU/'reports/ai/qint_p/qfinal022'
+REPORT=GPU/'reports/ai/qint_p/qfinal023'
 ENDPOINT_KEYS={'FITMATCH_TEST_APP_URL','FITMATCH_QWEN_TEST_ENDPOINT','QWEN_TEST_APP_URL','FITMATCH_APP_URL'}
 TOKEN_KEYS={'FITMATCH_WORKER_TOKEN','FITMATCH_TEST_WORKER_TOKEN','FITMATCH_QWEN_WORKER_TOKEN'}
 LABEL_KEYS={'FITMATCH_TEST_PROJECT_LABEL','FITMATCH_ENVIRONMENT','FITMATCH_TEST_LABEL'}
@@ -94,7 +94,7 @@ def inventory():
     dedicated=any(s['endpoint_candidate_present'] and s['explicit_test_designation_present'] for s in sources)
     endpoint_any=any(s['endpoint_candidate_present'] for s in sources)
     token_any=any(s['worker_token_candidate_present'] for s in sources)
-    return {'session':'PC-QINT-P-20261108-05','scope':'named own/shared worker configs and targeted process/user/machine environment only',
+    return {'session':'PC-QINT-P-20261108-06','scope':'named own/shared worker configs and targeted process/user/machine environment only',
         'dedicated_test_HTTPS_endpoint':'present with explicit test designation; unverified' if dedicated else 'not found in inspected sources',
         'any_unclassified_HTTPS_candidate_present':endpoint_any,
         'scoped_worker_token':'candidate present; scope/test binding unverified' if token_any else 'not found in inspected sources',
@@ -105,6 +105,7 @@ def inventory():
         'reviewed_worker_owner_config_ready':False,
         'external_secret_stores_or_other_user_folders_inspected':False,'network_or_auth_probe':False,
         'test_environment_ready':False,'production_environment_assumed_authorized':False,
+        'remote_project_note':'Codex reports smoke-supabase exists; owner-purpose confirmation pending; not accepted as dedicated test environment',
         'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
 
 if __name__=='__main__':
@@ -113,14 +114,16 @@ if __name__=='__main__':
     guard=hashlib.sha256(GUARD.read_bytes()).hexdigest()
     if guard!=GUARD_HASH:raise RuntimeError('Guard revision changed; checkpoint withheld')
     checkpoint={'version':'qint-p.canonical-checkpoint.v1','kind':'metadata only, not an installed worker config',
-        'session':'PC-QINT-P-20261108-05','expectedConfig':{'gpuLock':str(LOCK),'gpuSlot':str(COORD/'gpu0-slot.json'),
+        'session':'PC-QINT-P-20261108-06','expectedConfig':{'gpuLock':str(LOCK),'gpuSlot':str(COORD/'gpu0-slot.json'),
             'gpuSlotOwner':'pc-ai','gpuGuard':{'path':str(GUARD),'sha256':guard}},
         'placement':'worker sole byte0 owner, direct Qwen adapter; no nested guard/env-only proof',
-        'modelRevision':MODEL_REVISION,'latestAppUnderReview':'7631cb00114ddf559c234f1c0f13285dbb7305ab',
-        'finalApprovedTransport':None,'startupBindingACK':'WITHHELD QREV-BIND-02','cleanupGate':'NOT CLOSED QRACE receipt is not a code fix',
+        'modelRevision':MODEL_REVISION,'latestAppUnderReview':'579ece2f4d7eb1b5336fec1469d5965ab9d8f919',
+        'finalApprovedTransport':None,'startupBindingACK':'WITHHELD QREV-BIND-02',
+        'cleanupGate':'FOCUSED PASS by Codex PROC0023 on579ece2; not whole privacy/integration acceptance',
+        'knownCleanupLimit':'long upload plus app death after grace remains documented',
         'dedicatedTestEnvironmentReady':False,'QwenSlotGranted':False,'operatorApprovalInstalled':POLICY.exists(),
         'GPUStarted':False,'personalImageRead':False,'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
-    (COORD/'qint-p-qfinal022-canonical-checkpoint.json').write_text(json.dumps(checkpoint,indent=2)+'\n')
+    (COORD/'qint-p-qfinal023-canonical-checkpoint.json').write_text(json.dumps(checkpoint,indent=2)+'\n')
     print(json.dumps({key:result[key] for key in ['dedicated_test_HTTPS_endpoint','scoped_worker_token',
         'dedicated_project_test_label','any_unclassified_HTTPS_candidate_present','test_environment_ready',
         'credential_or_URL_values_emitted','network_or_auth_probe']}))
