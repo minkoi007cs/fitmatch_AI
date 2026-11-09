@@ -304,3 +304,9 @@ Cả hai dùng runtime/cache riêng, không sửa chung repoindex hoặc app fil
 
 ## 21. Qwen tích hợp chạy thử — H-QWEN-018 / PROC-0018
 Chủ dự án đã giao triển khai [Qwen app test integration](./docs/handoffs/qwen-app-test-integration-20261107.md). QINT-C Claudeapp/transport, QINT-P PCQwenruntime, QINT-G PC3Dguard, QINT-R Codexreview. Wardrobeimage→durablejob→PCQwen→humanreview; owned3looks/rulesfallback. Một OSlock choGPU, sửa productiondrain và finiteguard trước realintegration; testenv riêng, khôngproduction. Các hạn chế chưa giao Qwen integration cũ được thay trong scope này; không tự mở3Dcapability.
+
+## 22. Canonical cutover preparation - H-MIGRATION-26 / PROC-0026
+
+Canonical remains fitmatch-ai/gohczmqykjkrgdblgbog; connector access is restored. See [migration preparation](./docs/infrastructure/qwen-migration-preparation-20261109/plan.md), [Claude implementation handoff](./docs/handoffs/prompt-claude-migration-prep-20261109.md) and [PC continuation](./docs/handoffs/pc-migration-prep-20261109.md). Codex prepares/reviews the migration order and evidence; Claude owns scoped app/SQL compatibility implementation on a descendant of f80749a. Preserve R1/full-look/cleanup/binding work. The next bounded milestone is a reviewable legacy-compatible migration package, then controlled real Qwen through the app after native/backend/HTTPS gates. No expansion to unrelated applications, categories or animation.
+
+Cloud migration/deployment is not performed by the preparation request. Private backup/restore proof and exact SQL/history-adoption review precede execution. Keep wardrobe/profile/identity data, legacy FK semantics, private storage and one GPU task at a time. Both native PC ACKs remain required; CPU setup may proceed while waiting. Actual status and dispatch evidence are in process, not inferred from this assignment.

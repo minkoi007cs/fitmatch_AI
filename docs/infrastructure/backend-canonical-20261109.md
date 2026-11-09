@@ -11,6 +11,8 @@ User decision09/11/2026 supersedes earlier authorization to use smoke-supabase a
 
 ## Verified access discrepancy
 
+**Resolved 09/11/2026, PROC-0025/0026:** owner approved the organization-wide OAuth scope, reconnect completed, and the connector now lists fitmatch-ai and executes canonical read-only SQL. The paragraph below is historical diagnosis, not the current blocker. Current gaps are migration compatibility/recovery, native PC ACK and serving HTTPS revision; see [migration preparation](./qwen-migration-preparation-20261109/plan.md).
+
 Browseraccount minkoi007cs sees fitmatch-ai andlifedashboard in itsorg; fitmatch-aidashboardhealthy. ConnectedSupabaseinventorysees onlysmoke-supabase in anotherorg; itsSQLfails28P01 forreadonlyandpostgres. Directconnectorlist_tables oncanonicalgohczref returnspermissiondenied (-32600). This isconfirmedwrongconnection/accessscope, not proofcanonicalDBpasswordisbad. Do notresetcanonicalpassword/dropRLS/alterACL tofixwrongconnector. Correctconnectoraccount/projectauthorization mustbeselectedviauserconnectionflow; managementtoolsavailableherecannotretargetOAuthsilently. Dashboardloginandconnectorloginareseparatesessions.
 
 ## Requiredpreflight before cloud changes

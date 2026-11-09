@@ -1,0 +1,125 @@
+{
+  "format": "fitmatch.migration-preparation.v1",
+  "task": "CX-MIGRATION-PREP-26",
+  "projectRef": "gohczmqykjkrgdblgbog",
+  "sourceCommit": "f80749a65b47441958e7c6fc485034d7efe446df",
+  "status": "PREPARATION ONLY - NOT A HOSTED APPLY SCRIPT",
+  "skipReplay": [
+    "supabase/schema.sql",
+    "supabase/migrations/20261103_app_system_identity.sql"
+  ],
+  "observedIdentityMigration": "structurally present; no CLI history; do not invent applied history",
+  "steps": [
+    {
+      "order": 1,
+      "path": "supabase/migrations/20261104_ai_daily_quota.sql",
+      "sha256": "72c898950bab0a8740547f03dbe052871999b40f2373a534a701b38bdb59e434",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "verified-legacy-baseline-and-private-recovery"
+    },
+    {
+      "order": 2,
+      "path": "supabase/migrations/20261105_studio_control_plane.sql",
+      "sha256": "149fbcbf3d729870f0abd961cf9989594af4c298623c54fff4ec1ec6b5a07a8d",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261104_ai_daily_quota.sql"
+    },
+    {
+      "order": 3,
+      "path": "supabase/migrations/20261106025506_worker_recovery_r1.sql",
+      "sha256": "8b141146bc25715b3faf6bb2545df738aad805940afc208ccefc53f10aafe261",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261105_studio_control_plane.sql"
+    },
+    {
+      "order": 4,
+      "path": "supabase/migrations/20261106035951_full_look_c1.sql",
+      "sha256": "c539cb07589804e5fd612015fdc8e229f91a538a2d71e7d2faae40deb2ccc7e9",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261106025506_worker_recovery_r1.sql"
+    },
+    {
+      "order": 5,
+      "path": "supabase/migrations/20261106042143_capture_retention_c2.sql",
+      "sha256": "cfddc2a9ab3236d631d879d047ba5c6db9464a8437f9413a2ef0613c29b447a5",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261106035951_full_look_c1.sql"
+    },
+    {
+      "order": 6,
+      "path": "supabase/migrations/20261106044040_gc_dry_run_c3.sql",
+      "sha256": "8751b4aec051a7c55837f68afa975a4fa7118f5df5bff8485e65e4952f1ccd30",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261106042143_capture_retention_c2.sql"
+    },
+    {
+      "order": 7,
+      "path": "supabase/migrations/20261106053812_fitting_generations.sql",
+      "sha256": "4d9beb5d1776c3210555aec4b97284151533213280720d5b84c15c97d58d4eff",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261106044040_gc_dry_run_c3.sql"
+    },
+    {
+      "order": 8,
+      "path": "supabase/migrations/20261106150000_source_cleanup_priv01.sql",
+      "sha256": "10581f817603c745aed27d22a2c63bc9fb6a9a21a548a9802e04489293896bc5",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261106053812_fitting_generations.sql"
+    },
+    {
+      "order": 9,
+      "path": "supabase/migrations/20261107120000_qwen_analysis_qint.sql",
+      "sha256": "0440dccc8044035ab129adbb9b3d64fe1403ee8c488f2cda295b7d6ba793de80",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261106150000_source_cleanup_priv01.sql"
+    },
+    {
+      "order": 10,
+      "path": "supabase/migrations/20261108090000_qwen_review_qrev.sql",
+      "sha256": "8f403db32387aaae4b609e38613c54ac69115dbe89815ae4e7c65bba3da1dac0",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261107120000_qwen_analysis_qint.sql"
+    },
+    {
+      "order": 11,
+      "path": "supabase/migrations/20261108150000_qrev_cleanup_claim.sql",
+      "sha256": "08227b3fa14a0a8b1b99bc22fe3bb5dd72f0a89900e7081a2b579c54ff13c9f6",
+      "operation": "prepare-existing-absent-migration",
+      "execution": "NOT RUN on cloud",
+      "dependsOn": "supabase/migrations/20261108090000_qwen_review_qrev.sql"
+    }
+  ],
+  "compatibilityMigration": {
+    "status": "Assigned Claude, new CLI-generated file pending",
+    "mustFinishBefore": "app/auth pilot traffic",
+    "requirements": [
+      "guarded auth trigger target correction",
+      "legacy and fresh outfit compatibility",
+      "preserve existing FK targets and records"
+    ]
+  },
+  "cloudGates": [
+    "refreshed semantic preflight",
+    "private data/schema/storage recovery backup and restore proof",
+    "specific migration-history adoption strategy",
+    "restored-baseline regressions",
+    "Codex exact package review and owner execution decision"
+  ],
+  "gpuGates": [
+    "both native PC ACKs",
+    "reviewed HTTPS revision",
+    "private scoped enrollment",
+    "3D-issued finite pc-ai slot",
+    "single canonical OS lock through owned-tree drain"
+  ]
+}

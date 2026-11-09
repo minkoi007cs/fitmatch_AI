@@ -1,0 +1,20 @@
+PASS 1: synthetic canonical-shape auth INSERT reproduces missing public.users
+PASS 2: local target correction creates matching FitMatch profiles
+PASS 3: exact legacy outfit INSERT shape reproduces NOT NULL style_category
+PASS 4: explicitly supplied validated styleCategory preserves legacy NOT NULL
+PASS migration: 20261104_ai_daily_quota.sql
+PASS migration: 20261105_studio_control_plane.sql
+PASS migration: 20261106025506_worker_recovery_r1.sql
+PASS migration: 20261106035951_full_look_c1.sql
+PASS migration: 20261106042143_capture_retention_c2.sql
+PASS migration: 20261106044040_gc_dry_run_c3.sql
+PASS migration: 20261106053812_fitting_generations.sql
+PASS migration: 20261106150000_source_cleanup_priv01.sql
+PASS migration: 20261107120000_qwen_analysis_qint.sql
+PASS migration: 20261108090000_qwen_review_qrev.sql
+PASS migration: 20261108150000_qrev_cleanup_claim.sql
+PASS 5: legacy row byte-equivalent, sentinel and private wardrobe preserved; v2 bucket private
+PASS 6: quota and reserve RPC grants deny anon/authenticated, allow service_role
+PASS 7: real analysis-reserve RPC works with legacy nullable wardrobe fields
+PASS 8: legacy RLS owner/cross-owner SELECT behavior retained
+REHEARSAL PASS: PostgreSQL16, synthetic canonical-shape subset; NOT cloud restore, NOT hosted auth/storage, NOT real Qwen
