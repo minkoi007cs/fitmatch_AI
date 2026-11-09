@@ -1,5 +1,8 @@
 # FitMatch — roadmap sản phẩm và phát triển
 
+> **BACKEND-024 / PROC-0024 — 09/11/2026:** project chính thức là `fitmatch-ai` (`gohczmqykjkrgdblgbog`). `smoke-supabase` ngừng dùng cho FitMatch. Đọc [backend canonical](./docs/infrastructure/backend-canonical-20261109.md) và [environment manifest](./docs/infrastructure/backend-environments.json); chỉ dẫn smoke cũ là lịch sử, không được áp dụng. Bảo toàn dữ liệu hiện có; kiểm thử phá hủy chỉ local/disposable.
+
+
 > **Chia PC thành hai chat theo yêu cầu mới — H-PC-SPLIT-010:** đọc [ownership và GPU coordination](./docs/handoffs/pc-parallel-ai-3d.md). Chat PC cũ giữ avatar/garment/render; chat mới giữ QwenAI/env/cache riêng. Tải/setupCPU song song, GPU12GB chỉ một tác vụ, AI không loadGPU trước sharedlock+receipt từ chat3D. Phần Qwen trong H-EXEC-009 được chuyển khỏi chat cũ, không giao trùng.
 
 

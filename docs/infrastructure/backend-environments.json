@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "decision": "BACKEND-024",
+  "updated": "2026-11-09",
+  "canonical": {
+    "provider": "supabase",
+    "projectName": "fitmatch-ai",
+    "projectRef": "gohczmqykjkrgdblgbog",
+    "apiUrl": "https://gohczmqykjkrgdblgbog.supabase.co",
+    "purpose": "main/pilot backend; preserve existing data",
+    "dataIsolation": "No destructive tests or automatic cleanup on main"
+  },
+  "localVerification": {
+    "provider": "docker-postgresql",
+    "purpose": "disposable schema/concurrency/fault tests with synthetic data",
+    "credentials": "local only, never publish"
+  },
+  "deprecatedForFitMatch": [
+    {
+      "projectName": "smoke-supabase",
+      "projectRef": "wqbwwusrhertqktwsxsl",
+      "policy": "Do not enroll workers, apply FitMatch migrations, use keys or route app jobs here; do not delete project without inventory and specific deletion approval"
+    }
+  ],
+  "gates": {
+    "remoteMutation": "inventory existing schema/RLS/storage/migration history and recovery snapshot before additive migration",
+    "qwen": "canonical GPU binding fix + independent review/native ACK; flag remains OFF until controlled pilot ready",
+    "connector": "Must see canonical project through correct authorized account; browser login does not retarget connector"
+  }
+}

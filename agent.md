@@ -1,5 +1,8 @@
 # FitMatch — quy định bắt buộc cho mọi AI
 
+> **BACKEND-024 / PROC-0024 — 09/11/2026:** project chính thức là `fitmatch-ai` (`gohczmqykjkrgdblgbog`). `smoke-supabase` ngừng dùng cho FitMatch. Đọc [backend canonical](./docs/infrastructure/backend-canonical-20261109.md) và [environment manifest](./docs/infrastructure/backend-environments.json); chỉ dẫn smoke cũ là lịch sử, không được áp dụng. Bảo toàn dữ liệu hiện có; kiểm thử phá hủy chỉ local/disposable.
+
+
 Cập nhật: 05/11/2026. Áp dụng cho Codex, Claude, agent trên PC và mọi AI mới tham gia repo. `AGENTS.md` là entrypoint tự động và dẫn tới file này; tên `agent.md` không thay thế cơ chế nhận diện `AGENTS.md` của công cụ.
 
 ## 1. Đọc trước khi làm

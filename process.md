@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 08/11/2026, America/New_York. Revision: PROC-0023. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 09/11/2026, America/New_York. Revision: PROC-0024. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Trạng thái tiếp nối hiện hành — PROC-0016
 
@@ -478,3 +478,11 @@ Source579ece2 cleanupclaim reviewed; independent65unit/DB10blocksPASS includingo
 
 ### L-055 — 08/11/2026 — DISPATCH — CX-QRACE-REVIEW-23
 Publishedf262ee1; directmessagesbothPCsuccess clarifiedcleanupfocusedPASS vsbindingNEEDSCHANGES/CPUonlyuntilgates. Claudeexternalpromptprovided, notdirectlysent. NoGPUjobstarted/testmigration/deploy.
+
+
+### L-056 — 09/11/2026 — START — CX-BACKEND-CANONICAL-24
+User giao chọnSupabasechính vàbỏsmoke đểổnđịnhtươnglai. Scope canonicalenvdocs/rules/process/dispatch, retainexistingdata; no destructivedelete/reset. RootenvpublicURLgohcz…confirmed (nosecretoutput); Dashboardfitmatch-aihealthy/accessverified. Connectorwrongorgsmoke oldref, notimplicitlyretargeted. Claudeappowner giữcode; Qwenbindinggateunchanged.
+
+
+### L-057 — 09/11/2026 — DECISION / HANDOFF — BACKEND-024
+User giao quyền chọnbackendchính/bỏsmoke ổnđịnh. Canonicalfitmatch-ai/gohcz…selected, existingroot.envURLalreadycorrect; noenvsecret/sourceappmutation. Smokewqb deprecatedforFitMatch(notdeleted). Browsermainaccessible; connectorgohlisttablespermissiondeniedconfirmed, wrongorgconnectionnotfixedbyDBpasswordreset. Manifest/rules/roadmap andClaudeENV-CANON-01promptcreated. Maincloudmutationneedsinventory/recoverysnapshot/SQLreconciliation first; noautomaticdestructivetest orpaidsubscription. GPUbinding579ece2stillpending; PCconfighandoff CPUonly. Correctconnectoraccountauthorizationstillneedsuserconnectionflow; cannotclaimOAuthretargeted.

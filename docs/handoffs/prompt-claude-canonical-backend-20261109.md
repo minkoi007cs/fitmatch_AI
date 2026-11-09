@@ -1,0 +1,9 @@
+# ENV-CANON-01 + pending GPU binding — Claude continuation
+
+Read onboarding then docs/infrastructure/backend-canonical-20261109.md and backend-environments.json. Ownerchoseexistingfitmatch-ai/gohczmqykjkrgdblgbog asmain/pilotbackend; smoke/wqb retiredforFitMatch. Earlierpromptsmoketestinstructions/historydoNOToverrideBACKEND-024. Preserveallcurrentdata/auth/wardrobe/storage; noreset/drop orblindmigrationchain.
+
+Continueownappbranch from579ece2/actualdescendant; keepfocusedPASScleanup. FinishQREV-BIND-02 canonicalGPUlock/slot/guardwithnativePCACK, publishcheckpointurgently. Inparallel ENV-CANON-01 ownerreceipt forsrcconfig/serverstartup/workerconfigexamples/tests/docs: expectedbackendidentity+consistentURL/keyenvironment check (no secrets/logs); nofallbacksmoke orlocalwrongproject. Addtestwherewrongproject config/ref refuseswrites/enrollment/jobclaim; mockisolatedtests stayclearlyisolated.
+
+Preparemainprojectread-onlyschema/RLS/storage/migrationinventoryandreconciliationproposal oncecorrectaccessavailable; appDockerchain doesnotproveexistingcloudschemamatches. Inventory/recoveryprivatebackup+reviewbeforeadditivecloudmigration. No paidstaging/publicPCport ornewproductiondeploy. ExistingHTTPSappmustserveexactreviewedrevisionbeforePCenroll; origin+project+owner+registryscopeallbound. Serversecretkeysprivate; PConlyscopedtoken. Smoke tokennotreused.
+
+Codexconnectorcurrentlywrongorg/permissiondeniedgoh; Dashboardcanaccessmain. Do notaskforsecretsinchat or alterDBpasswordtofixconnectoraccount. CPUcode/tests/runbook canproceednow. Hand offactualSHA/diff/testlogs/configcontracttoPC; realGPUonlyafterbindingreview/nativeACK/accessgates.
