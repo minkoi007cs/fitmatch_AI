@@ -1,6 +1,9 @@
 # QINT-P / AI-QUALITY-04 checkpoint — 07/11/2026
 
-Latest: [PC-NATIVE-33 / disabled canonical preflight](native33-preflight.md).
+Latest: [CONNECT45 private enrollment/config preparation](connect45-preparation.md).
+Exact hosted origin/canonical ref prepared disabled; local owner-only credential
+reservation and hash-only handoff. No auth/claim/runtime/GPU; quiescence and slot blocked.
+Prior: [PC-NATIVE-33 / disabled canonical preflight](native33-preflight.md).
 Reviewed Claude499ead0 test correction:56run/47PASS/9skip/0errors;3existing preflight
 entry points refuse missing prerequisites. No live approval, slot or Qwen GPU.
 Prior: [AI-NATIVE-COMPOSE-31 Windows HTTP/worker/CLI proof](compose31-native-http.md).

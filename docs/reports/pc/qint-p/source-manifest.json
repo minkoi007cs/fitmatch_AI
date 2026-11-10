@@ -98,6 +98,30 @@
       "normalization": "CRLF to LF only"
     },
     {
+      "snapshot": "qint_p/connect45/source/scripts/worker/worker.py.txt",
+      "restore_to": "ai-service/qint_p/connect45/source/scripts/worker/worker.py",
+      "sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+      "bytes": 73502,
+      "original_sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/connect45_prepare.ps1.txt",
+      "restore_to": "ai-service/qint_p/connect45_prepare.ps1",
+      "sha256": "9106ab9b932254df26bfa4ca9eef2628c74cdd3bcd8541a8a959b74e518f2623",
+      "bytes": 8771,
+      "original_sha256": "9106ab9b932254df26bfa4ca9eef2628c74cdd3bcd8541a8a959b74e518f2623",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/connect45_readiness.py.txt",
+      "restore_to": "ai-service/qint_p/connect45_readiness.py",
+      "sha256": "0c6645abe023bd07ed6d0d4e3c4075f69a145776e91b2b5e9b271880c12314cc",
+      "bytes": 4784,
+      "original_sha256": "0c6645abe023bd07ed6d0d4e3c4075f69a145776e91b2b5e9b271880c12314cc",
+      "normalization": "CRLF to LF only"
+    },
+    {
       "snapshot": "qint_p/contract_snapshot/docs/qwen-contract-v1.md.txt",
       "restore_to": "ai-service/qint_p/contract_snapshot/docs/qwen-contract-v1.md",
       "sha256": "aebf025eb48bcc0a04e628900d58a02fb98f43a254ad72f69ad30eb56341c533",
