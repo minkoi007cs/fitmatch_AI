@@ -1,12 +1,12 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 09/11/2026, America/New_York. Revision: PROC-0032. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 09/11/2026, America/New_York. Revision: PROC-0033. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
-## Current continuation - PROC-0032
+## Current continuation - PROC-0033
 
 Claude APP-CLOSE-30 candidate499ead01e7f9274ddf310ab346fda4c2464588bd received via verified bundle and published by Codex on codex/app-close-30-claude-20261109 (Claude proxy push403). Focused R-MIGTARGET-29/NATIVE-FIXTURE-30/QINT-READSKEW/R-TIMEOUT-30 source accepted. Independent Mac114unit/Python56/lint/defaultTurbopackbuild/officialPG17legacyfresh/fulltest:v2HTTPbrowser PASS. CPU MOCK and synthetic assets; no realQwen/Windows/likeness acceptance. [Review](./docs/reports/review/app-close-30-review-20261109.md).
 
-[APP-RECOVERY-32](./docs/handoffs/prompt-claude-recovery-ready-20261109.md) sent directly in existing Claude session, UI confirms active response; receipt/implementation completion still pending. Scope local synthetic dump/restore rehearsal and exact recovery runbook, no cloud execution. Both PC CPU31 tasks continue independently; exact fixture patch follow-up attempted without acknowledgement, delivery UNKNOWN. Last published originalWindows suite46PASS/9skip/1fixtureERROR; fixed test native rerun pending. No new GPU slot; canonical policy/lock/guard retained. Private canonical backup/restore, hosted migration/HTTPS/scopedworker and real integrated Qwen remain open. Use L-075–077 over historical statuses.
+[APP-RECOVERY-32](./docs/handoffs/prompt-claude-recovery-ready-20261109.md) sent directly in existing Claude session, UI confirms active response; receipt/implementation completion still pending. Scope local synthetic dump/restore rehearsal and exact recovery runbook, no cloud execution. Both PC CPU31 tasks completed/published (AI047df82,3Dcc7b3b2); both new PC-NATIVE-33 sends confirmed and acknowledged. AI reports fixed native56run/47PASS/9skip/0error/exit0, logpublication pending; 3D rerun pending. AI disabled preflight and 3D coordinator readiness assigned CPU-only. See L-078/L-079 and docs/handoffs/pc-native-integration-20261109.md. No new GPU slot; canonical policy/lock/guard retained. Private canonical backup/restore, hosted migration/HTTPS/scopedworker and real integrated Qwen remain open. Use L-078/L-079 for current PC status and L-075–077 for app review over historical statuses.
 
 ## Historical continuation — PROC-0016
 
@@ -581,3 +581,7 @@ Full independent npm run test:v2 exit0 (real HTTP/PG/browser/worker, CPU MOCK); 
 ### L-078 - 09/11/2026 - START - CX-PC-NATIVE-33
 
 Owner requests both PC completion/native retest check and next work toward real Qwen without GPU overlap. Reviewer scope process/roadmap/docs/handoffs/pc-native-integration-20261109.md and docs/reports/review/pc-native-progress-20261109.md; source read-only. Ops8ab74ac clean. Both CPU31 tasks completed: AI PR9047df82, 3D PR10cc7b3b2 published; compact finalmessages explicitly stillawait exactClaude fixturepatch, no rerunWindows evidence. Prior send deliveryUNKNOWN resolved as no observed receipt, do not claim ran. Dispatch exact reviewed499ead0/f591d96 test-only patch now, then bounded CPU readiness; no realGPU/cloud grant. Claude APP-RECOVERY-32 ownership unchanged.
+
+### L-079 - 09/11/2026 - NATIVE STATUS / DISPATCH HANDOFF - CX-PC-NATIVE-33
+
+Fetched PC PR9047df82/PR10cc7b3b2;85AI+6PC3D source hashes/bytes verified0mismatch, reportscopeaccepted asboundedCPU evidence notrealQwen/likeness. Both direct PC-NATIVE-33 messages deliveredsuccess and activeexplicitACK. AI latestcommentary reports Windows56run/47PASS/9skip(5POSIX4symlinkprivilege)/0error/exit0, copiedfixturetestpasses; logpublicationpending soimplementerreportednotindependentrerun. 3D confirmed exact499ead0/checkoutsafety, nativererunpending. Both assignednext CPUreadiness after noerrors: AI-PREFLIGHT-33 disabledcanonicalconfig/prerequisites and GPU-READY-33 coordinatorchecklist; no slotissued. Boundedwait transienthostchanged, freshdiscovery/snapshotrecoveredbothactive. No GPU/cloud/appchanges; ClaudeAPP-RECOVERY32 preserved. Handoffpublished36445a4; finalstatusdocs/rootsyncfollow.
