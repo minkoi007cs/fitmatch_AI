@@ -328,3 +328,7 @@ The owner explicitly stopped the previous Claude for usage limits and requests a
 ## 26. Recovery readiness after APP-CLOSE-30 — H-RECOVERY-32
 
 [Independent review](./docs/reports/review/app-close-30-review-20261109.md) and [Claude continuation](./docs/handoffs/prompt-claude-recovery-ready-20261109.md). APP-RECOVERY-32 closes restore runbook gaps and rehearses private-backup validation on disposable synthetic local data/storage. Keep completed target/Windows fixture/read-skew/timeout fixes. No cloud writes, real backup data, deployment or GPU authorization follows from local rehearsal; actual canonical recovery and integration gates remain separate. PC CPU31 ownership unchanged.
+
+## 27. Native Windows closure and integration readiness — H-PC-NATIVE-33
+
+[PC review](./docs/reports/review/pc-native-progress-20261109.md) and [exact tasks](./docs/handoffs/pc-native-integration-20261109.md). Both PCs run reviewed fixturef591d96 on exact candidate499ead0, then AI prepares existing disabled preflight/config and 3D coordinator prepares bounded readiness checklist. CPU31 completed evidence is reused. No new GPU slot until backend/recovery/HTTPS/enrollment and native gates are verified; Qwen and 3D render remain mutually exclusive.
