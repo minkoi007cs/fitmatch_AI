@@ -1,0 +1,61 @@
+{
+  "task": "CONNECT-PC-GPU-45",
+  "session": "PC-20261110-CONNECT45-R2",
+  "snapshotAtUtc": "2026-11-10T17:46:52.9076084+00:00",
+  "checkedAtUtc": "2026-11-10T17:46:53.368945+00:00",
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "lockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "protectedFilesUnchanged": true,
+  "slotExpired": true,
+  "slotIssuedOrRefreshed": false,
+  "namedJobQuery": {
+    "query": "absent",
+    "winerror": 2
+  },
+  "sameOwnedObjectLive": 0,
+  "unknownOwnedQueries": 0,
+  "allProcessCount": 297,
+  "unknownCommandLines": 118,
+  "knownOwnedTreeQuiescence": "PASS_AT_SNAPSHOT",
+  "globalGPUIdleProven": false,
+  "freePhysicalRAMBytes": 4612816896,
+  "minimumRAMBytes": 4294967296,
+  "RAMAdmissionPASS": true,
+  "thresholdLowered": false,
+  "RAMMarginBytes": 317849600,
+  "workerRegisteredReported": "8f1cc6bb-6446-4a7f-9d67-6144deba29be",
+  "workerDisabledReported": true,
+  "QwenFlagOffReported": true,
+  "canonicalCutoverReportedPASS": true,
+  "native47PASS9skipReused": true,
+  "backendHeartbeatReadyExplicitlyReceived": false,
+  "executionWindowExplicitlyReceived": false,
+  "GPUStarted": false,
+  "threeDGPUWorkPaused": true,
+  "status": "WAIT_HEARTBEAT_BACKEND_READY_AND_EXPLICIT_WINDOW",
+  "gateRefreshRequiredImmediatelyBeforeAnySlot": true,
+  "docsRead": "433922c52d0561dcd931bdb96a80d7115b652cdf",
+  "executionReportSource": "7d042ed9ef02046b52e24f2235bb434b64359ee8",
+  "GPUReadOnly": {
+    "name": "RTX3060",
+    "driver": "610.88",
+    "totalMiB": 12288,
+    "usedMiB": 730,
+    "freeMiB": 11381,
+    "utilizationPercent": 16
+  },
+  "ownedProcessObjectQueries": 8,
+  "knownEngineCount": 0,
+  "boundsNotExecuted": {
+    "jobs": 1,
+    "kind": "garment.analyze",
+    "slotSeconds": 600,
+    "engineSeconds": 240,
+    "drainSeconds": 30,
+    "autoRefresh": false
+  }
+}
