@@ -17,3 +17,10 @@ A valid canonical PostgreSQL administrator connection is still missing. API/serv
 After recovery/cutover: exact HTTPS revision, scoped garment.analyze worker enrollment, PC backend/origin binding, existing native ACKs and process-tree quiescence, one coordinator-issued finite pc-ai slot and lock, then one owner-approved photo through real Qwen and human review. Keep Qwen flag OFF until these checks pass. Personal avatar/editor/tee+jeans quality remains a separate gate. No paid resources, public GPU port, destructive reset or source takeover.
 
 Status: CONNECT-43 incomplete, waiting for the missing local administrator configuration. Storage backup completed and verified; DB backup/restore, migration, worker enrollment and real Qwen **NOT RUN**. User asked for the final result; this checkpoint does not claim the connection complete.
+
+
+## CONNECT-45 follow-up — saved configuration authentication refused
+
+Owner saved `.env.db-admin.local`, mode600/Gitignored. URI metadata matches the canonical project user, region and session5432 endpoint; official project metadata confirms healthyPG17. First actual TLSpsql connection failed password authentication before SQL execution. Owner confirmed a local correction; one further connection failed the same way. There is one active DATABASE_URL assignment, no bracket placeholder/whitespace issue or duplicate assignment observed. No credentials or URL echoed. No brute-force, password reset or automatic credential rewriting attempted. Complete DB backup, restore and cutover remain NOT RUN; no worker enrollment/Qwenflag/GPU change. Existing9-objectStoragebackup stays intact.
+
+Independent preparation only: pinned officialPG17image available, CLI3.0.0 dump templates generated from syntheticlocalhost dryrun, all12SQLhashes+schemamanifest match reviewedplan, immutableworkerhash unchanged. This does not replace successful canonical authentication or actualrecoveryproof. Resume after owner corrects/retrieves actual DBpassword; do not repeat attempts without new input.

@@ -348,3 +348,8 @@ Owner requests the whole website in English, including Studio/capture/errors/acc
 ## 30. Controlled connection execution — CONNECT-43
 
 Owner explicitly requests locating private DB configuration on this Mac, actual backup/restore and completing PC/Qwen connection for direct app testing. Codex may execute scoped canonical cutover and enrollment after actual recovery proof/exact review; previous preparation-only rules no longer block this requested execution. Preserve all user data, unrelated applications and native GPU guards. Existing PC owners retain implementation/coordinator ownership. No destructive reset/restore, password rotation, paid resources or extra GPU overlap is authorized. If administrator credentials are missing, complete unaffected preparation and report the precise missing prerequisite rather than substituting API keys or synthetic rehearsal for a database backup.
+
+
+## 31. Parallel UI closure during actual cutover — CL-UX-FIX-46
+
+Owner requests Claude implementation in parallel and progress checks every15minutes during this active execution. Claude owns UI/corresponding browser test fixes from its independent CL-UX41 findings on a separate branch from6ec119a. Preserve English and image-under-text hero, raw values and regression coverage. Codex owns actual canonical recovery/cutover/enrollment/Vercel and integration review; PCs own runtime/coordinator. No overlap in SQL/worker/cutover files. The check cadence is active-session coordination, not a background automation or GPU grant.

@@ -1,12 +1,14 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 10/11/2026, America/New_York. Revision: PROC-0043. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 10/11/2026, America/New_York. Revision: PROC-0045. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
-## Current execution — CONNECT-43
+## Current execution — CONNECT-45 / CL-UX-FIX-46
 
-Owner authorizes finding private DB configuration, actual backup/restore and completing PC/Qwen connection. Config search did not locate a usable canonical PostgreSQL administrator URL/password. Root `.env.local` contains API configuration only; Vercel has no DB admin variable. Empty private config template is available locally (Gitignored, mode600); no secrets requested in chat. Actual Storage-only backup completed:9objects/9,605,786bytes, sizes/MD5/SHA256 verified, private persistent700/600 storage and Gitignore confirmed. This does not complete database backup or restore proof. [Checkpoint and exact next steps](./docs/reports/review/connect43-readiness-20261110.md).
+Canonical authentication now succeeds after owner saved the corrected private configuration. Actual CLI3 backup and14Storageobjects/20,354,806bytes pass92checks. Actual officialSupabasePG17.6.1.166ICU restore:69tables340rowsbyteequal, business/alltablehashes equal,666catalogkeys0differences. Twelve migrations applied+verified on restored copy, originals unchanged and signup/outfit/owner smokePASS (rolled back). [Actual recovery and execution report](./docs/reports/review/connect45-execution-20261110.md). Private backups stay Gitignored700/600; no secrets/rows published.
 
-DB backup/restore, cutover, enrollment and liveQwen remain NOT RUN pending the missing administrator config. No cloud writes, credential reset or GPU actions. Resume with actual credential then exact target/fullbackup/disposablePG17restoreproof before controlledmigration. Existing PC owners/oneGPUlock/finite slot and independent Claude review preserved.
+Codex source branchcodex/connect-45 from6ec119a owns exactpoolerallowlist+cutoverdocs, plancommit24c280b. SQL/worker/manifest unchanged. Canonical dry-run12wouldapplyPASS; freshprechecks and controlledcanonicalexecute are running, finalpostchecks notyetobserved. QwenOFF; no workergrant/GPU slot yet. Prior missingconfig/authfail entries are history.
+
+Both PC owners received/ACKed CONNECT45 CPUpreparation. AI privateconfig/tokenready hash-only returned, coordinator nativepublication and actualquiescencepending; rawtoken never inchat. Claude CL-UX41 completed report6968f35 received/verified. Owner requests parallelwork: CL-UX-FIX46 now submitted/Running for exclusiveUI+testfixes, Codex retainsDB/hosting, PCownersretainnativefiles. CheckClaudeevery15minutes whilethisexecutionactive; nobackgroundautomationclaimed.
 
 ## Current continuation — LANG-40 / CL-UX-41
 
@@ -703,3 +705,68 @@ Owner explicitly asks Codex to locate private DB configuration on this Mac, perf
 CONNECT-43 incomplete: bounded private configuration search found app/authenvs but no usable canonicalPostgreSQLadminURL/password. Vercelmetadata noDBadminvariable. No passwordguess/reset/keychain/historyread or unrelatedcredentialsreused. Textinputquestion pending for rememberedfile/app location; emptyprivate db-admin.env template ready under Gitignored .env.private-backups/connect43.
 
 Actual canonicalStorage readonly inventory9objects9,605,786bytes, all9downloaded/size+plainMD5verified/SHA256manifest, persistentprivate700dirs/600files rehashPASS9 and gitcheck-ignorePASS. STORAGE_ONLY, notfullDBbackup/restoreproof. Twoinitialattempts stoppedbeforeStorage atcanonicalURLassertion becauseVercellistAPIreturnedciphertext; individualvariableAPI correctedprivately, nosecretoutput orwrongbackendrequests. NoSQLcloudwrites/migration/workergrant/Qwenflag/GPU. ExistingPCsnapshot slotexpired/disabledpreflightunchanged; nofreshheartbeat established. Report docs/reports/review/connect43-readiness-20261110.md. NextactualDBcredential→fullprivatebackup→PG17restoreproof→controlledcutover→scopedworker/backendbinding/quiescence/finiteGPUslot→ownerphoto realQwen. Root/sourceuserwork preserved; opspublicationfollows. Do not represent partialStoragebackup asdatabasebackup orcompletedconnection.
+
+
+### L-099 - 10/11/2026 - START - CX-ENV-44
+
+Owner requests a dedicated FitMatch environment file for saving the administrator connection. ENV-44 Codex scope root .env.db-admin.local (private local only) and this coordination entry; baseline rootmain1ef8f25 dirty preserved. Existing .env.local and earlier private template preserved. Create exclusively, permission600, confirm Gitignored and emptyDATABASE_URL; no network/source/DB/GPU changes.
+
+### L-100 - 10/11/2026 - HANDOFF - CX-ENV-44
+
+Dedicated .env.db-admin.local created, mode600 and Gitignore verified. No credentials written or echoed; DATABASE_URL starts empty. Owner can save actualURI locally and report only saved status. This path supersedes earlier template as preferred input, previous template preserved. File creation Done; CONNECT-43 backup/migration/enrollment/realQwen still pending validconfig and recoveryproof. No app/cloud/runtime changes.
+
+### L-101 - 10/11/2026 - RESUME - CX-CONNECT-45
+
+Owner saved .env.db-admin.local and requests complete DBbackup and direct appPCQwen testing. CONNECT-45 continuation ofCONNECT-43: Codex privatebackup/restore/exactcutover/hosting/enrollment, existingPC owners retain runtime/coordinator. File600, nonemptyPostgreSQLURI, canonicalusernamebinding, sessionpooleraws-0-us-west-2:5432 metadata parsed privately, not yetauthenticated. NoURL/passwordprinted. App6ec119a/source7397b6a/rootmain1ef8f25dirtypreserved; nooverlapwithClaudeCL-UX41report. Scope extends privateignoredbackup/proof scripts and sanitized coordination/evidence; code fixes only isolatedbranch ifnecessary. First readonlyactualconnection, CLI3dump, fullprivatebackup anddisposablePG17restoreproof before anycanonicalDDL. Poolerexacthost mustbereconciledwithprojectbinding/officialdocs beforeallowlist, neverweaken targetguard. Userrequestauthorizes controlledmigration/enrollment afterproof, onefiniteQwenGPUslot throughPCowners; no destructivecanonicalrestore/reset/paid/UAC/publicport/overlap.
+
+
+### L-102 - 10/11/2026 - AUTHENTICATION REFUSAL / CHECKPOINT - CX-CONNECT-45
+
+Savedfilevalidated600, nonemptycanonicalPostgreSQLURI/session5432, no passwordplaceholder/bracketwrapper/whitespace or unescapedreservedcharacters detected. Officialconnector confirms projectfitmatch-ai/us-west-2/PG17ACTIVEHEALTHY. SingleTLSpsqlattempt toexactconfiguredaws-0-us-west-2sessionpooler reachedserver butfailed passwordauthentication, nottenantmissing. NoSQLexecuted/noDBbackup/cloudwrites. Noalternatepasswordguesses/reset, noautomaticcredentialrewrite. ErrorretainedprivatelywithURL/passwordredaction. Owneraskedviasafependingtextinput tocorrectlocalfilewithactualDBpassword (notaccountpassword/APIkey); nosecretrequested inchat. Do notretrybeforecorrection.
+
+Independentpreparation: existingofficialPG17image digest3540c036…verified; SupabaseCLI3.0.0 schema/roles/data--dry-run templates generatedusingonlysyntheticlocalhostURL; noDBconnected bydryrun.12migrationhashes+schemamanifestmatchreviewedplan, workeref25136b…unchanged. Existing9objectStoragebackupretained; completeDBbackup/restore/cutover/enrollment/QwenNOTRUN. Appsource6ec119aclean, rootdirtyuserworkpreserved. CONNECT-45 continuation awaits validlocalDBauthentication; noPCslot/flag/GPUchanged. Next reauthenticateonceownerfixesfile, thenactualbackupandPG17restoreproof beforecontrolledmigration.
+
+
+### L-103 - 10/11/2026 - OWNER CORRECTION / AUTH STILL REFUSED - CX-CONNECT-45
+
+Ownerexplicitlyconfirmedfilecorrected. Readfreshlocalfile andmadeexactlyoneadditionalTLSpsqlattempt; serveragainpasswordauthenticationfailed. SingleactiveDATABASE_URLassignment, no bracketwrapper, noambiguousduplicate. NoSQLran/noDBdump/noDBchange/noGPU/flag/enrollment. Donotkeepretryingorguesscredentials; requireactualDBpasswordcorrection orowner-led credentialrecovery. ExistingStoragebackupandreviewedhashprep retained. CONNECT-45 incomplete, finalcheckpointauthenticationblocker reportedtruthfully; notallsetupready. Usermustnotpastepasswordintochat.
+
+
+### L-104 - 10/11/2026 - OWNER RESET / LOCAL CONFIG UNCHANGED - CX-CONNECT-45
+
+Owner reports database password reset. Readonlymetadata check shows .env.db-admin.local mtime unchanged since last failedattempt, oneactivecanonical5432URI/mode600. No newconnectionattempt withstaleconfig, nopasswordreadout/guess/credentialrewrite. Ownermustsave thenewDBpassword inlocalURIbeforeoneauthenticatedretry; backups/cutover/enrollment remainpending, noDB/GPUchanges.
+
+
+### L-105 - 10/11/2026 - FRESH AUTH CHECK / SAVE DIAGNOSIS - CX-CONNECT-45
+
+OwnerconfirmsDBpasswordchangedtocorrectSupabasevalue; exactonefreshpsqlattempt stillAUTH_FAILEDbeforeSQL. Furtherprivateformatdiagnosis:oneassignment, no percentencodingchange/replacementchar/quotewrapper, noSSL/tenant-not-founderror. On-disk .env.db-admin.local mtime unchangedfromfirstfailure (1794318058.9980285); boundedFitMatchfileinventoryfindsonlythispopulatedfileandearlieremptyprivatetemplate, noalternateupdatedconfigfound. Usermayhaveunsavededitorchanges; asktoCmd+S exactfilepath beforeanotherattempt, donotassertpassworditselfwrongorresetagain. NoDBbackup/DDL/worker/GPUchanges. ExistingStoragebackupretained.
+
+### L-106 - 10/11/2026 - AUTH SUCCESS / BACKUP START - CX-CONNECT-45
+
+OwnerconfirmsCmd+S; newreadconnectionSUCCESS tocanonicalpooler/postgresPG17.6, modelsabsent. No password/URLoutput. ContinueexistingCONNECT45scope: privateCLI3roles/schema/data andactualmanagedauth/storagecustomizations+platformschema/roles supplementalbackup, catalogs/businessfingerprint andStoragebytes; readonlysource. No canonicalDDL untilfullbackupverify+actualPG17restoredinventory/fingerprint equalityandlocalcutover. Existing officialPG17digestpinned, app6ec119a unchanged; preserveuserwork. Actualbackuphasstarted, notyetPASS. PC/GPU gatesunchanged.
+
+### L-107 - 10/11/2026 - ACTUAL BACKUP VERIFIED - CX-CONNECT-45
+
+Canonicalactualroles/schema/dataCLI3dumpscompletedread-only; managedcustomizations/catalog/businessfingerprint/all-tablehashesandactualauth/storageschemadefinitions/passwordfreeplatformroles capturedprivately. Actualprojecthas2buckets/14objects, notjustFitMatch9; backedall14/20,354,806bytes withsize/plainMD5/SHA256checks. OFFLINEwrite-backup-manifest+verify-backup exit0:92checksPASS. Sourcepgcrypto/uuid-ossp/pg_stat_statements/supabase_vault metadata retained; officialSupabasePG17.6.1.166imageavailable/pullingforfaithfuldisposablelocalrestore. No cloudDDL/worker/GPUyet. Actualbackupiscompleteperverifier, actualrestoreproofstillpending; preserveprivateignored700/600path .env.private-backups/connect45/canonical-backup. No rows/photos/keys published. Nextlocalrestoreexactmanagedplatform/sourcecatalog/fingerprint/bytescomparison andlocal12stepcutover beforecanonicalexecute.
+
+### L-108 - 10/11/2026 - RESTORE PLATFORM / PC PREPARATION DISPATCH - CX-CONNECT-45
+
+Actualbackup92checksPASS remainsunchanged. MatchingofficialSupabasePG17.6.1.166image digestb3bfedb… localnetworknone target. Managedrolebootstrap initialGRANTEDBYsupabase_admin failure resolved inlocalplatformprovisioning byretainingmembershipoptions withfreshclusterbootstrapgrantor (sourcepasswordfreerolesdumpunchanged); nostatementerrorsignored. Actualauth/storageschemadefinitionsloaded,6custompolicies+publicfunctiontriggerdeferred untilpublic/data perrunbook. Restoretransactionthenrefusedmissingplatformsupabase_realtimepublication; abortedtargetonly, provisioningmissingmanagedpublicationbeforefreshretry. NoactualrestorePASSclaimedyet, no canonicalwrites.
+
+Owner-requestedconnectioncontinuation sent toBOTH existingPCthreads, acknowledgementsreturned. AI CONNECT-PC-AI45 privateconfig/runtime+token preparationonly, rawtokenstayPC, onlySHA256hashreturnedforlateroperatorenrollment. CoordinatorCONNECT-PC-GPU45 nativepublication/quiescence/finite-slotpreparation, NOslot/inferenceuntilCodexbackendready. Source7397b6a/immutableworker/context provided, noDBsecrets/sharedtokeninmessages. Deliverynotreceipt/completion; existingPCownershippreserved. Nextactualrestoreequality/localcutover, canonicalreadiness then scopedworkergrant andboundedGPU window.
+
+### L-109 - 10/11/2026 - REAL RESTORE PROOF / CUTOVER PLAN SCOPE - CX-CONNECT-45
+
+Consistentexportedsnapshotusedforschema/data/fingerprint, sourcewritesfalse. ActualrestoreonofficialSupabase17.6.1.166 finallymatchesICUprovider/en-US153.121 (firsttargetlibcaggregatehashmismatchdiagnosed, notprovenrowloss orlivechanges); business+all-tableaggregatehashPASS, exact69COPYtables340rowsbyteequal, full666flattenedcatalogkeys0diff underidenticalpublic/extensionssearchpath. Initial25defaultqualification/then26authnamequalifierdifferences werecomparisonsearch_path, correctedtoliteralsource setting; no sourceDDL/dataalteredtoforcepass. Originalfailedlogs/backupsretained. Freshlocaldry12pending, localexecute12APPLIED+VERIFIED; postpreservation/signup/outfit/ownerchecksongoing.\n
+Isolatedcodebranchcodex/connect-45 fromclean6ec119a nowownedbyCodex for reviewedpoolerallowlist/docs only beforecanonicaldryrun. Addexactaws-0-us-west-2.pooler.supabase.com fromowner-savedURI, successfullyauthenticatedcanonicalDB/officialregionmetadata and matchingcanonicalStorageobjects; retainstrictuser/ref/5432/TLSandalltargetrefusals, SQL/manifesthashesunchanged. No canonicalexecuteuntilpostproof+dryrun. PCprivateconfighashreserved, NOgrant/inferenceyet.
+
+### L-110 - 10/11/2026 - RESTORE AND LOCAL CUTOVER PASS / CANONICAL DRY - CX-CONNECT-45
+
+ActualmatchingICUPG17restore:allbusiness/all-tablehashesPASS,69tables340COPYrowsbyteequal,666catalogkeys0diff,14StoragefilesrehashPASS. Local12APPLIED+VERIFIED aspostgresrole, originals69tables340rowsunchangedaftercutover (expectednewfitmatch-v2bucketexcluded), localsignup→fm_users/outfitsave/reopen/cross-ownerdenialPASSinsideROLLBACK; no retainedsmokerows. RESTORE-PROOF.json privateactualdata proof saved. InitialaggregatehashmismatchcausedICU-vslibc sortprovider; earlierclaimliveupdateswasinference, notprovenrecordchanges. Snapshotredo retainedforconsistentpointintime, no sourcewrites.\n
+Planonlyaddsverifiedexactsessionpoolerhost, SQL/manifest/workerimmutable.33targetguardtestsPASS includingrefusals. Canonicaldryrunstartedthroughreviewedrunner/privateTLSwrapper afterproof; noexecuteatentrytime. Userexplicitconnect/backup/cutoverauthorizationretained, QwenOFF/nogrant/GPU. PCbothACKactive; AIreservedprivateownertoken, onlySHA256c474d31e…returned, rawtokenstaysPC; coordinatornative/quiescencepending. Nextcanonicaldry12ready→controlled12execute/postchecks, deliberatehistoryadoption, scopedownerworker+PCreadiness beforeboundedQwen.
+
+### L-111 - 10/11/2026 - CLAUDE PARALLEL IMPLEMENTATION / 15-MIN CHECK - CX-CONNECT-45
+
+OwnerexplicitlyrequestsClaudeparallelworkand15-minuteprogresschecks. ReadexistingClaudecompletedCL-UX41:2mediumfindings(ThequizlabelstillVietnamese;conditionalmobileherocontrastwithsubstituteimage)+minorcopy/plurals/accessibility. Downloadbundle971fcbd4… verified, reporthead6968f35. Reportonlyreview119unit/lint/substitutebuild/fulltest:v2reportedPASS; realimages/site/physicalmobilelimitsretained, no blockerclaimed. UIEnglishclaimqualifiedbyF1residual; fixassignednow.
+
+SubmittedCL-UX-FIX46 inexistingClaudedesktop: exclusive srcUI+correspondingbrowserlocators/tests+ownreport scope, branchfrom6ec119a; Codexkeepcutoverplan/README/privateDB/hosting/enrollment, PCskeepnative/coordinator. FixF1/F2andreportminorswithfullassertions, keepimageundertext/rawvalues, noSQL/worker/cloud/GPU. Submittedmessage+Runningobserved, notcompletion. NativeUIfirstpasteattemptblockedbyrefresh, rereadfreshstateandconfirmedoneactualsubmittedmessage. Screenshotprivate/tmp/fitmatch-claude46-dispatch.png. CheckClaudeon15-minutecadencewhilethisexecutionactive; notbackgroundautomationafterturnends. Codexcontinuesoriginalconnectionobjective, notstoppedbynewsteering. Canonicaldryrunexit0all12wouldapply/identityverified; actualexecutenotyetstartedatentrytime. Nextreviewableplancommit, canonicalexecute/postchecks, PCgates.
