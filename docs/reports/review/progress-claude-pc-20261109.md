@@ -21,6 +21,8 @@ Both existing chats were read after compact snapshots became available. These ar
 
 Both latest turns terminated with usage-limit systemError. This replaces earlier mere host-unavailable status: messages did reach the agents and substantial CPU work was performed, but final GitHub handoffs were not published. PR9/10 heads are still3f59cd24/32267169. Do not claim agents are currently working, code is saved remotely or GPU is idle.
 
+**Subsequent dispatch:** after publishing H-RESUME-30, both PC-SAVE-30 messages returned success and compact snapshots show new turns inProgress on both chats. AI model explicitly acknowledged and is packaging sanitized local source/evidence forPR9 without model/test reruns. 3D is active after delivery; specific execution receipt pending. This supersedes the initial stopped-turn status above. Final publication/completion has not yet been verified; no GPU grant was issued.
+
 Policy reported by both: SHA256 **789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039**. Existing guard SHA47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c. Existing worker LF SHAef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6, unchanged bycf902d3. This is a scoped binding ACK only; no slot or integrated GPU permission. Do not recreate policy/lock after resume merely because another chat starts.
 
 ## NATIVE-FIXTURE-30 - precise remaining test defect
