@@ -118,7 +118,21 @@ node scripts/migration-cutover/apply.mjs ... --execute                          
 
 Before running anything, the runner checks:
 
-- The target must be `db.<ref>.supabase.co` or the pooler user `postgres.<ref>`.
+- Target identity (R-MIGTARGET-29, `scripts/migration-cutover/target.mjs`), checked **before any psql
+  process starts** (refusal = exit 2, nothing is connected):
+  - Scheme `postgres://` or `postgresql://` only, single host, database `postgres`, no fragment.
+  - **Direct:** host exactly `db.<ref>.supabase.co`, port 5432, user exactly `postgres`.
+  - **Pooler:** host must be listed in the plan's `trustedPoolerHosts` (empty by default, so the pooler is
+    refused until the owner copies the exact session-pooler host from the project's dashboard *Connect* panel
+    into the plan and it is reviewed) and have the form `aws-<n>-<region>.pooler.supabase.com`; port 5432
+    (session mode; transaction mode 6543 is refused); user exactly `postgres.<ref>`. A matching
+    `postgres.<ref>` username on any other host is refused — the username is not evidence of the host.
+  - URL query parameters other than `sslmode` (`require`/`verify-ca`/`verify-full`), `connect_timeout` and
+    `application_name` are refused (`host`, `hostaddr`, `port`, `service`, `options`, … could redirect psql).
+  - libpq variables that can retarget psql (`PGHOST`, `PGHOSTADDR`, `PGPORT`, `PGSERVICE`, …) are removed
+    from psql's environment. There is no override flag. `--isolated-test` accepts loopback hosts only.
+  - Note: the pooler form above was taken from Supabase's documented connection strings as known to the
+    implementer; this cloud session could not reach the docs. Codex/owner confirm the exact host in the dashboard.
 - The smoke ref is refused.
 - The server major must be 17.
 - The manifest and every file must match their reviewed sha256.

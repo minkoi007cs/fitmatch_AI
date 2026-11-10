@@ -29,6 +29,7 @@ import { createHash } from "node:crypto";
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { compareInventory, flattenInventory, stepPrecondition } from "../schema-inventory-lib.mjs";
+import { checkPlanPoolerHosts, checkTarget, sanitizedPsqlEnv } from "./target.mjs";
 
 const arg = (name, fallback = null) => {
   const i = process.argv.indexOf(name);
@@ -50,29 +51,18 @@ const auditDir = arg("--audit") ?? fail("--audit <private dir> required");
 const execute = flag("--execute");
 const isolated = flag("--isolated-test");
 const psqlWords = (arg("--psql") ?? "psql").split(" ").filter(Boolean);
-const url = process.env.DATABASE_URL ?? fail("DATABASE_URL is not set");
+const url = process.env.DATABASE_URL || fail("DATABASE_URL is not set");
 
-// Target identity: the URL host/user must name the expected project; loopback only in isolated tests.
-let parsed;
-try {
-  parsed = new URL(url);
-} catch {
-  fail("DATABASE_URL is not a URL");
-}
-const loopback = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(parsed.hostname);
-if (expectedRef === "wqbwwusrhertqktwsxsl") fail("retired project (smoke-supabase)");
-if (isolated) {
-  if (!loopback) fail("--isolated-test accepts only a loopback database");
-} else if (expectedRef !== plan.projectRef) {
-  fail("expected ref differs from the plan's projectRef");
-} else if (!(parsed.hostname === `db.${expectedRef}.supabase.co` || decodeURIComponent(parsed.username).endsWith(`.${expectedRef}`))) {
-  fail("DATABASE_URL does not target the expected project (host db.<ref>.supabase.co or pooler user postgres.<ref>)");
-}
+// Target identity (R-MIGTARGET-29): checked before any psql process is started; loopback only in isolated tests.
+const planPoolers = checkPlanPoolerHosts(plan.trustedPoolerHosts);
+if (!planPoolers.ok) fail(planPoolers.reason);
+const target = checkTarget(url, { expectedRef, planRef: plan.projectRef, isolated, trustedPoolerHosts: plan.trustedPoolerHosts ?? [] });
+if (!target.ok) fail(`target identity: ${target.reason}`);
 
 const psql = (input, extraEnv = {}) => {
   const [cmd, ...rest] = psqlWords;
   return spawnSync(cmd, [...rest, "-X", "-v", "ON_ERROR_STOP=1", "-At", url], {
-    input, encoding: "utf8", env: { ...process.env, ...extraEnv }, maxBuffer: 64 * 1024 * 1024,
+    input, encoding: "utf8", env: { ...sanitizedPsqlEnv(process.env), ...extraEnv }, maxBuffer: 64 * 1024 * 1024,
   });
 };
 const inventorySql = readFileSync("scripts/schema-inventory.sql", "utf8");
@@ -95,7 +85,7 @@ const server = psql("select current_setting('server_version_num');");
 if (server.status !== 0) fail("cannot connect: " + (server.stderr || "").split("\n")[0], 3);
 const major = Math.floor(Number(server.stdout.trim()) / 10000);
 if (plan.serverMajor && major !== plan.serverMajor) fail(`server major ${major} differs from the plan (${plan.serverMajor})`);
-record({ event: "start", mode: execute ? "execute" : "dry-run", plan: plan.id, serverMajor: major, target: isolated ? "isolated-test" : expectedRef });
+record({ event: "start", mode: execute ? "execute" : "dry-run", plan: plan.id, serverMajor: major, target: isolated ? "isolated-test" : expectedRef, targetKind: target.kind });
 console.log(`${execute ? "EXECUTE" : "DRY RUN"} plan ${plan.id} on ${isolated ? "isolated test database" : `project ${expectedRef}`} (PostgreSQL ${major}); audit: ${audit}`);
 
 const adopt = [];

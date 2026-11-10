@@ -1,0 +1,202 @@
+TAP version 13
+# Subtest: target guard refuses: original repro: suffix user on arbitrary host
+ok 1 - target guard refuses: original repro: suffix user on arbitrary host
+  ---
+  duration_ms: 1.249658
+  type: 'test'
+  ...
+# Subtest: target guard refuses: suffix user on attacker pooler-looking host not in plan
+ok 2 - target guard refuses: suffix user on attacker pooler-looking host not in plan
+  ---
+  duration_ms: 0.219431
+  type: 'test'
+  ...
+# Subtest: target guard refuses: suffix user on a lookalike domain
+ok 3 - target guard refuses: suffix user on a lookalike domain
+  ---
+  duration_ms: 0.101857
+  type: 'test'
+  ...
+# Subtest: target guard refuses: other project's direct host
+ok 4 - target guard refuses: other project's direct host
+  ---
+  duration_ms: 0.091684
+  type: 'test'
+  ...
+# Subtest: target guard refuses: direct host but pooler-style user
+ok 5 - target guard refuses: direct host but pooler-style user
+  ---
+  duration_ms: 0.097673
+  type: 'test'
+  ...
+# Subtest: target guard refuses: direct host with another role
+ok 6 - target guard refuses: direct host with another role
+  ---
+  duration_ms: 0.08124
+  type: 'test'
+  ...
+# Subtest: target guard refuses: direct host wrong port
+ok 7 - target guard refuses: direct host wrong port
+  ---
+  duration_ms: 0.118645
+  type: 'test'
+  ...
+# Subtest: target guard refuses: trusted pooler wrong project user
+ok 8 - target guard refuses: trusted pooler wrong project user
+  ---
+  duration_ms: 0.10746
+  type: 'test'
+  ...
+# Subtest: target guard refuses: trusted pooler bare postgres user
+ok 9 - target guard refuses: trusted pooler bare postgres user
+  ---
+  duration_ms: 0.330673
+  type: 'test'
+  ...
+# Subtest: target guard refuses: trusted pooler transaction mode
+ok 10 - target guard refuses: trusted pooler transaction mode
+  ---
+  duration_ms: 0.305631
+  type: 'test'
+  ...
+# Subtest: target guard refuses: host query override
+ok 11 - target guard refuses: host query override
+  ---
+  duration_ms: 0.120592
+  type: 'test'
+  ...
+# Subtest: target guard refuses: hostaddr query override
+ok 12 - target guard refuses: hostaddr query override
+  ---
+  duration_ms: 0.064093
+  type: 'test'
+  ...
+# Subtest: target guard refuses: service query
+ok 13 - target guard refuses: service query
+  ---
+  duration_ms: 0.071
+  type: 'test'
+  ...
+# Subtest: target guard refuses: options query
+ok 14 - target guard refuses: options query
+  ---
+  duration_ms: 0.057327
+  type: 'test'
+  ...
+# Subtest: target guard refuses: weak sslmode
+ok 15 - target guard refuses: weak sslmode
+  ---
+  duration_ms: 0.042712
+  type: 'test'
+  ...
+# Subtest: target guard refuses: multi-host
+ok 16 - target guard refuses: multi-host
+  ---
+  duration_ms: 0.03637
+  type: 'test'
+  ...
+# Subtest: target guard refuses: other database
+ok 17 - target guard refuses: other database
+  ---
+  duration_ms: 0.040638
+  type: 'test'
+  ...
+# Subtest: target guard refuses: unsupported scheme
+ok 18 - target guard refuses: unsupported scheme
+  ---
+  duration_ms: 0.039792
+  type: 'test'
+  ...
+# Subtest: target guard refuses: key=value string
+ok 19 - target guard refuses: key=value string
+  ---
+  duration_ms: 0.032504
+  type: 'test'
+  ...
+# Subtest: target guard refuses: no host
+ok 20 - target guard refuses: no host
+  ---
+  duration_ms: 0.039807
+  type: 'test'
+  ...
+# Subtest: target guard refuses: loopback without isolated flag
+ok 21 - target guard refuses: loopback without isolated flag
+  ---
+  duration_ms: 0.077721
+  type: 'test'
+  ...
+# Subtest: target guard refuses: malformed
+ok 22 - target guard refuses: malformed
+  ---
+  duration_ms: 0.067023
+  type: 'test'
+  ...
+# Subtest: target guard refuses: empty
+ok 23 - target guard refuses: empty
+  ---
+  duration_ms: 0.034141
+  type: 'test'
+  ...
+# Subtest: target guard accepts only the verified direct endpoint and a reviewed pooler
+ok 24 - target guard accepts only the verified direct endpoint and a reviewed pooler
+  ---
+  duration_ms: 0.719613
+  type: 'test'
+  ...
+# Subtest: target guard: refs, retired project and plan mismatch
+ok 25 - target guard: refs, retired project and plan mismatch
+  ---
+  duration_ms: 0.134291
+  type: 'test'
+  ...
+# Subtest: isolated tests stay loopback-only
+ok 26 - isolated tests stay loopback-only
+  ---
+  duration_ms: 0.106071
+  type: 'test'
+  ...
+# Subtest: plan pooler allowlist must itself be well-formed
+ok 27 - plan pooler allowlist must itself be well-formed
+  ---
+  duration_ms: 0.110188
+  type: 'test'
+  ...
+# Subtest: psql environment drops libpq variables that can retarget the connection
+ok 28 - psql environment drops libpq variables that can retarget the connection
+  ---
+  duration_ms: 0.093308
+  type: 'test'
+  ...
+# Subtest: runner (offline): original R-MIGTARGET-29 URL is refused with exit 2 and psql is never started
+ok 29 - runner (offline): original R-MIGTARGET-29 URL is refused with exit 2 and psql is never started
+  ---
+  duration_ms: 38.972042
+  type: 'test'
+  ...
+# Subtest: runner (offline): every refused form exits 2 before psql
+ok 30 - runner (offline): every refused form exits 2 before psql
+  ---
+  duration_ms: 816.733603
+  type: 'test'
+  ...
+# Subtest: runner (offline): bad plan pooler allowlist is refused before psql
+ok 31 - runner (offline): bad plan pooler allowlist is refused before psql
+  ---
+  duration_ms: 31.916778
+  type: 'test'
+  ...
+# Subtest: runner (offline): accepted targets reach the fake psql once with a sanitized environment
+ok 32 - runner (offline): accepted targets reach the fake psql once with a sanitized environment
+  ---
+  duration_ms: 123.334401
+  type: 'test'
+  ...
+1..32
+# tests 32
+# suites 0
+# pass 32
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1162.630052

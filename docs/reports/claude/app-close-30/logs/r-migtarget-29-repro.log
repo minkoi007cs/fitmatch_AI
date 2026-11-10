@@ -1,0 +1,6 @@
+## baseline 0c4c44e (apply.mjs b7273a39…)
+REFUSED: cannot connect: FAKE_PSQL_CALLED_NO_NETWORK
+exit=3 psql_calls=1
+## fixed (apply.mjs 6639ab25…)
+REFUSED: target identity: DATABASE_URL host is not the expected project's direct endpoint or a reviewed pooler host
+exit=2 psql_calls=0
