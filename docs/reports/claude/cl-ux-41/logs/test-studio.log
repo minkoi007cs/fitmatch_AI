@@ -1,0 +1,15 @@
+
+> fitmatch-ai@0.1.0 test:studio
+> node --import tsx scripts/test-auth-http.mjs --studio
+
+PASS: guest APIs blocked before parsing/AI; cross-origin mutation rejected
+PASS: PKCE/state verified; callback bridges user-scoped Supabase session and preserves next/vibe
+PASS: avatar/shirt capture ZIP contents, image rejection, modal dismissal, GLB import, filter, compare, saved look, IndexedDB save/reload/restore/delete, camera and responsive layout (synthetic inputs)
+PASS: owner-scoped data, forged owner/image rejection, mismatched identity denied, outage preserves session
+PASS: outfit archive writes legacy style_category/is_saved; mixed or contradicting style refused before any write
+PASS: outfit image survives save/reload with new signed URL; foreign image path and invalid archive rejected; quiz contract correct
+PASS: non-destructive PATCH/profile, nested validation, quota 429/outage, legacy archive safety, 45-row pagination, shared asset retention and preview ownership
+PASS: 10 parallel HTTP requests rotate once; late cookie reuses encrypted successor
+PASS: explicit dual-session linking preserves the original wardrobe user ID
+PASS: logout clears both sessions; no unnecessary token refresh
+exit=0
