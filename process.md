@@ -1,10 +1,10 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 09/11/2026, America/New_York. Revision: PROC-0027. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 09/11/2026, America/New_York. Revision: PROC-0029. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
-## Current continuation - PROC-0026
+## Current continuation - PROC-0029
 
-Canonical connector access restored; cloud preflight read-only. Migration preparation and local synthetic legacy rehearsal completed; no hosted apply/deploy/GPU. [Plan and evidence](./docs/infrastructure/qwen-migration-preparation-20261109/plan.md). Claude CL-MIGRATION-26 receipt received at3e5a70a, owns compatibility code/SQL; final source is not published at the PROC-0027 check. Codex retains review/docs. Both PC hosts unreachable; native ACK still NOT VERIFIED. [Latest check](./docs/reports/review/migration-recheck-20261109.md); historical boards below must be read with L-064/L-065.
+Canonical connector access restored; cloud unchanged by this work. Claude stopped explicitly at owner request for usage limits and published app847aeea (implementationcf902d3), plus documentation PR15head5d08c98. Prior unpublished-source observations are historical. [Checkpoint review](./docs/reports/review/claude-checkpoint-847aeea.md): independent76unitPASS and12SQL/manifest hashes match; full browser remains NOT VERIFIED, R-MIGTARGET-29 needs correction before hosted execution. [Fresh AI handoff](./docs/handoffs/prompt-fresh-ai-migration-resume-20261109.md): APP-RESUME-29 assigned for successor receipt, app ownership transfers in that scope; Codex retains independent review/docs. No cloud apply/deploy/GPU. PC ownership and native ACK gates remain unchanged. Use latest L-067/L-068 over historical boards below.
 
 ## Historical continuation — PROC-0016
 
@@ -529,3 +529,13 @@ Receipt CL-MIGRATION-20261109-01 accepted as task receipt only; scope follows H-
 ### L-066 - 09/11/2026 - START / DISPATCH HANDOFF - CX-PC-REDISPATCH-28
 
 Owner explicitly asked to retry existing PC assignments. Codex scope process-only dispatch evidence from docs1e211de; existing H-MIGRATION-26 CPU tasks unchanged, Claude work preserved. AI model chat send_message_to_thread returned success for01a1aef0-d86e-7410-86f3-3f785f861e38. This proves send acknowledgement, not task receipt/execution/completion. 3d model01a1aa1b-fb39-7ab2-9ca0-1b5e637c9fae failed twice: cannot steer without an active turn id. Compact snapshots still unavailable, so no live worker/GPU state inferred. Requests explicitly deduplicate earlier delivery and forbid new CUDA/render/slot grants while awaiting Claude/review gates; preserve existing locks, checkpoints and UAC pause. No cloud/app/model/GPU mutation. First documentation patch did not match context and made no changes; corrected by append. Next: PC AI receipt/status when reachable; user may forward existing 3D continuation into the open 3D chat. No success claimed for 3D.
+
+### L-067 - 09/11/2026 - START - CX-FRESH-HANDOFF-29
+
+Owner supplies Claude's explicit stop/handoff due usage limit and requests a fresh AI continuation prompt. Scope Codex: docs/handoffs/prompt-fresh-ai-migration-resume-20261109.md, docs/reports/review/claude-checkpoint-847aeea.md and process; source847aeea read-only in separate detached review worktree. Receive implementationcf902d3 + report847aeea; PR15 is docs-only at5d08c98 against operations, not an app PR. Verify key source/unit evidence; no cloud SQL/deploy/GPU or takeover edits here. Explicit owner handoff permits the next app agent to resume scoped implementation after receipt; old Claude is stopped, this reviewer session continues.
+
+### L-068 - 09/11/2026 - CHECKPOINT / SUCCESSOR HANDOFF - CX-FRESH-HANDOFF-29
+
+App847aeea and PR15 metadata/report verified: PR15 only2docs onops, not app source; automatic preview not candidate acceptance. Key compatibility SQL/route/runner reviewed read-only. Independent npm76PASS onMac;12plannedSQLhashes+manifesthashPASS. Claude's build/PG17legacy/DB/HTTP/Python reports retained as implementer evidence; test:v2 failed once atAIproposalwait183, rerun interrupted, NOTVERIFIED. New R-MIGTARGET-29 offline repro: arbitraryhost@example.invalid with matching project suffix inusername reaches fakepsql, exit3; mustrefuse beforepsql, exit2. No network/credentials inrepro, no --execute. Hostedcutover NEEDSCHANGES until guard andUIverification resolved; not a full securityaudit. Fresh canonicalreadonly0V2tables/autholdtarget confirms not installed. No cloud writes/deploy/GPU.
+
+Owner-authorized transfer from stoppedClaude: APP-RESUME-29 successor Assigned before receipt, source branch from847aeea/descendant; same app/migration/testscope, plus evidence-backed runner/UI fix, no PCownership transfer. Full freshprompt andreview report saved; successor first closesUI+R-MIGTARGET then regression/package evidence for Codex independent review. Privatebackup/PG17restoreproof/nativePCACK/servingHTTPS/scopedworker andrealQwen stillopen. No new agent/chat created, no assumption successor already running. Docs checks/publication follow; finalSHA from Git readback.
