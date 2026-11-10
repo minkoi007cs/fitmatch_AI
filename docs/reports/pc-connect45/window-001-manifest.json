@@ -1,0 +1,15 @@
+{
+  "task": "CONNECT-PC-GPU-45-window001",
+  "files": [
+    {
+      "file": "window-001-refusal.md",
+      "sha256": "3da713260e5cf39eae4b3e3f7b38cec333d56d1a52ab9e468be172ea10e5da3d",
+      "bytes": 3189
+    },
+    {
+      "file": "window-001-refusal.json",
+      "sha256": "de2517bdb342ae9e74e3e5e4680325530d66a657388c2e00a47f994f7db2d671",
+      "bytes": 1809
+    }
+  ]
+}
