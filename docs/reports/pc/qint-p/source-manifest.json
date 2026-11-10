@@ -26,6 +26,22 @@
       "normalization": "CRLF to LF only"
     },
     {
+      "snapshot": "qint_p/bind25_native_cpu.py.txt",
+      "restore_to": "ai-service/qint_p/bind25_native_cpu.py",
+      "sha256": "4752c555b8b01640b153f4fe878f136f8fa1c29c22673cca1dfd50926f0a1c29",
+      "bytes": 8220,
+      "original_sha256": "4752c555b8b01640b153f4fe878f136f8fa1c29c22673cca1dfd50926f0a1c29",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/bind25_prepare.py.txt",
+      "restore_to": "ai-service/qint_p/bind25_prepare.py",
+      "sha256": "5ece07768e6eb90643a15a5d63b5e8d21d20da3545cabf1386210ea2b3588e2e",
+      "bytes": 7143,
+      "original_sha256": "5ece07768e6eb90643a15a5d63b5e8d21d20da3545cabf1386210ea2b3588e2e",
+      "normalization": "CRLF to LF only"
+    },
+    {
       "snapshot": "qint_p/boundary.py.txt",
       "restore_to": "ai-service/qint_p/boundary.py",
       "sha256": "34c3dae15a7c1087c0f7a93b2698660d291be65f01a869a4e7e55eb68e4a3657",
@@ -68,9 +84,9 @@
     {
       "snapshot": "qint_p/contract_snapshot/docs/qwen-contract-v1.md.txt",
       "restore_to": "ai-service/qint_p/contract_snapshot/docs/qwen-contract-v1.md",
-      "sha256": "39ca338fd162a60bbdd96ec3bf79cffc047cd8879b2d5a0ca1cba8eb16627b9d",
-      "bytes": 7520,
-      "original_sha256": "39ca338fd162a60bbdd96ec3bf79cffc047cd8879b2d5a0ca1cba8eb16627b9d",
+      "sha256": "aebf025eb48bcc0a04e628900d58a02fb98f43a254ad72f69ad30eb56341c533",
+      "bytes": 8869,
+      "original_sha256": "aebf025eb48bcc0a04e628900d58a02fb98f43a254ad72f69ad30eb56341c533",
       "normalization": "CRLF to LF only"
     },
     {
@@ -252,9 +268,9 @@
     {
       "snapshot": "qint_p/contract_snapshot/pin.json.txt",
       "restore_to": "ai-service/qint_p/contract_snapshot/pin.json",
-      "sha256": "371459a7fb2951f8ab4de3fe5e85f1122d249c547a6207a543c7d1556171ee99",
+      "sha256": "7e20e683029fd22687563275a84c9d62b9eed0e9cde10b0e71bdfc0da672f1e7",
       "bytes": 5474,
-      "original_sha256": "b086ec67c69d84f547fd82b07c0a59273040ee54ab04be1fb4e558b763c27f83",
+      "original_sha256": "df058a5a8a780cbbaa2c072fbee88f893bb10db2639b0faffd52282c94b54af6",
       "normalization": "CRLF to LF only"
     },
     {
@@ -343,6 +359,30 @@
       "sha256": "3deec689ddaba2503559cced1cf775c8d13e07a5349349bc03a5ad2c720603d2",
       "bytes": 1547,
       "original_sha256": "3deec689ddaba2503559cced1cf775c8d13e07a5349349bc03a5ad2c720603d2",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/native_bind25/source/scripts/worker/gpu_coordinator_policy.py.txt",
+      "restore_to": "ai-service/qint_p/native_bind25/source/scripts/worker/gpu_coordinator_policy.py",
+      "sha256": "9d600e87c44e70fdaa3e7f038dc15aea6ed125aad8d1c2ba3b204966eee1f47b",
+      "bytes": 4326,
+      "original_sha256": "9d600e87c44e70fdaa3e7f038dc15aea6ed125aad8d1c2ba3b204966eee1f47b",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/native_bind25/source/scripts/worker/test_worker_unit.py.txt",
+      "restore_to": "ai-service/qint_p/native_bind25/source/scripts/worker/test_worker_unit.py",
+      "sha256": "dea997fc9a22674de8e0e07087ac7233f4d75aeea98a4f989f7200e0f4bec1ef",
+      "bytes": 50539,
+      "original_sha256": "dea997fc9a22674de8e0e07087ac7233f4d75aeea98a4f989f7200e0f4bec1ef",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/native_bind25/source/scripts/worker/worker.py.txt",
+      "restore_to": "ai-service/qint_p/native_bind25/source/scripts/worker/worker.py",
+      "sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+      "bytes": 73502,
+      "original_sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
       "normalization": "CRLF to LF only"
     },
     {
@@ -444,49 +484,49 @@
     {
       "snapshot": "qint_p/test_worker_bridge.py.txt",
       "restore_to": "ai-service/qint_p/test_worker_bridge.py",
-      "sha256": "c0548da898ee52bfa603391fd161d34515eb86dbe39fe25e6aa77d7a690f715b",
-      "bytes": 16345,
-      "original_sha256": "c0548da898ee52bfa603391fd161d34515eb86dbe39fe25e6aa77d7a690f715b",
+      "sha256": "95ea62895c030bd14a1213f8bc6443550b20af36dd224f2f991deb0dce162e8a",
+      "bytes": 19156,
+      "original_sha256": "95ea62895c030bd14a1213f8bc6443550b20af36dd224f2f991deb0dce162e8a",
       "normalization": "CRLF to LF only"
     },
     {
       "snapshot": "qint_p/transport_interop.py.txt",
       "restore_to": "ai-service/qint_p/transport_interop.py",
-      "sha256": "d02a23d5f6c0b79fdfb293b3dc8debd75f330e7bf72f480a48b9e6559c0fa3e2",
-      "bytes": 5448,
-      "original_sha256": "d02a23d5f6c0b79fdfb293b3dc8debd75f330e7bf72f480a48b9e6559c0fa3e2",
+      "sha256": "ca366d1bc4f34a36301040697ba1c5a7007e81a26976e1e145a7b760e74814d3",
+      "bytes": 5619,
+      "original_sha256": "ca366d1bc4f34a36301040697ba1c5a7007e81a26976e1e145a7b760e74814d3",
       "normalization": "CRLF to LF only"
     },
     {
       "snapshot": "qint_p/wire.py.txt",
       "restore_to": "ai-service/qint_p/wire.py",
-      "sha256": "140092342013d0163dc00e13481c9001eeb13c0a89c4f2b7235e16e755079cd5",
-      "bytes": 4507,
-      "original_sha256": "140092342013d0163dc00e13481c9001eeb13c0a89c4f2b7235e16e755079cd5",
+      "sha256": "66a329c51d518aa193fb3d289d42252da374cd35af11732158f7f69c4b35823a",
+      "bytes": 4515,
+      "original_sha256": "66a329c51d518aa193fb3d289d42252da374cd35af11732158f7f69c4b35823a",
       "normalization": "CRLF to LF only"
     },
     {
       "snapshot": "qint_p/worker-engine.example.json.txt",
       "restore_to": "ai-service/qint_p/worker-engine.example.json",
-      "sha256": "b13869978a4a4e18ea9b19823eaf21ba755cec97a89c20b23832605f88ae9249",
-      "bytes": 964,
-      "original_sha256": "b13869978a4a4e18ea9b19823eaf21ba755cec97a89c20b23832605f88ae9249",
+      "sha256": "0948b38e6f26019f0323eb5549046900a2bfa77eb9500c646bba2878609bef87",
+      "bytes": 920,
+      "original_sha256": "0948b38e6f26019f0323eb5549046900a2bfa77eb9500c646bba2878609bef87",
       "normalization": "CRLF to LF only"
     },
     {
       "snapshot": "qint_p/worker-policy.example.json.txt",
       "restore_to": "ai-service/qint_p/worker-policy.example.json",
-      "sha256": "ad2039a83cb110922dd525bae45588a398e3e762c42cfb3626c1fb829f62e401",
-      "bytes": 994,
-      "original_sha256": "ad2039a83cb110922dd525bae45588a398e3e762c42cfb3626c1fb829f62e401",
+      "sha256": "df46e6c066c36282986a15e9d13572315987bd61b83ba6c8d6091cd0cc58b0b8",
+      "bytes": 1185,
+      "original_sha256": "df46e6c066c36282986a15e9d13572315987bd61b83ba6c8d6091cd0cc58b0b8",
       "normalization": "CRLF to LF only"
     },
     {
       "snapshot": "qint_p/worker_admission.py.txt",
       "restore_to": "ai-service/qint_p/worker_admission.py",
-      "sha256": "f80461bce88e4b732cd6865e36f64fe356f33cc0f9de808334ad28b9bb8be059",
-      "bytes": 7353,
-      "original_sha256": "f80461bce88e4b732cd6865e36f64fe356f33cc0f9de808334ad28b9bb8be059",
+      "sha256": "b5f92a1365a87cbd9d75ccba153b3967d6f57f3d79eedaba0b56f83626eca78a",
+      "bytes": 9894,
+      "original_sha256": "b5f92a1365a87cbd9d75ccba153b3967d6f57f3d79eedaba0b56f83626eca78a",
       "normalization": "CRLF to LF only"
     },
     {

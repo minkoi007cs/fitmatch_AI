@@ -19,8 +19,9 @@ import wire
 
 ROOT=Path(__file__).resolve().parent
 DOCS=ROOT.parents[2]/'fitmatch-pc-ai-01-docs'
-REV='1f4d01f0705453b4f479fe2583a7b752b55ffa04'
-REPORT=ROOT.parents[1]/'reports/ai/qint_p/worker_bridge'
+BIND25='--bind25' in sys.argv
+REV='f80749a65b47441958e7c6fc485034d7efe446df' if BIND25 else '1f4d01f0705453b4f479fe2583a7b752b55ffa04'
+REPORT=ROOT.parents[1]/('reports/ai/qint_p/bind25' if BIND25 else 'reports/ai/qint_p/worker_bridge')
 REPORT.mkdir(exist_ok=True)
 source=subprocess.check_output(['git','show',REV+':scripts/worker/worker.py'],cwd=DOCS)
 target=REPORT/'worker-source-private.py'
@@ -77,7 +78,7 @@ with tempfile.TemporaryDirectory(prefix='cli-',dir=REPORT) as temporary:
     records.append({'test':'CPU_positive_fixture','parent_proof':'injected','backend':'synthetic Backend',
         'actual_transport_json_result_ok':True,'exported_contract_checker_exit':0,
         'result_sha256':hashlib.sha256(output_bytes).hexdigest(),'GPU_loaded':False})
-output={'session':'PC-QINT-P-20261107-02','transport_revision':REV,
+output={'session':'PC-QINT-P-20261109-09' if BIND25 else 'PC-QINT-P-20261107-02','transport_revision':REV,
     'transport_source_sha256':hashlib.sha256(source).hexdigest(),'source_changed':False,
     'scope':'actual direct CLI negative subprocesses + actual classify_exit; no HTTP/queue/worker loop',
     'records':records,'model_loaded':False,'shared_lock_taken':False,'personal_image_read':False,

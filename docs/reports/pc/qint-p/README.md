@@ -1,6 +1,10 @@
 # QINT-P / AI-QUALITY-04 checkpoint — 07/11/2026
 
-Latest target: [BACKEND-024 canonical fitmatch-ai main/pilot](backend024-canonical.md).
+Latest checkpoint: [PC-QWEN-BIND-25 native ACK and CPU bridge](bind25-native.md).
+Focused policy/identity binding ACK PASS atf80749a; exact56tests retain a Windows
+fixture error (46PASS/9skip/1error), supplemental native4/4 and own bridge70/70PASS.
+No Qwen GPU grant; canonical migration/recovery, HTTPS/token and finite slot pending.
+Backend decision: [BACKEND-024 canonical fitmatch-ai main/pilot](backend024-canonical.md).
 The former smoke target is deprecated for FitMatch; old credentials cannot be reused.
 App HTTPS/scoped canonical token and binding gates remain open; no SQL or GPU started.
 Historical target: [superseded smoke authorization](test-target-authorization.md).

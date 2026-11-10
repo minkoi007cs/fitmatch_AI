@@ -1,0 +1,12 @@
+{
+  "admitted": true,
+  "scope": "binding only; no lock acquired, no slot or backend readiness evaluation",
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "lockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "derivedCanonicalPathsMatch": true,
+  "owner": "pc-ai",
+  "realPolicyOrLockOrSlotWrittenByQwen": false
+}

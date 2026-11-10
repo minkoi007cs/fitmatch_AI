@@ -1,10 +1,10 @@
 {
-  "source_revision": "931109906089e20738090613086b73c3677d3a40",
+  "source_revision": "f80749a65b47441958e7c6fc485034d7efe446df",
   "files": [
     {
       "path": "docs/qwen-contract-v1.md",
-      "sha256": "39ca338fd162a60bbdd96ec3bf79cffc047cd8879b2d5a0ca1cba8eb16627b9d",
-      "bytes": 7520
+      "sha256": "aebf025eb48bcc0a04e628900d58a02fb98f43a254ad72f69ad30eb56341c533",
+      "bytes": 8869
     },
     {
       "path": "fixtures/qwen-v1/adapter-errors.json",

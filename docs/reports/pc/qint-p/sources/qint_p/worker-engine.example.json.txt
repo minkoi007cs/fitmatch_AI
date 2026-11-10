@@ -1,13 +1,15 @@
 {
-  "appUrl": "https://dedicated-test-endpoint.invalid",
+  "appUrl": "https://reviewed-app-origin.invalid",
   "workDir": "ABSOLUTE_PRIVATE_TEST_WORKDIR_REQUIRED",
   "processContainment": "required",
-  "gpuLock": "EXACT_COORDINATOR_ABSOLUTE_GPU0_LOCK_PATH_REQUIRED",
-  "gpuSlot": "EXACT_COORDINATOR_ABSOLUTE_GPU0_SLOT_PATH_REQUIRED",
   "gpuSlotOwner": "pc-ai",
-  "gpuGuard": {
-    "path": "EXACT_COORDINATOR_ABSOLUTE_GPU_GUARD_PATH_REQUIRED",
-    "sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c"
+  "gpuCoordinator": {
+    "path": "EXACT_PC3D_COORDINATOR_POLICY_PATH_REQUIRED",
+    "sha256": "PC3D_ISSUED_POLICY_SHA256_REQUIRED"
+  },
+  "expectedBackend": {
+    "projectRef": "gohczmqykjkrgdblgbog",
+    "appOrigin": "https://reviewed-app-origin.invalid"
   },
   "engines": {
     "garment.analyze": {

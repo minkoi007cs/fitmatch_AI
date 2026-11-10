@@ -1,0 +1,49 @@
+{
+  "session": "PC-QINT-P-20261109-09",
+  "revision": "f80749a65b47441958e7c6fc485034d7efe446df",
+  "workerLFsha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "python": "3.10.22",
+  "os": "nt",
+  "testsRun": 4,
+  "errors": 0,
+  "failures": 0,
+  "skips": 0,
+  "events": [
+    {
+      "test": "test_copy_created_before_hold_refused_while_original_held",
+      "passed": true,
+      "copiedPolicyByteIdentical": true,
+      "canonicalStillHeld": true,
+      "foreignLockIndependentlyFree": true,
+      "refusal": "identity mismatch before worker acquires copied lock"
+    },
+    {
+      "test": "test_existing_real_lock_identity_read_only",
+      "passed": true,
+      "volume": 3699583840,
+      "fileId": 2251799814103012,
+      "statEqualsFstat": true,
+      "lockAcquired": false,
+      "actualLockBytesReadOrWritten": false
+    },
+    {
+      "test": "test_native_owned_grandchild_drain_holds_synthetic_lock",
+      "passed": true,
+      "nativeJobObject": true,
+      "venvLauncherExitedBeforeGrandchild": true,
+      "ownedGrandchildDrained": true,
+      "foreignProcessUnaffected": true,
+      "lockHeldUntilDrain": true,
+      "nestedGpuGuard": false
+    },
+    {
+      "test": "test_opened_handle_identity_and_external_exclusion",
+      "passed": true,
+      "statEqualsFstat": true,
+      "externalProcessExcluded": true
+    }
+  ],
+  "seconds": 8.469,
+  "CUDAImported": false,
+  "realPolicyLockSlotWritten": false
+}

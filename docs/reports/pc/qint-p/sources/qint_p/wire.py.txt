@@ -1,4 +1,4 @@
-"""Claude 9311099 contract mapper. CPU conformance only until shared lock placement is reconciled."""
+"""Claude v1-r2 contract mapper; schemas/fixtures unchanged at f80749a. GPU still gated by local approval."""
 import hashlib
 import json
 from pathlib import Path

@@ -28,13 +28,14 @@ def value():
     return result
 
 def policy(root):
-    return {'version':'qint-p.worker-admission.v1','enabled':True,'scope':'disposable_test_only',
+    return {'version':'qint-p.worker-admission.v2','enabled':True,'scope':'authorized_wardrobe_pilot',
         'reviews':{name:'PASS' for name in admission.GATES},'app_revision':'a'*40,
         'contract_revision':'b'*40,'transport_revision':'c'*40,
         'transport_path':str(root/'worker.py'),'transport_sha256':'d'*64,
         'transport_python_exe':str(Path(sys.executable).absolute()),
         'config_path':str(root/'config.json'),'config_sha256':'e'*64,
-        'work_dir':str(root),'guard_sha256':admission.GUARD_HASH,'lock_path':str(admission.LOCK)}
+        'work_dir':str(root),'guard_sha256':admission.GUARD_HASH,'lock_path':str(admission.LOCK),
+        'coordinator_sha256':'f'*64,'app_origin':'https://fitmatch-pilot.net'}
 
 def ancestor(approved):
     return {'pid':1234,'creation_time':time.time()-20,'exe':approved['transport_python_exe'],
@@ -179,9 +180,10 @@ class VerifyCompositionTests(unittest.TestCase):
         self.value=value();self.policy=policy(self.root)
         self.lock=self.root/'isolated.lock';self.lock.write_bytes(b'0')
         self.policy['lock_path']=str(self.lock)
-        self.config={'gpuLock':str(self.lock),'processContainment':'required','workDir':str(self.root),
-            'gpuSlot':str(self.root/'gpu0-slot.json'),'gpuSlotOwner':'pc-ai',
-            'gpuGuard':{'path':str(admission.GUARD),'sha256':admission.GUARD_HASH}}
+        self.config={'processContainment':'required','workDir':str(self.root),'gpuSlotOwner':'pc-ai',
+            'gpuCoordinator':{'path':str(self.root/'gpu-coordinator.json'),'sha256':self.policy['coordinator_sha256']},
+            'expectedBackend':{'projectRef':admission.BACKEND_REF,'appOrigin':self.policy['app_origin']},
+            'appUrl':self.policy['app_origin']}
         self.worker=self.root/'worker.py';self.worker.write_text('# synthetic CPU test transport; not production source')
         self.configfile=self.root/'config.json';self.save_config()
         self.policy['transport_sha256']=hashlib.sha256(self.worker.read_bytes()).hexdigest()
@@ -207,6 +209,7 @@ class VerifyCompositionTests(unittest.TestCase):
         self.stack.enter_context(patch.dict(os.environ,{'FITMATCH_GPU_LOCK_HELD_BY':'worker','FITMATCH_GPU_LOCK_PATH':str(self.lock)}))
         self.lock_probe=self.stack.enter_context(patch.object(admission,'lock_is_held'))
         self.job_probe=self.stack.enter_context(patch.object(admission,'in_windows_job'))
+        self.coordinator_probe=self.stack.enter_context(patch.object(admission,'coordinator_binding',return_value=(1,2)))
     def save_config(self):
         self.configfile.write_text(json.dumps(self.config))
         self.policy['config_sha256']=hashlib.sha256(self.configfile.read_bytes()).hexdigest()
@@ -240,10 +243,44 @@ class VerifyCompositionTests(unittest.TestCase):
     def test_qrev_slot_and_guard_fields_must_match_fixed_receipt(self):
         original=dict(self.config)
         for key,bad in [('gpuSlot',str(self.root/'other-slot.json')),('gpuSlotOwner','pc-3d'),
-                        ('gpuGuard',{'path':str(self.root/'other-guard.py'),'sha256':admission.GUARD_HASH}),
-                        ('gpuGuard',{'path':str(admission.GUARD),'sha256':'0'*64})]:
+                        ('gpuGuard',{'path':str(admission.GUARD),'sha256':admission.GUARD_HASH}),
+                        ('gpuCoordinator',{'path':str(self.root/'foreign/gpu-coordinator.json'),'sha256':self.policy['coordinator_sha256']}),
+                        ('expectedBackend',{'projectRef':'wqbwwusrhertqktwsxsl','appOrigin':self.policy['app_origin']}),
+                        ('appUrl','https://other-pilot.net')]:
             self.config={**original,key:bad};self.save_config();self.save_policy()
             with self.subTest(key=key),self.assertRaisesRegex(Refused,'GPU_BUSY'):self.verify()
         self.lock_probe.assert_not_called()
+
+class CoordinatorBindingTests(unittest.TestCase):
+    """Synthetic private tree only; never writes coordinator-owned real policy/lock/slot."""
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name);self.coord=self.root/'coordination';self.coord.mkdir()
+        self.lock=self.coord/'gpu0.lock';self.lock.write_bytes(b'0')
+        self.guard=self.root/'fitmatch_AI/workers/windows/gpu_guard.py';self.guard.parent.mkdir(parents=True)
+        self.guard.write_text('# synthetic guard')
+        (self.coord/'gpu0-slot.json').write_text('{}')
+        identity=self.lock.stat()
+        self.doc={'kind':'fitmatch.gpu-coordinator.v1','coordinator':'pc-3d','owners':['pc-3d','pc-ai'],
+            'lock':{'name':'gpu0.lock','volume':identity.st_dev,'fileId':identity.st_ino},
+            'slot':{'name':'gpu0-slot.json'},'guard':{'relativeToWorkspace':'fitmatch_AI/workers/windows/gpu_guard.py',
+            'sha256':admission.GUARD_HASH},'issuedAtUtc':'2026-11-09T06:00:00Z'}
+        self.pin=self.save()
+        self.stack=contextlib.ExitStack();self.addCleanup(self.stack.close)
+        for key,value in [('GPU',self.root),('COORD',self.coord),('LOCK',self.lock),('GUARD',self.guard)]:
+            self.stack.enter_context(patch.object(admission,key,value))
+    def save(self):
+        path=self.coord/'gpu-coordinator.json';path.write_text(json.dumps(self.doc))
+        return {'coordinator_sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
+    def test_stat_and_opened_handle_identity_match(self):
+        self.assertEqual(admission.coordinator_binding(self.pin),tuple(self.doc['lock'][key] for key in ['volume','fileId']))
+    def test_copied_or_replaced_lock_is_refused(self):
+        self.doc['lock']['fileId']+=1;self.pin=self.save()
+        with self.assertRaises(Refused):admission.coordinator_binding(self.pin)
+    def test_modified_policy_or_wrong_guard_relative_refused(self):
+        self.doc['note']='modified';self.save()
+        with self.assertRaises(Refused):admission.coordinator_binding(self.pin)
+        self.doc['guard']['relativeToWorkspace']='outside.py';self.pin=self.save()
+        with self.assertRaises(Refused):admission.coordinator_binding(self.pin)
 
 if __name__=='__main__':unittest.main(verbosity=2)
