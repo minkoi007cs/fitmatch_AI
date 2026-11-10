@@ -72,5 +72,8 @@
    ],
    "note": "Compatibility: corrects handle_new_user() target; legacy fm_outfits columns keep NOT NULL/defaults (allowed differences). Must finish before app/auth pilot traffic."
   }
+ ],
+ "trustedPoolerHosts": [
+  "aws-0-us-west-2.pooler.supabase.com"
  ]
 }

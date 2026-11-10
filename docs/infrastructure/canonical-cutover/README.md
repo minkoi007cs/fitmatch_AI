@@ -189,9 +189,7 @@ Before running anything, the runner checks:
   process starts** (refusal = exit 2, nothing is connected):
   - Scheme `postgres://` or `postgresql://` only, single host, database `postgres`, no fragment.
   - **Direct:** host exactly `db.<ref>.supabase.co`, port 5432, user exactly `postgres`.
-  - **Pooler:** host must be listed in the plan's `trustedPoolerHosts` (empty by default, so the pooler is
-    refused until the owner copies the exact session-pooler host from the project's dashboard *Connect* panel
-    into the plan and it is reviewed) and have the form `aws-<n>-<region>.pooler.supabase.com`; port 5432
+  - **Pooler:** host must be listed in the plan's `trustedPoolerHosts` (reviewed exact host `aws-0-us-west-2.pooler.supabase.com` for CONNECT-45, supplied by the owner in a private configuration and verified against the canonical project/region and successful authenticated backup; all other hosts remain refused) and have the form `aws-<n>-<region>.pooler.supabase.com`; port 5432
     (session mode; transaction mode 6543 is refused); user exactly `postgres.<ref>`. A matching
     `postgres.<ref>` username on any other host is refused — the username is not evidence of the host.
   - URL query parameters other than `sslmode` (`require`/`verify-ca`/`verify-full`), `connect_timeout` and
@@ -243,7 +241,7 @@ tables keep Supabase's default grants behind per-owner RLS.
 | 2 | Secrets typed into the operator's own shell only (`DATABASE_URL`, DB password); never in chat, Git, logs | owner | — |
 | 3 | §2 backup into a private 700 directory; `verify-backup.mjs` exit 0 | owner | non-zero |
 | 4 | §3 restore proof on a disposable target incl. inventory diff = 0, fingerprint/bytes equal, runner dry run + execute + smoke | owner, summary to Codex | any difference |
-| 5 | Canonical endpoint: direct `db.gohczmqykjkrgdblgbog.supabase.co:5432` user `postgres`; or add the **exact** session-pooler host from Dashboard → Connect to `trustedPoolerHosts` and get it reviewed (empty today; never guess) | owner + Codex | target refused |
+| 5 | Canonical endpoint: direct `db.gohczmqykjkrgdblgbog.supabase.co:5432` user `postgres`; or add the **exact** session-pooler host from Dashboard → Connect to `trustedPoolerHosts` and get it reviewed (CONNECT-45: exact session host reviewed and allowlisted; never guess) | owner + Codex | target refused |
 | 6 | Maintenance window; Qwen flag OFF; no worker granted `garment.analyze` | owner | — |
 | 7 | Runner dry run on canonical (`--audit` private dir): 20261103 VERIFIED PRESENT, 12 would apply | operator | any refusal (exit 2/3/4) |
 | 8 | Runner `--execute`; stop at first failure (exit 5); later steps are not attempted | operator | non-zero → §5 |
@@ -279,3 +277,12 @@ steps are additive and remain. Do not re-run a non-rerunnable step; reconcile wi
 - PC3D native coordinator ACK, policy and finite slot for pc-ai.
 - PC Qwen adapter/runtime ACK.
 - Pilot.
+
+
+## CONNECT-45 execution receipt — 10 November 2026
+
+The owner explicitly requested actual canonical backup/restore and direct PC/Qwen connection. The exact session pooler `aws-0-us-west-2.pooler.supabase.com:5432` is now allowlisted; username must remain `postgres.gohczmqykjkrgdblgbog`, with all prior target/parameter/refusal guards intact. No SQL or manifest hash was changed.
+
+Actual private CLI3 backup includes roles/schema/data/customizations and14Storageobjects (20,354,806bytes),92offlinechecksPASS. Matching officialSupabasePostgreSQL17.6.1.166 with ICUen-US153.121 restored the consistent snapshot:69COPYtables/340rows byteequal, business/all-table fingerprints equal and666catalogkeys/0differences under the same search path. Twelve migrations applied+verified on the restored copy; original rows and Storagebytes unchanged, signup/outfit save/cross-owner checks passed inside a rolled-back local smoke transaction. Private backup/rows/keys remain ignored and are not part of this repository.
+
+This receipt closes actual local recovery proof for this snapshot. Canonical execution and postchecks are recorded separately in process and the CONNECT-45 report; do not infer execution from this receipt. Existing no-destructive-restore/oneGPU/scoped-enrollment boundaries remain.
