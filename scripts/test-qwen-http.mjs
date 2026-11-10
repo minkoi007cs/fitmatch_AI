@@ -78,10 +78,10 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(base + "/wardrobe");
-    const panel = page.getByRole("group", { name: `Phân tích AI cho ${item.name}` });
-    await panel.getByRole("button", { name: "Phân tích với AI" }).click();
+    const panel = page.getByRole("group", { name: `AI analysis for ${item.name}` });
+    await panel.getByRole("button", { name: "Analyze with AI" }).click();
     // No worker granted for analysis is online: say so instead of pretending it is about to run.
-    await panel.getByText("PC đang offline", { exact: false }).waitFor();
+    await panel.getByText("Your PC is offline", { exact: false }).waitFor();
     assert.equal((await (await request("/api/v2/analyses")).json()).workerOnline, false);
     const a = JSON.parse(v2.sql(`select row_to_json(t) from (select id,status,image_asset_id,image_sha256,source_path from fm_v2_analyses where user_id='${owner}' and item_id='${itemId}') t;`));
     assert.equal(a.status, "pending");
@@ -121,7 +121,7 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals from fm_v2_jobs where id='${jobId}';`), "queued:0:0", "nothing claimed while busy");
     let status = await (await request("/api/v2/analyses")).json();
     assert.deepEqual([status.workerOnline, status.gpuBusy], [true, true]);
-    await panel.getByText("PC đang bận GPU với việc khác", { exact: false }).waitFor({ timeout: 15000 });
+    await panel.getByText("Your PC's GPU is busy with another task", { exact: false }).waitFor({ timeout: 15000 });
     await asSecond(async (req2) => {
       const other = await (await req2("/api/v2/analyses")).json();
       assert.deepEqual([other.workerOnline, other.gpuBusy], [false, false], "another owner never sees this PC's GPU state");
@@ -138,7 +138,7 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     out = await runWorker(token, "gpu_busy");
     assert.doesNotMatch(out, /Completed/);
     assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals||':'||error_code from fm_v2_jobs where id='${jobId}';`), "queued:0:1:GPU_BUSY");
-    await panel.getByText("PC đang bận GPU", { exact: false }).waitFor({ timeout: 15000 });
+    await panel.getByText("Your PC's GPU is busy", { exact: false }).waitFor({ timeout: 15000 });
     // Lock released after the owned adapter tree drained.
     const probe = await promisify(execFile)("python3", ["-c",
       "import fcntl,sys;f=open(sys.argv[1],'a+');fcntl.flock(f.fileno(),fcntl.LOCK_EX|fcntl.LOCK_NB);print('free')", lockPath]);
@@ -149,7 +149,7 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     v2.sql(`update fm_v2_jobs set not_before=now() where id='${jobId}';`);
     out = await runWorker(token, "memory");
     assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals||':'||error_code from fm_v2_jobs where id='${jobId}';`), "queued:0:2:MEMORY_PRESSURE");
-    await panel.getByText("PC đang thiếu bộ nhớ trống", { exact: false }).waitFor({ timeout: 15000 });
+    await panel.getByText("Your PC has limited free memory", { exact: false }).waitFor({ timeout: 15000 });
     // 2nd account: sees nothing of this owner's analyses and cannot act on them over HTTP.
     await asSecond(async (req2, owner2) => {
       assert.notEqual(owner2, owner);
@@ -180,21 +180,21 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     assert.equal(replay.status, 200);
     assert.equal((await replay.json()).replay, true);
 
-    await panel.getByText("Đề xuất của AI", { exact: false }).waitFor({ timeout: 15000 });
-    assert.equal(await panel.getByLabel("Loại").inputValue(), "tshirt");
-    assert.equal(await panel.getByLabel("Màu chính").inputValue(), "red");
-    assert.equal(await panel.getByLabel("Màu phụ").inputValue(), "white");
-    assert.equal(await panel.getByLabel("Họa tiết").inputValue(), "printed");
-    assert.equal(await panel.getByLabel("Chữ/logo trên đồ").inputValue(), "", "OCR candidate is not pre-approved");
-    await panel.getByText("chưa xác nhận", { exact: false }).waitFor();
+    await panel.getByText("AI suggestion", { exact: false }).waitFor({ timeout: 15000 });
+    assert.equal(await panel.getByLabel("Category").inputValue(), "tshirt");
+    assert.equal(await panel.getByLabel("Main color").inputValue(), "red");
+    assert.equal(await panel.getByLabel("Secondary color").inputValue(), "white");
+    assert.equal(await panel.getByLabel("Patterns").inputValue(), "printed");
+    assert.equal(await panel.getByLabel("Garment text / logo").inputValue(), "", "OCR candidate is not pre-approved");
+    await panel.getByText("unconfirmed", { exact: false }).waitFor();
     await page.screenshot({ path: "test-results/qint-review.png" });
-    await panel.getByLabel("Màu phụ").selectOption("");
-    await panel.getByRole("button", { name: "Lưu vào tủ đồ" }).click();
-    await panel.getByText("Đã lưu theo xác nhận của bạn", { exact: false }).waitFor();
+    await panel.getByLabel("Secondary color").selectOption("");
+    await panel.getByRole("button", { name: "Save to wardrobe" }).click();
+    await panel.getByText("Saved with your confirmation", { exact: false }).waitFor();
     assert.equal(v2.sql(`select category||':'||color||':'||pattern||':'||coalesce(secondary_color,'-') from fm_wardrobe_items where id='${itemId}';`), "t-shirt:red:graphic:-", "only reviewed values written; cleared secondary not invented");
     assert.equal(v2.sql(`select status||':'||(confirmed_fields ? 'logoText') from fm_v2_analyses where id='${a.id}';`), "confirmed:false");
     await page.reload();
-    await panel.getByText("Đã lưu theo xác nhận của bạn", { exact: false }).waitFor();
+    await panel.getByText("Saved with your confirmation", { exact: false }).waitFor();
     // Asking again for the same photo reuses the confirmed analysis: no GPU, no new job.
     const again = await request("/api/v2/analyses", { method: "POST", body: JSON.stringify({ itemId }) });
     assert.equal((await again.json()).analysis.state, "confirmed");
@@ -302,20 +302,20 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     assert.equal(v2.sql(`select state||':'||error_code from fm_v2_jobs where analysis_id='${second.analysis.id}';`), "failed:INVALID_OUTPUT");
     assert.equal(v2.sql(`select status||':'||(result_json is null) from fm_v2_analyses where id='${second.analysis.id}';`), "pending:true", "self-approved output never stored");
     await page.reload();
-    await panel.getByText("AI trả kết quả không hợp lệ", { exact: false }).waitFor();
-    await panel.getByRole("button", { name: "Thử lại" }).click();
-    await panel.getByText("Đang chờ PC nhận việc", { exact: false }).waitFor();
+    await panel.getByText("AI returned an invalid result", { exact: false }).waitFor();
+    await panel.getByRole("button", { name: "Retry" }).click();
+    await panel.getByText("Waiting for your PC to accept the job", { exact: false }).waitFor();
     out = await runWorker(token, "abstain");
     assert.match(out, /Completed analysis job/);
-    await panel.getByText("AI không đưa ra đề xuất", { exact: false }).waitFor({ timeout: 15000 });
-    await panel.getByRole("button", { name: "Đóng" }).click();
-    await panel.getByText("Đã bỏ qua đề xuất AI", { exact: false }).waitFor();
+    await panel.getByText("AI has no suggestion", { exact: false }).waitFor({ timeout: 15000 });
+    await panel.getByRole("button", { name: "Close" }).click();
+    await panel.getByText("AI suggestion dismissed", { exact: false }).waitFor();
     assert.equal(v2.sql(`select category||':'||color||':'||pattern from fm_wardrobe_items where id='${itemId}';`), "t-shirt:red:graphic", "abstention changes nothing");
     // Flag off: the UI hides the feature (server-side refusal is covered by the route).
     await page.route("**/api/v2/analyses", (route) => route.fulfill({ json: { enabled: false, analyses: [] } }));
     await page.reload();
     await page.getByRole("heading", { name: item.name }).first().waitFor();
-    assert.equal(await page.getByRole("group", { name: `Phân tích AI cho ${item.name}` }).count(), 0);
+    assert.equal(await page.getByRole("group", { name: `AI analysis for ${item.name}` }).count(), 0);
     assert.deepEqual(errors, []);
     v2.sql(`update fm_v2_workers set enabled=false where user_id='${owner}' and allowed_capabilities @> '{garment.analyze}';`);
   } finally {

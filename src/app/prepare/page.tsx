@@ -49,7 +49,7 @@ export default function PreparePage() {
     void refresh();
     void fetch("/api/wardrobe", { cache: "no-store" })
       .then(async (r) => {
-        if (!r.ok) throw new Error("Không tải được tủ đồ.");
+        if (!r.ok) throw new Error("Unable to load your wardrobe.");
         const d = await r.json();
         if (alive.current)
           setItems(
@@ -76,10 +76,10 @@ export default function PreparePage() {
       await api(`jobs/${jobId}/${command}`, {});
       setNotice(
         command === "regenerate"
-          ? "Đã tạo lượt mặc thử mới. Phiên bản cũ được giữ lại."
+          ? "New fitting created. The previous version is preserved."
           : command === "retry"
-          ? "Đã đưa tác vụ trở lại hàng đợi."
-          : "Đã hủy tác vụ. Kết quả đến muộn sẽ không được công bố.",
+          ? "Job returned to the queue."
+          : "Job canceled. Late results will not be published.",
       );
       await refresh();
     } catch (e) {
@@ -98,16 +98,15 @@ export default function PreparePage() {
             Your digital wardrobe
           </p>
           <h1 className="font-display text-4xl lg:text-5xl font-semibold">
-            Từ ảnh đến phòng thử đồ.
+            From photos to your fitting room.
           </h1>
           <p className="mt-4 text-fg-muted text-sm max-w-xl leading-6">
-            Chuẩn bị avatar, áo thun và jeans. Kết quả đã xử lý sẽ được
-            giữ lại để bạn mặc thử nhanh trong Studio.
+            Prepare your avatar, T-shirts and jeans. Completed results are saved for quick outfit changes in Studio.
           </p>
         </div>
         <button onClick={() => void refresh()} className={button}>
           <RefreshCw size={15} />
-          Làm mới
+          Refresh
         </button>
       </header>
       {error && (
@@ -116,7 +115,7 @@ export default function PreparePage() {
           className="mb-5 rounded-xl border border-danger/40 p-4 text-danger text-sm"
         >
           <p>{error}</p>
-          {!data && <p className="mt-2 text-fg-muted text-xs leading-6">Chưa thể tải thư viện 3D. Bạn vẫn có thể <Link href="/wardrobe" className="text-accent-text underline">thêm đồ vào tủ</Link> hoặc <Link href="/studio" className="text-accent-text underline">mở bộ 3D từ PC trong Studio</Link>. Bấm Làm mới để kiểm tra lại.</p>}
+          {!data && <p className="mt-2 text-fg-muted text-xs leading-6">Unable to load the 3D library. You can still <Link href="/wardrobe" className="text-accent-text underline">add clothes to your wardrobe</Link> or <Link href="/studio" className="text-accent-text underline">open a PC-exported 3D bundle in Studio</Link>. Select Refresh to check again.</p>}
         </div>
       )}
       {notice && (
@@ -127,64 +126,63 @@ export default function PreparePage() {
       <div className="rounded-2xl border border-border p-4 mb-6 text-sm flex flex-wrap gap-3 justify-between">
         <span>
           {!data
-            ? error ? "Chưa kiểm tra được trạng thái xử lý" : "Đang kiểm tra máy xử lý…"
+            ? error ? "Unable to check processing status" : "Checking the processor…"
             : data.connected
-              ? "Máy xử lý đã kết nối"
-              : "Máy xử lý đang ngoại tuyến · tác vụ mới sẽ chờ"}
+              ? "Processor connected"
+              : "Processor offline · New jobs will wait"}
         </span>
         <span className="text-fg-muted text-xs">
           {data?.online
             .map(
               (c) =>
                 ({
-                  "avatar.reconstruct": "Dựng người",
-                  "garment.reconstruct": "Dựng áo",
-                  "garment.drape": "Mặc thử áo",
-                  "bottom.reconstruct": "Dựng quần",
-                  "bottom.drape": "Mặc thử quần",
+                  "avatar.reconstruct": "Build avatar",
+                  "garment.reconstruct": "Build top",
+                  "garment.drape": "Fit top",
+                  "bottom.reconstruct": "Build bottom",
+                  "bottom.drape": "Fit bottom",
                 })[c] ?? c,
             )
-            .join(" · ") || "Chưa có năng lực xử lý được xác nhận"}
+            .join(" · ") || "No processing capabilities confirmed yet"}
         </span>
       </div>
       <div className="grid lg:grid-cols-2 gap-5 mb-10">
         <section className={panel}>
           <Camera className="text-accent-text mb-5" />
-          <p className="text-xs text-fg-muted mb-2">01 / Cơ thể của bạn</p>
-          <h2 className="font-display text-2xl">Tạo avatar</h2>
+          <p className="text-xs text-fg-muted mb-2">01 / Your body</p>
+          <h2 className="font-display text-2xl">Create avatar</h2>
           <p className="text-sm text-fg-muted leading-6 my-4">
-            Ảnh toàn thân trước, bên và sau, cùng chiều cao. Mặc đồ ôm vừa và
-            chụp trong ánh sáng đều.
+            Full-body front, side and back photos, plus your height. Wear close-fitting clothes and use even lighting.
           </p>
           <button
             disabled={!data}
             onClick={() => setCapture("avatar")}
             className={`${button} bg-accent text-bg`}
           >
-            Thêm ảnh cơ thể
+            Add body photos
           </button>
         </section>
         <section className={panel}>
           <Shirt className="text-accent-text mb-5" />
-          <p className="text-xs text-fg-muted mb-2">02 / Áo thun và jeans thật</p>
-          <h2 className="font-display text-2xl">Đưa đồ vào không gian 3D</h2>
+          <p className="text-xs text-fg-muted mb-2">02 / Your real T-shirts and jeans</p>
+          <h2 className="font-display text-2xl">Bring your clothes into 3D</h2>
           <label className="block text-sm mt-4">
-            Món đồ trong tủ
+            Wardrobe item
             <select
               value={selected}
               onChange={(e) => setSelected(e.target.value)}
               className={field}
             >
-              <option value="">Chọn áo thun, sơ mi hoặc jeans</option>
+              <option value="">Choose a T-shirt, shirt or jeans</option>
               {items.map((i) => (
                 <option key={i.id} value={i.id}>
-                  {i.name} · {i.category === "jeans" ? "Jeans" : i.category === "shirt" ? "Sơ mi" : "Áo thun"}
+                  {i.name} · {i.category === "jeans" ? "Jeans" : i.category === "shirt" ? "Shirt" : "T-shirt"}
                 </option>
               ))}
             </select>
           </label>
           <p className="text-xs text-fg-muted my-3">
-            Chụp mặt trước / sau trên nền trơn; thêm ảnh logo/túi nếu cần. Áo và quần được xử lý riêng, không cần avatar trước.
+            Photograph the front and back against a plain background. Add logo or pocket details if needed. Tops and bottoms are processed separately; no avatar is required to start.
           </p>
           <div className="flex flex-wrap gap-3">
             <button
@@ -192,27 +190,27 @@ export default function PreparePage() {
               onClick={() => setCapture("garment")}
               className={button}
             >
-              Thêm ảnh món đồ
+              Add item photos
             </button>
             <Link
               href="/wardrobe"
               className="text-accent-text text-xs inline-flex items-center gap-1"
             >
-              Thêm đồ vào tủ <ArrowUpRight size={13} />
+              Add to wardrobe <ArrowUpRight size={13} />
             </Link>
           </div>
         </section>
       </div>
       <section>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="font-display text-2xl">Thư viện & tiến độ</h2>
+          <h2 className="font-display text-2xl">Library & progress</h2>
           <Link href="/looks" className="text-accent-text text-sm">
-            Chọn áo để mặc thử →
+            Choose a top to try on →
           </Link>
         </div>
         {data?.models.length === 0 && (
           <div className={`${panel} text-fg-muted text-sm`}>
-            Chưa có kết quả 3D. Bạn có thể bắt đầu bằng ảnh avatar hoặc thêm ảnh áo thun và jeans từ tủ đồ.
+            No 3D results yet. Start with avatar photos or add photos of T-shirts and jeans from your wardrobe.
           </div>
         )}
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -222,7 +220,7 @@ export default function PreparePage() {
               <article className={panel} key={m.id}>
                 <p className="text-xs text-fg-muted mb-3">
                   {kindLabel[m.kind]} ·{" "}
-                  {new Date(m.created_at).toLocaleDateString("vi-VN")}
+                  {new Date(m.created_at).toLocaleDateString("en-US")}
                 </p>
                 <h3 className="text-lg break-words font-medium">{m.name}</h3>
                 <p
@@ -230,35 +228,35 @@ export default function PreparePage() {
                   className={`text-sm mt-4 ${m.output_asset_id ? "text-success" : "text-fg-muted"}`}
                 >
                   {m.output_asset_id
-                    ? "Sẵn sàng"
+                    ? "Ready"
                     : stateLabel[j?.state ?? "queued"]}
                 </p>
                 {j?.stage && j.state === "running" && (
                   <p className="text-xs text-fg-muted mt-2">
                     {(
                       {
-                        starting: "Khởi động",
-                        preprocessing: "Chuẩn bị ảnh",
-                        reconstructing: "Dựng hình",
-                        texturing: "Tạo bề mặt",
-                        draping: "Mô phỏng áo",
-                        exporting: "Xuất model",
-                        uploading: "Tải kết quả",
+                        starting: "Starting",
+                        preprocessing: "Preparing photos",
+                        reconstructing: "Building geometry",
+                        texturing: "Creating surfaces",
+                        draping: "Simulating garment",
+                        exporting: "Exporting model",
+                        uploading: "Uploading results",
                       } as Record<string, string>
-                    )[j.stage] ?? "Đang xử lý"}
+                    )[j.stage] ?? "Processing"}
                   </p>
                 )}
                 {j?.error_code && (
                   <p className="text-xs text-danger mt-2">
                     {(
                       {
-                        OOM: "GPU thiếu bộ nhớ. Cần điều chỉnh cấu hình máy xử lý.",
+                        OOM: "The GPU ran out of memory. The processor configuration needs adjustment.",
                         MODEL_UNAVAILABLE:
-                          "Máy xử lý chưa sẵn sàng cho loại model này.",
-                        LEASE_EXPIRED: "Mất kết nối máy xử lý.",
-                        SOURCE_DELETED: "Đã hủy vì ảnh/video gốc đã bị xóa.",
+                          "The processor is not ready for this model type.",
+                        LEASE_EXPIRED: "Lost connection to the processor.",
+                        SOURCE_DELETED: "Canceled because the source photos or video were deleted.",
                       } as Record<string, string>
-                    )[j.error_code] ?? "Tác vụ chưa tạo được kết quả hợp lệ."}
+                    )[j.error_code] ?? "This job did not produce a valid result."}
                   </p>
                 )}
                 {m.kind === "avatar" && m.output_asset_id && (
@@ -277,7 +275,7 @@ export default function PreparePage() {
                       className={button}
                       href={`/studio?avatar=${m.kind === "avatar" ? m.id : m.avatar_id}${m.kind === "fitting" ? `&fitting=${m.id}` : ""}`}
                     >
-                      Mở trong Studio
+                      Open in Studio
                     </Link>
                   )}
                   {j && ["queued", "running"].includes(j.state) && (
@@ -286,7 +284,7 @@ export default function PreparePage() {
                       onClick={() => void action(j.id, "cancel")}
                       className="text-sm text-fg-muted underline"
                     >
-                      Hủy
+                      Cancel
                     </button>
                   )}
                   {j && !m.superseded_by &&
@@ -298,13 +296,13 @@ export default function PreparePage() {
                         onClick={() => void action(j.id, "retry")}
                         className={button}
                       >
-                        Thử lại
+                        Retry
                       </button>
                     )}
                   {j && m.kind === "fitting" && !m.superseded_by && !m.output_asset_id &&
                     ["failed", "canceled"].includes(j.state) && j.attempt >= 3 && j.error_code !== "SOURCE_DELETED" && (
                     <button disabled={busy} className={button} onClick={() => void action(j.id, "regenerate")}>
-                      Tạo lượt mặc thử mới
+                      Create new fitting
                     </button>
                   )}
                 </div>

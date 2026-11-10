@@ -15,17 +15,17 @@ import {
   type CaptureSlot,
 } from "@/lib/studio/capture";
 const labels: Record<CaptureSlot, string> = {
-  front: "Mặt trước",
-  side: "Mặt bên",
-  back: "Mặt sau",
-  detail: "Chi tiết / logo",
-  face: "Ảnh mặt (cận)",
+  front: "Front",
+  side: "Side",
+  back: "Back",
+  detail: "Detail / logo",
+  face: "Face close-up",
 };
 export type CaptureExtras = { video?: File; measurements?: Measurements };
 const MEASURES: Array<[keyof Measurements, string]> = [
-  ["chestCm", "Vòng ngực (cm)"],
-  ["waistCm", "Vòng eo (cm)"],
-  ["hipCm", "Vòng mông (cm)"],
+  ["chestCm", "Chest (cm)"],
+  ["waistCm", "Waist (cm)"],
+  ["hipCm", "Hips (cm)"],
 ];
 function PhotoSlot({
   slot,
@@ -62,12 +62,12 @@ function PhotoSlot({
             width={600}
             height={600}
             src={preview}
-            alt={`Ảnh ${labels[slot].toLowerCase()}`}
+            alt={`Photo: ${labels[slot].toLowerCase()}`}
             className="h-36 w-full object-contain rounded-xl"
           />
         ) : (
           <div className="h-36 grid place-items-center text-fg-subtle text-xs border border-dashed border-border rounded-xl">
-            Chọn ảnh đã chụp
+            Choose an existing photo
           </div>
         )}
         <input
@@ -91,7 +91,7 @@ function PhotoSlot({
           className="text-xs text-fg-muted flex items-center gap-1 mt-3"
         >
           <X size={12} />
-          Bỏ ảnh
+          Remove photo
         </button>
       )}
     </div>
@@ -163,7 +163,7 @@ export default function CaptureDrawer({
       }
     } catch (e) {
       if (alive.current && versions.current[slot] === version)
-        setError(e instanceof Error ? e.message : "Ảnh không hợp lệ.");
+        setError(e instanceof Error ? e.message : "Invalid photo.");
     }
   }
   async function submit(e: React.FormEvent) {
@@ -179,7 +179,7 @@ export default function CaptureDrawer({
             .filter(([, v]) => v && v.trim())
             .map(([k, v]) => [k, Number(v)]),
         ) as Measurements;
-        if (Object.values(m).some((v) => !Number.isFinite(v))) throw new Error("Số đo phải là số.");
+        if (Object.values(m).some((v) => !Number.isFinite(v))) throw new Error("Measurements must be numbers.");
         await onSend(name.trim(), avatar ? Number(height) : null, photos, {
           video,
           measurements: Object.keys(m).length ? m : undefined,
@@ -202,7 +202,7 @@ export default function CaptureDrawer({
       }
     } catch (e) {
       if (alive.current)
-        setError(e instanceof Error ? e.message : "Không thể xuất bộ ảnh.");
+        setError(e instanceof Error ? e.message : "Unable to export the photo bundle.");
     } finally {
       exporting.current = false;
       if (alive.current) setBusy(false);
@@ -212,12 +212,12 @@ export default function CaptureDrawer({
     <Drawer
       isOpen
       onClose={onClose}
-      title={avatar ? "Tạo avatar của bạn" : "Chuẩn bị áo của bạn"}
-      eyebrow="Bước 01 / Chuẩn bị ảnh"
+      title={avatar ? "Create your avatar" : "Prepare your garment"}
+      eyebrow="Step 01 / Prepare photos"
       description={
         onSend
-          ? "Ảnh được lưu vào kho riêng của tài khoản và gửi đến máy xử lý đã kết nối khi bạn bấm gửi."
-          : "Ảnh chỉ được xử lý trong trình duyệt. Bạn quyết định khi nào chuyển bộ ảnh sang PC."
+          ? "Photos are saved to your private account storage and sent to your connected processor when you submit."
+          : "Photos are processed only in your browser. You decide when to transfer the bundle to your PC."
       }
       width="lg"
     >
@@ -225,21 +225,21 @@ export default function CaptureDrawer({
         <div className="rounded-2xl bg-accent-soft p-4 text-sm leading-6">
           <Camera size={20} className="text-accent-text mb-2" />
           {avatar
-            ? "Chụp toàn thân trước, bên và sau, cùng ánh sáng, máy ngang tầm người. Mặc đồ ôm vừa, tay cách thân nhẹ; không cần ảnh khỏa thân."
+            ? "Take full-body front, side and back photos in consistent lighting, with the camera level. Wear close-fitting clothes with your arms slightly away from your body. No nude photos are needed."
             : kind === "jeans"
-              ? "Trải quần phẳng trên nền trơn, hai ống duỗi thẳng, cạp quần ở trên. Chụp mặt trước và mặt sau cùng ánh sáng tự nhiên, không bộ lọc; thêm ảnh chi tiết túi/logo nếu cần."
-              : "Trải áo phẳng trên nền trơn, chụp trước và sau với ánh sáng tự nhiên. Không dùng bộ lọc; thêm ảnh chi tiết để giữ logo, cổ và hàng nút."}
+              ? "Lay the jeans flat on a plain background, legs straight and waistband at the top. Photograph the front and back in natural light without filters. Add pocket or logo details if needed."
+              : "Lay the garment flat on a plain background. Photograph the front and back in natural light without filters. Add detail photos to preserve the logo, collar and buttons."}
         </div>
         {!avatar && (
           <div className="flex gap-2 text-xs text-fg-muted">
             <span className="border border-border px-3 py-2 rounded-full">
-              {kind === "shirt" ? "Sơ mi" : kind === "jeans" ? "Jeans" : "Áo thun"}
+              {kind === "shirt" ? "Shirt" : kind === "jeans" ? "Jeans" : "T-shirt"}
             </span>
-            <span className="px-3 py-2">Một áo / một bộ ảnh</span>
+            <span className="px-3 py-2">One garment / one photo bundle</span>
           </div>
         )}
         <label className="block text-sm">
-          {avatar ? "Tên avatar" : "Tên chiếc áo"}
+          {avatar ? "Avatar name" : "Garment name"}
           <input
             required
             maxLength={80}
@@ -249,13 +249,13 @@ export default function CaptureDrawer({
               setName(e.target.value);
               setDone(false);
             }}
-            placeholder={avatar ? "Avatar của tôi" : "Áo thun trắng in hình"}
+            placeholder={avatar ? "My avatar" : "White graphic T-shirt"}
             className="mt-2 w-full rounded-xl border border-border bg-bg p-3"
           />
         </label>
         {avatar && (
           <label className="block text-sm">
-            Chiều cao (cm)
+            Height (cm)
             <input
               type="number"
               required
@@ -274,9 +274,9 @@ export default function CaptureDrawer({
         )}
         <div>
           <div className="flex justify-between text-xs text-fg-muted mb-3">
-            <span>Góc ảnh bắt buộc</span>
+            <span>Required views</span>
             <span>
-              {complete}/{requiredSlots(kind).length} đã chọn
+              {complete}/{requiredSlots(kind).length} selected
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -291,23 +291,23 @@ export default function CaptureDrawer({
             ))}
           </div>
           <p className="text-xs text-fg-muted mt-3">
-            JPG / PNG / WebP · tối đa 12 MB/ảnh · ít nhất 512 × 512 px
-            {!avatar && " · ảnh chi tiết không bắt buộc"}
+            JPG / PNG / WebP · Up to 12 MB each · At least 512 × 512 px
+            {!avatar && " · Detail photos are optional"}
           </p>
         </div>
         {extended && (
           <fieldset className="space-y-4 rounded-2xl border border-border p-4">
-            <legend className="text-sm px-1">Thêm để giống hơn (không bắt buộc)</legend>
+            <legend className="text-sm px-1">Add more detail (optional)</legend>
             <p className="text-xs text-fg-muted leading-5">
-              Video quay chậm một vòng quanh người có thể thay ba ảnh cơ thể: khi đó bỏ trống ba ảnh trên và thêm ảnh mặt. Máy xử lý sẽ báo những khung hình nào thực sự được dùng.
+              A slow video around your body can replace the three body photos. Leave those photos empty and add a face photo instead. The processor will report which frames it actually uses.
             </p>
             <PhotoSlot slot="face" file={photos.face} disabled={busy} onChange={(file) => void select("face", file)} />
             <label className="block text-sm">
-              Video quanh người (MP4 / WebM / MOV, tối đa 150 MB)
+              Body video (MP4 / WebM / MOV, up to 150 MB)
               <input
                 type="file"
                 accept="video/mp4,video/webm,video/quicktime"
-                aria-label="Video quanh người"
+                aria-label="Body video"
                 disabled={busy}
                 className="mt-2 block w-full text-xs"
                 onChange={(e) => {
@@ -325,7 +325,7 @@ export default function CaptureDrawer({
                 }}
               />
             </label>
-            {video && <p className="text-xs text-success">Đã chọn video · {(video.size / 1024 / 1024).toFixed(1)} MB</p>}
+            {video && <p className="text-xs text-success">Video selected · {(video.size / 1024 / 1024).toFixed(1)} MB</p>}
             <div className="grid grid-cols-3 gap-2">
               {MEASURES.map(([key, label]) => (
                 <label key={key} className="text-xs text-fg-muted">
@@ -356,8 +356,8 @@ export default function CaptureDrawer({
         {done && (
           <p role="status" className="text-sm text-success">
             {onSend
-              ? "Đã đưa vào hàng đợi. Theo dõi tác vụ ở trang Chuẩn bị 3D."
-              : "Đã xuất bộ ảnh ZIP. Chuyển file sang PC để xử lý; chưa có tác vụ GPU được gửi tự động."}
+              ? "Queued. Track your job on Prepare 3D."
+              : "Photo ZIP exported. Transfer it to your PC for processing. No GPU job has been sent automatically."}
           </p>
         )}
         {busy && progress && (
@@ -368,8 +368,8 @@ export default function CaptureDrawer({
         <div className="border-t border-border pt-5">
           <p className="text-xs text-fg-muted leading-5 mb-4">
             {onSend
-              ? "Bấm gửi để lưu ảnh vào kho riêng và cho máy xử lý của tài khoản tải xuống. Nếu máy chưa kết nối, tác vụ sẽ chờ; không tự chuyển sang dịch vụ AI khác."
-              : "Bộ ảnh tải xuống có chứa ảnh cá nhân của bạn. Chỉ gửi đến máy xử lý của bạn. Khi PC trả kết quả, mở bộ 3D trong Studio để mặc thử."}
+              ? "Submit to save photos privately and make them available to your account's processor. If it is offline, the job waits; it will not switch to another AI service."
+              : "The downloaded bundle contains your personal photos. Send it only to your own processor. When your PC returns results, open the 3D bundle in Studio to try them on."}
           </p>
           <button
             disabled={
@@ -382,13 +382,13 @@ export default function CaptureDrawer({
             <Download size={16} />
             {busy
               ? onSend
-                ? "Đang gửi…"
-                : "Đang đóng gói…"
+                ? "Sending…"
+                : "Packaging…"
               : onSend
                 ? done
-                  ? "Đã gửi"
-                  : "Gửi ảnh và tạo 3D"
-                : "Xuất bộ ảnh cho PC"}
+                  ? "Submitted"
+                  : "Submit photos & create 3D"
+                : "Export photos for PC"}
           </button>
         </div>
       </form>

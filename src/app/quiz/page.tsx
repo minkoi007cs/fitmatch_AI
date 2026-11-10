@@ -16,24 +16,24 @@ const defaults: StyleAnswers = {
   climate: "mild",
 };
 const steps = [
-  "Dịp mặc",
-  "Phong cách",
-  "Phom yêu thích",
-  "Bảng màu",
-  "Họa tiết",
-  "Nhịp sống",
+  "Outfit occasion",
+  "Style",
+  "Preferred fit",
+  "Color palette",
+  "Patterns",
+  "Lifestyle",
 ];
 const colors = [
-  ["black", "Đen", "#242424"],
-  ["white", "Trắng", "#efefea"],
-  ["cream", "Kem", "#d4c6ab"],
-  ["blue", "Xanh dương", "#7a9db4"],
+  ["black", "Black", "#242424"],
+  ["white", "White", "#efefea"],
+  ["cream", "Cream", "#d4c6ab"],
+  ["blue", "Blue", "#7a9db4"],
   ["navy", "Navy", "#28354d"],
-  ["brown", "Nâu", "#80634d"],
-  ["gray", "Xám", "#929391"],
+  ["brown", "Brown", "#80634d"],
+  ["gray", "Gray", "#929391"],
   ["olive", "Olive", "#727b50"],
-  ["red", "Đỏ", "#a73d38"],
-  ["pink", "Hồng", "#cd9da9"],
+  ["red", "Red", "#a73d38"],
+  ["pink", "Pink", "#cd9da9"],
 ] as const;
 export default function QuizPage() {
   const router = useRouter(),
@@ -58,7 +58,7 @@ export default function QuizPage() {
         cache: "no-store",
         signal: controller.signal,
       }).then(async (r) => {
-        if (!r.ok) throw new Error("Cần đăng nhập lại.");
+        if (!r.ok) throw new Error("Please sign in again.");
         return r.json();
       }),
     ])
@@ -178,13 +178,12 @@ export default function QuizPage() {
             Style, made personal
           </p>
           <h1 className="font-display text-4xl leading-tight">
-            Bắt đầu từ
+            Start with
             <br />
-            gu của bạn.
+            your style.
           </h1>
           <p className="mt-5 text-sm text-fg-muted leading-6">
-            Vài lựa chọn để tìm áo phù hợp từ chính tủ đồ. Sau đó, xem chiếc áo
-            ấy trên avatar của bạn.
+            A few choices to find the right clothes in your own wardrobe. Then see them on your avatar.
           </p>
           <ol className="mt-8 space-y-3 hidden lg:block">
             {steps.map((s, i) => (
@@ -201,13 +200,13 @@ export default function QuizPage() {
           </ol>
           {saved && (
             <p className="text-xs mt-7 text-success">
-              Đã lưu hồ sơ phong cách trên tài khoản.
+              Style profile saved to your account.
             </p>
           )}
         </aside>
         <section className={panel} aria-busy={busy}>
           <div className="flex justify-between text-xs text-fg-muted mb-4">
-            <span>Gu của bạn / {steps[step]}</span>
+            <span>Your style / {steps[step]}</span>
             <span>
               {step + 1} / {steps.length}
             </span>
@@ -221,33 +220,33 @@ export default function QuizPage() {
           <h2 className="font-display text-2xl sm:text-3xl mb-3">
             {
               [
-                "Bạn đang chọn áo cho dịp nào?",
-                "Bạn thấy mình trong phong cách nào?",
-                "Bạn thích áo ôm dáng thế nào?",
-                "Màu nào khiến bạn muốn mặc?",
-                "Bạn muốn tránh họa tiết nào?",
-                "Thời tiết nơi bạn mặc thường thế nào?",
+                "What are you dressing for?",
+                "Which style feels most like you?",
+                "How do you like your tops to fit?",
+                "Which colors do you love wearing?",
+                "Are there patterns you prefer to avoid?",
+                "What is the weather usually like where you dress?",
               ][step]
             }
           </h2>
           <p className="text-sm text-fg-muted mb-7 leading-6">
             {
               [
-                "Chọn tình huống bạn mặc nhiều nhất.",
-                "Chọn một hướng chính; bạn có thể đổi bất cứ lúc nào.",
-                "Đây là sở thích. Quiz không đo cơ thể hoặc cam kết độ vừa.",
-                "Chọn từ 1 đến 5 màu. Màu và logo của áo thật vẫn được giữ theo ảnh.",
-                "Có thể bỏ qua nếu bạn thích tất cả.",
-                "Lưu để phát triển gợi ý theo chất liệu. Hiện chưa dùng thời tiết và phom để chấm điểm áo.",
+                "Choose the occasion you dress for most.",
+                "Choose your main direction. You can change it anytime.",
+                "This is a preference. The quiz does not measure your body or guarantee fit.",
+                "Choose 1–5 colors. Your real garments keep their original colors and logos.",
+                "Skip this if you like them all.",
+                "Saved for future material-based suggestions. Weather and fit preferences do not currently affect garment scores.",
               ][step]
             }
           </p>
           {step === 0 &&
             options("occasion", [
-              ["daily", "Mỗi ngày", "Dạo phố, cà phê, gặp bạn bè"],
-              ["campus", "Đi học", "Thoải mái cho cả ngày"],
-              ["work", "Đi làm", "Gọn gàng và chỉn chu"],
-              ["evening", "Buổi tối", "Một dịp đặc biệt hơn"],
+              ["daily", "Every day", "Walks, coffee and time with friends"],
+              ["campus", "School", "Comfort for the whole day"],
+              ["work", "Work", "Neat and polished"],
+              ["evening", "Evening", "Something a little more special"],
             ])}
           {step === 1 && (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -255,26 +254,26 @@ export default function QuizPage() {
                 [
                   [
                     "minimal",
-                    "Tối giản",
-                    "Đường nét sạch, màu trung tính",
+                    "Minimal",
+                    "Clean lines and neutral colors",
                     IMAGES.quizTailored,
                   ],
                   [
                     "casual",
-                    "Tự nhiên",
-                    "Áo thun, denim và sự thoải mái",
+                    "Casual",
+                    "T-shirts, denim and comfort",
                     IMAGES.quizDenim,
                   ],
                   [
                     "streetwear",
                     "Streetwear",
-                    "Phom rộng và điểm nhấn",
+                    "Roomy silhouettes and statement pieces",
                     IMAGES.quizStreetwear,
                   ],
                   [
                     "formal",
-                    "Chỉn chu",
-                    "Sơ mi, đường cắt gọn gàng",
+                    "Smart",
+                    "Shirts and clean tailoring",
                     IMAGES.look2,
                   ],
                 ] as const
@@ -307,7 +306,7 @@ export default function QuizPage() {
                       {title}
                     </span>
                     <span className="block px-4 py-3 text-xs text-fg-muted">
-                      {detail} · ảnh tham khảo
+                      {detail} · reference image
                     </span>
                   </button>
                 );
@@ -316,9 +315,9 @@ export default function QuizPage() {
           )}
           {step === 2 &&
             options("fit", [
-              ["regular", "Vừa người", "Gọn và có khoảng cử động"],
-              ["relaxed", "Thoải mái", "Rộng nhẹ quanh vai và thân"],
-              ["oversized", "Oversize", "Phom rộng là điểm nhấn"],
+              ["regular", "Regular", "Neat with room to move"],
+              ["relaxed", "Relaxed", "A little extra room at the shoulders and body"],
+              ["oversized", "Oversize", "Roomy shapes make the statement"],
             ])}
           {step === 3 && (
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -355,10 +354,10 @@ export default function QuizPage() {
             <div className="grid sm:grid-cols-2 gap-3">
               {(
                 [
-                  ["graphic", "In hình / logo"],
-                  ["striped", "Kẻ sọc"],
-                  ["plaid", "Ca rô"],
-                  ["floral", "Hoa"],
+                  ["graphic", "Graphics / logos"],
+                  ["striped", "Stripes"],
+                  ["plaid", "Plaid"],
+                  ["floral", "Floral"],
                 ] as const
               ).map(([value, label]) => (
                 <button
@@ -377,16 +376,16 @@ export default function QuizPage() {
                   className={`${button} ${answers.avoidPatterns.includes(value) ? "border-accent bg-accent-soft" : ""}`}
                 >
                   {answers.avoidPatterns.includes(value) && <Check size={14} />}
-                  Tránh {label}
+                  Avoid {label}
                 </button>
               ))}
             </div>
           )}
           {step === 5 &&
             options("climate", [
-              ["warm", "Nóng", "Ưu tiên cảm giác nhẹ, thoáng"],
-              ["mild", "Ôn hòa", "Linh hoạt trong ngày"],
-              ["cool", "Se lạnh", "Có thể cần phối lớp"],
+              ["warm", "Hot", "Light and breathable"],
+              ["mild", "Mild", "Versatile throughout the day"],
+              ["cool", "Cool", "You might want layers"],
             ])}
           {error && (
             <p role="alert" className="mt-6 text-sm text-danger">
@@ -401,7 +400,7 @@ export default function QuizPage() {
               onClick={() => setStep((s) => s - 1)}
             >
               <ArrowLeft size={15} />
-              Quay lại
+              Back
             </button>
             <button
               disabled={busy || (step === 3 && !answers.favoriteColors.length)}
@@ -412,10 +411,10 @@ export default function QuizPage() {
               }
             >
               {busy
-                ? "Đang tải…"
+                ? "Loading…"
                 : step === 5
-                  ? "Lưu & gợi ý mặc thử"
-                  : "Tiếp theo"}
+                  ? "Save & find looks"
+                  : "Next"}
               <ArrowRight size={15} />
             </button>
           </div>

@@ -63,7 +63,7 @@ const Viewer = dynamic(() => import("@/components/studio/Viewer"), {
   ssr: false,
   loading: () => (
     <div className="grid place-items-center h-[600px] text-fg-muted">
-      Đang mở Studio…
+      Opening Studio…
     </div>
   ),
 });
@@ -96,13 +96,13 @@ type CloudLook = {
   camera: CameraState | null;
   snapshot: Record<string, { sha256: string; fittingId?: string; garmentId?: string; modelId?: string }> | null;
 };
-const SLOT_LABEL: Record<Slot, string> = { top: "Áo", bottom: "Quần" };
+const SLOT_LABEL: Record<Slot, string> = { top: "Top", bottom: "Bottom" };
 const STATUS_LABEL: Record<StudioItem["status"], string> = {
-  ready: "Sẵn sàng",
-  pending: "Đang chuẩn bị cho avatar này",
-  prepare: "Chưa mặc thử · bấm để chuẩn bị",
-  failed: "Lần chuẩn bị trước lỗi",
-  "garment-pending": "Đang dựng 3D",
+  ready: "Ready",
+  pending: "Preparing for this avatar",
+  prepare: "Not fitted yet · Select to prepare",
+  failed: "Previous preparation failed",
+  "garment-pending": "Building 3D",
 };
 
 export default function Studio({ request = {} }: { request?: StudioRequest }) {
@@ -199,13 +199,13 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
         record.model.garment_id !== item.id ||
         (record.model.slot ?? "top") !== item.slot
       )
-        throw new Error("Lượt mặc thử không thuộc avatar/món đồ này.");
+        throw new Error("This fitting does not belong to this avatar and garment.");
       const expected = expectedSha.current.get(item.fittingId);
       if (expected && record.asset && record.asset.sha256 !== expected)
-        throw new Error("Phiên bản 3D của món đồ đã khác bản lưu trong look.");
+        throw new Error("This garment's 3D version has changed since the look was saved.");
       const used = state.current.assets.reduce((n, a) => n + a.bytes.byteLength, state.current.scene?.avatar.bytes.byteLength ?? 0);
       if (record.asset && used + record.asset.bytes > SESSION_BYTES)
-        throw new Error("Phiên đã tải gần 120 MB mô hình. Mở lại avatar để giải phóng bộ nhớ rồi chọn tiếp.");
+        throw new Error("This session has loaded nearly 120 MB of models. Reopen the avatar to free memory before choosing more.");
       const bytes = await modelBytes(record, { signal, expectedSha256: expected });
       if (sceneKey.current !== key) return;
       setAssets((prev) => (prev.some((a) => a.id === item.id) ? prev : [...prev, { id: item.id, name: item.name, bytes }]));
@@ -226,7 +226,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       );
       if (sceneKey.current !== key) return;
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "pending", fittingId: res.modelId } : i)));
-      setNotice(`Đang chuẩn bị “${item.name}” cho avatar này. Bạn có thể chọn món khác; món này chỉ tự hiện nếu bạn vẫn đang chọn nó.`);
+      setNotice(`Preparing “${item.name}” for this avatar. You can choose something else; this item will appear only if it is still selected.`);
     } catch (e) {
       if (sceneKey.current !== key) return;
       setError((e as Error).message);
@@ -258,7 +258,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
         if (!item) continue;
         if (item.status === "failed") {
           setOutfit((o) => itemFailed(o, s.key, item.id));
-          setNotice(`Không chuẩn bị được “${item.name}”. Bộ đang mặc được giữ nguyên; xem lỗi ở trang Chuẩn bị 3D.`);
+          setNotice(`Unable to prepare “${item.name}”. Your current outfit is preserved. View the error on Prepare 3D.`);
         } else if (item.status === "ready") ensureRef.current(item);
       }
     } catch {
@@ -289,13 +289,13 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
         cloudRows(),
         req.look ? api<{ looks: CloudLook[] }>("looks") : Promise.resolve({ looks: [] as CloudLook[] }),
       ]);
-      if (avatar.model.kind !== "avatar") throw new Error("Hãy chọn model avatar.");
+      if (avatar.model.kind !== "avatar") throw new Error("Please choose an avatar model.");
       const look = req.look ? savedLooks.looks.find((l) => l.id === req.look) : undefined;
-      if (req.look && (!look || look.avatar_id !== avatarId)) throw new Error("Không tìm thấy look này cho avatar đã chọn.");
+      if (req.look && (!look || look.avatar_id !== avatarId)) throw new Error("This look was not found for the selected avatar.");
       // LOOK-01: a saved look pins the avatar version too, not only the garments.
       const pinnedAvatar = look?.snapshot?.avatar;
       if (pinnedAvatar && ((pinnedAvatar.modelId && pinnedAvatar.modelId !== avatarId) || pinnedAvatar.sha256 !== avatar.asset?.sha256))
-        throw new Error("Avatar đã khác phiên bản lưu trong look này. Look không được mở với avatar khác.");
+        throw new Error("The avatar version has changed since this look was saved. A look cannot open with a different avatar.");
       const bytes = await modelBytes(avatar, { signal: opening.signal, expectedSha256: pinnedAvatar?.sha256 });
       if (version !== generation.current) return;
       let list = cloudItems(rows.models, rows.jobs, avatarId);
@@ -307,8 +307,8 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       if (look) {
         const top = garmentOfFitting(look.top_fitting_id ?? look.fitting_id);
         const bottom = garmentOfFitting(look.bottom_fitting_id);
-        if ((look.top_fitting_id ?? look.fitting_id) && !top) throw new Error("Áo trong look không còn trên tài khoản.");
-        if (look.bottom_fitting_id && !bottom) throw new Error("Quần trong look không còn trên tài khoản.");
+        if ((look.top_fitting_id ?? look.fitting_id) && !top) throw new Error("The top in this look is no longer on your account.");
+        if (look.bottom_fitting_id && !bottom) throw new Error("The bottom in this look is no longer on your account.");
         start = { top: top?.garment_id ?? null, bottom: bottom?.garment_id ?? null };
         for (const v of Object.values(look.snapshot ?? {})) if (v.fittingId) expectedSha.current.set(v.fittingId, v.sha256);
         // Reopen exactly the fittings that were saved, by id, even if a newer generation exists.
@@ -318,7 +318,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
         camera = look.camera;
       } else if (req.fitting) {
         const fit = garmentOfFitting(req.fitting);
-        if (!fit?.output_asset_id) throw new Error("Lượt thử này chưa sẵn sàng hoặc thuộc avatar khác.");
+        if (!fit?.output_asset_id) throw new Error("This fitting is not ready or belongs to another avatar.");
         start = { ...EMPTY, [(fit.slot ?? "top") as Slot]: fit.garment_id };
       } else {
         start = {
@@ -343,7 +343,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       }
       const tops = list.filter((i) => i.slot === "top").length;
       const bottoms = list.filter((i) => i.slot === "bottom").length;
-      setCloudNotice(`Đã mở avatar · ${tops} áo và ${bottoms} quần trong tủ. Món chưa mặc thử sẽ được chuẩn bị khi bạn chọn.`);
+      setCloudNotice(`Avatar opened · ${tops} tops and ${bottoms} bottoms in your wardrobe. Unfitted items will be prepared when selected.`);
     } catch (e) {
       if (version === generation.current) setCloudError((e as Error).message);
     } finally {
@@ -362,12 +362,12 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       if (action === "save") {
         if (!bundle || !scene) return;
         await workspaceStorage(owner, "save", { version: 1, bundle, assets: [scene.avatar, ...bundle.garments.map((g) => assets.find((a) => a.id === g.id)!)], looks });
-        if (version === generation.current) setNotice("Đã lưu bộ 3D và các look trên trình duyệt này. Chưa đồng bộ lên tài khoản.");
+        if (version === generation.current) setNotice("3D bundle and looks saved in this browser. They have not been synced to your account.");
       } else if (action === "load") {
         const saved = await workspaceStorage(owner, "load");
         if (version !== generation.current) return;
         if (!saved) {
-          setNotice("Chưa có bộ 3D lưu trên trình duyệt này cho tài khoản hiện tại.");
+          setNotice("No 3D bundle is saved in this browser for the current account.");
           return;
         }
         const w = validateWorkspace(saved);
@@ -376,13 +376,13 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
         commitScene({ key: `local:${next}`, source: "local", avatar: w.assets[0], name: w.bundle.avatar.name }, list, w.assets.slice(1), presetOutfit(list), null);
         setBundle(w.bundle);
         setLooks(w.looks);
-        setNotice("Đã khôi phục bộ 3D đã lưu trên máy.");
+        setNotice("Restored your locally saved 3D bundle.");
       } else {
         await workspaceStorage(owner, "delete");
-        if (version === generation.current) setNotice("Đã xóa bản lưu trên trình duyệt. Bộ đang mở vẫn giữ trong phiên này.");
+        if (version === generation.current) setNotice("Local save deleted. The open bundle remains in this session.");
       }
     } catch (e) {
-      if (version === generation.current) setError(e instanceof Error ? e.message : "Không thể truy cập bộ lưu.");
+      if (version === generation.current) setError(e instanceof Error ? e.message : "Unable to access local storage.");
     } finally {
       setStorageBusy(false);
     }
@@ -397,16 +397,16 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
     try {
       const list = [...files];
       const manifest = list.find((f) => f.name === "manifest.json");
-      if (!manifest || manifest.size > 32 * 1024) throw new Error("Chọn manifest.json cùng các file GLB do PC xuất (manifest tối đa 32 KB).");
-      if (new Set(list.map((f) => f.name)).size !== list.length) throw new Error("Tên file không được trùng.");
+      if (!manifest || manifest.size > 32 * 1024) throw new Error("Select manifest.json and the PC-exported GLB files (manifest up to 32 KB).");
+      if (new Set(list.map((f) => f.name)).size !== list.length) throw new Error("File names must be unique.");
       const next = parseBundle(JSON.parse(await manifest.text()));
       const records = [next.avatar, ...next.garments];
       if (records.reduce((n, r) => n + (list.find((f) => f.name === r.file)?.size ?? 0), 0) > SESSION_BYTES)
-        throw new Error("Tổng mô hình tối đa 120 MB cho phiên thử nghiệm.");
+        throw new Error("Models must total no more than 120 MB for this experimental session.");
       const prepared: ModelAsset[] = [];
       for (const record of records) {
         const file = list.find((f) => f.name === record.file);
-        if (!file || file.size > MAX_GLB_BYTES) throw new Error(`Thiếu ${record.file} hoặc file vượt 40 MB.`);
+        if (!file || file.size > MAX_GLB_BYTES) throw new Error(`Missing ${record.file} or the file exceeds 40 MB.`);
         const bytes = await file.arrayBuffer();
         validateGlb(bytes);
         prepared.push({ id: record === next.avatar ? "avatar" : record.id, name: record.name, bytes });
@@ -417,7 +417,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       setBundle(next);
       setLooks([]);
     } catch (e) {
-      if (generation.current === version) setError(e instanceof Error ? e.message : "Không thể mở bộ 3D.");
+      if (generation.current === version) setError(e instanceof Error ? e.message : "Unable to open the 3D bundle.");
     } finally {
       if (generation.current === version) setBusy(false);
       if (input.current) input.current.value = "";
@@ -443,16 +443,16 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
   function pick(item: StudioItem) {
     if (!scene) return;
     if (item.status === "garment-pending") {
-      setNotice(`“${item.name}” đang được dựng 3D. Bạn vẫn có thể phối món khác.`);
+      setNotice(`“${item.name}” is being built in 3D. You can keep styling other items.`);
       return;
     }
     setOutfit((s) => choose(s, { [item.slot]: item.id }));
     if (item.status === "failed") {
       setOutfit((s) => itemFailed(s, scene.key, item.id));
-      setNotice(`Lần chuẩn bị “${item.name}” bị lỗi. Thử lại ở trang Chuẩn bị 3D; bộ đang mặc được giữ nguyên.`);
+      setNotice(`Preparation of “${item.name}” failed. Retry on Prepare 3D; your current outfit is preserved.`);
       return;
     }
-    if (item.status === "pending") setNotice(`“${item.name}” đang được chuẩn bị. Món này sẽ tự hiện nếu bạn vẫn chọn nó.`);
+    if (item.status === "pending") setNotice(`“${item.name}” is being prepared. It will appear only if it is still selected.`);
     ensure(item);
   }
   function apply(next: Outfit) {
@@ -482,7 +482,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
           ...(cam ? { camera: cam } : {}),
         });
         setLookName("");
-        setNotice("Đã lưu cả bộ (áo, quần, góc máy) vào tài khoản. Mở lại ở trang Gợi ý & look.");
+        setNotice("Full look saved to your account, including top, bottom and camera. Reopen it from Ideas & saved looks.");
       } catch (err) {
         setError((err as Error).message);
       }
@@ -494,7 +494,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       { id: crypto.randomUUID(), name: lookName.trim(), garmentId: shown.top, top: shown.top, bottom: shown.bottom, camera: cam, createdAt: new Date().toISOString() },
     ]);
     setLookName("");
-    setNotice("Đã thêm look trong phiên. Bấm Lưu trên máy để giữ sau khi đóng trang.");
+    setNotice("Look added to this session. Select Save on this device to keep it after closing the page.");
   }
   function openLocalLook(look: LocalLook) {
     apply(lookOutfit(look));
@@ -503,12 +503,12 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
   async function renderLookbook() {
     const blob = await viewer.current?.capture(shot);
     if (!blob) {
-      setError("Chưa chụp được ảnh. Hãy đợi mô hình tải xong rồi thử lại.");
+      setError("Unable to capture an image. Wait for the models to load and try again.");
       return;
     }
     const name = [nameOf(outfit.shown.top)?.name, nameOf(outfit.shown.bottom)?.name].filter(Boolean).join(" + ") || "avatar";
     downloadBlob(blob, `fitmatch-lookbook-${name.replace(/[^\p{L}\p{N}]+/gu, "-").slice(0, 60)}-${shot.angle}.png`);
-    setNotice("Đã lưu ảnh lookbook render từ chính avatar và bộ đồ đang hiển thị. Không dùng AI tạo ảnh.");
+    setNotice("Lookbook image saved from the displayed avatar and outfit. No AI image generation was used.");
   }
   function exportSelection() {
     if (!bundle) return;
@@ -516,7 +516,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       new Blob([JSON.stringify({ schemaVersion: 2, avatarId: bundle.avatar.id, outfit: outfit.shown, looks }, null, 2)], { type: "application/json" }),
       "fitmatch-look-selections.json",
     );
-    setNotice("Đã xuất danh sách lựa chọn. File này không chứa mô hình 3D; hãy giữ bộ GLB gốc.");
+    setNotice("Selection list exported. This file does not contain 3D models; keep your original GLB bundle.");
   }
 
   const nameOf = (id: string | null) => (id ? items.find((i) => i.id === id) : undefined);
@@ -530,7 +530,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
   const onFailed = useCallback(
     (id: string) => {
       setOutfit((s) => itemFailed(s, sceneKeyValue, id));
-      setError("Một món đồ không đọc được (GLB lỗi hoặc khác hệ trục). Bộ đang mặc được giữ nguyên.");
+      setError("An item could not be read (invalid GLB or incompatible coordinates). Your current outfit is preserved.");
     },
     [sceneKeyValue],
   );
@@ -540,20 +540,20 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       <header className="flex flex-wrap items-end justify-between gap-5 mb-7">
         <div>
           <p className="text-accent-text uppercase tracking-[.25em] text-[10px] mb-2">Fitmatch / Personal fitting studio</p>
-          <h1 className="font-display text-4xl lg:text-5xl font-bold">Phòng thử đồ của bạn.</h1>
-          <p className="text-sm text-fg-muted mt-3">Chọn áo và quần riêng. Đổi món này, món kia vẫn giữ.</p>
+          <h1 className="font-display text-4xl lg:text-5xl font-bold">Your personal fitting room.</h1>
+          <p className="text-sm text-fg-muted mt-3">Choose tops and bottoms separately. Change one while keeping the other.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setCapture("avatar")} className={`${action} border border-border hover:bg-bg-raised`}>
             <Camera size={15} />
-            Chuẩn bị avatar
+            Prepare avatar
           </button>
           <button disabled={busy || storageBusy} onClick={() => input.current?.click()} className={`${action} bg-accent hover:bg-accent-hover`}>
             <FolderOpen size={15} />
-            {busy ? "Đang kiểm tra…" : "Mở bộ 3D từ PC"}
+            {busy ? "Checking…" : "Open 3D bundle from PC"}
           </button>
         </div>
-        <input ref={input} type="file" multiple accept=".json,.glb" className="hidden" aria-label="Chọn manifest và mô hình GLB" onChange={(e) => void load(e.target.files)} />
+        <input ref={input} type="file" multiple accept=".json,.glb" className="hidden" aria-label="Choose manifest and GLB models" onChange={(e) => void load(e.target.files)} />
       </header>
       <CloudLibrary
         requestedAvatar={request.avatar}
@@ -565,10 +565,10 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3 mb-5 text-xs text-fg-muted">
         <span className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full bg-accent-text" />
-          Nghiên cứu · Mở kết quả trên tài khoản hoặc nhập bộ GLB từ PC.
+          Experimental · Open account results or import a PC-exported GLB bundle.
         </span>
         <button disabled={!owner || storageBusy || busy} onClick={() => void persist("load")} className="text-accent-text disabled:opacity-40">
-          {storageBusy ? "Đang truy cập bộ lưu…" : "Mở bản lưu trên máy"}
+          {storageBusy ? "Accessing local storage…" : "Open saved bundle on this device"}
         </button>
       </div>
       {error && (
@@ -585,16 +585,16 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
         <aside className="rounded-3xl border border-border bg-bg-elevated p-5 lg:min-h-[660px] flex flex-col">
           <div className="flex justify-between items-center mb-5">
             <h2 className="font-semibold">
-              Tủ đồ 3D <span className="text-fg-subtle text-xs ml-1">{items.length}</span>
+              3D wardrobe <span className="text-fg-subtle text-xs ml-1">{items.length}</span>
             </h2>
             <Shirt size={18} className="text-fg-muted" />
           </div>
           <label className="relative block mb-3">
             <Search size={14} className="absolute left-3 top-3 text-fg-muted" />
-            <input aria-label="Tìm đồ" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm áo, quần…" className="w-full pl-9 pr-3 py-2.5 rounded-xl text-xs bg-bg border border-border" />
+            <input aria-label="Find items" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search tops, jeans…" className="w-full pl-9 pr-3 py-2.5 rounded-xl text-xs bg-bg border border-border" />
           </label>
-          <div role="group" aria-label="Lọc loại đồ" className="flex flex-wrap gap-1 mb-5">
-            {[["all", "Tất cả"], ["t-shirt", "Áo thun"], ["shirt", "Sơ mi"], ["jeans", "Jeans"]].map(([id, label]) => (
+          <div role="group" aria-label="Filter garment categories" className="flex flex-wrap gap-1 mb-5">
+            {[["all", "All"], ["t-shirt", "T-shirt"], ["shirt", "Shirt"], ["jeans", "Jeans"]].map(([id, label]) => (
               <button key={id} onClick={() => setCategory(id)} aria-pressed={category === id} className={`rounded-full px-3 py-2 text-[11px] ${category === id ? "bg-fg text-bg" : "text-fg-muted hover:bg-bg-raised"}`}>
                 {label}
               </button>
@@ -603,17 +603,17 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
           {scene ? (
             <div className="space-y-5">
               <button onClick={() => apply({ top: null, bottom: null })} aria-pressed={outfit.wanted.top === null && outfit.wanted.bottom === null} className={`w-full text-left text-xs p-3 rounded-xl border ${outfit.wanted.top === null && outfit.wanted.bottom === null ? "border-accent" : "border-border"}`}>
-                Chỉ xem avatar
+                View avatar only
               </button>
               {SLOTS.map((slot) => {
                 const list = visible.filter((i) => i.slot === slot);
                 return (
-                  <section key={slot} aria-label={`${SLOT_LABEL[slot]} trong tủ`}>
+                  <section key={slot} aria-label={`${SLOT_LABEL[slot]} in wardrobe`}>
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-[11px] uppercase tracking-widest text-fg-muted">{SLOT_LABEL[slot]}</h3>
                       {outfit.wanted[slot] && (
                         <button className="text-[11px] text-fg-muted underline underline-offset-2" onClick={() => apply({ ...outfit.wanted, [slot]: null })}>
-                          Bỏ {SLOT_LABEL[slot].toLocaleLowerCase()}
+                          Remove {SLOT_LABEL[slot].toLocaleLowerCase()}
                         </button>
                       )}
                     </div>
@@ -629,12 +629,12 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
                             </span>
                             <span className="text-xs text-fg-muted block mt-2">
                               {CATEGORY_LABEL[g.category]}
-                              {g.preset ? " · Mẫu (không thuộc tủ đồ)" : ""} · {STATUS_LABEL[g.status]}
+                              {g.preset ? " · Preset (not from your wardrobe)" : ""} · {STATUS_LABEL[g.status]}
                             </span>
                           </button>
                         );
                       })}
-                      {list.length === 0 && <p className="text-xs text-fg-muted py-2">Không có món đồ phù hợp bộ lọc.</p>}
+                      {list.length === 0 && <p className="text-xs text-fg-muted py-2">No items match your filters.</p>}
                     </div>
                   </section>
                 );
@@ -643,23 +643,23 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
           ) : (
             <div className="py-6 text-center">
               <Shirt size={30} strokeWidth={1} className="mx-auto mb-4 text-fg-subtle" />
-              <p className="text-sm text-fg-muted leading-6">Áo thun và jeans của bạn sẽ ở đây.</p>
-              <p className="text-xs text-fg-subtle leading-5 mt-2">Trải phẳng, chụp rõ mặt trước và mặt sau.</p>
+              <p className="text-sm text-fg-muted leading-6">Your T-shirts and jeans will appear here.</p>
+              <p className="text-xs text-fg-subtle leading-5 mt-2">Lay them flat and take clear front and back photos.</p>
             </div>
           )}
           <div className="mt-auto pt-6 space-y-2">
-            {([["t-shirt", "Thêm áo thun"], ["jeans", "Thêm jeans"], ["shirt", "Thêm sơ mi"]] as const).map(([kind, label]) => (
+            {([["t-shirt", "Add T-shirt"], ["jeans", "Add jeans"], ["shirt", "Add shirt"]] as const).map(([kind, label]) => (
               <button key={kind} onClick={() => setCapture(kind)} className={`${action} w-full border border-border hover:bg-bg-raised`}>
                 <Plus size={14} />
                 {label}
               </button>
             ))}
             <Link href="/wardrobe" className="pt-3 flex justify-center items-center gap-2 text-xs text-accent-text">
-              Tủ đồ ảnh <ArrowUpRight size={14} />
+              Photo wardrobe <ArrowUpRight size={14} />
             </Link>
           </div>
         </aside>
-        <section aria-label="Không gian thử đồ" className="min-w-0">
+        <section aria-label="Fitting room" className="min-w-0">
           {scene ? (
             <Viewer key={scene.key} avatar={scene.avatar} items={assets} shown={outfit.shown} onLoaded={onLoaded} onFailed={onFailed} controlRef={viewer} initialCamera={initialCamera} />
           ) : (
@@ -669,18 +669,18 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
                 <div className="mx-auto mb-7 rounded-full bg-white/60 w-24 h-24 grid place-items-center">
                   <UserRound size={38} strokeWidth={1} />
                 </div>
-                <h2 className="font-display text-3xl font-semibold">Bắt đầu với avatar của bạn</h2>
-                <p className="text-sm text-neutral-600 leading-6 mt-4">Tạo avatar hoặc thêm áo/quần trước đều được. Khi cả hai sẵn sàng, chọn áo và quần để mặc thử.</p>
+                <h2 className="font-display text-3xl font-semibold">Start with your avatar</h2>
+                <p className="text-sm text-neutral-600 leading-6 mt-4">Create your avatar or add clothes first. When both are ready, choose a top and bottom to try on.</p>
                 <button className="mt-7 bg-neutral-900 text-white rounded-full py-3 px-6 text-sm inline-flex items-center gap-2" onClick={() => setCapture("avatar")}>
                   <Camera size={15} />
-                  Chuẩn bị ảnh avatar
+                  Prepare avatar photos
                 </button>
                 <button className="block mx-auto mt-4 text-xs underline underline-offset-4 disabled:opacity-40" disabled={busy || storageBusy} onClick={() => input.current?.click()}>
-                  Đã có kết quả? Mở bộ 3D từ PC
+                  Already have results? Open a 3D bundle from PC
                 </button>
               </div>
               <div className="mt-12 grid grid-cols-3 gap-5 w-full max-w-md text-left border-t border-neutral-400/30 pt-5">
-                {[["01", "Avatar"], ["02", "Áo + quần"], ["03", "Phối & lưu"]].map(([n, title]) => (
+                {[["01", "Avatar"], ["02", "Top + bottom"], ["03", "Style & save"]].map(([n, title]) => (
                   <div key={n}>
                     <p className="text-[10px] text-neutral-500 mb-2">{n}</p>
                     <p className="text-xs font-medium">{title}</p>
@@ -690,42 +690,42 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
             </div>
           )}
           <p className="text-center text-xs text-fg-subtle mt-3">
-            {scene ? "Kéo để xoay · Cuộn để zoom · Góc nhìn giữ nguyên khi đổi đồ" : "Tạo và gửi ảnh ở trang Chuẩn bị 3D, hoặc xuất ZIP để chuyển thủ công"}
+            {scene ? "Drag to orbit · Scroll to zoom · Camera stays in place when changing clothes" : "Create and submit photos on Prepare 3D, or export a ZIP to transfer manually"}
           </p>
         </section>
         <aside className="space-y-4 lg:col-span-2 xl:col-span-1 grid lg:grid-cols-2 xl:block gap-4">
           <section className="border border-border rounded-3xl p-5 bg-bg-elevated">
-            <p className="text-[10px] uppercase text-fg-muted tracking-widest mb-4">Look hiện tại</p>
-            <dl className="space-y-2 text-sm" aria-label="Bộ đang mặc">
+            <p className="text-[10px] uppercase text-fg-muted tracking-widest mb-4">Current look</p>
+            <dl className="space-y-2 text-sm" aria-label="Current outfit">
               {SLOTS.map((slot) => (
                 <div key={slot} className="flex justify-between gap-3">
                   <dt className="text-fg-muted">{SLOT_LABEL[slot]}</dt>
                   <dd className="text-right break-words min-w-0">
-                    {nameOf(outfit.shown[slot])?.name ?? "Trang phục gốc của avatar"}
-                    {nameOf(outfit.shown[slot])?.preset ? " (mẫu)" : ""}
+                    {nameOf(outfit.shown[slot])?.name ?? "Avatar's original clothing"}
+                    {nameOf(outfit.shown[slot])?.preset ? " (preset)" : ""}
                   </dd>
                 </div>
               ))}
               <div className="flex justify-between gap-3">
-                <dt className="text-fg-muted">Giày</dt>
-                <dd className="text-right text-fg-muted">Mẫu sẵn của avatar</dd>
+                <dt className="text-fg-muted">Shoes</dt>
+                <dd className="text-right text-fg-muted">Avatar preset shoes</dd>
               </div>
             </dl>
             {pending.length > 0 && (
               <p role="status" className="text-xs text-fg-muted mt-3 flex gap-2 items-center">
                 <Loader2 size={12} className="animate-spin" aria-hidden />
-                Đang chuẩn bị {pending.map((s) => SLOT_LABEL[s].toLocaleLowerCase()).join(" và ")}; bộ hiện tại giữ nguyên.
+                Preparing {pending.map((s) => SLOT_LABEL[s].toLocaleLowerCase()).join(" and ")}; your current outfit stays in place.
               </p>
             )}
             <button
               disabled={!scene}
               onClick={() => {
                 setCompare(outfit.wanted);
-                setNotice("Đã ghi nhớ look A. Chọn đồ khác rồi bấm So sánh A ↔ B.");
+                setNotice("Look A remembered. Choose different clothes, then select Compare A ↔ B.");
               }}
               className={`${action} mt-5 w-full border border-border`}
             >
-              Ghi nhớ look A
+              Remember look A
             </button>
             <button
               disabled={!scene || !compare}
@@ -736,29 +736,29 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
               }}
               className={`${action} mt-2 w-full border border-border`}
             >
-              So sánh A ↔ B
+              Compare A ↔ B
             </button>
             <form onSubmit={(e) => void saveLook(e)} className="mt-5 border-t border-border pt-4">
               <label className="block text-xs text-fg-muted mb-2" htmlFor="look-name">
-                Tên bộ phối
+                Look name
               </label>
-              <input id="look-name" disabled={!scene} maxLength={80} value={lookName} onChange={(e) => setLookName(e.target.value)} placeholder="Đi cà phê cuối tuần" className="bg-bg rounded-xl border border-border p-3 text-xs w-full" />
+              <input id="look-name" disabled={!scene} maxLength={80} value={lookName} onChange={(e) => setLookName(e.target.value)} placeholder="Weekend coffee" className="bg-bg rounded-xl border border-border p-3 text-xs w-full" />
               <button disabled={!scene || !lookName.trim() || pending.length > 0 || (scene.source === "local" && looks.length >= 30)} className={`${action} mt-2 w-full bg-accent`}>
                 <Bookmark size={14} />
-                {scene?.source === "cloud" ? "Lưu bộ vào tài khoản" : "Lưu look trong phiên"}
+                {scene?.source === "cloud" ? "Save look to account" : "Save look in session"}
               </button>
               <p className="text-[10px] text-fg-subtle mt-2">
-                {scene?.source === "cloud" ? "Lưu áo, quần, góc máy và đúng phiên bản 3D đang hiển thị." : "Tối đa 30 look / bộ 3D"}
+                {scene?.source === "cloud" ? "Saves the displayed top, bottom, camera and exact 3D versions." : "Up to 30 looks / 3D bundle"}
               </p>
             </form>
             {looks.length > 0 && (
-              <ul aria-label="Look đã lưu" className="mt-4 space-y-2">
+              <ul aria-label="Saved looks" className="mt-4 space-y-2">
                 {looks.map((look) => (
                   <li key={look.id} className="flex gap-2 items-center border border-border rounded-xl p-2">
                     <button className="text-xs flex-1 text-left break-words min-w-0" onClick={() => openLocalLook(look)}>
                       {look.name}
                     </button>
-                    <button aria-label={`Xóa look ${look.name}`} onClick={() => setLooks((prev) => prev.filter((l) => l.id !== look.id))} className="p-1 text-fg-muted">
+                    <button aria-label={`Delete look ${look.name}`} onClick={() => setLooks((prev) => prev.filter((l) => l.id !== look.id))} className="p-1 text-fg-muted">
                       <Trash2 size={13} />
                     </button>
                   </li>
@@ -766,69 +766,69 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
               </ul>
             )}
           </section>
-          <section className="border border-border rounded-3xl p-5" aria-label="Ảnh lookbook">
-            <h2 className="text-sm font-semibold">Ảnh lookbook</h2>
-            <p className="text-xs text-fg-muted leading-5 mt-2">Render trực tiếp từ avatar và bộ đồ đang hiển thị; màu, logo và phom giữ nguyên, không dùng AI tạo ảnh.</p>
+          <section className="border border-border rounded-3xl p-5" aria-label="Lookbook image">
+            <h2 className="text-sm font-semibold">Lookbook image</h2>
+            <p className="text-xs text-fg-muted leading-5 mt-2">Rendered directly from your displayed avatar and outfit, preserving colors, logos and shape. No AI image generation.</p>
             <div className="grid grid-cols-2 gap-2 mt-3">
               <label className="text-xs text-fg-muted">
-                Góc máy
-                <select aria-label="Góc máy lookbook" value={shot.angle} onChange={(e) => setShot((v) => ({ ...v, angle: e.target.value as LookbookShot["angle"] }))} className="mt-1 w-full bg-bg border border-border rounded-xl p-2 text-fg">
-                  <option value="front">Trước</option>
-                  <option value="side">Bên</option>
-                  <option value="back">Sau</option>
-                  <option value="current">Góc đang xem</option>
+                Camera angle
+                <select aria-label="Lookbook camera angle" value={shot.angle} onChange={(e) => setShot((v) => ({ ...v, angle: e.target.value as LookbookShot["angle"] }))} className="mt-1 w-full bg-bg border border-border rounded-xl p-2 text-fg">
+                  <option value="front">Front</option>
+                  <option value="side">Side</option>
+                  <option value="back">Back</option>
+                  <option value="current">Current view</option>
                 </select>
               </label>
               <label className="text-xs text-fg-muted">
-                Nền
-                <select aria-label="Nền lookbook" value={shot.background} onChange={(e) => setShot((v) => ({ ...v, background: e.target.value as LookbookShot["background"] }))} className="mt-1 w-full bg-bg border border-border rounded-xl p-2 text-fg">
-                  <option value="neutral">Trung tính</option>
-                  <option value="white">Trắng</option>
-                  <option value="dark">Tối</option>
+                Background
+                <select aria-label="Lookbook background" value={shot.background} onChange={(e) => setShot((v) => ({ ...v, background: e.target.value as LookbookShot["background"] }))} className="mt-1 w-full bg-bg border border-border rounded-xl p-2 text-fg">
+                  <option value="neutral">Neutral</option>
+                  <option value="white">White</option>
+                  <option value="dark">Dark</option>
                 </select>
               </label>
             </div>
             <button disabled={!scene || pending.length > 0} onClick={() => void renderLookbook()} className={`${action} w-full border border-border mt-3`}>
               <Download size={14} />
-              Lưu ảnh lookbook
+              Save lookbook image
             </button>
           </section>
           <div className="space-y-4">
             <section className="border border-border rounded-3xl p-5">
               <UserRound size={20} className="text-accent-text mb-3" />
-              <h2 className="text-sm font-semibold break-words">{scene?.name ?? "Chưa có avatar"}</h2>
+              <h2 className="text-sm font-semibold break-words">{scene?.name ?? "No avatar yet"}</h2>
               <p className="text-xs text-fg-muted mt-2 leading-5">
                 {scene?.source === "cloud"
-                  ? "Avatar và đồ đã mặc thử nằm trên tài khoản. Mở lại look không chạy AI lần nữa."
+                  ? "Your avatar and fitted clothes are on your account. Reopening a look does not run AI again."
                   : scene
-                    ? "Bộ GLB nhập từ PC. Đóng bộ không xóa bản đã lưu trên máy."
-                    : "Ảnh trước, bên, sau và chiều cao giúp kiểm tra hình dáng."}
+                    ? "GLB bundle imported from PC. Closing it does not delete your local save."
+                    : "Front, side and back photos, plus height, help check body shape."}
               </p>
               <button onClick={() => setCapture("avatar")} className="text-xs text-accent-text mt-3">
-                Chuẩn bị avatar mới
+                Prepare a new avatar
               </button>
               {scene && (
                 <button onClick={reset} className="text-xs flex items-center gap-2 mt-4 text-fg-muted">
                   <RotateCcw size={13} />
-                  Đóng bộ 3D
+                  Close 3D bundle
                 </button>
               )}
             </section>
             <section className="border border-border rounded-3xl p-5">
               <HardDrive size={18} className="text-fg-muted mb-3" />
-              <h2 className="text-sm font-semibold">Lưu riêng trên máy</h2>
+              <h2 className="text-sm font-semibold">Save privately on this device</h2>
               <p className="text-xs text-fg-muted leading-5 mt-2">
-                Dành cho bộ GLB nhập từ PC. Bản lưu chỉ ở trình duyệt này, tách theo tài khoản; người dùng chung máy vẫn có thể truy cập dữ liệu trình duyệt.
+                For PC-imported GLB bundles. Saves stay in this browser, separated by account. Other people using this device can still access browser data.
               </p>
               <button disabled={!bundle || !owner || storageBusy || busy} onClick={() => void persist("save")} className={`${action} w-full border border-border mt-4`}>
-                Lưu trên máy
+                Save on this device
               </button>
               <button disabled={!bundle} onClick={exportSelection} className="text-xs text-fg-muted flex items-center gap-2 mt-3">
                 <Download size={13} />
-                Xuất danh sách look
+                Export look list
               </button>
               <button disabled={!owner || storageBusy} onClick={() => void persist("delete")} className="text-xs text-fg-muted mt-4 disabled:opacity-40">
-                Xóa bản lưu trên máy
+                Delete local save
               </button>
             </section>
           </div>

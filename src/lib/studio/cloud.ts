@@ -51,17 +51,17 @@ async function download(url: string, expected: { sha256: string; bytes: number }
     response = await doFetch(url, { signal });
   } catch (e) {
     if (signal?.aborted) throw e;
-    throw new ModelDownloadError("Mất kết nối khi tải model. Kiểm tra mạng rồi mở lại.", "network");
+    throw new ModelDownloadError("Connection lost while downloading the model. Check your network and reopen it.", "network");
   }
   if (!response.ok) {
     await response.body?.cancel().catch(() => undefined);
     if (EXPIRED_STATUS.has(response.status))
-      throw new ModelDownloadError("Liên kết tải model đã hết hạn. Hãy mở lại để lấy liên kết mới.", "expired");
-    if (response.status === 404) throw new ModelDownloadError("Không tìm thấy tệp model trên máy chủ.", "missing");
-    throw new ModelDownloadError("Không tải được model. Hãy thử lại sau.", "network");
+      throw new ModelDownloadError("The model download link expired. Reopen it to get a new link.", "expired");
+    if (response.status === 404) throw new ModelDownloadError("The model file was not found on the server.", "missing");
+    throw new ModelDownloadError("Unable to download the model. Please try again later.", "network");
   }
   const reader = response.body?.getReader();
-  if (!reader) throw new ModelDownloadError("Kết quả 3D không có dữ liệu.", "integrity");
+  if (!reader) throw new ModelDownloadError("The 3D result contains no data.", "integrity");
   const chunks: Uint8Array[] = [];
   let size = 0;
   while (true) {
@@ -70,11 +70,11 @@ async function download(url: string, expected: { sha256: string; bytes: number }
     size += value.byteLength;
     if (size > MAX_GLB_BYTES || size > expected.bytes) {
       await reader.cancel();
-      throw new ModelDownloadError(size > MAX_GLB_BYTES ? "Model vượt giới hạn 40 MB." : "Kích thước model không khớp. Hãy tải lại.", "integrity");
+      throw new ModelDownloadError(size > MAX_GLB_BYTES ? "The model exceeds the 40 MB limit." : "Model size mismatch. Please download it again.", "integrity");
     }
     chunks.push(value);
   }
-  if (size !== expected.bytes) throw new ModelDownloadError("Kích thước model không khớp. Hãy tải lại.", "integrity");
+  if (size !== expected.bytes) throw new ModelDownloadError("Model size mismatch. Please download it again.", "integrity");
   const buffer = new Uint8Array(size);
   let offset = 0;
   for (const chunk of chunks) {
@@ -84,7 +84,7 @@ async function download(url: string, expected: { sha256: string; bytes: number }
   const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", buffer)))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  if (hash !== expected.sha256) throw new ModelDownloadError("Model không khớp bản đã xác minh.", "integrity");
+  if (hash !== expected.sha256) throw new ModelDownloadError("The model does not match the verified version.", "integrity");
   try {
     validateGlb(buffer.buffer);
   } catch (e) {
@@ -103,10 +103,10 @@ async function download(url: string, expected: { sha256: string; bytes: number }
 export async function modelBytes(record: ModelResponse, options: ModelBytesOptions | AbortSignal = {}) {
   const opts: ModelBytesOptions = options instanceof AbortSignal ? { signal: options } : options;
   const doFetch: Fetch = opts.fetch ?? ((url, init) => fetch(url, init));
-  if (!record.asset) throw new ModelDownloadError("Model chưa sẵn sàng. Theo dõi ở trang Chuẩn bị 3D.", "unavailable");
-  if (record.asset.bytes > MAX_GLB_BYTES) throw new ModelDownloadError("Model vượt giới hạn 40 MB.", "integrity");
+  if (!record.asset) throw new ModelDownloadError("The model is not ready. Track it on Prepare 3D.", "unavailable");
+  if (record.asset.bytes > MAX_GLB_BYTES) throw new ModelDownloadError("The model exceeds the 40 MB limit.", "integrity");
   if (opts.expectedSha256 && record.asset.sha256 !== opts.expectedSha256)
-    throw new ModelDownloadError("Phiên bản 3D đã khác bản đã lưu.", "changed");
+    throw new ModelDownloadError("The 3D version has changed since it was saved.", "changed");
   const identity = { modelId: record.model.id, outputAssetId: record.model.output_asset_id, sha256: record.asset.sha256, bytes: record.asset.bytes };
   try {
     return await download(record.asset.url, identity, opts.signal, doFetch);
@@ -118,7 +118,7 @@ export async function modelBytes(record: ModelResponse, options: ModelBytesOptio
       fresh = await refresh();
     } catch (r) {
       if (opts.signal?.aborted) throw r;
-      throw new ModelDownloadError((r as Error).message || "Không lấy lại được liên kết tải model.", "unavailable");
+      throw new ModelDownloadError((r as Error).message || "Unable to refresh the model download link.", "unavailable");
     }
     opts.signal?.throwIfAborted();
     if (
@@ -128,7 +128,7 @@ export async function modelBytes(record: ModelResponse, options: ModelBytesOptio
       fresh.asset.sha256 !== identity.sha256 ||
       fresh.asset.bytes !== identity.bytes
     )
-      throw new ModelDownloadError("Model đã đổi phiên bản trong lúc tải. Hãy mở lại.", "changed");
+      throw new ModelDownloadError("The model version changed during download. Please reopen it.", "changed");
     return await download(fresh.asset.url, identity, opts.signal, doFetch);
   }
 }

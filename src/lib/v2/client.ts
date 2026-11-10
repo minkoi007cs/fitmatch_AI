@@ -6,29 +6,29 @@ export type Library = {
   connected: boolean;
 };
 const messages: Record<string, string> = {
-  SOURCE_DELETED: "Ảnh/video nguồn đã được xóa. Hãy tạo phiên bản mới bằng bộ ảnh mới.",
-  FITTING_NOT_READY: "Món đồ chưa sẵn sàng để lưu vào bộ phối. Hãy chờ xử lý xong.",
-  LOOK_NOT_FOUND: "Không tìm thấy bộ phối này. Hãy làm mới danh sách bộ đã lưu.",
-  QUIZ_REQUIRED: "Hãy hoàn thành quiz trước khi gợi ý.",
-  MODEL_NOT_READY: "Avatar và áo cần xử lý xong trước khi mặc thử.",
+  SOURCE_DELETED: "Source photos or video have been deleted. Create a new version with new photos.",
+  FITTING_NOT_READY: "This item is not ready to save in a look. Wait for processing to finish.",
+  LOOK_NOT_FOUND: "This look was not found. Refresh your saved looks.",
+  QUIZ_REQUIRED: "Complete the style quiz before requesting suggestions.",
+  MODEL_NOT_READY: "Your avatar and garment must finish processing before trying them on.",
   QUOTA_EXCEEDED:
-    "Đã đạt giới hạn xử lý. Hãy chờ hoặc hoàn tất các tác vụ đang có.",
-  DATA_UNAVAILABLE: "Chưa kết nối được thư viện 3D. Hãy thử tải lại sau.",
-  SERVICE_UNAVAILABLE: "Dịch vụ 3D chưa sẵn sàng. Hãy thử lại sau.",
+    "Processing limit reached. Wait for current jobs to finish.",
+  DATA_UNAVAILABLE: "Unable to connect to the 3D library. Please try loading it again later.",
+  SERVICE_UNAVAILABLE: "The 3D service is not ready. Please try again later.",
   JOB_ACTION_NOT_ALLOWED:
-    "Tác vụ đã đổi trạng thái hoặc đạt giới hạn 3 lần chạy. Hãy làm mới.",
-  IDEMPOTENCY_CONFLICT: "Yêu cầu đã thay đổi. Hãy đóng và mở lại bộ ảnh.",
-  FEATURE_DISABLED: "Phân tích bằng AI chưa được bật trên máy chủ này.",
-  ITEM_HAS_NO_IMAGE: "Món đồ này chưa có ảnh để phân tích.",
-  ITEM_IMAGE_UNAVAILABLE: "Không đọc được ảnh của món đồ. Hãy tải ảnh lại.",
-  INVALID_IMAGE: "Ảnh không hợp lệ hoặc quá nhỏ (cần ít nhất 128×128).",
-  IMAGE_TOO_LARGE: "Ảnh lớn hơn 10 MB.",
-  RESULT_CHANGED: "Kết quả phân tích đã thay đổi. Hãy xem lại trước khi lưu.",
-  SOURCE_CHANGED: "Ảnh của món đồ đã thay đổi sau khi phân tích. Hãy phân tích lại.",
-  ALREADY_DECIDED: "Bạn đã xử lý đề xuất này rồi.",
-  NOT_REVIEWABLE: "Đề xuất chưa sẵn sàng để duyệt.",
-  RETRY_NOT_ALLOWED: "Không thể thử lại (đã đủ 3 lần hoặc trạng thái đã đổi).",
-  CANCEL_NOT_ALLOWED: "Tác vụ đã chạy xong hoặc đã dừng.",
+    "This job changed status or reached the three-attempt limit. Please refresh.",
+  IDEMPOTENCY_CONFLICT: "The request has changed. Close and reopen the photo bundle.",
+  FEATURE_DISABLED: "AI analysis is not enabled on this server yet.",
+  ITEM_HAS_NO_IMAGE: "This item needs a photo before it can be analyzed.",
+  ITEM_IMAGE_UNAVAILABLE: "Unable to read this item's photo. Please upload it again.",
+  INVALID_IMAGE: "Invalid image or image too small (at least 128 × 128 required).",
+  IMAGE_TOO_LARGE: "The image exceeds 10 MB.",
+  RESULT_CHANGED: "The analysis result has changed. Review it again before saving.",
+  SOURCE_CHANGED: "This item's photo changed after analysis. Please analyze it again.",
+  ALREADY_DECIDED: "You have already reviewed this suggestion.",
+  NOT_REVIEWABLE: "This suggestion is not ready for review.",
+  RETRY_NOT_ALLOWED: "Unable to retry (three attempts reached or status changed).",
+  CANCEL_NOT_ALLOWED: "This job has already finished or stopped.",
 };
 export async function api<T>(
   path: string,
@@ -49,8 +49,8 @@ export async function api<T>(
   if (!response.ok)
     throw new Error(
       response.status === 401
-        ? "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại."
-        : (messages[data.error] ?? "Không thể hoàn tất thao tác. Hãy thử lại."),
+        ? "Your session has expired. Please sign in again."
+        : (messages[data.error] ?? "Unable to complete this action. Please try again."),
     );
   return data as T;
 }
@@ -76,16 +76,16 @@ export async function library(): Promise<Library> {
   };
 }
 export const stateLabel: Record<string, string> = {
-  queued: "Đang chờ máy xử lý",
-  running: "Đang xử lý",
-  succeeded: "Sẵn sàng",
-  failed: "Cần thử lại",
-  canceled: "Đã hủy",
+  queued: "Waiting for processor",
+  running: "Processing",
+  succeeded: "Ready",
+  failed: "Retry needed",
+  canceled: "Canceled",
 };
 export const kindLabel: Record<string, string> = {
   avatar: "Avatar",
-  garment: "Đồ 3D",
-  fitting: "Đồ đã mặc thử",
+  garment: "3D garment",
+  fitting: "Fitted garment",
 };
 export async function prepareFitting(avatar: ModelRow, garment: ModelRow) {
   return api<{ jobId: string; modelId: string; reused: boolean }>(

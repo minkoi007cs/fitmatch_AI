@@ -35,26 +35,26 @@ export type AnalysisView = {
 
 const ACTIVE = new Set(["queued", "waiting_gpu", "running"]);
 const colorNames: Record<string, string> = {
-  blue: "Xanh dương", white: "Trắng", black: "Đen", gray: "Xám", red: "Đỏ", green: "Xanh lá",
-  yellow: "Vàng", brown: "Nâu", other: "Màu khác",
+  blue: "Blue", white: "White", black: "Black", gray: "Gray", red: "Red", green: "Green",
+  yellow: "Yellow", brown: "Brown", other: "Other color",
 };
-const patternNames: Record<string, string> = { solid: "Trơn", striped: "Kẻ sọc", printed: "In hình", checked: "Caro", other: "Khác" };
-const categoryNames: Record<string, string> = { tshirt: "Áo thun", jeans: "Quần jeans" };
+const patternNames: Record<string, string> = { solid: "Plain", striped: "Stripes", printed: "Graphic", checked: "Plaid", other: "Other" };
+const categoryNames: Record<string, string> = { tshirt: "T-shirt", jeans: "Jeans" };
 const abstainNames: Record<string, string> = {
-  ambiguous_target: "Ảnh có nhiều món đồ, AI không chắc món nào cần phân tích.",
-  unreadable_image: "Ảnh quá mờ hoặc tối để phân tích.",
-  not_garment: "AI không thấy quần áo trong ảnh.",
-  unsupported_category: "Loại đồ này chưa được hỗ trợ (hiện chỉ áo thun và jeans).",
+  ambiguous_target: "The image contains several items. AI could not determine which one to analyze.",
+  unreadable_image: "The image is too blurry or dark to analyze.",
+  not_garment: "AI could not find clothing in this image.",
+  unsupported_category: "This category is not supported yet (currently T-shirts and jeans only).",
 };
 const failureNames: Record<string, string> = {
-  GPU_UNAVAILABLE: "PC bận GPU quá lâu. Hãy thử lại sau.",
-  OOM: "PC thiếu bộ nhớ khi chạy AI.",
-  TIMEOUT: "AI chạy quá thời gian cho phép.",
-  INVALID_OUTPUT: "AI trả kết quả không hợp lệ.",
-  MODEL_UNAVAILABLE: "Mô hình AI trên PC chưa sẵn sàng.",
-  LEASE_EXPIRED: "PC mất kết nối giữa chừng.",
-  CANCELED: "Bạn đã hủy.",
-  SOURCE_CHANGED: "Ảnh đã đổi trong lúc phân tích.",
+  GPU_UNAVAILABLE: "The PC's GPU has been busy for too long. Please try again later.",
+  OOM: "The PC ran out of memory while running AI.",
+  TIMEOUT: "AI exceeded the processing time limit.",
+  INVALID_OUTPUT: "AI returned an invalid result.",
+  MODEL_UNAVAILABLE: "The AI model on your PC is not ready.",
+  LEASE_EXPIRED: "The PC lost its connection during processing.",
+  CANCELED: "You canceled this analysis.",
+  SOURCE_CHANGED: "The image changed during analysis.",
 };
 
 export function useWardrobeAnalyses() {
@@ -130,14 +130,14 @@ export function AnalysisPanel({
 
   const box = "mt-2 rounded-[2px] border border-border bg-bg-raised/60 p-2.5 text-[11px] leading-4 text-fg-muted space-y-2";
   const button = "rounded-[2px] border border-border-strong px-2 py-1 text-[11px] text-fg hover:bg-bg-elevated disabled:opacity-50";
-  const label = `Phân tích AI cho ${itemName}`;
+  const label = `AI analysis for ${itemName}`;
 
   if (!analysis || analysis.state === "stale")
     return (
       <div className={box} role="group" aria-label={label}>
-        {analysis?.state === "stale" && <p>Ảnh đã thay đổi sau lần phân tích trước.</p>}
+        {analysis?.state === "stale" && <p>The image has changed since the previous analysis.</p>}
         <button disabled={busy || !hasImage} className={button} onClick={() => void start()}>
-          {hasImage ? "Phân tích với AI" : "Cần ảnh để phân tích"}
+          {hasImage ? "Analyze with AI" : "Add an image to analyze"}
         </button>
         {error && <p role="alert" className="text-danger">{error}</p>}
       </div>
@@ -148,19 +148,19 @@ export function AnalysisPanel({
       <div className={box} role="group" aria-label={label}>
         <p role="status">
           {analysis.state === "running"
-            ? "AI đang phân tích trên PC…"
+            ? "AI is analyzing on your PC…"
             : !workerOnline
-              ? "PC đang offline. Việc vẫn được giữ và sẽ chạy khi PC bật lại; bạn vẫn có thể sửa thông tin món đồ thủ công."
+              ? "Your PC is offline. The job is saved and will run when it reconnects. You can still edit item details manually."
               : analysis.state === "queued" && gpuBusy
-                ? "PC đang bận GPU với việc khác. Việc của bạn vẫn giữ trong hàng đợi và chưa bị tính lượt thử."
+                ? "Your PC's GPU is busy with another task. Your job remains queued and no attempt has been counted."
                 : analysis.state === "queued"
-                ? "Đang chờ PC nhận việc…"
+                ? "Waiting for your PC to accept the job…"
                 : analysis.errorCode === "MEMORY_PRESSURE"
-                  ? "PC đang thiếu bộ nhớ trống, sẽ tự thử lại."
-                  : "PC đang bận GPU, sẽ tự thử lại."}
+                  ? "Your PC has limited free memory. It will retry automatically."
+                  : "Your PC's GPU is busy. It will retry automatically."}
         </p>
         <button disabled={busy} className={button} onClick={() => void act("cancel")}>
-          Hủy
+          Cancel
         </button>
         {error && <p role="alert" className="text-danger">{error}</p>}
       </div>
@@ -170,12 +170,12 @@ export function AnalysisPanel({
     return (
       <div className={box} role="group" aria-label={label}>
         <p role="status">
-          {analysis.state === "canceled" ? "Đã hủy phân tích." : "Phân tích thất bại."}{" "}
-          {analysis.errorCode ? failureNames[analysis.errorCode] ?? "" : ""} Bạn vẫn có thể sửa thông tin món đồ thủ công.
+          {analysis.state === "canceled" ? "Analysis canceled." : "Analysis failed."}{" "}
+          {analysis.errorCode ? failureNames[analysis.errorCode] ?? "" : ""} You can still edit item details manually.
         </p>
         {analysis.attempts < 3 && (
           <button disabled={busy} className={button} onClick={() => void act("retry")}>
-            Thử lại
+            Retry
           </button>
         )}
         {error && <p role="alert" className="text-danger">{error}</p>}
@@ -187,9 +187,9 @@ export function AnalysisPanel({
       <div className={box} role="group" aria-label={label}>
         <p role="status">
           {analysis.state === "rejected"
-            ? "Đã bỏ qua đề xuất AI."
-            : "Đã lưu theo xác nhận của bạn" +
-              (analysis.confirmedFields?.logoText ? ` (chữ trên áo: “${analysis.confirmedFields.logoText}”)` : "") +
+            ? "AI suggestion dismissed."
+            : "Saved with your confirmation" +
+              (analysis.confirmedFields?.logoText ? ` (garment text: “${analysis.confirmedFields.logoText}”)` : "") +
               "."}
         </p>
       </div>
@@ -250,9 +250,9 @@ function Review({
   if (!attrs || analysis.result?.outcome === "abstained")
     return (
       <div className={box} role="group" aria-label={label}>
-        <p role="status">AI không đưa ra đề xuất: {abstainNames[analysis.result?.abstainReason ?? ""] ?? "không chắc chắn."}</p>
+        <p role="status">AI has no suggestion: {abstainNames[analysis.result?.abstainReason ?? ""] ?? "uncertain."}</p>
         <button disabled={busy} className={button} onClick={() => onSubmit("reject", {})}>
-          Đóng
+          Close
         </button>
         {error && <p role="alert" className="text-danger">{error}</p>}
       </div>
@@ -267,38 +267,38 @@ function Review({
 
   return (
     <div className={box} role="group" aria-label={label}>
-      <p className="font-semibold text-fg" role="status">Đề xuất của AI — kiểm tra rồi lưu</p>
+      <p className="font-semibold text-fg" role="status">AI suggestion — review before saving</p>
       <label className="block">
-        Loại
-        <select aria-label="Loại" className={select} value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option value="">— chưa chọn —</option>
+        Category
+        <select aria-label="Category" className={select} value={category} onChange={(e) => setCategory(e.target.value)}>
+          <option value="">— choose —</option>
           {Object.entries(categoryNames).map(([v, n]) => (
             <option key={v} value={v}>{n}</option>
           ))}
         </select>
       </label>
       <label className="block">
-        Màu chính
-        <select aria-label="Màu chính" className={select} value={primary} onChange={(e) => setPrimary(e.target.value)}>
-          <option value="">— chưa chọn —</option>
+        Main color
+        <select aria-label="Main color" className={select} value={primary} onChange={(e) => setPrimary(e.target.value)}>
+          <option value="">— choose —</option>
           {Object.entries(colorNames).map(([v, n]) => (
             <option key={v} value={v}>{n}</option>
           ))}
         </select>
       </label>
       <label className="block">
-        Màu phụ
-        <select aria-label="Màu phụ" className={select} value={secondary} onChange={(e) => setSecondary(e.target.value)}>
-          <option value="">— không —</option>
+        Secondary color
+        <select aria-label="Secondary color" className={select} value={secondary} onChange={(e) => setSecondary(e.target.value)}>
+          <option value="">— none —</option>
           {Object.entries(colorNames).map(([v, n]) => (
             <option key={v} value={v}>{n}</option>
           ))}
         </select>
       </label>
       <label className="block">
-        Họa tiết
-        <select aria-label="Họa tiết" className={select} value={pattern} onChange={(e) => setPattern(e.target.value)}>
-          <option value="">— chưa chọn —</option>
+        Pattern
+        <select aria-label="Patterns" className={select} value={pattern} onChange={(e) => setPattern(e.target.value)}>
+          <option value="">— choose —</option>
           {Object.entries(patternNames).map(([v, n]) => (
             <option key={v} value={v}>{n}</option>
           ))}
@@ -307,7 +307,7 @@ function Review({
       {analysis.result!.candidateLogoTexts.length > 0 && (
         <div>
           <p>
-            AI đọc được chữ (chưa xác nhận, có thể sai):{" "}
+            AI detected this text (unconfirmed and may be incorrect):{" "}
             {analysis.result!.candidateLogoTexts.map((t) => (
               <button
                 key={t}
@@ -325,10 +325,10 @@ function Review({
         </div>
       )}
       <label className="block">
-        Chữ/logo trên đồ (tùy chọn, bạn tự xác nhận)
+        Garment text / logo (optional, confirmed by you)
         <input
           ref={logoRef}
-          aria-label="Chữ/logo trên đồ"
+          aria-label="Garment text / logo"
           className={select}
           maxLength={32}
           value={logoText}
@@ -337,10 +337,10 @@ function Review({
       </label>
       <div className="flex gap-2">
         <button disabled={busy || Object.keys(fields).length === 0} className={button} onClick={() => onSubmit("approve", fields)}>
-          Lưu vào tủ đồ
+          Save to wardrobe
         </button>
         <button disabled={busy} className={button} onClick={() => onSubmit("reject", {})}>
-          Bỏ qua
+          Dismiss
         </button>
       </div>
       {error && <p role="alert" className="text-danger">{error}</p>}

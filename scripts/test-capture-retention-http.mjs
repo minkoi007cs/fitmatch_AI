@@ -50,22 +50,22 @@ export async function testCaptureRetention({ base, fixture, request, jar, owner,
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(base + "/prepare");
-    await page.getByRole("button", { name: "Thêm ảnh cơ thể" }).click();
+    await page.getByRole("button", { name: "Add body photos" }).click();
     const dialog = page.getByRole("dialog");
-    await dialog.getByLabel("Tên avatar").fill("Avatar từ video (synthetic)");
-    await dialog.getByLabel("Chiều cao (cm)").fill("168");
-    const send = dialog.getByRole("button", { name: "Gửi ảnh và tạo 3D" });
+    await dialog.getByLabel("Avatar name").fill("Avatar từ video (synthetic)");
+    await dialog.getByLabel("Height (cm)").fill("168");
+    const send = dialog.getByRole("button", { name: "Submit photos & create 3D" });
     const face = await sharp({ create: { width: 700, height: 700, channels: 3, background: "#c9a98f" } }).png().toBuffer();
-    await dialog.getByLabel("Video quanh người").setInputFiles({ name: "turn.mp4", mimeType: "video/mp4", buffer: fakeMp4() });
+    await dialog.getByLabel("Body video").setInputFiles({ name: "turn.mp4", mimeType: "video/mp4", buffer: fakeMp4() });
     assert.equal(await send.isDisabled(), true, "video needs a face photo");
-    await dialog.getByLabel("Ảnh mặt (cận)", { exact: true }).setInputFiles({ name: "face.png", mimeType: "image/png", buffer: face });
-    await dialog.getByLabel("Vòng eo (cm)").fill("76");
-    await dialog.getByLabel("Vòng ngực (cm)").fill("92");
+    await dialog.getByLabel("Face close-up", { exact: true }).setInputFiles({ name: "face.png", mimeType: "image/png", buffer: face });
+    await dialog.getByLabel("Waist (cm)").fill("76");
+    await dialog.getByLabel("Chest (cm)").fill("92");
     await send.waitFor();
-    await page.waitForFunction(() => [...document.querySelectorAll("button")].some((b) => b.textContent === "Gửi ảnh và tạo 3D" && !b.disabled));
+    await page.waitForFunction(() => [...document.querySelectorAll("button")].some((b) => b.textContent === "Submit photos & create 3D" && !b.disabled));
     await page.screenshot({ path: "test-results/c2-capture-video-face.png" });
     await send.click();
-    await dialog.getByRole("status").filter({ hasText: "Đã đưa vào hàng đợi" }).waitFor();
+    await dialog.getByRole("status").filter({ hasText: "Queued." }).waitFor();
     await page.keyboard.press("Escape");
 
     const c = await worker("claim", {});
@@ -100,23 +100,23 @@ export async function testCaptureRetention({ base, fixture, request, jar, owner,
 
     await page.reload();
     const card = page.locator("article", { has: page.getByRole("heading", { name: "Avatar từ video (synthetic)" }) });
-    await card.getByText("Bản nháp", { exact: false }).waitFor();
-    await card.getByRole("button", { name: "Dùng tạm bản này" }).click();
-    await card.getByText("Bạn đang dùng bản này.").waitFor();
+    await card.getByText("Draft.", { exact: false }).waitFor();
+    await card.getByRole("button", { name: "Use this draft" }).click();
+    await card.getByText("You are using this version.").waitFor();
     assert.notEqual(v2.sql(`select accepted_at is not null from fm_v2_models where id='${job.modelId}';`), "f");
-    await card.getByRole("button", { name: "Giữ ảnh gốc" }).click();
-    await card.getByText("Đang giữ.").waitFor();
-    await card.getByText("Chỉnh mặt, dáng, tóc, da").click();
-    await card.getByText("Chưa khả dụng", { exact: false }).waitFor();
-    await card.getByRole("button", { name: "Xóa ảnh gốc" }).click();
-    await card.getByRole("group", { name: "Xác nhận xóa ảnh gốc" }).waitFor();
+    await card.getByRole("button", { name: "Keep originals" }).click();
+    await card.getByText("Keeping originals.").waitFor();
+    await card.getByText("Edit face, body, hair and skin").click();
+    await card.getByText("Not available yet", { exact: false }).waitFor();
+    await card.getByRole("button", { name: "Delete originals" }).click();
+    await card.getByRole("group", { name: "Confirm source deletion" }).waitFor();
     await page.screenshot({ path: "test-results/c2-retention-confirm.png" });
     // CL-PRIV-01 failure injection: storage refuses the first removal. The request is recorded,
     // the UI must not claim the files are gone, and the state survives a reload.
     v2.faults.removeFail = 1;
     const removeCallsBefore = v2.faults.removeCalls;
-    await card.getByRole("button", { name: "Xác nhận xóa" }).click();
-    await page.getByRole("status").filter({ hasText: "Đã ghi nhận yêu cầu xóa nhưng chưa xóa xong" }).waitFor();
+    await card.getByRole("button", { name: "Confirm deletion" }).click();
+    await page.getByRole("status").filter({ hasText: "Deletion was requested, but some files are still in storage." }).waitFor();
     assert.equal(v2.faults.removeCalls, removeCallsBefore + 1);
     assert.equal(v2.sql(`select string_agg(distinct state, ',') from fm_v2_assets where id in (${sources.map(([id]) => `'${id}'`)});`), "deleted", "tombstoned even though storage failed");
     assert.ok(sources.every(([, path, source]) => v2.hasObject(path) && v2.hasObject(source)), "objects really still stored");
@@ -137,13 +137,13 @@ export async function testCaptureRetention({ base, fixture, request, jar, owner,
     assert.equal(v2.sql(`select string_agg(distinct state||':'||attempts, ',') from fm_v2_source_cleanup where requested_by_model='${job.modelId}';`), "pending:2");
     assert.ok(sources.every(([, path]) => v2.hasObject(path)));
     await page.reload();
-    const status = card.getByRole("status", { name: "Trạng thái xóa ảnh gốc" });
-    await status.getByText("Đang xóa", { exact: false }).waitFor();
-    assert.equal(await card.getByText("Đã xóa khỏi bộ nhớ lưu trữ", { exact: false }).count(), 0, "no false 'deleted' after reload");
+    const status = card.getByRole("status", { name: "Source deletion status" });
+    await status.getByText("Deleting:", { exact: false }).waitFor();
+    assert.equal(await card.getByText("Deleted from storage.", { exact: false }).count(), 0, "no false 'deleted' after reload");
     await page.screenshot({ path: "test-results/priv01-cleanup-pending.png" });
-    await status.getByRole("button", { name: "Thử xóa lại" }).click();
-    await page.getByRole("status").filter({ hasText: "Đã xóa ảnh/video gốc khỏi bộ nhớ lưu trữ" }).waitFor();
-    await card.getByText("Đã xóa khỏi bộ nhớ lưu trữ", { exact: false }).waitFor();
+    await status.getByRole("button", { name: "Retry deletion" }).click();
+    await page.getByRole("status").filter({ hasText: "Original photos and video deleted from storage." }).waitFor();
+    await card.getByText("Deleted from storage.", { exact: false }).waitFor();
     assert.equal(v2.sql(`select source_cleanup from fm_v2_models where id='${job.modelId}';`), "completed");
     assert.equal(v2.sql(`select string_agg(distinct state, ',') from fm_v2_source_cleanup where requested_by_model='${job.modelId}';`), "completed");
     // A further request is a no-op: nothing outstanding, no storage call.

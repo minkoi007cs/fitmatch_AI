@@ -58,7 +58,7 @@ export default function LooksPage() {
         api<{ recommendation: Recommendation | null }>("recommendations"),
         api<{ looks: SavedLook[] }>("looks"),
         fetch("/api/wardrobe", { cache: "no-store" }).then(async (r) => {
-          if (!r.ok) throw new Error("Không tải được tủ đồ.");
+          if (!r.ok) throw new Error("Unable to load your wardrobe.");
           return r.json();
         }),
         api<{ feedback: { item_id: string; value: "like" | "skip" }[] }>(
@@ -126,31 +126,30 @@ export default function LooksPage() {
             Picked from your wardrobe
           </p>
           <h1 className="font-display text-4xl lg:text-5xl font-semibold">
-            Gu của bạn. Áo của bạn.
+            Your style. Your clothes.
           </h1>
           <p className="text-sm text-fg-muted leading-6 mt-4 max-w-xl">
-            Tối đa ba bộ áo + jeans có thật trong tủ đồ, dựa trên gu trong quiz và
-            dịp bạn chọn. Tủ chưa có jeans thì gợi ý phần áo.
+            Up to three top-and-jeans looks from your own wardrobe, based on your style profile and occasion. No jeans yet? Start with tops.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
           <label className="text-xs text-fg-muted">
-            Dịp
+            Occasion
             <select
-              aria-label="Dịp mặc"
+              aria-label="Outfit occasion"
               value={occasion}
               onChange={(e) => setOccasion(e.target.value as typeof occasion)}
               className="ml-2 bg-bg border border-border rounded-xl p-2 text-fg"
             >
               <option value="">Theo quiz</option>
-              <option value="daily">Hằng ngày</option>
-              <option value="campus">Đi học</option>
-              <option value="work">Đi làm</option>
-              <option value="evening">Buổi tối</option>
+              <option value="daily">Everyday</option>
+              <option value="campus">School</option>
+              <option value="work">Work</option>
+              <option value="evening">Evening</option>
             </select>
           </label>
           <Link href="/quiz" className={button}>
-            Chỉnh gu
+            Edit style
           </Link>
           <button
             disabled={busy || !loaded}
@@ -158,14 +157,14 @@ export default function LooksPage() {
               void run(async () => {
                 await api("recommendations", occasion ? { occasion } : {});
                 setNotice(
-                  "Đã cập nhật theo tủ đồ, gu trong quiz và dịp bạn chọn.",
+                  "Updated using your wardrobe, style profile and occasion.",
                 );
               })
             }
             className={`${button} bg-accent text-bg`}
           >
             <RefreshCw size={14} />
-            Gợi ý lại
+            Refresh ideas
           </button>
         </div>
       </header>
@@ -176,8 +175,8 @@ export default function LooksPage() {
         >
           <p>{error}</p>
           <div className="mt-3 flex flex-wrap gap-3 items-center">
-            <button className={button} disabled={busy} onClick={() => void refresh()}>Thử tải lại bộ phối</button>
-            <Link href="/wardrobe" className="inline-flex min-h-11 items-center text-accent-text text-xs">Về tủ đồ ảnh →</Link>
+            <button className={button} disabled={busy} onClick={() => void refresh()}>Try loading looks again</button>
+            <Link href="/wardrobe" className="inline-flex min-h-11 items-center text-accent-text text-xs">Back to photo wardrobe →</Link>
           </div>
         </div>
       )}
@@ -188,13 +187,13 @@ export default function LooksPage() {
       )}
       <div className="grid md:grid-cols-[1fr_1fr] gap-5 mb-7">
         <label className={`${panel} block text-sm`}>
-          Mặc thử trên avatar
+          Try on your avatar
           <select
             value={avatarId}
             onChange={(e) => setAvatarId(e.target.value)}
             className={field}
           >
-            <option value="">Chưa có avatar sẵn sàng</option>
+            <option value="">No avatar ready yet</option>
             {data?.models
               .filter((m) => m.kind === "avatar" && m.output_asset_id)
               .map((m) => (
@@ -206,45 +205,43 @@ export default function LooksPage() {
         </label>
         <div className={`${panel} text-sm text-fg-muted leading-6`}>
           <p>
-            Chỉ áo đã dựng và mặc thử xong mới mở được 3D. Lần đầu có thể cần
-            chờ GPU; lần sau dùng lại kết quả của đúng avatar và áo.
+            Only completed 3D garments and fittings can open in Studio. The first fitting may require GPU processing; later visits reuse results for the same avatar and garment.
           </p>
           <Link
             href="/prepare"
             className="text-accent-text inline-flex items-center gap-1 mt-2"
           >
-            Chuẩn bị avatar & áo <ArrowUpRight size={13} />
+            Prepare avatar & clothes <ArrowUpRight size={13} />
           </Link>
         </div>
       </div>
       {!loaded && !error && (
         <p role="status" className={`${panel} text-fg-muted`}>
-          Đang mở tủ đồ của bạn…
+          Opening your wardrobe…
         </p>
       )}
       {loaded && !rec && (
         <section className={panel}>
           <h2 className="text-xl font-medium">
-            Bắt đầu bằng một chút về gu của bạn.
+            Start with a little about your style.
           </h2>
           <p className="text-sm text-fg-muted mt-3 mb-5">
-            Quiz giúp chọn đúng áo thật từ tủ đồ của bạn.
+            The style quiz helps us choose real clothes from your wardrobe.
           </p>
           <Link href="/quiz" className={`${button} bg-accent text-bg`}>
-            Làm quiz
+            Take the quiz
           </Link>
         </section>
       )}
       {rec && rec.data.length === 0 && (
         <section className={panel}>
           <Shirt className="mb-4 text-fg-muted" />
-          <h2 className="text-xl">Chưa tìm thấy áo phù hợp.</h2>
+          <h2 className="text-xl">No matching tops yet.</h2>
           <p className="text-sm text-fg-muted mt-3 mb-4">
-            Thêm áo thun / sơ mi vào tủ đồ hoặc thay đổi những họa tiết bạn muốn
-            tránh, rồi bấm Gợi ý lại.
+            Add T-shirts or shirts to your wardrobe, or adjust the patterns you avoid, then refresh your ideas.
           </p>
           <Link href="/wardrobe" className={button}>
-            Mở tủ đồ
+            Open wardrobe
           </Link>
         </section>
       )}
@@ -295,16 +292,16 @@ export default function LooksPage() {
                     <Shirt size={48} strokeWidth={1} className="mx-auto mb-3" />
                     <span className="text-xs">
                       {item
-                        ? "Áo chưa có ảnh xem trước"
-                        : "Áo không còn trong tủ đồ"}
+                        ? "No preview image for this top"
+                        : "This top is no longer in your wardrobe"}
                     </span>
                   </div>
                 )}
                 <span className="absolute top-4 left-4 rounded-full bg-white/85 px-3 py-1 text-[11px]">
-                  Lựa chọn 0{index + 1}
+                  Option 0{index + 1}
                 </span>
                 <span className="absolute bottom-4 left-4 text-[10px] uppercase tracking-widest">
-                  Ảnh áo gốc · Chưa phải ảnh render
+                  Original garment photo · Not a 3D render
                 </span>
               </div>
               <div className="p-6">
@@ -313,8 +310,8 @@ export default function LooksPage() {
                   {full && <span className="block text-lg text-fg-muted">+ {look.bottomItemName}</span>}
                 </h2>
                 <p className="text-xs text-accent-text mt-2">
-                  {look.category === "shirt" ? "Sơ mi" : "Áo thun"}
-                  {full ? " + Jeans · Mặc thử cả bộ" : " · Mặc thử phần áo"}
+                  {look.category === "shirt" ? "Shirt" : "T-shirt"}
+                  {full ? " + Jeans · Try the full look" : " · Try this top"}
                 </p>
                 <p className="text-sm text-fg-muted leading-6 mt-4">
                   {look.reason}
@@ -322,34 +319,34 @@ export default function LooksPage() {
                 <div className="mt-6 space-y-3">
                   {full ? (
                     !item || !bottomItem ? (
-                      <p className="text-sm text-fg-muted">Một món không còn trong tủ. Bấm Gợi ý lại.</p>
+                      <p className="text-sm text-fg-muted">An item is no longer in your wardrobe. Refresh your ideas.</p>
                     ) : !avatar ? (
                       <Link href="/prepare" className={`${button} w-full`}>
-                        Tạo avatar trước
+                        Create an avatar first
                       </Link>
                     ) : garment && bottomGarment ? (
                       <Link
                         href={`/studio?avatar=${avatar.id}&top=${garment.id}&bottom=${bottomGarment.id}`}
                         className={`${button} bg-accent text-bg w-full`}
                       >
-                        Mặc thử cả bộ <ArrowUpRight size={14} />
+                        Try the full look <ArrowUpRight size={14} />
                       </Link>
                     ) : (
                       <Link href="/prepare" className={`${button} w-full`}>
-                        Chuẩn bị {!garment ? "áo" : "quần"} 3D trước
+                        Prepare {!garment ? "top" : "bottom"} in 3D first
                       </Link>
                     )
                   ) : !item ? (
                     <p className="text-sm text-fg-muted">
-                      Bấm Gợi ý lại để cập nhật tủ đồ.
+                      Refresh ideas to update your wardrobe.
                     </p>
                   ) : !avatar ? (
                     <Link href="/prepare" className={`${button} w-full`}>
-                      Tạo avatar trước
+                      Create an avatar first
                     </Link>
                   ) : !garment ? (
                     <Link href="/prepare" className={`${button} w-full`}>
-                      Chuẩn bị áo 3D
+                      Prepare this top in 3D
                     </Link>
                   ) : fitting?.output_asset_id ? (
                     <>
@@ -357,7 +354,7 @@ export default function LooksPage() {
                         href={href}
                         className={`${button} bg-accent text-bg w-full`}
                       >
-                        Mặc thử 3D <ArrowUpRight size={14} />
+                        Try on in 3D <ArrowUpRight size={14} />
                       </Link>
                       <button
                         disabled={busy}
@@ -369,13 +366,13 @@ export default function LooksPage() {
                               fittingId: fitting.id,
                               recommendationId: rec.id,
                             });
-                            setNotice("Đã lưu look vào tài khoản.");
+                            setNotice("Look saved to your account.");
                           })
                         }
                         className={`${button} w-full`}
                       >
                         <Bookmark size={14} />
-                        Lưu look
+                        Save look
                       </button>
                     </>
                   ) : job && ["queued", "running"].includes(job.state) ? (
@@ -386,12 +383,12 @@ export default function LooksPage() {
                       {stateLabel[job.state]}
                       {job.state === "queued" &&
                       !data?.online.includes("garment.drape")
-                        ? " · máy mặc thử chưa kết nối"
+                        ? " · fitting processor not connected"
                         : ""}
                     </p>
                   ) : job && ["failed", "canceled"].includes(job.state) ? (
                     <Link className={`${button} w-full`} href="/prepare">
-                      Xem lỗi & thử lại
+                      View error & retry
                     </Link>
                   ) : (
                     <button
@@ -400,13 +397,13 @@ export default function LooksPage() {
                         void run(async () => {
                           await prepareFitting(avatar, garment);
                           setNotice(
-                            "Đã chuẩn bị tác vụ mặc thử. Khi hoàn tất, nút mở 3D sẽ xuất hiện.",
+                            "Fitting requested. The 3D button will appear when it is ready.",
                           );
                         })
                       }
                       className={`${button} bg-accent text-bg w-full`}
                     >
-                      Chuẩn bị lượt mặc thử 3D
+                      Prepare 3D fitting
                     </button>
                   )}
                 </div>
@@ -426,12 +423,12 @@ export default function LooksPage() {
                             value: "like",
                           });
                           setNotice(
-                            "Đã ghi nhớ áo hợp gu để ưu tiên lần gợi ý sau.",
+                            "Noted your preference for future suggestions.",
                           );
                         })
                       }
                     >
-                      Hợp gu
+                      My style
                     </button>
                     <button
                       disabled={busy}
@@ -445,12 +442,12 @@ export default function LooksPage() {
                           });
                           await api("recommendations", {});
                           setNotice(
-                            "Đã ẩn áo này khỏi gợi ý. Bạn có thể hoàn tác bên dưới.",
+                            "This top is hidden from suggestions. You can undo this below.",
                           );
                         })
                       }
                     >
-                      Ẩn khỏi gợi ý
+                      Hide from suggestions
                     </button>
                   </div>
                 )}
@@ -461,7 +458,7 @@ export default function LooksPage() {
       </div>
       {votes.some((v) => v.value === "skip") && (
         <section className="mt-8">
-          <h2 className="text-sm font-medium mb-3">Áo đã ẩn khỏi gợi ý</h2>
+          <h2 className="text-sm font-medium mb-3">Tops hidden from suggestions</h2>
           <div className="flex flex-wrap gap-2">
             {votes
               .filter((v) => v.value === "skip")
@@ -482,8 +479,7 @@ export default function LooksPage() {
                     })
                   }
                 >
-                  {items.find((i) => i.id === v.item_id)?.name ?? "Áo đã ẩn"} ·
-                  Hoàn tác
+                  {items.find((i) => i.id === v.item_id)?.name ?? "Hidden top"} · Undo
                 </button>
               ))}
           </div>
@@ -492,7 +488,7 @@ export default function LooksPage() {
       {saved.length > 0 && (
         <section className="mt-12">
           <h2 className="font-display text-2xl mb-5">
-            Look đã lưu trên tài khoản
+            Looks saved to your account
           </h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {saved.map((l) => (
@@ -505,7 +501,7 @@ export default function LooksPage() {
                 </Link>
                 <button
                   disabled={busy}
-                  aria-label={`Xóa look ${l.name}`}
+                  aria-label={`Delete look ${l.name}`}
                   onClick={() =>
                     void run(async () => {
                       await api(
@@ -526,8 +522,7 @@ export default function LooksPage() {
         </section>
       )}
       <p className="mt-8 text-xs text-fg-muted leading-5">
-        Gợi ý hiện dùng quy tắc có giải thích, không cần API AI trả phí. Chưa
-        đánh giá độ vừa hoặc tạo quần / phụ kiện ngoài tủ đồ.
+        Suggestions currently use explainable rules. They do not assess fit or add clothes and accessories you do not own.
       </p>
     </main>
   );

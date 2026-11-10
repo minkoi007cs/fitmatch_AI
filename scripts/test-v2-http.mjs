@@ -194,7 +194,7 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
     "models",
     {
       kind: "fitting",
-      name: "Sơ mi trên avatar",
+      name: "Shirt trên avatar",
       avatarId: avatar.modelId,
       garmentId: garment.modelId,
     },
@@ -253,24 +253,24 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(base + "/quiz");
     await page
-      .getByRole("button", { name: "Đi làm Gọn gàng và chỉn chu" })
+      .getByRole("button", { name: "Work Neat and polished" })
       .click();
     await page.reload();
     await page.waitForFunction(() =>
       document
         .querySelector('button[aria-pressed="true"]')
-        ?.textContent?.includes("Đi làm"),
+        ?.textContent?.includes("Work"),
     );
     await page.screenshot({
       path: "test-results/v2-quiz-desktop.png",
       fullPage: true,
     });
     for (let i = 0; i < 5; i++) {
-      const next = page.getByRole("button", { name: "Tiếp theo", exact: true });
+      const next = page.getByRole("button", { name: "Next", exact: true });
       await next.waitFor({ state: "visible" });
       await next.click();
     }
-    await page.getByRole("button", { name: "Lưu & gợi ý mặc thử" }).click();
+    await page.getByRole("button", { name: "Save & find looks" }).click();
     await page.waitForURL("**/looks");
     await page
       .getByRole("heading", { name: "Existing wardrobe", exact: true })
@@ -279,34 +279,34 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
       path: "test-results/v2-looks-desktop.png",
       fullPage: true,
     });
-    await page.getByRole("button", { name: "Hợp gu", exact: true }).click();
+    await page.getByRole("button", { name: "My style", exact: true }).click();
     await page.waitForFunction(() =>
       [...document.querySelectorAll("button")].some(
         (b) =>
-          b.textContent === "Hợp gu" &&
+          b.textContent === "My style" &&
           b.getAttribute("aria-pressed") === "true",
       ),
     );
-    await page.getByRole("button", { name: "Ẩn khỏi gợi ý" }).click();
+    await page.getByRole("button", { name: "Hide from suggestions" }).click();
     await page
-      .getByRole("heading", { name: "Chưa tìm thấy áo phù hợp." })
+      .getByRole("heading", { name: "No matching tops yet." })
       .waitFor();
     await page
-      .getByRole("button", { name: "Existing wardrobe · Hoàn tác" })
+      .getByRole("button", { name: "Existing wardrobe · Undo" })
       .click();
     await page
       .getByRole("heading", { name: "Existing wardrobe", exact: true })
       .waitFor();
-    await page.getByRole("button", { name: "Lưu look", exact: true }).click();
+    await page.getByRole("button", { name: "Save look", exact: true }).click();
     await page
-      .getByRole("heading", { name: "Look đã lưu trên tài khoản" })
+      .getByRole("heading", { name: "Looks saved to your account" })
       .waitFor();
-    await page.getByRole("link", { name: "Mặc thử 3D", exact: false }).click();
-    await page.getByRole("button", { name: "Trước", exact: true }).waitFor();
+    await page.getByRole("link", { name: "Try on in 3D", exact: false }).click();
+    await page.getByRole("button", { name: "Front", exact: true }).waitFor();
     await page.waitForFunction(
       () =>
         ![...document.querySelectorAll("button")].find(
-          (b) => b.textContent === "Trước",
+          (b) => b.textContent === "Front",
         )?.disabled,
     );
     await page.screenshot({
@@ -315,7 +315,7 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
     });
     assert.equal(
       await page
-        .getByRole("button", { name: "Chỉ xem avatar", exact: true })
+        .getByRole("button", { name: "View avatar only", exact: true })
         .count(),
       1,
     );
@@ -329,9 +329,9 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
       await route.continue();
     });
     await page
-      .getByRole("button", { name: "Mở từ tài khoản", exact: true })
+      .getByRole("button", { name: "Open from account", exact: true })
       .click();
-    await page.getByLabel("Chọn manifest và mô hình GLB").setInputFiles([
+    await page.getByLabel("Choose manifest and GLB models").setInputFiles([
       {
         name: "manifest.json",
         mimeType: "application/json",
@@ -354,7 +354,7 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
       .waitFor();
     releaseCloud();
     await page
-      .getByRole("button", { name: "Mở từ tài khoản", exact: true })
+      .getByRole("button", { name: "Open from account", exact: true })
       .waitFor();
     assert.equal(
       await page
@@ -369,24 +369,24 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
     );
     await page.goto(base + "/prepare");
     await page
-      .getByText("Máy xử lý đang ngoại tuyến · tác vụ mới sẽ chờ", {
+      .getByText("Processor offline · New jobs will wait", {
         exact: true,
       })
       .waitFor();
-    await page.getByRole("button", { name: "Thêm ảnh cơ thể" }).click();
+    await page.getByRole("button", { name: "Add body photos" }).click();
     const dialog = page.getByRole("dialog");
-    await dialog.getByLabel("Tên avatar").fill("Avatar tải qua trình duyệt");
-    await dialog.getByLabel("Chiều cao (cm)").fill("172");
-    for (const label of ["Mặt trước", "Mặt bên", "Mặt sau"])
+    await dialog.getByLabel("Avatar name").fill("Avatar tải qua trình duyệt");
+    await dialog.getByLabel("Height (cm)").fill("172");
+    for (const label of ["Front", "Side", "Back"])
       await dialog.getByLabel(label, { exact: true }).setInputFiles({
         name: "fixture.png",
         mimeType: "image/png",
         buffer: photo,
       });
-    await dialog.getByRole("button", { name: "Gửi ảnh và tạo 3D" }).click();
+    await dialog.getByRole("button", { name: "Submit photos & create 3D" }).click();
     await dialog
       .getByRole("status")
-      .filter({ hasText: "Đã đưa vào hàng đợi" })
+      .filter({ hasText: "Queued." })
       .waitFor();
     await page.keyboard.press("Escape");
     await page
@@ -399,7 +399,7 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(base + "/quiz");
     await page
-      .getByRole("button", { name: "Tiếp theo", exact: true })
+      .getByRole("button", { name: "Next", exact: true })
       .waitFor();
     await page.screenshot({
       path: "test-results/v2-quiz-mobile.png",
@@ -412,9 +412,9 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
     );
     for (let i = 0; i < 5; i++)
       await page
-        .getByRole("button", { name: "Tiếp theo", exact: true })
+        .getByRole("button", { name: "Next", exact: true })
         .click();
-    await page.getByRole("button", { name: "Lưu & gợi ý mặc thử" }).click();
+    await page.getByRole("button", { name: "Save & find looks" }).click();
     await page.waitForURL("**/looks");
     assert.equal(
       v2.sql(`select count(*) from fm_v2_profiles where user_id='${owner}';`),

@@ -57,18 +57,18 @@ export default function CloudLibrary({
   }, [requestedAvatar]);
   const message = error || listError;
   return (
-    <section aria-label="Thư viện 3D trên tài khoản" aria-busy={loading || busy} className="rounded-2xl border border-border p-4 mb-5">
+    <section aria-label="Account 3D library" aria-busy={loading || busy} className="rounded-2xl border border-border p-4 mb-5">
       <div className="flex flex-wrap items-center gap-3">
         <label className="flex w-full flex-col gap-2 text-xs text-fg-muted sm:w-auto sm:flex-row sm:items-center">
-          Avatar trên tài khoản
+          Account avatar
           <select
-            aria-label="Avatar trên tài khoản"
+            aria-label="Account avatar"
             disabled={loading || busy || !avatars.length}
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
             className="min-h-11 w-full bg-bg border border-border rounded-xl p-2 text-fg sm:max-w-[240px] disabled:opacity-60"
           >
-            <option value="">{loading ? "Đang tải avatar…" : listError ? "Chưa tải được thư viện" : avatars.length ? "Chọn avatar" : "Chưa có avatar sẵn sàng"}</option>
+            <option value="">{loading ? "Loading avatars…" : listError ? "Unable to load library" : avatars.length ? "Choose avatar" : "No avatar ready yet"}</option>
             {avatars.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
@@ -77,19 +77,19 @@ export default function CloudLibrary({
           </select>
         </label>
         <button disabled={busy || !selected} onClick={() => onOpen(selected)} className={button}>
-          {busy ? "Đang tải bộ 3D…" : "Mở từ tài khoản"}
+          {busy ? "Loading 3D bundle…" : "Open from account"}
         </button>
         <Link href="/prepare" className="text-xs text-accent-text">
-          Tạo avatar / thêm đồ & theo dõi xử lý →
+          Create avatar / add clothes & track progress →
         </Link>
       </div>
       {message && (
         <div role="alert" className="mt-4 border-t border-border pt-4 text-sm">
           <p className="text-danger">{message}</p>
-          <p className="mt-2 text-xs leading-5 text-fg-muted">Bạn vẫn có thể quản lý tủ đồ ảnh hoặc mở bộ 3D đã xuất từ PC.</p>
+          <p className="mt-2 text-xs leading-5 text-fg-muted">You can still manage your photo wardrobe or open a PC-exported 3D bundle.</p>
           <div className="mt-3 flex flex-wrap gap-3 items-center">
-            <button disabled={loading || busy} className={button} onClick={() => { setListError(""); setLoading(true); setRevision((v) => v + 1); }}>Thử tải lại thư viện</button>
-            <Link href="/wardrobe" className="inline-flex min-h-11 items-center text-xs text-accent-text">Về tủ đồ ảnh →</Link>
+            <button disabled={loading || busy} className={button} onClick={() => { setListError(""); setLoading(true); setRevision((v) => v + 1); }}>Try loading library again</button>
+            <Link href="/wardrobe" className="inline-flex min-h-11 items-center text-xs text-accent-text">Back to photo wardrobe →</Link>
           </div>
         </div>
       )}

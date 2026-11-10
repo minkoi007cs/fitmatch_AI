@@ -39,9 +39,9 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
       }
 
       if (isSignUp) {
-        toast("Đã tạo tài khoản. Hãy kiểm tra email để xác nhận nếu được yêu cầu.", "success");
+        toast("Account created. Check your email to confirm if required.", "success");
       } else {
-        toast("Đã đăng nhập.", "success");
+        toast("Signed in.", "success");
       }
 
       if (result.data.session) {
@@ -49,7 +49,7 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
       }
     } catch (err) {
       setLoading(false);
-      toast(err instanceof Error ? err.message : "Chưa đăng nhập được. Hãy thử lại.", "error");
+      toast(err instanceof Error ? err.message : "Unable to sign in. Please try again.", "error");
     }
   }
 
@@ -70,7 +70,7 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
       }
     } catch (err) {
       setOauthLoading(false);
-      toast(err instanceof Error ? err.message : "Chưa kết nối được dịch vụ đăng nhập.", "error");
+      toast(err instanceof Error ? err.message : "Unable to connect to the sign-in service.", "error");
     }
   }
 
@@ -113,12 +113,12 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
           </div>
 
           <div className="space-y-3 max-w-md">
-            <div className="eyebrow text-accent-text">TÀI KHOẢN CÁ NHÂN</div>
+            <div className="eyebrow text-accent-text">PERSONAL ACCOUNT</div>
             <h2 className="font-display text-4xl font-extrabold text-fg leading-tight">
-              Tủ đồ và phong cách của riêng bạn.
+              Your wardrobe. Your personal style.
             </h2>
             <p className="text-xs text-fg-muted leading-relaxed font-normal">
-              Lưu món đồ, ghi nhớ gu và mở lại những bộ phối bạn thích.
+              Save your clothes, remember your style and revisit your favorite looks.
             </p>
           </div>
         </div>
@@ -129,13 +129,13 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
         <div className="w-full max-w-[400px] space-y-7">
           <div className="space-y-2">
             <div className="eyebrow text-accent-text">
-              {isSignUp ? "Tạo tài khoản" : "Chào mừng trở lại"}
+              {isSignUp ? "Create account" : "Welcome back"}
             </div>
             <h1 className="font-display text-3xl sm:text-4xl font-extrabold tracking-tight text-fg">
-              {isSignUp ? "Tạo tài khoản FitMatch." : "Đăng nhập tủ đồ của bạn."}
+              {isSignUp ? "Create your FitMatch account." : "Sign in to your wardrobe."}
             </h1>
             <p className="text-xs text-fg-muted leading-relaxed font-normal">
-              Dùng tài khoản FitMatch đã có để giữ lại tủ đồ của bạn.
+              Use your existing FitMatch account to keep your wardrobe.
             </p>
           </div>
 
@@ -158,7 +158,7 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
                   <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
                 </svg>
               )}
-              <span>Tiếp tục với Microsoft</span>
+              <span>Continue with Microsoft</span>
             </button>
           </div>
 
@@ -166,13 +166,13 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
           <div className="relative flex items-center justify-center">
             <div className="h-px w-full bg-border" />
             <span className="absolute bg-bg px-3 text-[10px] font-mono uppercase tracking-widest text-fg-subtle">
-              Email và mật khẩu
+              Email and password
             </span>
           </div>
 
           {/* Email / Password Form */}
           <form onSubmit={handlePasswordAuth} className="space-y-4">
-            <Field label="Địa chỉ email" htmlFor="email-input">
+            <Field label="Email address" htmlFor="email-input">
               <Input
                 id="email-input"
                 type="email"
@@ -184,7 +184,7 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
               />
             </Field>
 
-            <Field label="Mật khẩu" htmlFor="password-input">
+            <Field label="Password" htmlFor="password-input">
               <div className="relative">
                 <Input
                   id="password-input"
@@ -199,7 +199,7 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-fg-subtle hover:text-fg transition p-1"
-                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -212,7 +212,7 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
               loading={loading}
               className="w-full h-12 uppercase tracking-wider text-xs font-bold mt-2"
             >
-              {isSignUp ? "Tạo tài khoản" : "Đăng nhập"}
+              {isSignUp ? "Create account" : "Sign in"}
             </Button>
           </form>
 
@@ -223,7 +223,7 @@ export default function LegacyLogin({ returnTo = "/wardrobe", hosted = false }: 
               onClick={() => setIsSignUp((prev) => !prev)}
               className="text-xs text-fg-muted hover:text-accent-text transition cursor-pointer"
             >
-              {isSignUp ? "Đã có tài khoản? Đăng nhập." : "Chưa có tài khoản? Tạo mới."}
+              {isSignUp ? "Already have an account? Sign in." : "New here? Create an account."}
             </button>
           </div>
         </div>

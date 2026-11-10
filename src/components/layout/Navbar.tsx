@@ -12,11 +12,11 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 
 const navLinks = [
-  { href: "/wardrobe", label: "Tủ đồ" },
+  { href: "/wardrobe", label: "Wardrobe" },
   { href: "/studio", label: "Studio 3D" },
-  { href: "/looks", label: "Gợi ý & bộ đã lưu" },
-  { href: "/prepare", label: "Chuẩn bị 3D" },
-  { href: "/quiz", label: "Gu của bạn" },
+  { href: "/looks", label: "Ideas & saved looks" },
+  { href: "/prepare", label: "Prepare 3D" },
+  { href: "/quiz", label: "Your style" },
 ];
 
 export function Navbar() {
@@ -86,8 +86,8 @@ export function Navbar() {
       // Clear all client route state after revoking both authentication sessions.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       if (response.ok) window.location.href = "/";
-      else toast("Chưa đăng xuất được. Hãy thử lại.", "error");
-    } catch { toast("Mất kết nối. Hãy thử đăng xuất lại.", "error"); }
+      else toast("Unable to sign out. Please try again.", "error");
+    } catch { toast("Lost connection. Please try signing out again.", "error"); }
   }
 
   const userInitial = email ? email.charAt(0).toUpperCase() : "U";
@@ -114,7 +114,7 @@ export function Navbar() {
           </Link>
 
           {/* Nav Links Center */}
-          <nav aria-label="Điều hướng chính" className="hidden lg:flex items-center gap-5 xl:gap-8">
+          <nav aria-label="Main navigation" className="hidden lg:flex items-center gap-5 xl:gap-8">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -147,7 +147,7 @@ export function Navbar() {
                   onClick={() => setUserDropdownOpen((prev) => !prev)}
                   className="flex items-center gap-2.5 rounded-full border border-border-strong bg-bg-raised/80 pl-1.5 pr-3 py-1 text-sm text-fg transition hover:border-accent-ring hover:bg-bg-raised focus-visible:outline-2 focus-visible:outline-accent-ring"
                   aria-expanded={userDropdownOpen}
-                  aria-label="Mở menu tài khoản"
+                  aria-label="Open account menu"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-[#0A0A0B] text-xs font-bold font-mono">
                     {userInitial}
@@ -169,7 +169,7 @@ export function Navbar() {
                       className="absolute right-0 mt-2 w-56 rounded-[8px] border border-border-strong bg-bg-elevated/95 backdrop-blur-xl p-2 shadow-2xl z-50 text-xs"
                     >
                       <div className="px-3 py-2 border-b border-border/80 mb-1">
-                        <div className="text-[10px] uppercase tracking-wider text-fg-subtle">Tài khoản</div>
+                        <div className="text-[10px] uppercase tracking-wider text-fg-subtle">Account</div>
                         <div className="text-fg font-medium truncate mt-0.5">{email}</div>
                       </div>
 
@@ -179,21 +179,21 @@ export function Navbar() {
                           onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center gap-2 rounded-[4px] px-3 py-2 text-fg-muted hover:text-fg hover:bg-bg-raised transition"
                         >
-                          Tủ đồ của bạn
+                          Your wardrobe
                         </Link>
                         <Link
                           href="/outfits"
                           onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center gap-2 rounded-[4px] px-3 py-2 text-fg-muted hover:text-fg hover:bg-bg-raised transition"
                         >
-                          Ý tưởng phối đồ 2D
+                          2D outfit ideas
                         </Link>
                         <Link
                           href="/quiz"
                           onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center gap-2 rounded-[4px] px-3 py-2 text-fg-muted hover:text-fg hover:bg-bg-raised transition"
                         >
-                          Gu của bạn
+                          Your style
                         </Link>
                       </div>
 
@@ -204,7 +204,7 @@ export function Navbar() {
                           className="flex w-full items-center gap-2 rounded-[4px] px-3 py-2 text-danger hover:bg-danger/10 transition text-left"
                         >
                           <LogOut className="h-3.5 w-3.5" />
-                          Đăng xuất
+                          Sign out
                         </button>
                       </div>
                     </motion.div>
@@ -217,7 +217,7 @@ export function Navbar() {
                 className="inline-flex items-center gap-2 rounded-[8px] bg-accent hover:bg-accent-hover text-[#0A0A0B] px-4 py-2 text-xs uppercase tracking-[0.14em] font-bold transition shadow-sm"
               >
                 <User className="h-3.5 w-3.5" />
-                Đăng nhập
+                Sign in
               </Link>
             )}
           </div>
@@ -227,7 +227,7 @@ export function Navbar() {
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
             className="flex lg:hidden rounded-[4px] border border-border bg-bg-raised min-h-11 min-w-11 items-center justify-center p-2 text-fg"
-            aria-label={mobileMenuOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
+            aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-navigation"
           >
@@ -236,8 +236,8 @@ export function Navbar() {
         </div>
       </header>
 
-      <Drawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} title="Không gian của bạn" description="Tủ đồ, gu và bộ phối của riêng bạn.">
-        <nav id="mobile-navigation" aria-label="Điều hướng trên điện thoại" className="flex flex-col gap-2">
+      <Drawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} title="Your space" description="Your wardrobe, your style and your saved looks.">
+        <nav id="mobile-navigation" aria-label="Mobile navigation" className="flex flex-col gap-2">
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} onClick={() => setMobileMenuOpen(false)} className={cn("flex min-h-12 items-center rounded-xl px-4 py-3 text-base", pathname === link.href ? "bg-accent-soft text-accent-text" : "text-fg hover:bg-bg-raised")}>
               {link.label}
@@ -245,7 +245,7 @@ export function Navbar() {
           ))}
         </nav>
         <div className="mt-8 border-t border-border pt-6">
-          {email ? <div className="space-y-4"><p className="break-all text-xs text-fg-muted">Đang đăng nhập: {email}</p><button type="button" onClick={handleSignOut} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm text-danger"><LogOut size={16} />Đăng xuất</button></div> : <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-bg"><Sparkles size={16} />Đăng nhập</Link>}
+          {email ? <div className="space-y-4"><p className="break-all text-xs text-fg-muted">Signed in as: {email}</p><button type="button" onClick={handleSignOut} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm text-danger"><LogOut size={16} />Sign out</button></div> : <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-bg"><Sparkles size={16} />Sign in</Link>}
         </div>
       </Drawer>
     </>

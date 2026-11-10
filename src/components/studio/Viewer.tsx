@@ -91,7 +91,7 @@ export default function Viewer({
   const shownRef = useRef(shown);
   const callbacks = useRef({ onLoaded, onFailed });
   const firstCamera = useRef(initialCamera);
-  const [message, setMessage] = useState("Đang tải mô hình 3D…");
+  const [message, setMessage] = useState("Loading 3D models…");
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
   const [autoOrbit, setAutoOrbit] = useState(!!initialCamera?.autoOrbit);
@@ -166,11 +166,11 @@ export default function Viewer({
     scene.add(world);
     let renderer: THREE.WebGLRenderer;
     try { renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); }
-    catch { queueMicrotask(() => { if (alive) { setFailed(true); setMessage("Không thể mở WebGL. Hãy bật tăng tốc đồ họa hoặc thử trình duyệt khác."); } }); return () => { alive = false; }; }
+    catch { queueMicrotask(() => { if (alive) { setFailed(true); setMessage("Unable to start WebGL. Enable hardware acceleration or try another browser."); } }); return () => { alive = false; }; }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     element.appendChild(renderer.domElement);
-    renderer.domElement.setAttribute("aria-label", "Avatar 3D; kéo để xoay, cuộn để phóng to");
+    renderer.domElement.setAttribute("aria-label", "3D avatar; drag to orbit and scroll to zoom");
     const camera = new THREE.PerspectiveCamera(38, 1, .01, 1000);
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true; controls.enablePan = false; controls.autoRotateSpeed = 0.9;
@@ -198,13 +198,13 @@ export default function Viewer({
         const body = gltf.scene;
         world.add(body); models.set(avatar.id, body);
         const box = new THREE.Box3().setFromObject(body);
-        if (box.isEmpty()) throw new Error("Avatar không chứa hình học.");
+        if (box.isEmpty()) throw new Error("This avatar contains no geometry.");
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
         // Orbit distance that keeps the whole body (head to feet) in frame at this field of view.
         const fit = (size.y / 2) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.12 / 1.65;
         const radius = Math.max(size.length() * .75, fit);
-        if (!Number.isFinite(radius) || radius < .001) throw new Error("Kích thước avatar không hợp lệ.");
+        if (!Number.isFinite(radius) || radius < .001) throw new Error("Invalid avatar dimensions.");
         world.position.sub(center);
         // Front view by default.
         camera.position.set(0, radius * .12, radius * 1.65);
@@ -216,9 +216,9 @@ export default function Viewer({
         controls.addEventListener("end", () => mark(s));
         state.current = s;
         setReady(true); setMessage("");
-      } catch { if (alive) { setFailed(true); setMessage("Không thể đọc mô hình. Kiểm tra GLB có mesh và texture nhúng, cùng hệ tọa độ."); } }
+      } catch { if (alive) { setFailed(true); setMessage("Unable to read the model. Check that the GLB contains meshes and embedded textures with compatible coordinates."); } }
     })();
-    const contextLost = (e: Event) => { e.preventDefault(); setFailed(true); setMessage("Mất kết nối GPU trình duyệt. Hãy tải lại trang để mở lại mô hình."); };
+    const contextLost = (e: Event) => { e.preventDefault(); setFailed(true); setMessage("The browser lost its GPU connection. Reload the page to reopen the models."); };
     renderer.domElement.addEventListener("webglcontextlost", contextLost);
     return () => {
       alive = false; state.current = null; setReady(false); observer.disconnect(); renderer.setAnimationLoop(null);
@@ -268,9 +268,9 @@ export default function Viewer({
     <div ref={host} className="absolute inset-0" data-testid="viewer-canvas" />
     {message && <div role={failed ? "alert" : "status"} className="absolute inset-0 grid place-items-center p-12 text-center text-neutral-800 bg-[#e4e4e0]/90">{message}</div>}
     <div className="absolute bottom-5 inset-x-0 flex flex-wrap justify-center gap-2 px-3">
-      {[["Trước", 0], ["Bên", Math.PI / 2], ["Sau", Math.PI], ["Đặt lại", 0]].map(([label, angle]) => <button disabled={!ready || failed} key={label} onClick={() => view(Number(angle))} className={pill}>{label}</button>)}
+      {[["Front", 0], ["Side", Math.PI / 2], ["Back", Math.PI], ["Reset", 0]].map(([label, angle]) => <button disabled={!ready || failed} key={label} onClick={() => view(Number(angle))} className={pill}>{label}</button>)}
       <button disabled={!ready || failed} aria-pressed={autoOrbit} onClick={() => setAutoOrbit(v => !v)} className={`${pill} ${autoOrbit ? "!bg-neutral-900 !text-white" : ""}`}>
-        {autoOrbit ? "Dừng tự xoay" : "Tự xoay"}
+        {autoOrbit ? "Stop auto-orbit" : "Auto-orbit"}
       </button>
     </div>
   </div>;

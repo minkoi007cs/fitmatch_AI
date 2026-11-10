@@ -28,7 +28,7 @@ const inventory = [
   },
   {
     id: "b",
-    name: "Sơ mi",
+    name: "Shirt",
     category: "shirt",
     color: "white",
     style: "minimal",
@@ -60,8 +60,8 @@ test("quiz selects real supported inventory, honors excluded patterns and gives 
   assert.ok(
     looks.every((l) => l.renderScope === "top-only" && l.engine === "rules-v1"),
   );
-  assert.match(looks[0].reason, /sơ mi/);
-  assert.match(looks[0].reason, /chưa được suy ra từ quiz/);
+  assert.match(looks[0].reason, /a shirt/);
+  assert.match(looks[0].reason, /not inferred from the quiz/);
   assert.deepEqual(recommend([], profile), []);
   assert.deepEqual(recommend(inventory, profile), looks);
 });
@@ -78,7 +78,7 @@ test("item feedback suppresses skipped inventory without inventing replacements"
   );
   assert.match(
     recommend(inventory, profile, { b: "like" })[0].reason,
-    /từng thích/,
+    /previously liked/,
   );
 });
 test("strict input contracts reject ownership injection, duplicate photos and partial quizzes", () => {
@@ -143,11 +143,11 @@ test("Vietnamese blue preference does not treat every xanh garment as blue", () 
 test("full look: three owned top+jeans outfits, varied, never invented; occasion changes the ranking", () => {
   const owned = [
     { id: "t1", name: "Tee trắng", category: "t-shirt", color: "white", style: "minimal", pattern: "plain" },
-    { id: "t2", name: "Sơ mi xanh", category: "shirt", color: "blue", style: "formal", pattern: "plain" },
+    { id: "t2", name: "Shirt xanh", category: "shirt", color: "blue", style: "formal", pattern: "plain" },
     { id: "t3", name: "Tee đỏ", category: "t-shirt", color: "red", style: "casual", pattern: "plain" },
     { id: "j1", name: "Jeans xanh", category: "jeans", color: "blue", style: "casual", pattern: "plain" },
     { id: "j2", name: "Jeans đen", category: "jeans", color: "black", style: "minimal", pattern: "plain" },
-    { id: "p1", name: "Quần tây", category: "pants", color: "gray", style: "formal", pattern: "plain" },
+    { id: "p1", name: "Bottom tây", category: "pants", color: "gray", style: "formal", pattern: "plain" },
   ];
   const looks = recommend(owned, profile);
   assert.equal(looks.length, 3);
@@ -156,7 +156,7 @@ test("full look: three owned top+jeans outfits, varied, never invented; occasion
   assert.equal(new Set(looks.map((l) => l.itemId)).size, 3, "each outfit uses a different top first");
   assert.equal(new Set(looks.map((l) => `${l.itemId}+${l.bottomItemId}`)).size, 3);
   assert.ok(looks.every((l) => !("itemColor" in l)));
-  assert.match(looks[0].reason, /ghép với/);
+  assert.match(looks[0].reason, /paired with/);
   // One top and one jeans: exactly one outfit, not three.
   assert.equal(recommend([owned[0], owned[3]], profile).length, 1);
   // Two tops, one jeans: two outfits.

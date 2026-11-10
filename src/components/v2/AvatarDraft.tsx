@@ -41,21 +41,21 @@ export default function AvatarDraft({
       `models/${model.id}/source`,
       { action: "delete" },
     );
-    const extra = `${r.canceledJobs ? ` Đã hủy ${r.canceledJobs} tác vụ đang dùng chúng.` : ""}${
-      r.affectedModels ? ` ${r.affectedModels} phiên bản khác dùng chung ảnh này cũng không dựng lại được từ nguồn này.` : ""
+    const extra = `${r.canceledJobs ? ` Canceled ${r.canceledJobs} jobs using them.` : ""}${
+      r.affectedModels ? ` ${r.affectedModels} other versions sharing these photos can no longer rebuild from this source.` : ""
     }`;
     return r.storageCleanupPending
-      ? `Đã ghi nhận yêu cầu xóa nhưng chưa xóa xong tệp khỏi bộ nhớ lưu trữ. Bấm "Thử xóa lại" sau ít phút.${extra}`
-      : `Đã xóa ảnh/video gốc khỏi bộ nhớ lưu trữ.${extra}`;
+      ? `Deletion was requested, but some files are still in storage. Select "Retry deletion" in a few minutes.${extra}`
+      : `Original photos and video deleted from storage.${extra}`;
   };
   return (
     <div className="mt-4 border-t border-border pt-4 space-y-3 text-xs">
       {model.accepted_at ? (
-        <p className="text-success">Bạn đang dùng bản này.</p>
+        <p className="text-success">You are using this version.</p>
       ) : (
         <>
           <p className="text-fg-muted leading-5">
-            Bản nháp. Mở trong Studio để xem, rồi chọn dùng tạm hoặc bổ sung ảnh để dựng lại. Bản nháp chưa phải xác nhận là giống bạn.
+            Draft. Open it in Studio to review, then use it provisionally or add photos to rebuild. A draft does not confirm likeness.
           </p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -64,40 +64,40 @@ export default function AvatarDraft({
               onClick={() =>
                 void run(async () => {
                   await api(`models/${model.id}/accept`, {});
-                  return "Đã chọn dùng tạm avatar này. Bạn vẫn có thể tạo bản mới bất cứ lúc nào.";
+                  return "This avatar is now selected provisionally. You can create a new version anytime.";
                 })
               }
             >
-              Dùng tạm bản này
+              Use this draft
             </button>
             <button disabled={busy} className="text-accent-text underline underline-offset-2" onClick={onRecapture}>
-              Bổ sung ảnh / tạo lại
+              Add photos / rebuild
             </button>
           </div>
         </>
       )}
       <div>
-        <p className="text-fg-muted mb-2">Ảnh/video gốc</p>
+        <p className="text-fg-muted mb-2">Original photos and video</p>
         {retention === "deleted" ? (
           cleanup === "pending" || cleanup === "failed" ? (
-            <div role="status" aria-label="Trạng thái xóa ảnh gốc" className="space-y-2">
+            <div role="status" aria-label="Source deletion status" className="space-y-2">
               <p className="leading-5 text-accent-text">
                 {cleanup === "failed"
-                  ? "Chưa xóa xong: bộ nhớ lưu trữ chưa xóa được tệp sau nhiều lần thử."
-                  : "Đang xóa: đã ghi nhận yêu cầu, tệp gốc chưa được xóa xong khỏi bộ nhớ lưu trữ."}{" "}
-                Ảnh/video này đã không còn dùng được để dựng lại.
+                  ? "Deletion incomplete: storage could not remove the files after several attempts."
+                  : "Deleting: your request is recorded, but source files have not all been removed from storage."}{" "}
+                These photos and video can no longer be used to rebuild.
               </p>
               <button disabled={busy} className={button} onClick={() => void run(remove)}>
-                Thử xóa lại
+                Retry deletion
               </button>
             </div>
           ) : (
-            <p className="text-fg-muted leading-5">Đã xóa khỏi bộ nhớ lưu trữ. Avatar, đồ đã mặc thử và look vẫn giữ; không thể dựng lại từ nguồn này.</p>
+            <p className="text-fg-muted leading-5">Deleted from storage. Your avatar, fittings and looks are preserved; this source can no longer be used to rebuild.</p>
           )
         ) : confirm ? (
-          <div role="group" aria-label="Xác nhận xóa ảnh gốc" className="space-y-2">
+          <div role="group" aria-label="Confirm source deletion" className="space-y-2">
             <p className="leading-5">
-              Xóa vĩnh viễn ảnh/video dùng để tạo avatar này? Avatar, đồ đã mặc thử và look vẫn giữ. Tác vụ đang dùng các ảnh này sẽ bị hủy.
+              Permanently delete the photos and video used to create this avatar? Your avatar, fittings and looks are preserved. Jobs using these photos will be canceled.
             </p>
             <div className="flex gap-2">
               <button
@@ -105,10 +105,10 @@ export default function AvatarDraft({
                 className={`${button} border-danger text-danger`}
                 onClick={() => void run(remove)}
               >
-                Xác nhận xóa
+                Confirm deletion
               </button>
               <button disabled={busy} className="text-fg-muted underline" onClick={() => setConfirm(false)}>
-                Không xóa
+                Keep files
               </button>
             </div>
           </div>
@@ -116,11 +116,11 @@ export default function AvatarDraft({
           <div className="flex flex-wrap gap-2 items-center">
             {cleanup && (
               <p className="w-full text-fg-muted leading-5">
-                Một số ảnh dùng chung với avatar khác đã bị xóa{cleanup === "completed" ? "" : " (đang dọn khỏi bộ nhớ)"}; không thể dựng lại đầy đủ từ nguồn này.
+                Some photos shared with another avatar were deleted{cleanup === "completed" ? "" : " (storage cleanup pending)"}; this source can no longer support a complete rebuild.
               </p>
             )}
             {retention === "keep" ? (
-              <span className="text-fg-muted">Đang giữ.</span>
+              <span className="text-fg-muted">Keeping originals.</span>
             ) : (
               <button
                 disabled={busy}
@@ -128,23 +128,23 @@ export default function AvatarDraft({
                 onClick={() =>
                   void run(async () => {
                     await api(`models/${model.id}/source`, { action: "keep" });
-                    return "Đã giữ ảnh/video gốc. Bạn có thể xóa sau.";
+                    return "Original photos and video kept. You can delete them later.";
                   })
                 }
               >
-                Giữ ảnh gốc
+                Keep originals
               </button>
             )}
             <button disabled={busy} className="text-fg-muted underline underline-offset-2" onClick={() => setConfirm(true)}>
-              Xóa ảnh gốc
+              Delete originals
             </button>
           </div>
         )}
       </div>
       <details>
-        <summary className="cursor-pointer text-fg-muted">Chỉnh mặt, dáng, tóc, da</summary>
+        <summary className="cursor-pointer text-fg-muted">Edit face, body, hair and skin</summary>
         <p className="mt-2 leading-5 text-fg-muted">
-          Chưa khả dụng: máy xử lý chưa có công cụ chỉnh avatar, nên thanh kéo và chỉnh bằng lời chưa được bật. Hiện bạn có thể bổ sung ảnh mặt, video hoặc số đo rồi tạo lại.
+          Not available yet: the processor does not have an avatar editor, so sliders and text edits are not enabled. You can currently add face photos, video or measurements and rebuild.
         </p>
       </details>
       {error && (

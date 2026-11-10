@@ -28,9 +28,9 @@ function openDb(): Promise<IDBDatabase> {
       request.result.createObjectStore("workspaces");
     request.onsuccess = () => resolve(request.result);
     request.onerror = () =>
-      reject(new Error("Trình duyệt không cho phép lưu cục bộ."));
+      reject(new Error("This browser does not allow local storage."));
     request.onblocked = () =>
-      reject(new Error("Hãy đóng tab Studio khác và thử lại."));
+      reject(new Error("Close other Studio tabs and try again."));
   });
 }
 export async function workspaceStorage(
@@ -51,7 +51,7 @@ export async function workspaceStorage(
   action: "load" | "save" | "delete",
   data?: Workspace,
 ): Promise<Workspace | undefined | void> {
-  if (!owner) throw new Error("Cần đăng nhập để chọn đúng kho cục bộ.");
+  if (!owner) throw new Error("Sign in to access the correct local storage.");
   const db = await openDb();
   try {
     return await new Promise<Workspace | undefined | void>(
@@ -75,7 +75,7 @@ export async function workspaceStorage(
         tx.onabort = tx.onerror = () =>
           reject(
             new Error(
-              "Không thể lưu/đọc bộ 3D. Kiểm tra dung lượng và quyền lưu trữ trình duyệt.",
+              "Unable to save or read the 3D bundle. Check browser storage permissions and available space.",
             ),
           );
       },
@@ -93,23 +93,23 @@ export function validateWorkspace(value: unknown): Workspace {
     !Array.isArray(w.looks) ||
     w.looks.length > 30
   )
-    throw new Error("Bộ lưu cục bộ không hợp lệ.");
+    throw new Error("Invalid local save.");
   const bundle = parseBundle(w.bundle);
   const expected = ["avatar", ...bundle.garments.map((g) => g.id)];
   if (
     w.assets.length !== expected.length ||
     new Set(w.assets.map((a) => a.id)).size !== expected.length
   )
-    throw new Error("Thiếu hoặc trùng mô hình trong bộ lưu.");
+    throw new Error("Missing or duplicate models in the saved bundle.");
   let total = 0;
   for (const a of w.assets) {
     if (!expected.includes(a.id) || !(a.bytes instanceof ArrayBuffer))
-      throw new Error("Mô hình lưu không hợp lệ.");
+      throw new Error("Invalid saved model.");
     validateGlb(a.bytes);
     total += a.bytes.byteLength;
   }
   if (w.assets[0]?.id !== "avatar" || total > 120 * 1024 * 1024)
-    throw new Error("Bộ lưu vượt giới hạn hoặc sai thứ tự avatar.");
+    throw new Error("The saved bundle exceeds limits or has an invalid avatar order.");
   for (const look of w.looks) {
     if (
       !look ||
@@ -124,7 +124,7 @@ export function validateWorkspace(value: unknown): Workspace {
       (look.bottom && bundle.garments.find((g) => g.id === look.bottom)?.category !== "jeans") ||
       (look.camera != null && !cameraState.safeParse(look.camera).success)
     )
-      throw new Error("Look đã lưu không thuộc bộ avatar/áo này.");
+      throw new Error("This saved look does not belong to this avatar and garment bundle.");
   }
   return w;
 }

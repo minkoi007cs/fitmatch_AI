@@ -122,10 +122,10 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     const shown = async () => {
-      const text = await page.getByLabel("Bộ đang mặc").innerText();
+      const text = await page.getByLabel("Current outfit").innerText();
       return {
-        top: /Áo\s*\n?\s*(.+)/.exec(text)?.[1].trim(),
-        bottom: /Quần\s*\n?\s*(.+)/.exec(text)?.[1].trim(),
+        top: /Top\s*\n?\s*(.+)/.exec(text)?.[1].trim(),
+        bottom: /Bottom\s*\n?\s*(.+)/.exec(text)?.[1].trim(),
       };
     };
     const waitShown = async (want, timeout = 20000) => {
@@ -139,11 +139,11 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
       assert.deepEqual(last, want);
     };
     const ready = () =>
-      page.waitForFunction(() => ![...document.querySelectorAll("button")].find((b) => b.textContent === "Trước")?.disabled);
+      page.waitForFunction(() => ![...document.querySelectorAll("button")].find((b) => b.textContent === "Front")?.disabled);
     await page.goto(`${base}/studio?avatar=${avatar.modelId}&top=${teeA.modelId}&bottom=${jeansA.modelId}`);
     await ready();
     await waitShown({ top: "Tee trắng (fixture)", bottom: "Jeans xanh (fixture)" });
-    await page.getByLabel("Avatar 3D; kéo để xoay, cuộn để phóng to").waitFor();
+    await page.getByLabel("3D avatar; drag to orbit and scroll to zoom").waitFor();
     await page.screenshot({ path: "test-results/c1-full-look-front.png" });
     const item = (name) => page.getByRole("button", { name: new RegExp(name.replace(/[()]/g, "\\$&")) });
     assert.equal(await item("Tee trắng (fixture)").getAttribute("aria-pressed"), "true");
@@ -152,7 +152,7 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
     // A→B→A on the bottom slot: B is prepared on click, the user returns to A before B is ready.
     const jobsBefore = v2.sql(`select count(*) from fm_v2_jobs where user_id='${owner}';`);
     await item("Jeans đen (fixture)").click();
-    await page.getByRole("status").filter({ hasText: "Đang chuẩn bị quần" }).waitFor();
+    await page.getByRole("status").filter({ hasText: "Preparing bottom" }).waitFor();
     await waitShown({ top: "Tee trắng (fixture)", bottom: "Jeans xanh (fixture)" });
     await item("Jeans xanh (fixture)").click();
     await waitShown({ top: "Tee trắng (fixture)", bottom: "Jeans xanh (fixture)" });
@@ -166,22 +166,22 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
 
     // Pending auto-apply while still selected: tee B is prepared and appears by itself, jeans kept.
     await item("Tee đỏ (fixture)").click();
-    await page.getByRole("status").filter({ hasText: "Đang chuẩn bị áo" }).waitFor();
+    await page.getByRole("status").filter({ hasText: "Preparing top" }).waitFor();
     await finishNext("garment.drape", B.parts.top.bytes);
     await waitShown({ top: "Tee đỏ (fixture)", bottom: "Jeans đen (fixture)" });
 
     // Camera: auto-orbit toggle, then a side view that is saved with the look.
-    await page.getByRole("button", { name: "Tự xoay", exact: true }).click();
-    assert.equal(await page.getByRole("button", { name: "Dừng tự xoay" }).getAttribute("aria-pressed"), "true");
-    await page.getByRole("button", { name: "Dừng tự xoay" }).click();
-    await page.getByRole("button", { name: "Bên", exact: true }).click();
+    await page.getByRole("button", { name: "Auto-orbit", exact: true }).click();
+    assert.equal(await page.getByRole("button", { name: "Stop auto-orbit" }).getAttribute("aria-pressed"), "true");
+    await page.getByRole("button", { name: "Stop auto-orbit" }).click();
+    await page.getByRole("button", { name: "Side", exact: true }).click();
     await page.waitForTimeout(2000); // let orbit damping from auto-rotate settle
-    await page.getByRole("button", { name: "Bên", exact: true }).click();
+    await page.getByRole("button", { name: "Side", exact: true }).click();
     const sideCamera = await page.getByTestId("viewer-canvas").getAttribute("data-camera");
     await page.screenshot({ path: "test-results/c1-full-look-side.png" });
-    await page.getByLabel("Tên bộ phối").fill("Cuối tuần thun + jeans");
-    await page.getByRole("button", { name: "Lưu bộ vào tài khoản" }).click();
-    await page.getByRole("status").filter({ hasText: "Đã lưu cả bộ" }).waitFor();
+    await page.getByLabel("Look name").fill("Cuối tuần thun + jeans");
+    await page.getByRole("button", { name: "Save look to account" }).click();
+    await page.getByRole("status").filter({ hasText: "Full look saved to your account" }).waitFor();
     const look = JSON.parse(
       v2.sql(`select row_to_json(l) from fm_v2_looks l where user_id='${owner}' and name='Cuối tuần thun + jeans';`),
     );
@@ -216,7 +216,7 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
     );
     assert.equal(v2.sql(`select count(*) from fm_v2_jobs where user_id='${owner}';`), jobsAtSave, "reopen runs no AI job");
     assert.equal((await worker("claim", {})).status, 204, "nothing queued after reopen");
-    await page.getByRole("button", { name: "Trước", exact: true }).click();
+    await page.getByRole("button", { name: "Front", exact: true }).click();
     await page.screenshot({ path: "test-results/c1-full-look-reopened.png" });
     // LOOK-01: a look whose avatar snapshot differs from the avatar now served is refused, not
     // silently shown on another avatar version.
@@ -225,7 +225,7 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
         jsonb_set(snapshot,'{avatar,sha256}',to_jsonb(repeat('0',64))) from fm_v2_looks where id='${look.id}' returning id;`);
     const readsTampered = v2.faults.reads;
     await page.goto(`${base}/studio?avatar=${avatar.modelId}&look=${tampered}`);
-    await page.getByText("Avatar đã khác phiên bản lưu trong look này", { exact: false }).waitFor();
+    await page.getByText("The avatar version has changed since this look was saved", { exact: false }).waitFor();
     assert.equal(v2.faults.reads, readsTampered, "nothing downloaded for a mismatching snapshot");
     v2.sql(`delete from fm_v2_looks where id='${tampered}';`);
     await page.goto(`${base}/looks`);
@@ -233,10 +233,10 @@ export async function testFullLook({ base, request, jar, owner, v2 }) {
     await ready();
     await waitShown({ top: "Tee đỏ (fixture)", bottom: "Jeans đen (fixture)" });
     // Lookbook: rendered from the same scene, chosen angle and background, no generator.
-    await page.getByLabel("Góc máy lookbook").selectOption("back");
-    await page.getByLabel("Nền lookbook").selectOption("white");
+    await page.getByLabel("Lookbook camera angle").selectOption("back");
+    await page.getByLabel("Lookbook background").selectOption("white");
     const downloading = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Lưu ảnh lookbook" }).click();
+    await page.getByRole("button", { name: "Save lookbook image" }).click();
     const file = await (await downloading).path();
     const png = sharp(file);
     const meta = await png.metadata();

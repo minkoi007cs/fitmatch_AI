@@ -8,14 +8,14 @@ export const field =
 export function WorkspaceNav({ current }: { current: string }) {
   return (
     <nav
-      aria-label="Không gian cá nhân"
+      aria-label="Personal space"
       className="mb-8 flex flex-wrap gap-2 text-xs"
     >
       {[
-        ["/wardrobe", "Tủ đồ"],
-        ["/prepare", "Chuẩn bị 3D"],
-        ["/quiz", "Gu của bạn"],
-        ["/looks", "Gợi ý mặc thử"],
+        ["/wardrobe", "Wardrobe"],
+        ["/prepare", "Prepare 3D"],
+        ["/quiz", "Your style"],
+        ["/looks", "Outfit suggestions"],
         ["/studio", "Studio"],
       ].map(([href, label]) => (
         <Link

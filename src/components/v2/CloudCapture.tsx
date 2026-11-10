@@ -55,7 +55,7 @@ export default function CloudCapture({
     const attempt = request.current;
     for (let i = attempt.assetIds.length; i < files.length; i++) {
       const [slot, file] = files[i];
-      setProgress(slot === "video" ? "Đang gửi video…" : `Đang gửi ảnh ${i + 1}/${files.length}…`);
+      setProgress(slot === "video" ? "Uploading video…" : `Uploading photo ${i + 1}/${files.length}…`);
       const intent = await api<{ assetId: string; uploadUrl: string }>(
         "assets/upload-intent",
         slot === "video" ? { kind: "video", bytes: file.size, contentType: videoType } : { kind: "photo", bytes: file.size },
@@ -66,12 +66,12 @@ export default function CloudCapture({
         body: file,
       });
       if (!upload.ok)
-        throw new Error(slot === "video" ? "Không tải được video. Hãy kiểm tra kết nối và thử lại." : "Không tải được ảnh. Hãy kiểm tra kết nối và thử lại.");
+        throw new Error(slot === "video" ? "Unable to upload the video. Check your connection and try again." : "Unable to upload the photo. Check your connection and try again.");
       await api(`assets/${intent.assetId}/finalize`, {});
       attempt.assetIds.push(intent.assetId);
     }
     const idOf = (slot: string) => attempt.assetIds[files.findIndex(([s]) => s === slot)];
-    setProgress("Đang tạo tác vụ…");
+    setProgress("Creating job…");
     await api(
       "models",
       avatar
@@ -92,7 +92,7 @@ export default function CloudCapture({
           },
       { "Idempotency-Key": attempt.key },
     );
-    setProgress("Đã đưa vào hàng đợi. Bạn có thể đóng cửa sổ này.");
+    setProgress("Queued. You can close this window.");
     onDone();
   }
   return (

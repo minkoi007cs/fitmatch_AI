@@ -103,11 +103,11 @@ function pairWithJeans(
     bottomItemId: b.id,
     bottomItemName: b.name,
     reason:
-      top.reason.replace(/\. Phom và độ vừa.*$/, "") +
-      `; ghép với ${b.name}` +
-      (balanced ? " (màu cân bằng)" : "") +
-      (feedback[b.id] === "like" ? ", quần bạn từng thích" : "") +
-      ". Phom và độ vừa cần xem trên avatar; chưa được suy ra từ quiz.",
+      top.reason.replace(/\. Shape and fit.*$/, "") +
+      `; paired with ${b.name}` +
+      (balanced ? " (balanced color)" : "") +
+      (feedback[b.id] === "like" ? ", a bottom you previously liked" : "") +
+      ". Shape and fit need to be checked on your avatar; they are not inferred from the quiz.",
   }));
 }
 function recommendTops(
@@ -165,15 +165,15 @@ function recommendTops(
     itemColor: item.color,
     reason:
       [
-        style ? "Hợp phong cách bạn chọn" : "Một lựa chọn khác từ tủ đồ",
-        color ? "có màu bạn yêu thích" : null,
-        feedback[item.id] === "like" ? "bạn từng thích áo này" : null,
+        style ? "Matches your selected style" : "Another option from your wardrobe",
+        color ? " includes a favorite color" : null,
+        feedback[item.id] === "like" ? " you previously liked this top" : null,
         profile.occasion === "work" && item.category === "shirt"
-          ? "sơ mi phù hợp định hướng đi làm"
+          ? " a shirt for your workwear preference"
           : null,
       ]
         .filter(Boolean)
         .join("; ") +
-      ". Phom và độ vừa cần xem trên avatar; chưa được suy ra từ quiz.",
+      ". Shape and fit need to be checked on your avatar; they are not inferred from the quiz.",
   }));
 }

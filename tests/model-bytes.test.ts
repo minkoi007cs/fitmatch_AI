@@ -77,7 +77,7 @@ test("refreshed record must be the identical asset; any change is refused withou
 test("revoked or foreign model: the authenticated refresh fails and nothing is downloaded", async () => {
   const s = server({ old: [400] });
   await assert.rejects(
-    modelBytes(record("old"), { fetch: s.doFetch, refresh: async () => Promise.reject(new Error("Không thể hoàn tất thao tác. Hãy thử lại.")) }),
+    modelBytes(record("old"), { fetch: s.doFetch, refresh: async () => Promise.reject(new Error("Unable to complete this action. Please try again.")) }),
     reason("unavailable"),
   );
   assert.deepEqual(s.calls, ["old"]);

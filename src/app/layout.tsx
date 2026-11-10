@@ -28,13 +28,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "FitMatch AI — Tủ đồ và phòng thử đồ của bạn",
+  title: "FitMatch AI — Your wardrobe and fitting room",
   description:
-    "Giữ tủ đồ riêng, chọn gu theo dịp và chuẩn bị avatar cho phòng thử đồ 3D cá nhân.",
+    "Keep your wardrobe private, find looks for each occasion and prepare your avatar for a personal 3D fitting room.",
   openGraph: {
-    title: "FitMatch AI — Tủ đồ của riêng bạn",
+    title: "FitMatch AI — Your personal wardrobe",
     description:
-      "Tủ đồ số, gợi ý phối đồ theo gu và Studio 3D trong giai đoạn thử nghiệm.",
+      "Your digital wardrobe, personal outfit ideas and an experimental 3D Studio.",
     type: "website",
   },
 };
@@ -46,12 +46,12 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="vi"
+      lang="en"
       className={`${archivo.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <body className="min-h-screen bg-bg text-fg flex flex-col font-sans selection:bg-accent-soft selection:text-accent-text">
         <ToastProvider>
-          <a href="#app-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-fg focus:px-5 focus:py-3 focus:text-bg">Đến nội dung chính</a>
+          <a href="#app-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-fg focus:px-5 focus:py-3 focus:text-bg">Skip to main content</a>
           <Navbar />
           <div id="app-content" tabIndex={-1} className="flex-1">{children}</div>
           <Footer />

@@ -22,19 +22,19 @@ export default function Error({
         <AlertCircle className="h-6 w-6" />
       </div>
       <div className="space-y-2 max-w-md">
-        <div className="eyebrow text-danger">Chưa mở được trang</div>
+        <div className="eyebrow text-danger">Unable to open this page</div>
         <h2 className="font-display text-3xl font-bold tracking-tight text-fg">
-          Đã có lỗi khi tải nội dung.
+          Something went wrong while loading this page.
         </h2>
         <p className="text-sm text-fg-muted font-normal">
-          Hãy thử tải lại hoặc quay về tủ đồ để tiếp tục.
+          Try again or return to your wardrobe to continue.
         </p>
       </div>
       <div className="flex flex-wrap justify-center gap-3">
         <Button variant="accent" onClick={() => reset()} icon={<RotateCcw className="h-4 w-4" />}>
-          Thử tải lại
+          Try again
         </Button>
-        <Link href="/wardrobe" className="inline-flex min-h-11 items-center rounded-xl border border-border px-5 py-3 text-sm">Về tủ đồ</Link>
+        <Link href="/wardrobe" className="inline-flex min-h-11 items-center rounded-xl border border-border px-5 py-3 text-sm">Back to wardrobe</Link>
       </div>
     </div>
   );

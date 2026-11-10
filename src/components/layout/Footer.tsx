@@ -8,24 +8,23 @@ export function Footer() {
             FITMATCH<span className="text-accent-text">.AI</span>
           </Link>
           <p className="text-xs leading-6 mt-4 max-w-sm">
-            Tủ đồ thật, gu của riêng bạn. Khám phá phong cách và xem từng chiếc
-            áo trong không gian 3D cá nhân.
+            Your real wardrobe, your own style. Explore outfit ideas and see each garment in your personal 3D space.
           </p>
           <p className="text-xs mt-5">
             © {new Date().getFullYear()} Fitmatch AI
           </p>
         </div>
-        <nav aria-label="Khám phá">
+        <nav aria-label="Explore">
           <p className="text-xs uppercase tracking-widest mb-4">
-            Không gian của bạn
+            Your space
           </p>
           <ul className="space-y-3 text-sm">
             {[
-              ["/wardrobe", "Tủ đồ"],
-              ["/quiz", "Gu của bạn"],
-              ["/looks", "Gợi ý mặc thử"],
+              ["/wardrobe", "Wardrobe"],
+              ["/quiz", "Your style"],
+              ["/looks", "Outfit suggestions"],
               ["/studio", "3D Studio"],
-              ["/outfits", "Ý tưởng phối đồ 2D"],
+              ["/outfits", "2D outfit ideas"],
             ].map(([href, label]) => (
               <li key={href}>
                 <Link href={href} className="hover:text-fg">
@@ -37,21 +36,19 @@ export function Footer() {
         </nav>
         <div>
           <p className="text-xs uppercase tracking-widest mb-4">
-            Từ ảnh đến 3D
+            From photos to 3D
           </p>
           <p className="text-xs leading-6">
-            Tạo avatar, thêm ảnh áo và theo dõi xử lý trong không gian của tài
-            khoản.
+            Create an avatar, add garment photos and track processing in your account.
           </p>
           <Link
             href="/prepare"
             className="text-accent-text text-sm inline-block mt-3"
           >
-            Chuẩn bị bộ ảnh →
+            Prepare photos →
           </Link>
           <p className="text-[11px] leading-5 mt-6">
-            Ảnh phong cách tham khảo: Unsplash · Maxime, Tamara Bellis, Laura
-            Chouette, Hunters Race, Ksenia Chernaya và Aiony Haust.
+            Style reference photography: Unsplash · Maxime, Tamara Bellis, Laura Chouette, Hunters Race, Ksenia Chernaya and Aiony Haust.
           </p>
         </div>
       </div>

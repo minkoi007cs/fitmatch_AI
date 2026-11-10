@@ -6,7 +6,7 @@ export default function Loading() {
       <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border-strong bg-bg-raised">
         <Loader2 className="h-5 w-5 animate-spin text-accent-text" />
       </div>
-      <div className="text-sm text-fg-muted">Đang tải không gian của bạn…</div>
+      <div className="text-sm text-fg-muted">Loading your space…</div>
     </div>
   );
 }
