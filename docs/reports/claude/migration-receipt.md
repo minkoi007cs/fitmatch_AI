@@ -17,3 +17,12 @@
 - Có thể sửa: `scripts/test-v2-db.mjs`, `scripts/v2-http-fixture.mjs`, `scripts/test-auth-http.mjs` (thêm migration mới vào chuỗi test), `package.json` chỉ thêm script npm (không thêm dependency).
 
 Ngoài scope: áp SQL lên cloud, deploy, cấp quyền worker/GPU, PC adapter/guard, transport worker (chỉ sửa nếu PC repro lỗi thật), bảng không thuộc FitMatch, migration lịch sử (bất biến).
+
+## CHECKPOINT — 09/11/2026 21:08 ET — paused at owner request (usage limit)
+
+- App branch `codex/canonical-migration-26` pushed: implementation `cf902d3`, report/logs `847aeea` (baseline `f80749a`).
+- Status: **Ready for review — partial verification.** All checks PASS on cf902d3 (npm test 76/76, lint, build,
+  contracts, python 56, manifest current, PG17 legacy/fresh compat test, test:v2:db, test:http) **except**
+  `npm run test:v2` run 1: Qwen browser block timed out (15 s); rerun stopped by the pause → NOT VERIFIED.
+- No cloud SQL, no deploy, no worker grant, no GPU. Report: `docs/reports/claude/migration/report.md`
+  (also on the app branch). Next AI: rerun `npm run test:v2`, then Codex review; owner backup/restore before any execute.
