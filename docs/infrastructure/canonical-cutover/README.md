@@ -116,9 +116,13 @@ caught even when the manifest is self-consistent). The manifest also records a *
 Rehearsed locally on synthetic data by `npm run test:restore-rehearsal` (§3.4). For the real backup:
 
 1. **Target:** a disposable local Supabase stack or a disposable project that is explicitly not the canonical
-   one, freshly created, on PG17. Preflight (the rehearsal's `restorePreflight`): no relations in `public`, no
-   rows in `auth.users`/`storage.objects`/`storage.buckets`; every `CREATE ROLE` in `roles.sql` is a custom role
-   that does **not** exist yet. If a custom role already exists, compare it (attributes, memberships) and, only if
+   one, freshly created, on PG17. Guards, both must pass:
+   `TARGET_URL=… node scripts/migration-cutover/check-restore-target.mjs --canonical-ref gohczmqykjkrgdblgbog`
+   (refuses the canonical and retired refs and redirecting URL parameters) and
+   `psql "$TARGET_URL" -X -At -v ON_ERROR_STOP=1 -f scripts/migration-cutover/restore-preflight.sql` (no
+   relations in `public`, no rows in `auth.users`/`storage.objects`/`storage.buckets`). Then every
+   `CREATE ROLE` in `roles.sql` must be a custom role that does **not** exist yet on the target
+   (`grep '^CREATE ROLE' roles.sql` vs `select rolname from pg_roles`). If a custom role already exists, compare it (attributes, memberships) and, only if
    equivalent, comment out exactly that one `CREATE ROLE "<name>";` line in a private copy (its `ALTER`/`GRANT`
    lines stay). Never drop `ON_ERROR_STOP` or ignore role errors wholesale. The other documented hosted cases
    (`supabase_admin` owner lines, `cli_login_postgres` grant) are handled the same narrow way, line by line,

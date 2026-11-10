@@ -68,3 +68,18 @@ test("defects are refused: truncation, missing file, bytes missing/extra/changed
     rmSync(d, { recursive: true });
   }
 });
+
+test("restore-proof target guard refuses canonical/retired projects and redirecting parameters", async () => {
+  const { checkRestoreTarget } = await import("../scripts/migration-cutover/check-restore-target.mjs");
+  const C = "gohczmqykjkrgdblgbog";
+  for (const url of [
+    `postgresql://postgres@db.${C}.supabase.co/postgres`,
+    `postgresql://postgres.${C}@aws-0-us-east-1.pooler.supabase.com:5432/postgres`,
+    "postgresql://postgres@db.wqbwwusrhertqktwsxsl.supabase.co/postgres",
+    "postgresql://postgres@127.0.0.1/postgres?host=db.other.example",
+    "mysql://x@y/z", "not a url",
+  ]) assert.equal(checkRestoreTarget(url, C).ok, false, url);
+  assert.equal(checkRestoreTarget("postgresql://postgres.abcdefghijabcdefghij@aws-0-us-east-1.pooler.supabase.com:5432/postgres", C).ok, true);
+  assert.equal(checkRestoreTarget("postgresql://postgres@127.0.0.1:54322/postgres", C).ok, true);
+  assert.equal(checkRestoreTarget("postgresql://postgres@127.0.0.1/postgres", "bad").ok, false);
+});

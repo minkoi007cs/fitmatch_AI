@@ -157,10 +157,8 @@ const listStorage = (root) => {
 const RESERVED = /^(anon|authenticated|authenticator|cli_login_.*|dashboard_user|pgbouncer|postgres|service_role|supabase_.*|pgsodium_.*|pgtle_admin)$/;
 function restorePreflight(c, dir, allowExistingRoles = []) {
   const problems = [];
-  const fresh = sql(c, "select count(*) from pg_class k join pg_namespace n on n.oid=k.relnamespace where n.nspname='public' and k.relkind in ('r','p','v','m','S');");
-  if (fresh !== "0") problems.push(`target is not fresh: ${fresh} relation(s) already in schema public`);
-  const sbObjects = sql(c, "select (select count(*) from auth.users) + (select count(*) from storage.objects) + (select count(*) from storage.buckets);");
-  if (sbObjects !== "0") problems.push("target auth/storage already hold rows");
+  const fresh = trySql(c, file("scripts/migration-cutover/restore-preflight.sql")); // the runbook's preflight
+  if (!fresh.ok) problems.push((fresh.err.match(/ERROR:\s+(.*)/) ?? [, fresh.err])[1]);
   const roles = [...readFileSync(join(dir, "roles.sql"), "utf8").matchAll(/^CREATE ROLE "([^"]+)"/gm)].map((m) => m[1]);
   const reservedInFile = roles.filter((r) => RESERVED.test(r));
   if (reservedInFile.length) problems.push(`roles.sql creates reserved roles (CLI filter missing?): ${reservedInFile}`);
