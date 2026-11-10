@@ -48,3 +48,14 @@ Next operator sequence after reconnection:
 5. At window end disable analysis flag/worker and withdraw slot unless owner explicitly chooses continued operation. Preserve actual output for human review and report timeout/failure honestly.
 
 This is a pending execution sequence, not an observed heartbeat, live inference or product-quality PASS. Local rolled-back signup/outfit/two-owner checks passed on the actual restored data; an equivalent real hosted two-account acceptance remains to run.
+
+
+## Resumed connection and UI review — 17:52 UTC
+
+Owner explicitly approved report publication. Commit7d042ed pushed to codex/connect-45 and exact remote readback verified. Both original PC chats rediscovered and resumed after prior usage limit. Native policy/guard/lock identity and absence of owned engines reported unchanged; freeRAM measurements4,680,658,944/4,612,816,896bytes exceed4GiB narrowly, so refresh before inference. No new model download or native suite rerun.
+
+The existing worker was conditionally enabled with exact token hash and garment.analyze-only grant for one heartbeat. PC-held token remained private. PC reports HTTP200/success/canonicalbackend/grants[] at17:48:24UTC; independent canonicalDB last_seen17:48:27.688Z/capabilities{} confirms transport with QwenOFF. Zero claims/model loads/GPU jobs. Coordinator keeps3Dpaused and can issue one600-second slot only after a fresh admission check and explicit execution window.
+
+Claude CL-UX-FIX46 completed source7edb330/report162a941. Verified incremental bundleSHA9aebda359e8fa274c5414e62bf86cf0279167db870164b9f605d21f83e2431a1; source changes reviewed and cherry-picked as ca3466c79d42f4b8ff273b86d34734ebb8935443. English residual, mobile hero overlay (image remains behind text), plurals, labels/navigation,404 and chips fixed. Corresponding test changes preserve assertions; two new unit tests. Independent121unit/fulltest:v2PASS (real local SQL/HTTP/browser, CPU MOCK), lint0errors with one warning in the unchanged prior report helper. Default Turbopack blocked by sandbox portEPERM; webpack with actual Googlefonts passed after network authorization. Claude stand-in image/nav contrast observation remains a limit, not a live-site finding.
+
+Tracked-only source export (noenv/privatebackup/test-results) staged on Vercel dpl_EK7gxYYHUXsUocAPcGaa5igD7wsE, reviewedCommit/gitCommitShaca3466c, READY/aliases[]. StageHTTP200/EnglishHTML/newmobileoverlay verified. Qwen1 is a deployment-only override for a future bounded test; projectdefault0/public7397b6a unchanged. No promotion or GPU slot yet. Browser control is disabled in Codex Work settings, so owner was asked to enable it or choose manual app testing; do not extract cookies or bypass authenticated UI with service-role writes. Await that choice before promoting the test deployment and allocating the finite GPU window. Real Qwen output/humanreview, physical mobile and personal avatar/tee/jeans acceptance remain NOT VERIFIED.
