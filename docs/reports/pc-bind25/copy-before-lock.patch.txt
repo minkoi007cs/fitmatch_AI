@@ -1,0 +1,16 @@
+--- a/scripts/worker/test_worker_unit.py
++++ b/scripts/worker/test_worker_unit.py
+@@ -633,10 +633,12 @@
+ 
+     def test_copied_coordination_with_identical_policy_refused_while_canonical_held(self):
+         """QFINAL-022 case 1, fixed: another existing lock cannot be admitted even with byte-identical policy."""
++        # Windows byte-range locks deny reading the held byte during copytree.
++        # Snapshot first; admission is still tested while the canonical lock is held.
++        other = self.copy_workspace()
+         holder = worker.FileLock(self.lock, create=False)
+         self.assertTrue(holder.acquire(0))
+         try:
+-            other = self.copy_workspace()
+             pinned = {'path': str(other / 'coordination' / 'gpu-coordinator.json'), 'sha256': self.policy_sha}
+             with self.assertRaisesRegex(worker.AdmissionError, 'identity'):
+                 worker.SharedGpuAdmission(self.config(gpuCoordinator=pinned))
