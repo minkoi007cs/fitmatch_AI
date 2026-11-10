@@ -33,3 +33,18 @@ All12canonical steps APPLIED+VERIFIED, runner exit0. Fresh pre/post business fin
 One worker registered DISABLED, bound to the sole existing linked owner, capability garment.analyze only, using the PC-held reserved token's SHA256. Rawtoken never transferred to Mac/chat; no app job or GPU inference run. PR10updated85e9d37 native/readiness10files independently checked against SHA256/bytes. Native47executedPASS/9skips preserved. Coordinator snapshot owned-treePASS, globalGPUidle notproven; fresh admission/resource checks still required. PC reported freeRAM below4GiB threshold earlier, so do not lower admission or kill foreign apps.
 
 Follow-up messages with backend/enrollment readiness were attempted after registration; the send call stopped returning and was bounded/terminated, delivery UNKNOWN. Subsequent wait snapshots could not reach remotehost, and fresh thread inventory no longer listed the PC chats. Do not infer worker start, receipt or runtime connection. QwenflagOFF/workerDISABLED remain the safe verified state. User asked to restore PC Remote Control connection; unaffected docs/UI work continues. ClaudeCL-UX-FIX46 separately observedRunning after explicit dispatch; next active-session check due15minutes after14:11:36UTC.
+
+
+## Activation checkpoint — 14:28 UTC
+
+Fresh thread inventory still has no remote PC chats. Claude UI46 remains Running, observed testing bright hero screenshots390/1440 at the first15-minute check. Do not retry an unknown-delivery start blindly: obtain the PC's actual current worker/config/owned-process state first.
+
+Next operator sequence after reconnection:
+
+1. Reconcile AI and3D receipts with immutable workerSHAef25136b and deployed7397b6a. Confirm the existing reserved token locally matches registered hash, without transmitting token or private configuration.
+2. With QwenflagOFF, enable only the existing scoped worker for a bounded heartbeat/backend-identity check; current source strips garment.analyze from stored capabilities while flagOFF. Require HTTPS200, canonical projectRef and a fresh DB last_seen before inference activation. No GPU/model load is needed for this transport check.
+3. Coordinator refreshes canonicalpolicy/lock identity, owned-tree drain and actual resource admission. Prior freeRAM below4GiB is a refusal, not permission to reduce the threshold. Obtain one explicit600-second slot for one garment.analyze job; no automatic renewal or overlapping3D.
+4. Deploy/review QwenflagON only for the agreed test window; heartbeat must then show the exact granted analysis capability. Submit one owner-approved garment photo through authenticated app UI. Record reserve/enqueue/claim/result/humanreview, duration/VRAM/RAM and non-overlap evidence; do not auto-confirm predicted fields.
+5. At window end disable analysis flag/worker and withdraw slot unless owner explicitly chooses continued operation. Preserve actual output for human review and report timeout/failure honestly.
+
+This is a pending execution sequence, not an observed heartbeat, live inference or product-quality PASS. Local rolled-back signup/outfit/two-owner checks passed on the actual restored data; an equivalent real hosted two-account acceptance remains to run.
