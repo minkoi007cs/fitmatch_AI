@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 09/11/2026, America/New_York. Revision: PROC-0030. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 09/11/2026, America/New_York. Revision: PROC-0031. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Current continuation - PROC-0030
 
@@ -551,3 +551,11 @@ Received Claude0c4c44e/run2 fullHTTPbrowserPASS log, docs-only delta, codecf902d
 ### L-071 - 09/11/2026 - DISPATCH / HANDOFF - CX-CLAUDE-PC-HANDOFF-30
 
 Published9145532; direct PC-SAVE-30 sends returned success BOTH existing PC chats. Subsequent compact snapshot shows BOTH new turns inProgress (replaces initial previous-turn usage errors). PCAI explicitly acknowledges PC-SAVE-30, local bridge/config/examples70tests+4nativecases saved, packaging sanitized source/evidence forPR9; no rerun model/suite. PC3D active after send, execution details pending. Sent/active are not final published checkpoint or completion. Keep noGPU/slotgrant and existingpolicy/lock. Claude external successor prompt published for owner forwarding, not directly dispatched. Docs links/fences/diff checked; no new full app tests on unchanged code. Root sync follows; finalpublicationSHA byGit readback.
+
+### L-072 - 09/11/2026 - START - CX-PC-NEXT-31
+
+Owner confirms newClaude prompt sent and requests PC save/push verification and independent continuation. Codex scope process/docs/handoffs/pc-after-save-20261109.md and docs/reports/review/pc-save-review-20261109.md; PC owned implementation only via existing chats. Remote PR9fbd46e5 and PR1053e649f verified. AI idle/completed, 3D published docs and closing local checkpoint/bundle. Review new reports, verify source snapshot hashes; do not claim native artifact execution. No app/Claude edits, cloud writes or GPU grant. Next tasks will follow saved checkpoints and remain CPU-only, not redo models or occupy Claude's fixture fix.
+
+### L-073 - 09/11/2026 - VERIFIED / ASSIGN - CX-PC-NEXT-31
+
+PC save/push verified: AI PR9fbd46e57ba71b021cd0f030e18a732d442cad1f5, all83source snapshotSHA/bytesmatch, report/interopread. 3D PR1053e649fb29ba832a666e759ed4ca1339229d71b7, ninepublishedfilespresent/report/ACK/artifactmetadataread; localimplementationa2af700/report9987285reportedclean, finishingbundle. Report docs/reports/review/pc-save-review-20261109.md distinguishes publishedsnapshots vsnativeexecution/modelquality. Original56suite remains46PASS/9skip/1ERROR; Claude ownsfixturepatch. NextboundedCPUtasks docs/handoffs/pc-after-save-20261109.md: AI-NATIVE-COMPOSE-31 actualWindowsworker+realCLIrefusal/loopbackcomposition (currentinteropCLIonly), PC-CPU-FACE-31 visibleface/headtextureprojectionfeasibility onexistingprivatephoto/UV/calibration and explicitlyCPUrender. Preserve hiddenregions/geometry/privateassets andlabelpartial; noGPU/newmodel/cloud. Finishcheckpointfirst, reusealreadycompletedwork, reportexactblockerifCPUcalibration/toolingmissing. Tasks Assigned before newreceipt; directdispatch result follows. Claude APP-CLOSE-30 not altered.
