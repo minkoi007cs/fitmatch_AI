@@ -633,10 +633,13 @@ class SharedGpuAdmissionTests(unittest.TestCase):
 
     def test_copied_coordination_with_identical_policy_refused_while_canonical_held(self):
         """QFINAL-022 case 1, fixed: another existing lock cannot be admitted even with byte-identical policy."""
+        # NATIVE-FIXTURE-30: copy BEFORE taking the canonical lock. On Windows the locked byte cannot be read,
+        # so copytree under the lock failed before any assertion. The refusal and split-lock checks below still
+        # run entirely while the canonical lock is held.
+        other = self.copy_workspace()
         holder = worker.FileLock(self.lock, create=False)
         self.assertTrue(holder.acquire(0))
         try:
-            other = self.copy_workspace()
             pinned = {'path': str(other / 'coordination' / 'gpu-coordinator.json'), 'sha256': self.policy_sha}
             with self.assertRaisesRegex(worker.AdmissionError, 'identity'):
                 worker.SharedGpuAdmission(self.config(gpuCoordinator=pinned))
