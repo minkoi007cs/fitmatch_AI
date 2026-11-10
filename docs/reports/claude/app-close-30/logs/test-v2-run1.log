@@ -1,0 +1,94 @@
+$ npm run test:v2  run1 (HEAD f591d96; webpack build with local font mock; postgres:16/17 local stand-in images; Playwright 1.64.1 with headless shell 1243 aliased as 1248)
+2026-11-10T02:50:06Z
+
+> fitmatch-ai@0.1.0 test:v2
+> node --import tsx scripts/test-auth-http.mjs --v2 --studio
+
+PASS: guest APIs blocked before parsing/AI; cross-origin mutation rejected
+PASS: PKCE/state verified; callback bridges user-scoped Supabase session and preserves next/vibe
+PASS R1 worker recovery (real routes + SQL + Python worker): complete/finalize reply loss and outage, upload outcome unknown and expired URL, claim reply loss redelivered, restart within lease, restart after lease loss reusing output (stale token 409), MODEL_UNAVAILABLE, adapter contract exit78/exit2+JSON/usage/configured OOM/TIMEOUT, default-deny grants, operator create/grant/ungrant/rotate/revoke, crash during inference guarded by workDir lock, host GPU lock blocks claims while another process holds the GPU, no secrets in adapter env. Synthetic geometry only.
+PASS C1 full look (real routes + PostgreSQL + browser): jeans enqueue→bottom.reconstruct/bottom.drape with slot/category/shared frame validated against schemas/v1-r2, per-item fittings (one job for jeans B, no outfit combinations), two independent slots, A→B→A with late result not applied, pending auto-apply only while selected, auto-orbit toggle, whole outfit + camera + asset sha saved, reopen restores outfit and camera with no new job, also when all three signed URLs expired (one same-version re-sign each), avatar snapshot mismatch refused before download. Synthetic box geometry only.
+PASS C2 capture + retention (real routes + PostgreSQL + browser): video intent limits and container check, avatar from video + face photo + measurements through the capture drawer, envelope roles/mediaType validated against schemas/v1-r2, draft use-for-now, keep then delete source with injected storage failure (pending survives reload, no false 'deleted', retry removes objects; dependent queued job canceled, retry and re-enqueue refused, derived avatar kept), editor shown as unavailable. Synthetic bytes only.
+▲ Next.js 16.4.5
+- Local:         http://localhost:3220
+- Network:       http://192.0.2.2:3220
+✓ Ready in 90ms
+✓ Running next.config.ts took 33ms
+[backend] bound to isolated local test backend
+⨯ Error: getaddrinfo ENOTFOUND images.unsplash.com
+    at ignore-listed frames {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'images.unsplash.com'
+}
+⨯ Error: getaddrinfo ENOTFOUND images.unsplash.com
+    at ignore-listed frames {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'images.unsplash.com'
+}
+⨯ Error: getaddrinfo ENOTFOUND images.unsplash.com
+    at ignore-listed frames {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'images.unsplash.com'
+}
+⨯ Error: getaddrinfo ENOTFOUND images.unsplash.com
+    at ignore-listed frames {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'images.unsplash.com'
+}
+⨯ Error: getaddrinfo ENOTFOUND images.unsplash.com
+    at ignore-listed frames {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'images.unsplash.com'
+}
+⨯ Error: getaddrinfo ENOTFOUND images.unsplash.com
+    at ignore-listed frames {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'images.unsplash.com'
+}
+⨯ Error: getaddrinfo ENOTFOUND images.unsplash.com
+    at ignore-listed frames {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'images.unsplash.com'
+}
+⨯ Error: getaddrinfo ENOTFOUND images.unsplash.com
+    at ignore-listed frames {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'images.unsplash.com'
+}
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 15000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('group', { name: 'Phân tích AI cho Existing wardrobe' }).getByText('Đề xuất của AI') to be visible[22m
+
+    at testQwen (/home/claude/fitmatch-app/scripts/test-qwen-http.mjs:183:63)
+    at async testV2 (/home/claude/fitmatch-app/scripts/test-v2-http.mjs:477:5)
+    at async <anonymous> (/home/claude/fitmatch-app/scripts/test-auth-http.mjs:174:97) {
+  log: [
+    "  - waiting for getByRole('group', { name: 'Phân tích AI cho Existing wardrobe' }).getByText('Đề xuất của AI') to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v22.23.4
+exit=1
+2026-11-10T02:52:55Z

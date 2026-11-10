@@ -1,0 +1,71 @@
+diff --git a/scripts/test-qwen-http.mjs b/scripts/test-qwen-http.mjs
+index 53948b0..9fbecc1 100644
+--- a/scripts/test-qwen-http.mjs
++++ b/scripts/test-qwen-http.mjs
+@@ -77,6 +77,11 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
+     const page = await context.newPage();
+     const errors = [];
+     page.on("pageerror", (e) => errors.push(e.message));
++    // DIAG (temporary, not committed): record every analyses poll seen by the browser.
++    const t0 = Date.now(); globalThis.__diag = [];
++    page.on("response", async (r) => { if (!r.url().includes("/api/v2/analyses")) return;
++      let body = ""; try { const j = await r.json(); body = JSON.stringify({ enabled: j.enabled, states: (j.analyses ?? []).map((x) => x.state) }); } catch { body = "?"; }
++      globalThis.__diag.push(`${Date.now() - t0}ms ${r.request().method()} ${r.status()} ${body}`); });
+     await page.goto(base + "/wardrobe");
+     const panel = page.getByRole("group", { name: `Phân tích AI cho ${item.name}` });
+     await panel.getByRole("button", { name: "Phân tích với AI" }).click();
+@@ -122,6 +127,7 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
+     let status = await (await request("/api/v2/analyses")).json();
+     assert.deepEqual([status.workerOnline, status.gpuBusy], [true, true]);
+     await panel.getByText("PC đang bận GPU với việc khác", { exact: false }).waitFor({ timeout: 15000 });
++    globalThis.__diag?.push(`${Date.now() - t0}ms MARK await asSecond`);
+     await asSecond(async (req2) => {
+       const other = await (await req2("/api/v2/analyses")).json();
+       assert.deepEqual([other.workerOnline, other.gpuBusy], [false, false], "another owner never sees this PC's GPU state");
+@@ -151,6 +157,7 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
+     assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals||':'||error_code from fm_v2_jobs where id='${jobId}';`), "queued:0:2:MEMORY_PRESSURE");
+     await panel.getByText("PC đang thiếu bộ nhớ trống", { exact: false }).waitFor({ timeout: 15000 });
+     // 2nd account: sees nothing of this owner's analyses and cannot act on them over HTTP.
++    globalThis.__diag?.push(`${Date.now() - t0}ms MARK await asSecond`);
+     await asSecond(async (req2, owner2) => {
+       assert.notEqual(owner2, owner);
+       const list = await (await req2("/api/v2/analyses")).json();
+@@ -166,6 +173,8 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
+     assert.equal(v2.sql(`select state||':'||deferrals from fm_v2_jobs where id='${jobId}';`), "queued:2", "foreign calls changed nothing");
+     // 3rd run after backoff: proposal stored for review, wardrobe untouched until the human confirms.
+     v2.sql(`update fm_v2_jobs set not_before=now() where id='${jobId}';`);
++    globalThis.__diag?.push(`${Date.now() - t0}ms MARK out = await runWorker`);
++    globalThis.__skewArmed = !!process.env.DIAG_SKEW_MS;
+     out = await runWorker(token, "proposal");
+     assert.match(out, /Completed analysis job/);
+     const stored = JSON.parse(v2.sql(`select row_to_json(t) from (select status,result_json,result_sha256,result_lease_token from fm_v2_analyses where id='${a.id}') t;`));
+@@ -180,7 +189,10 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
+     assert.equal(replay.status, 200);
+     assert.equal((await replay.json()).replay, true);
+ 
+-    await panel.getByText("Đề xuất của AI", { exact: false }).waitFor({ timeout: 15000 });
++    console.log("DIAG before proposal wait at", Date.now() - t0, "ms");
++    try { await panel.getByText("Đề xuất của AI", { exact: false }).waitFor({ timeout: 15000 }); }
++    catch (e) { console.log("DIAG polls:\n" + globalThis.__diag.join("\n")); console.log("DIAG panel text:", await panel.innerText().catch(() => "<no panel>")); throw e; }
++    console.log("DIAG polls (ok):\n" + globalThis.__diag.slice(-6).join("\n"));
+     assert.equal(await panel.getByLabel("Loại").inputValue(), "tshirt");
+     assert.equal(await panel.getByLabel("Màu chính").inputValue(), "red");
+     assert.equal(await panel.getByLabel("Màu phụ").inputValue(), "white");
+diff --git a/scripts/v2-http-fixture.mjs b/scripts/v2-http-fixture.mjs
+index 620beea..2900428 100644
+--- a/scripts/v2-http-fixture.mjs
++++ b/scripts/v2-http-fixture.mjs
+@@ -298,6 +298,13 @@ export async function v2Fixture() {
+           }
+         }
+         const table = url.pathname.slice("/rest/v1/".length);
++        // DIAG (temporary, not committed): widen the gap between a poll's analysis read and job read.
++        if (process.env.DIAG_SKEW_MS && req.method === "GET" && table === "fm_v2_jobs" && (url.searchParams.get("select") ?? "").startsWith("analysis_id,state"))
++          if (globalThis.__skewArmed) { // hold this poll's job read until the worker result has committed
++            globalThis.__skewArmed = false;
++            for (let i = 0; i < 80 && sql("select count(*) from fm_v2_analyses where status='pending';") !== "0"; i++) await new Promise((r) => setTimeout(r, 100));
++            globalThis.__diag?.push("fixture: held one poll's job read until result commit");
++          }
+         if (tables.has(table)) {
+           if (req.headers.authorization !== "Bearer synthetic-service")
+             throw new Error("Service scope expected");

@@ -1,0 +1,29 @@
+$ DIAG_SKEW_MS=1 npm run test:v2   A/B run B: FIXED read order (analysis-read.ts), same temporary diag hold
+
+> fitmatch-ai@0.1.0 test:v2
+> node --import tsx scripts/test-auth-http.mjs --v2 --studio
+
+PASS: guest APIs blocked before parsing/AI; cross-origin mutation rejected
+PASS: PKCE/state verified; callback bridges user-scoped Supabase session and preserves next/vibe
+PASS R1 worker recovery (real routes + SQL + Python worker): complete/finalize reply loss and outage, upload outcome unknown and expired URL, claim reply loss redelivered, restart within lease, restart after lease loss reusing output (stale token 409), MODEL_UNAVAILABLE, adapter contract exit78/exit2+JSON/usage/configured OOM/TIMEOUT, default-deny grants, operator create/grant/ungrant/rotate/revoke, crash during inference guarded by workDir lock, host GPU lock blocks claims while another process holds the GPU, no secrets in adapter env. Synthetic geometry only.
+PASS C1 full look (real routes + PostgreSQL + browser): jeans enqueue→bottom.reconstruct/bottom.drape with slot/category/shared frame validated against schemas/v1-r2, per-item fittings (one job for jeans B, no outfit combinations), two independent slots, A→B→A with late result not applied, pending auto-apply only while selected, auto-orbit toggle, whole outfit + camera + asset sha saved, reopen restores outfit and camera with no new job, also when all three signed URLs expired (one same-version re-sign each), avatar snapshot mismatch refused before download. Synthetic box geometry only.
+PASS C2 capture + retention (real routes + PostgreSQL + browser): video intent limits and container check, avatar from video + face photo + measurements through the capture drawer, envelope roles/mediaType validated against schemas/v1-r2, draft use-for-now, keep then delete source with injected storage failure (pending survives reload, no false 'deleted', retry removes objects; dependent queued job canceled, retry and re-enqueue refused, derived avatar kept), editor shown as unavailable. Synthetic bytes only.
+DIAG before proposal wait at 16973 ms
+DIAG polls (ok):
+10776ms GET 200 {"enabled":true,"states":["waiting_gpu"]}
+13816ms GET 200 {"enabled":true,"states":["waiting_gpu"]}
+13840ms MARK await asSecond
+14662ms MARK out = await runWorker
+fixture: held one poll's job read until result commit
+17151ms GET 200 {"enabled":true,"states":["review"]}
+PASS QINT-C analysis (real routes + PostgreSQL + browser + real worker.py, CPU MOCK adapter): owned photo -> immutable private snapshot -> durable job; dedupe; 3D lists/actions exclude analysis jobs; GPU_BUSY deferral shown as waiting, attempt kept, lock free after drain; proposal stored for review only, result replay idempotent; browser review prefilled except OCR, human confirm writes only reviewed mapped values, persists after reload; same photo reuses confirmed result without a job; self-approving output fails closed, retry, abstention changes nothing; flag-off UI hidden; PC offline and MEMORY_PRESSURE shown distinctly; second account sees/acts on nothing over HTTP; QREV: shared lock held elsewhere -> no claim, heartbeat gpuBusy shown as 'PC busy with other work' to the owner only, slot of the other PC owner refused before claim, snapshot upload failure and item edit during upload leave no orphan (removal recorded), full queue refused before any upload; ENV-CANON-01 worker bound to another backend exits 5 before claim; QREV-BIND-02 coordinator-bound lock/slot/guard via the PC3D policy helper; QREV-CLEANUP-RACE with the real collector: collector between upload and enqueue -> 409 SNAPSHOT_EXPIRED and object removed, late upload after a completed collector pass removed by reopened abort, enqueue-wins snapshot never claimed. No Qwen quality or real GPU claim.
+PASS S1/S2 real HTTP + PostgreSQL + browser: auth/CSRF, private image normalization, idempotency, worker claims/output/fencing, body+garment+fitting, quiz restore/save, inventory suggestions, cloud look, verified GLB Studio, offline browser capture queue, mobile layout. Geometry is synthetic; no inference-quality claim.
+PASS: avatar/shirt capture ZIP contents, image rejection, modal dismissal, GLB import, filter, compare, saved look, IndexedDB save/reload/restore/delete, camera and responsive layout (synthetic inputs)
+PASS: owner-scoped data, forged owner/image rejection, mismatched identity denied, outage preserves session
+PASS: outfit archive writes legacy style_category/is_saved; mixed or contradicting style refused before any write
+PASS: outfit image survives save/reload with new signed URL; foreign image path and invalid archive rejected; quiz contract correct
+PASS: non-destructive PATCH/profile, nested validation, quota 429/outage, legacy archive safety, 45-row pagination, shared asset retention and preview ownership
+PASS: 10 parallel HTTP requests rotate once; late cookie reuses encrypted successor
+PASS: explicit dual-session linking preserves the original wardrobe user ID
+PASS: logout clears both sessions; no unnecessary token refresh
+exit=0

@@ -5,6 +5,7 @@ import { InputError } from "@/lib/validation";
 import { normalizeAnalysisImage } from "./image";
 import { bucket, digest, required, result, signedAsset } from "./server";
 import type { JobRow, WorkerRow } from "./contracts";
+import { readAnalyses, readAnalysis, type AnalysisReader, type AnalysisRow } from "./analysis-read";
 import {
   ANALYSIS_KIND,
   ANALYSIS_CONTRACT,
@@ -24,75 +25,32 @@ export function analysisEnabled() {
 }
 const WARDROBE_BUCKET = "fitmatch-wardrobe";
 
-export type AnalysisView = {
-  id: string;
-  itemId: string;
-  /** Combined, user-facing state: what is really happening, never a guess. */
-  state: "queued" | "waiting_gpu" | "running" | "review" | "confirmed" | "rejected" | "stale" | "failed" | "canceled";
-  errorCode: string | null;
-  attempts: number;
-  createdAt: string;
-  resultSha256: string | null;
-  result: z.infer<typeof analysisResult> | null;
-  confirmedFields: Record<string, unknown> | null;
-};
+export type { AnalysisView } from "./analysis-read";
 
-type AnalysisRow = {
-  id: string;
-  item_id: string;
-  status: "pending" | "review" | "confirmed" | "rejected" | "stale";
-  result: z.infer<typeof analysisResult> | null;
-  result_sha256: string | null;
-  confirmed_fields: Record<string, unknown> | null;
-  created_at: string;
-};
-
-function view(a: AnalysisRow, j: Pick<JobRow, "state" | "error_code" | "attempt"> & { stage?: string | null; deferrals?: number } | null): AnalysisView {
-  let state: AnalysisView["state"];
-  if (a.status !== "pending") state = a.status;
-  else if (!j) state = "failed";
-  else if (j.state === "queued") state = (j.deferrals ?? 0) > 0 ? "waiting_gpu" : "queued";
-  else if (j.state === "running") state = "running";
-  else if (j.state === "canceled") state = "canceled";
-  else state = "failed";
-  return {
-    id: a.id,
-    itemId: a.item_id,
-    state,
-    errorCode: a.status === "pending" ? (j?.error_code ?? null) : null,
-    attempts: j?.attempt ?? 0,
-    createdAt: a.created_at,
-    resultSha256: a.status === "review" || a.status === "confirmed" || a.status === "rejected" ? a.result_sha256 : null,
-    result: a.status === "review" || a.status === "confirmed" || a.status === "rejected" ? a.result : null,
-    confirmedFields: a.confirmed_fields,
-  };
-}
-
-/** Latest analysis per item for the owner (one query each, no N+1). */
-export async function listAnalyses(owner: string) {
+/** Supabase adapter for the pure, skew-safe read model in analysis-read.ts. */
+const COLUMNS = "id,item_id,status,result,result_sha256,confirmed_fields,created_at";
+function reader(): AnalysisReader {
   const db = createAdminClient();
-  const rows = result(
-    await db
-      .from("fm_v2_analyses")
-      .select("id,item_id,status,result,result_sha256,confirmed_fields,created_at")
-      .eq("user_id", owner)
-      .order("created_at", { ascending: false })
-      .limit(200),
-  ) as AnalysisRow[];
-  const latest = new Map<string, AnalysisRow>();
-  for (const r of rows) if (!latest.has(r.item_id)) latest.set(r.item_id, r);
-  const ids = [...latest.values()].map((r) => r.id);
-  const jobs = ids.length
-    ? (result(
+  return {
+    analysesForOwner: async (owner) =>
+      result(
+        await db.from("fm_v2_analyses").select(COLUMNS).eq("user_id", owner).order("created_at", { ascending: false }).limit(200),
+      ) as AnalysisRow[],
+    analysesByIds: async (owner, ids) =>
+      result(await db.from("fm_v2_analyses").select(COLUMNS).eq("user_id", owner).in("id", ids)) as AnalysisRow[],
+    jobsFor: async (owner, ids) =>
+      result(
         await db
           .from("fm_v2_jobs")
           .select("analysis_id,state,error_code,attempt,stage,deferrals")
           .eq("user_id", owner)
           .in("analysis_id", ids),
-      ) as (JobRow & { analysis_id: string; deferrals: number })[])
-    : [];
-  const byAnalysis = new Map(jobs.map((j) => [j.analysis_id, j]));
-  return [...latest.values()].map((a) => view(a, byAnalysis.get(a.id) ?? null));
+      ) as (JobRow & { analysis_id: string; deferrals: number })[],
+  };
+}
+
+export async function listAnalyses(owner: string) {
+  return readAnalyses(reader(), owner);
 }
 
 /**
@@ -119,20 +77,9 @@ export async function analysisWorkerStatus(owner: string) {
 }
 
 async function analysisOf(owner: string, id: string) {
-  const db = createAdminClient();
-  const a = result(
-    await db
-      .from("fm_v2_analyses")
-      .select("id,item_id,status,result,result_sha256,confirmed_fields,created_at")
-      .eq("id", id)
-      .eq("user_id", owner)
-      .maybeSingle(),
-  ) as AnalysisRow | null;
+  const a = await readAnalysis(reader(), owner, id);
   if (!a) throw new InputError(404, "ANALYSIS_NOT_FOUND");
-  const j = result(
-    await db.from("fm_v2_jobs").select("state,error_code,attempt,stage,deferrals").eq("analysis_id", id).eq("user_id", owner).maybeSingle(),
-  ) as (JobRow & { deferrals: number }) | null;
-  return view(a, j);
+  return a;
 }
 
 /**
