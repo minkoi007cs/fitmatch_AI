@@ -1,0 +1,26 @@
+[
+  {
+    "file": "tshirt.png",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/1/1d/White_tshirt.png",
+    "source_page": "https://commons.wikimedia.org/wiki/File:White_tshirt.png",
+    "author": "Сергей Шахвердов",
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "changes": "Original bytes unchanged; inference converts to RGB on white background and may resize.",
+    "provenance": "Public reference fixture, not project owner garment; low resolution 171x155.",
+    "bytes": 7038,
+    "sha256": "6a08e7b819e897ed2725e286df8af886560b1db59d60c2758d4d550f068a3f08"
+  },
+  {
+    "file": "jeans.jpg",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Jeans.jpg",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Jeans.jpg",
+    "author": "Oktaeder; uploaded by Juanmak",
+    "license": "Public domain (author dedication)",
+    "license_url": "https://commons.wikimedia.org/wiki/File:Jeans.jpg#Licensing",
+    "changes": "Original bytes unchanged; inference converts to RGB and may resize.",
+    "provenance": "Public reference fixture, not project owner garment; 435x650.",
+    "bytes": 100403,
+    "sha256": "b316902ad85e8ff46b164ceb7f2c38d3c1424c9d789703e0267e3dfce68fbe1c"
+  }
+]

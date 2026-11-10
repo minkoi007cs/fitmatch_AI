@@ -1,0 +1,19 @@
+{
+  "session": "PC-AI-20261105-01",
+  "started_at_utc": "2026-11-06T03:58:08.892573+00:00",
+  "status": "GPUSmokeFailed",
+  "samples": [],
+  "input_kind": "public licensed reference fixtures, not personal garments",
+  "quantization": "original BF16 safetensors quantized on load to bitsandbytes NF4 double quantization",
+  "offload": false,
+  "remote_code": false,
+  "max_schema_retries": 1,
+  "max_new_tokens": 384,
+  "error_type": "RuntimeError",
+  "error": "Not a child of the active shared guard",
+  "process_peak_working_set_bytes": 18751488,
+  "sample_count_metrics": 0,
+  "seconds": 0.004,
+  "ended_at_utc": "2026-11-06T03:58:08.895748+00:00",
+  "unload": "references deleted and CUDA cache cleared; shared guard must verify whole child tree exit"
+}

@@ -1,0 +1,79 @@
+[
+  {
+    "path": "ai-service/build_handoff.py",
+    "bytes": 18833,
+    "sha256": "36f35247ee79c34c48142188d4c62930e15374e2e6f5349b914eea1bc344d6e6"
+  },
+  {
+    "path": "ai-service/contract.py",
+    "bytes": 1020,
+    "sha256": "044020d1cb906e14edae56d735c70986a1e07942782fef1fe48937d526663fe0"
+  },
+  {
+    "path": "ai-service/cpu_readiness.py",
+    "bytes": 5646,
+    "sha256": "e6e1a3699923c6f12a91841419aef69a0c85cc67f7bf1fe6a5027f65897170a9"
+  },
+  {
+    "path": "ai-service/fixtures/edit.json",
+    "bytes": 343,
+    "sha256": "9fae13cabce7e73d0825807e9664abad66cbf2f54a19b998c0cca339202306f2"
+  },
+  {
+    "path": "ai-service/fixtures/jeans.json",
+    "bytes": 368,
+    "sha256": "e3c879367ff083b48f2962395535125ba48d196c50a623fdb01aaf795cce9a6e"
+  },
+  {
+    "path": "ai-service/fixtures/tshirt.json",
+    "bytes": 394,
+    "sha256": "5033492f351ca5e20542cb27b77bd20062650e42fd12a3df44e52a5d7da55611"
+  },
+  {
+    "path": "ai-service/gpu_smoke.py",
+    "bytes": 11943,
+    "sha256": "b46624c6bb03e97d254b49b0d5fdfe486c831961d3c8690c2479599608dc6f8c"
+  },
+  {
+    "path": "ai-service/model_setup.py",
+    "bytes": 7363,
+    "sha256": "5743767c9b738a94791744213ab7891cd000ec2ad3190e1a20c305ff9b84e170"
+  },
+  {
+    "path": "ai-service/prepare_smoke_images.py",
+    "bytes": 2107,
+    "sha256": "4b217db56c913db2b81af4837a105a78361ccae548f86418efc69d1217f69dc6"
+  },
+  {
+    "path": "ai-service/requirements.lock.txt",
+    "bytes": 613,
+    "sha256": "dd508405731893c6e3444e65ab25f74482ce739d20aeab45da63466093b342a3"
+  },
+  {
+    "path": "ai-service/schemas/edit-intent.schema.json",
+    "bytes": 1369,
+    "sha256": "628042a86cd7e6088c45fbaec3e6471cd9ae416b6574b268e1a148a9f6187524"
+  },
+  {
+    "path": "ai-service/schemas/garment-attributes.schema.json",
+    "bytes": 1826,
+    "sha256": "2f72652fa83739752df35627310c5cb7198543fbaadb6787946ecf0586687b9b"
+  },
+  {
+    "path": "ai-service/test_contract.py",
+    "bytes": 2376,
+    "sha256": "3061532d5002b4c50c37f5fc972c60271483ad65c3ecd136c527b6bbce56739f"
+  },
+  {
+    "path": "fitmatch_AI/workers/windows/gpu_guard.py",
+    "bytes": 12463,
+    "sha256": "4ddf206d2cb16794f1e05eded7278d82c027dab1d277ac737b003322f8006680",
+    "owner": "PC-3D-02; read only"
+  },
+  {
+    "path": "coordination/pc-3d-qwen-receipt.md",
+    "bytes": 2884,
+    "sha256": "f813f5671fbe6f5de9c67fef7e853ca87ec70f68c31a381661dbc45741c3083a",
+    "owner": "PC-3D-02; read only"
+  }
+]

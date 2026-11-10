@@ -1,0 +1,20 @@
+{
+  "schema_version": "pc-ai.garment-observations.v1",
+  "kind": "garment_attributes",
+  "category": "jeans",
+  "slot": "bottom",
+  "colors": [
+    "blue"
+  ],
+  "pattern": "solid",
+  "logo": {
+    "visibility": "unclear",
+    "text": null
+  },
+  "observations": [
+    "Synthetic JSON fixture: long trouser legs."
+  ],
+  "limitations": [
+    "Fixture only; no image or model was used. Material, size, hidden back and fit are unverified."
+  ]
+}

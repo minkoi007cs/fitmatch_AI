@@ -1,0 +1,42 @@
+{
+  "session": "PC-AI-20261105-01",
+  "task": "PC-AI-01",
+  "baseline_docs_sha": "47f521f83e024062ad0b041b878d0460932dc892",
+  "prepublication_docs_readback_sha": "a72686a72732d55198413f2d456033e9034a8811",
+  "central_process_source": "PROC-0010",
+  "proposed_status": "Ready for review",
+  "model": "DownloadedAndHashVerified",
+  "cpu": "CPUReadinessPassed",
+  "gpu": "GPUSmokeSchemaPassed",
+  "guard_child_exit": 0,
+  "image_grounding_quality": "Needs changes; visible collar/sleeve omission and unverified five-pocket/material claims",
+  "host_memory": "Only 161599488 bytes minimum available in measured run; no production host safety acceptance",
+  "session_events": [
+    {
+      "event": "START",
+      "evidence": "receipt.json"
+    },
+    {
+      "event": "DOWNLOAD",
+      "evidence": "model-manifest.json"
+    },
+    {
+      "event": "CPU_TEST",
+      "evidence": "cpu-tests.log; cpu-readiness.json"
+    },
+    {
+      "event": "GPU_TEST",
+      "started_at_utc": "2026-11-06T03:58:09.885461+00:00",
+      "evidence": "gpu-smoke.json"
+    },
+    {
+      "event": "END/HANDOFF",
+      "guard_ended_at_utc": "2026-11-06T03:59:56.174804+00:00",
+      "evidence": "gpu-release.json; ai-model-setup-report.md"
+    }
+  ],
+  "all_guarded_processes_exited": true,
+  "central_process_modified": false,
+  "report": "docs/reports/pc/ai-model-setup-report.md",
+  "next": "Codex review; Claude schema integration proposal; GPU remains 3D coordinated"
+}
