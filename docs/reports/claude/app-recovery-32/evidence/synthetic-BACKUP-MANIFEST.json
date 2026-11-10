@@ -1,0 +1,36 @@
+{
+ "format": "fitmatch.backup-manifest.v1",
+ "createdAt": "2026-11-10T04:02:39.160Z",
+ "files": {
+  "roles.sql": "f6aec5c513c7322ddfdbd50f25ad84c1b617145efe50b0446506551b152b5dcd",
+  "schema.sql": "e478ce31f0efd9612cd4107c8bc6710cf3e2c3c49f0541c8a73fdf0ad04d1aad",
+  "data.sql": "dd95d6433df53979f342c4a5bbb3b3295780bb0a096ffcfe1b12bd929a584d9b",
+  "auth-storage-custom.sql": "05ec6b05a041179e51c8b5e469cfa179707da69b38090890acf02dab1fddcf08"
+ },
+ "storage": [
+  {
+   "path": "fitmatch-wardrobe/d1d1d1d1-0000-4000-a000-000000000001/analysis/snapshot.jpg",
+   "size": 7001,
+   "sha256": "79112159c83b155819f88d2a217b30231366c3178ef5a9ef056e04ff2dd8c726"
+  },
+  {
+   "path": "fitmatch-wardrobe/d1d1d1d1-0000-4000-a000-000000000001/tee.jpg",
+   "size": 48213,
+   "sha256": "3ed05ab27f722d50f095c6dda18be14eb4e34d03b36dcb3eeaf74bb558ac1603"
+  },
+  {
+   "path": "fitmatch-wardrobe/d1d1d1d1-0000-4000-a000-000000000002/jeans.png",
+   "size": 131072,
+   "sha256": "c30b2fa77bd797c12b30648a82ee1f0c410758bbca6d7ddd29156d5921c4f617"
+  }
+ ],
+ "business": {
+  "fingerprint": "e45bab5ea603372ff18c21d804d2a0a2",
+  "counts": "auth.users=2,fm_auth_identities=2,fm_auth_refreshes=1,fm_outfits=2,fm_users=2,fm_wardrobe_items=3,storage.objects(fitmatch-wardrobe)=3"
+ },
+ "tools": {
+  "cli": "3.0.0",
+  "pgDump": "pg_dump (PostgreSQL) 17.9",
+  "synthetic": true
+ }
+}

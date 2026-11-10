@@ -12,6 +12,7 @@
     "test:studio": "node --import tsx scripts/test-auth-http.mjs --studio",
     "test:v2:db": "node scripts/test-v2-db.mjs",
     "test:legacy-compat": "node scripts/test-legacy-compat-db.mjs",
+    "test:restore-rehearsal": "node scripts/migration-cutover/rehearse-restore.mjs",
     "test:v2": "node --import tsx scripts/test-auth-http.mjs --v2 --studio"
   },
   "dependencies": {

@@ -74,38 +74,101 @@ Kept as they are (no blind change):
 
 ## 2. Private backup (owner runs; Supabase CLI 3.0.0; outputs never go to Git or chat)
 
-Use a private directory with mode 700 on an encrypted disk. Enter the database password at the prompt or
-from an environment variable in your own shell. Never paste it into a chat or commit it.
+What each artefact really contains (verified on CLI 3.0.0 with `db dump --dry-run`, which prints the exact
+`pg_dumpall`/`pg_dump` script, and against the [official backup/restore guide](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore)):
+
+| File | Source | Contains | Does NOT contain |
+|---|---|---|---|
+| `roles.sql` | `db dump --role-only` (`pg_dumpall --roles-only --no-role-passwords`) | custom roles + their grants | reserved roles (`anon`, `authenticated`, `service_role`, `postgres`, `supabase_*`, `authenticator`, `pgbouncer`, `dashboard_user`, `cli_login_*`, …: their CREATE/ALTER/GRANT lines are filtered out), passwords |
+| `schema.sql` | `db dump` (`pg_dump --schema-only`) | `public` (and other non-platform schemas): tables, functions incl. `handle_new_user`, policies, grants, default privileges | schemas `auth`, `storage`, `extensions`, `realtime`, `supabase_migrations`, …; therefore **our trigger `on_auth_user_created` on `auth.users` and our policy `wardrobe_storage_own` on `storage.objects` are missing** |
+| `data.sql` | `db dump --data-only --use-copy` | rows of `public` **and of `auth` and `storage`** (e.g. `auth.users`, `storage.buckets`, `storage.objects` metadata); starts with `SET session_replication_role = replica`, ends with the pg_dump trailer and `RESET ALL;` | `extensions`, `realtime`, `supabase_migrations`, `auth.schema_migrations`, `storage.migrations`, … ; **no object bytes** |
+| `auth-storage-custom.sql` | catalog query below | our triggers/policies inside `auth`/`storage` | platform objects |
+| `storage/<bucket>/…` | `storage cp -r` | object **bytes** | — |
 
 ```bash
-umask 077; mkdir -p ~/fitmatch-private/backup-$(date -u +%Y%m%dT%H%MZ) && cd "$_"
-npx supabase@3.0.0 --version                       # must print 3.0.0
+umask 077; B=~/fitmatch-private/backup-$(date -u +%Y%m%dT%H%MZ); mkdir -p "$B" && cd "$B"
+npx supabase@3.0.0 --version                                   # must print 3.0.0
+# --remote=<ref> uses the linked project/credentials; --remote=<connection string> is also accepted (keep it in
+# your shell only). Use the session-pooler string only if IPv6/IPv4 add-on is unavailable.
 npx supabase@3.0.0 db dump --remote=gohczmqykjkrgdblgbog --role-only -f roles.sql
 npx supabase@3.0.0 db dump --remote=gohczmqykjkrgdblgbog -f schema.sql
-npx supabase@3.0.0 db dump --remote=gohczmqykjkrgdblgbog --data-only --use-copy -f data.sql
-# Storage object bytes are NOT in a database dump. Copy the private FitMatch buckets as well:
+npx supabase@3.0.0 db dump --remote=gohczmqykjkrgdblgbog --data-only --use-copy \
+  -x storage.buckets_vectors -x storage.vector_indexes -f data.sql      # exclusions from the official guide
+# Our customizations inside auth/storage (schema.sql skips those schemas). Read-only; run with psql on the
+# same connection, review the output, keep it private:
+psql "$DATABASE_URL" -X -At -v ON_ERROR_STOP=1 -f <repo>/scripts/migration-cutover/capture-managed-customizations.sql > auth-storage-custom.sql
+# Object bytes (not in any SQL dump), bucket by bucket:
 npx supabase@3.0.0 storage cp -r ss:///fitmatch-wardrobe ./storage/fitmatch-wardrobe --remote=gohczmqykjkrgdblgbog
-sha256sum roles.sql schema.sql data.sql > SHA256SUMS; find storage -type f | wc -l > storage-count.txt
+# Manifest + independent completeness check (offline):
+node <repo>/scripts/migration-cutover/write-backup-manifest.mjs "$B"
+node <repo>/scripts/migration-cutover/verify-backup.mjs "$B"          # exit 0 required
 ```
 
-Use `--dry-run` first to print the `pg_dump` script without connecting for data. The `fitmatch-v2` bucket
-does not exist yet on the cloud (it is created by step 2), so there is nothing to copy for it.
+`fitmatch-v2` does not exist on the cloud yet (step 2 creates it). `verify-backup.mjs` refuses: a missing or
+empty file; sha256 different from `BACKUP-MANIFEST.json`; `data.sql`/`roles.sql` without their completion
+markers (truncated dumps); an unterminated `COPY`; missing FitMatch core tables/`handle_new_user`; an
+`auth-storage-custom.sql` without `on_auth_user_created`; any `storage.objects` row without bytes, bytes without
+a row, or bytes whose size / plain-md5 eTag differ from the row's metadata (a Storage copy that never ran is
+caught even when the manifest is self-consistent). The manifest also records a **business fingerprint** (§3).
 
 ## 3. Restore proof (before touching the cloud)
 
-1. Start a disposable local PG17 Supabase stack, or a disposable project that is explicitly not the
-   canonical one. Restore in this order: `psql -f roles.sql`, then `schema.sql`, then `data.sql`.
-2. Run `scripts/schema-inventory.sql` on the restored copy, then
-   `node scripts/compare-schema-inventory.mjs <inventory.json>`. Expect the same picture Codex recorded:
-   base partial with equivalent legacy names and different-target owner FKs, identity applied, steps 1–11
-   absent, the unrelated tables listed as extra.
-3. Run the runner against the restored copy (§4, dry run, then `--execute`). Then run a signup, an outfit
-   save/reopen and a wardrobe upload/edit against it, and compare row counts and `SHA256SUMS` of a fresh
-   data dump of the FitMatch tables before and after.
-4. Record versions, timings and the audit log in the private directory. Send Codex only a sanitized summary.
+Rehearsed locally on synthetic data by `npm run test:restore-rehearsal` (§3.4). For the real backup:
 
-`npm run test:legacy-compat` is the synthetic version of steps 2–3 on a canonical-shaped legacy database
-(PG17, no network). It is not a restore proof.
+1. **Target:** a disposable local Supabase stack or a disposable project that is explicitly not the canonical
+   one, freshly created, on PG17. Preflight (the rehearsal's `restorePreflight`): no relations in `public`, no
+   rows in `auth.users`/`storage.objects`/`storage.buckets`; every `CREATE ROLE` in `roles.sql` is a custom role
+   that does **not** exist yet. If a custom role already exists, compare it (attributes, memberships) and, only if
+   equivalent, comment out exactly that one `CREATE ROLE "<name>";` line in a private copy (its `ALTER`/`GRANT`
+   lines stay). Never drop `ON_ERROR_STOP` or ignore role errors wholesale. The other documented hosted cases
+   (`supabase_admin` owner lines, `cli_login_postgres` grant) are handled the same narrow way, line by line,
+   recorded in the private log.
+2. **Default privileges (R-RESTORE-ACL-32):** a Supabase project has `ALTER DEFAULT PRIVILEGES` for `postgres` in
+   `public` granting ALL to `anon`, `authenticated`, `service_role`. `pg_dump` writes ACLs relative to the
+   built-in default, so objects re-created by `schema.sql` would get those grants **back** even where the source
+   revoked them. Rehearsed: the literal command re-granted `anon` EXECUTE on `fm_begin_auth_refresh` /
+   `fm_finish_auth_refresh` and SELECT on `fm_auth_identities` / `fm_auth_refreshes`. Therefore wrap the
+   restore with the target's default ACLs switched off and restored in the same transaction:
+
+   ```bash
+   psql "$TARGET_URL" -X -At -v ON_ERROR_STOP=1 -v mode=off -f <repo>/scripts/migration-cutover/default-acl.sql > acl-off.sql
+   psql "$TARGET_URL" -X -At -v ON_ERROR_STOP=1 -v mode=on  -f <repo>/scripts/migration-cutover/default-acl.sql > acl-on.sql
+   psql --single-transaction --variable ON_ERROR_STOP=1 \
+     --file roles.sql --file acl-off.sql --file schema.sql --file acl-on.sql \
+     --command 'SET session_replication_role = replica' --file data.sql --dbname "$TARGET_URL"
+   psql "$TARGET_URL" -X -v ON_ERROR_STOP=1 --single-transaction -f auth-storage-custom.sql   # after data: triggers must not fire on restored rows
+   ```
+
+   Any error aborts the whole transaction (rehearsed: nothing half-restored). Then upload the object bytes
+   to the target buckets (CLI `storage cp` per bucket, or the guide's script) and re-run `verify-backup` logic
+   against the target's `storage.objects` (sizes/eTags).
+3. **Compare (must be identical before any runner step):**
+   - business fingerprint: `md5` over `auth.users(id,email)`, `fm_users`, `fm_wardrobe_items`, `fm_outfits`,
+     `fm_auth_identities`, `fm_auth_refreshes`, `storage.objects(bucket_id,name,owner,metadata)`, FitMatch
+     buckets and the unrelated sentinel table (query in `rehearse-restore.mjs` `FINGERPRINT`), plus per-table counts;
+   - full catalog inventory (`scripts/schema-inventory.sql` + buckets) source vs restored: **zero differences**.
+     This is what catches a forgotten `auth-storage-custom.sql` and the default-ACL re-grant;
+   - storage bytes: sha256 per object equal to the backup manifest.
+   Never compare raw dump hashes before/after a migration: dumps change with every DDL. Compare the business
+   fingerprint of the columns that exist before and after; rows created by smoke tests (signup, outfit) are
+   excluded by id.
+4. **Runner on the restored copy:** dry run (12 pending, fingerprint unchanged), `--execute` (12 applied +
+   verified), fingerprint unchanged, owner FKs to `fm_users`, nullable wardrobe `color`/`style`, legacy
+   `style_category` NOT NULL/no default, identity/refresh rows, private buckets; then signup provisions
+   `fm_users`, outfit save/reopen, cross-owner denial, bytes unchanged.
+5. Record versions, timings, audit log and the comparisons in the private directory. Send Codex only a
+   sanitized summary (counts, hashes of the business fingerprint, pass/fail), never rows.
+
+### 3.4 Local synthetic rehearsal (APP-RECOVERY-32)
+
+`npm run test:restore-rehearsal` runs §2–3 end to end on two throw-away PG17 containers (`--network none`): a
+Supabase-like platform stub (`scripts/fixtures/supabase-platform-stub.sql`) plus the canonical legacy shape
+and synthetic users/wardrobe/outfits/identity/refresh/storage metadata, and synthetic object bytes on disk.
+Dumps are produced by the CLI 3.0.0 scripts themselves (`db dump --dry-run` output, `pg_dump` executed inside
+the source container). Fault cases: truncated/missing `data.sql`, missing/corrupted/never-copied bytes,
+pre-existing custom role, non-fresh target, restore SQL error, forgotten auth/storage customizations, literal
+restore re-granting privileges. It is **not** a backup of the canonical project, not hosted Auth/Storage and
+not a Storage API copy. Requires Docker and the CLI (`SUPABASE_CLI`, default `npx -y supabase@3.0.0`).
 
 ## 4. Runner (`scripts/migration-cutover/apply.mjs`)
 
@@ -167,6 +230,24 @@ these defaults, a correct cloud apply would have failed verification after step 
 gives the browser roles no access to any FitMatch v2 private table or function. The only exceptions are
 read-only owner-scoped RLS tables and the non-callable `set_updated_at` trigger function. Legacy `fm_*`
 tables keep Supabase's default grants behind per-owner RLS.
+
+## 4b. Execution checklist (only after Codex review PASS and an owner go decision)
+
+| # | Step | Who | Stop if |
+|---|---|---|---|
+| 1 | Check out the reviewed commit; `sha256sum` of `apply.mjs`, `target.mjs`, the 12 step files, `schema-manifest.json` equal the values in the review report and `cutover-plan.json` | operator (owner machine) | any hash differs |
+| 2 | Secrets typed into the operator's own shell only (`DATABASE_URL`, DB password); never in chat, Git, logs | owner | — |
+| 3 | §2 backup into a private 700 directory; `verify-backup.mjs` exit 0 | owner | non-zero |
+| 4 | §3 restore proof on a disposable target incl. inventory diff = 0, fingerprint/bytes equal, runner dry run + execute + smoke | owner, summary to Codex | any difference |
+| 5 | Canonical endpoint: direct `db.gohczmqykjkrgdblgbog.supabase.co:5432` user `postgres`; or add the **exact** session-pooler host from Dashboard → Connect to `trustedPoolerHosts` and get it reviewed (empty today; never guess) | owner + Codex | target refused |
+| 6 | Maintenance window; Qwen flag OFF; no worker granted `garment.analyze` | owner | — |
+| 7 | Runner dry run on canonical (`--audit` private dir): 20261103 VERIFIED PRESENT, 12 would apply | operator | any refusal (exit 2/3/4) |
+| 8 | Runner `--execute`; stop at first failure (exit 5); later steps are not attempted | operator | non-zero → §5 |
+| 9 | Post-checks: inventory comparator, signup, outfit save/reopen, wardrobe upload/edit; fingerprint of preserved columns equal to the backup's | operator | any difference → §5 |
+| 10 | History adoption: run the printed `migration repair --status applied …` deliberately | owner | — |
+
+Partial failure: every step file is one transaction, so a failed step leaves no partial DDL; earlier committed
+steps are additive and remain. Do not re-run a non-rerunnable step; reconcile with the audit log and Codex.
 
 ## 5. Rollback
 

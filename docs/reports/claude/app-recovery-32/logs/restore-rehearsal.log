@@ -1,0 +1,15 @@
+$ SUPABASE_CLI=<local supabase@3.0.0> REHEARSAL_EVIDENCE=docs/reports/claude/app-recovery-32/evidence npm run test:restore-rehearsal  (postgres:17-alpine = local stand-in: conda-forge PostgreSQL 17.9 server + psql/pg_dump 17.9; Docker Hub blocked)
+
+> fitmatch-ai@0.1.0 test:restore-rehearsal
+> node scripts/migration-cutover/rehearse-restore.mjs
+
+PASS CLI 3.0.0 dump scripts obtained with --dry-run: data dump includes auth/storage rows, schema dump excludes auth/storage/extensions objects
+PASS backup: roles/schema/data via CLI scripts, auth/storage customizations captured separately (absent from schema.sql), 3 storage objects copied as bytes, manifest written
+PASS verify-backup: 37 checks (hashes, completeness markers, storage rows ⇄ bytes ⇄ metadata size/eTag)
+PASS restore: preflight (fresh target, no role conflicts) → single transaction roles+schema+replica data → auth/storage customizations → bytes
+PASS compare: fingerprint e45bab5ea603372ff18c21d804d2a0a2 and counts (auth.users=2,fm_auth_identities=2,fm_auth_refreshes=1,fm_outfits=2,fm_users=2,fm_wardrobe_items=3,storage.objects(fitmatch-wardrobe)=3) equal, full catalog inventory equal (109 keys), storage bytes sha256 equal and match restored metadata
+PASS cutover on restored copy: dry run 12 pending/no change → execute 12 applied+verified → business fingerprint unchanged; owner FKs→fm_users, nullable color/style, legacy style_category NOT NULL kept; identity+refresh kept; buckets private; signup provisions fm_users; outfit save/reopen; cross-owner denied; bytes unchanged
+PASS faults (backup): truncated data.sql, missing data.sql, missing object bytes, corrupted object bytes, Storage never copied — all refused by verify-backup before restore
+PASS faults (restore): pre-existing custom role refused by preflight (raw restore aborts atomically; explicit allow of a verified role works), non-fresh target refused, restore SQL error rolls back everything, forgotten auth/storage customizations detected by inventory diff (policy:storage.objects.wardrobe_storage_own, trigger:auth.users.on_auth_user_created); R-RESTORE-ACL-32 literal official restore re-grants anon/authenticated on 4 objects (function:public.fm_begin_auth_refresh(p_hash text, p_owner uuid), function:public.fm_finish_auth_refresh(p_hash text, p_owner uuid, p_result text), grant:public.fm_auth_identities, grant:public.fm_auth_refreshes), caught by inventory diff and prevented by default-ACL neutralization
+PASS APP-RECOVERY-32 local synthetic restore rehearsal (postgres:17-alpine; not a canonical backup/restore proof)
+exit=0

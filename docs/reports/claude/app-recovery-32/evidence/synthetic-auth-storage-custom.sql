@@ -1,0 +1,2 @@
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+create policy wardrobe_storage_own on storage.objects as permissive for all to public using (((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))) with check (((bucket_id = 'fitmatch-wardrobe'::text) AND ((auth.uid())::text = (storage.foldername(name))[1])));
