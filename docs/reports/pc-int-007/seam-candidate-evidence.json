@@ -1,0 +1,64 @@
+{
+  "kind": "bounded seam-only research candidate",
+  "status": "candidate-pending-BVH",
+  "globalRescale": false,
+  "canonicalTargetsChanged": false,
+  "canonicalTargetsSHA256": "506934a0e74029ef24106ba2e798ecabd8ea3658fea143f7b94bc52d2f0d6e67",
+  "movingVertices": 322,
+  "frozenInteriorVertices": 6851,
+  "frozenInteriorExactlyUnchanged": true,
+  "coordinateBoundMetres": 0.003,
+  "maximumActualMoveMetres": 0.004272080376856464,
+  "initialMaxStrain": 0.7249070219136196,
+  "finalMaxStrain": 0.5170104862599532,
+  "initialP95Strain": 0.05936348711659686,
+  "finalP95Strain": 0.05890014696156674,
+  "initialEdgesOver20Percent": 89,
+  "finalEdgesOver20Percent": 66,
+  "triangleOrientationFlips": 0,
+  "bodyVerticesInside1mm": 0,
+  "solverSuccess": false,
+  "solverStatus": 0,
+  "functionEvaluations": 60,
+  "wallSeconds": 5.419091599993408,
+  "capabilitiesEnabled": [],
+  "limitations": [
+    "Not calibrated cloth physics or size acceptance",
+    "Interior high strain is deliberately not changed",
+    "No self/pants collision in optimizer; require subsequent BVH/render before any candidate promotion"
+  ],
+  "reviewDisposition": "nonconverged-review-only; BVH subsequently checked; not promoted or exported",
+  "subsequentCollisionQA": {
+    "scope": "Blender CPU BVH triangle overlap, epsilon0; not exact-arithmetic proof",
+    "positiveAndNegativeControls": "passed",
+    "pairs": {
+      "tee-body": {
+        "trianglePairCount": 0,
+        "first20Pairs": []
+      },
+      "pants-body": {
+        "trianglePairCount": 0,
+        "first20Pairs": []
+      },
+      "tee-pants": {
+        "trianglePairCount": 0,
+        "first20Pairs": []
+      }
+    },
+    "selfIntersections": {
+      "tee": {
+        "nonAdjacentTrianglePairCount": 0,
+        "rawIndexNonAdjacentCount": 0,
+        "sewnAdjacencyExcluded": 0,
+        "first20Pairs": []
+      },
+      "pants": {
+        "nonAdjacentTrianglePairCount": 0,
+        "rawIndexNonAdjacentCount": 0,
+        "sewnAdjacencyExcluded": 0,
+        "first20Pairs": []
+      }
+    },
+    "wallSeconds": 0.24999679997563362
+  }
+}

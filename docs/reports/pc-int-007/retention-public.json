@@ -1,0 +1,64 @@
+{
+  "schema": "fitmatch.pc-retention-inventory.v1",
+  "mode": "dry-run-inventory-only",
+  "files": 244,
+  "bytes": 45243011,
+  "counts": {
+    "other-protected-metadata": 118,
+    "private-operational-log-not-read": 5,
+    "protected-checkpoint": 4,
+    "derived-preview": 56,
+    "protected-derived-or-engine-artifact": 36,
+    "research-or-ambiguous-image": 14,
+    "research-texture-fixture": 11
+  },
+  "roots": [
+    {
+      "label": "research-runs",
+      "exists": true
+    },
+    {
+      "label": "template-runs",
+      "exists": true
+    },
+    {
+      "label": "mesh-diagnostics",
+      "exists": true
+    },
+    {
+      "label": "default-job-root",
+      "exists": false
+    },
+    {
+      "label": "alternate-job-root",
+      "exists": false
+    }
+  ],
+  "skippedEntries": 0,
+  "duplicateImageGroups": 8,
+  "filesInDuplicateImageGroups": 22,
+  "deletionEligible": 0,
+  "filesDeleted": 0,
+  "wallSeconds": 0.06065860006492585,
+  "notScanned": [
+    ".git",
+    "__pycache__",
+    "ai-service",
+    "coordination",
+    "downloads",
+    "envs",
+    "models",
+    "node_modules",
+    "python",
+    "sources",
+    "toolchains",
+    "tools"
+  ],
+  "limitations": [
+    "Explicit PC-owned roots only; not a whole-machine/private-photo search",
+    "Metadata/optional image hashes only; manifests/logs/configs never decoded",
+    "No owner/job identity, server tombstone, deletion request or physical cleanup verified",
+    "Duplicate content does not authorize deletion; published derived/checkpoints stay protected",
+    "Trusted stable operator roots only; not a TOCTOU-safe deletion sandbox"
+  ]
+}

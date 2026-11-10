@@ -1,0 +1,16 @@
+--- a/scripts/worker/test_worker_unit.py
++++ b/scripts/worker/test_worker_unit.py
+@@ -174,8 +174,12 @@
+             path = Path(directory) / 'gpu.lock'
+             marker = Path(directory) / 'ready.txt'
+             with marker.open('w') as output:
++                # A Windows venv redirector can outlive/be distinct from its real
++                # interpreter. This stdlib-only lock fixture must kill its actual
++                # holder, not just a redirector waiting on an open stdin pipe.
++                child_python = getattr(sys, '_base_executable', sys.executable) if os.name == 'nt' else sys.executable
+                 child = subprocess.Popen(
+-                    [sys.executable, '-I', '-c', child_code,
++                    [child_python, '-I', '-c', child_code,
+                      str(Path(__file__).with_name('worker.py').resolve()), str(path)],
+                     stdin=subprocess.PIPE, stdout=output, stderr=subprocess.DEVNULL)
+                 probe = worker.FileLock(path)
