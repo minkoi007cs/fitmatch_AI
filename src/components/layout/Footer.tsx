@@ -22,7 +22,7 @@ export function Footer() {
             {[
               ["/wardrobe", "Wardrobe"],
               ["/quiz", "Your style"],
-              ["/looks", "Outfit suggestions"],
+              ["/looks", "Ideas & saved looks"],
               ["/studio", "3D Studio"],
               ["/outfits", "2D outfit ideas"],
             ].map(([href, label]) => (

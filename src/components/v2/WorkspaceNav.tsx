@@ -15,7 +15,7 @@ export function WorkspaceNav({ current }: { current: string }) {
         ["/wardrobe", "Wardrobe"],
         ["/prepare", "Prepare 3D"],
         ["/quiz", "Your style"],
-        ["/looks", "Outfit suggestions"],
+        ["/looks", "Ideas & saved looks"],
         ["/studio", "Studio"],
       ].map(([href, label]) => (
         <Link

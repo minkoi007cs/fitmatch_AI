@@ -2,7 +2,7 @@
 
 /**
  * QINT-C wardrobe analysis UI. The AI only proposes; nothing is written to the wardrobe until the
- * owner reviews the values and presses "Lưu vào tủ đồ". Unknown values and unverified logo text are
+ * owner reviews the values and presses "Save to wardrobe". Unknown values and unverified logo text are
  * never applied automatically. Hidden entirely while the server-side flag is off.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -171,7 +171,7 @@ export function AnalysisPanel({
       <div className={box} role="group" aria-label={label}>
         <p role="status">
           {analysis.state === "canceled" ? "Analysis canceled." : "Analysis failed."}{" "}
-          {analysis.errorCode ? failureNames[analysis.errorCode] ?? "" : ""} You can still edit item details manually.
+          {analysis.errorCode && !(analysis.state === "canceled" && analysis.errorCode === "CANCELED") ? `${failureNames[analysis.errorCode] ?? ""} ` : ""}You can still edit item details manually.
         </p>
         {analysis.attempts < 3 && (
           <button disabled={busy} className={button} onClick={() => void act("retry")}>
@@ -297,7 +297,7 @@ function Review({
       </label>
       <label className="block">
         Pattern
-        <select aria-label="Patterns" className={select} value={pattern} onChange={(e) => setPattern(e.target.value)}>
+        <select aria-label="Pattern" className={select} value={pattern} onChange={(e) => setPattern(e.target.value)}>
           <option value="">— choose —</option>
           {Object.entries(patternNames).map(([v, n]) => (
             <option key={v} value={v}>{n}</option>

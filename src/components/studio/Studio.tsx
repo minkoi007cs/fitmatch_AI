@@ -59,6 +59,7 @@ import {
 import { api } from "@/lib/v2/client";
 import type { CameraState, ModelRow } from "@/lib/v2/contracts";
 import type { ModelAsset, ViewerControl, LookbookShot } from "@/components/studio/Viewer";
+import { plural } from "@/lib/plural";
 const Viewer = dynamic(() => import("@/components/studio/Viewer"), {
   ssr: false,
   loading: () => (
@@ -343,7 +344,7 @@ export default function Studio({ request = {} }: { request?: StudioRequest }) {
       }
       const tops = list.filter((i) => i.slot === "top").length;
       const bottoms = list.filter((i) => i.slot === "bottom").length;
-      setCloudNotice(`Avatar opened · ${tops} tops and ${bottoms} bottoms in your wardrobe. Unfitted items will be prepared when selected.`);
+      setCloudNotice(`Avatar opened · ${plural(tops, "top")} and ${plural(bottoms, "bottom")} in your wardrobe. Unfitted items will be prepared when selected.`);
     } catch (e) {
       if (version === generation.current) setCloudError((e as Error).message);
     } finally {

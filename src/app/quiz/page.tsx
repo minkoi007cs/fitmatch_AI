@@ -243,7 +243,7 @@ export default function QuizPage() {
           </p>
           {step === 0 &&
             options("occasion", [
-              ["daily", "Every day", "Walks, coffee and time with friends"],
+              ["daily", "Everyday", "Walks, coffee and time with friends"],
               ["campus", "School", "Comfort for the whole day"],
               ["work", "Work", "Neat and polished"],
               ["evening", "Evening", "Something a little more special"],

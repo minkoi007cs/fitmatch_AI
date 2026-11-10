@@ -184,7 +184,7 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     assert.equal(await panel.getByLabel("Category").inputValue(), "tshirt");
     assert.equal(await panel.getByLabel("Main color").inputValue(), "red");
     assert.equal(await panel.getByLabel("Secondary color").inputValue(), "white");
-    assert.equal(await panel.getByLabel("Patterns").inputValue(), "printed");
+    assert.equal(await panel.getByLabel("Pattern", { exact: true }).inputValue(), "printed");
     assert.equal(await panel.getByLabel("Garment text / logo").inputValue(), "", "OCR candidate is not pre-approved");
     await panel.getByText("unconfirmed", { exact: false }).waitFor();
     await page.screenshot({ path: "test-results/qint-review.png" });

@@ -166,10 +166,10 @@ function recommendTops(
     reason:
       [
         style ? "Matches your selected style" : "Another option from your wardrobe",
-        color ? " includes a favorite color" : null,
-        feedback[item.id] === "like" ? " you previously liked this top" : null,
+        color ? "includes a favorite color" : null,
+        feedback[item.id] === "like" ? "you previously liked this top" : null,
         profile.occasion === "work" && item.category === "shirt"
-          ? " a shirt for your workwear preference"
+          ? "a shirt for your workwear preference"
           : null,
       ]
         .filter(Boolean)

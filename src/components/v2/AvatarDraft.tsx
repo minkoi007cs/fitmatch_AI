@@ -3,6 +3,7 @@ import { useState } from "react";
 import { api } from "@/lib/v2/client";
 import type { ModelRow } from "@/lib/v2/contracts";
 import { button } from "./WorkspaceNav";
+import { plural } from "@/lib/plural";
 
 /**
  * Draft decision, source retention and edit availability for one finished avatar version.
@@ -41,7 +42,7 @@ export default function AvatarDraft({
       `models/${model.id}/source`,
       { action: "delete" },
     );
-    const extra = `${r.canceledJobs ? ` Canceled ${r.canceledJobs} jobs using them.` : ""}${
+    const extra = `${r.canceledJobs ? ` Canceled ${plural(r.canceledJobs, "job")} using them.` : ""}${
       r.affectedModels ? ` ${r.affectedModels} other versions sharing these photos can no longer rebuild from this source.` : ""
     }`;
     return r.storageCleanupPending

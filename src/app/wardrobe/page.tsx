@@ -37,6 +37,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import { AnalysisPanel, useWardrobeAnalyses } from "@/components/v2/WardrobeAnalysis";
+import { plural } from "@/lib/plural";
 
 type DraftItem = {
   name: string;
@@ -298,7 +299,7 @@ export default function WardrobePage() {
               Your wardrobe
             </h1>
             <span className="font-mono text-xs sm:text-sm font-semibold tabular-nums text-accent-text">
-              ({loadError && !items.length ? "—" : items.length} items)
+              ({loadError && !items.length ? "—" : plural(items.length, "item")})
             </span>
           </div>
 
@@ -743,7 +744,7 @@ export default function WardrobePage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Patterns" htmlFor="field-pattern">
+                <Field label="Pattern" htmlFor="field-pattern">
                   <Select
                     id="field-pattern"
                     value={draft.pattern}

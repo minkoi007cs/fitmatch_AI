@@ -141,7 +141,7 @@ export default function LooksPage() {
               onChange={(e) => setOccasion(e.target.value as typeof occasion)}
               className="ml-2 bg-bg border border-border rounded-xl p-2 text-fg"
             >
-              <option value="">Theo quiz</option>
+              <option value="">From your quiz</option>
               <option value="daily">Everyday</option>
               <option value="campus">School</option>
               <option value="work">Work</option>
@@ -428,7 +428,7 @@ export default function LooksPage() {
                         })
                       }
                     >
-                      My style
+                      Matches my style
                     </button>
                     <button
                       disabled={busy}

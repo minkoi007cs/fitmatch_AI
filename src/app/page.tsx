@@ -18,7 +18,7 @@ export default function HomePage() {
     <main id="main-content" tabIndex={-1}>
       <section aria-labelledby="hero-title" className="relative isolate flex min-h-[760px] items-center overflow-hidden bg-black lg:min-h-[860px]">
         <Image src={IMAGES.heroLanding.src} alt="Style reference: an outfit with a minimal aesthetic" fill priority sizes="100vw" placeholder="blur" blurDataURL={DARK_BLUR_DATA_URL} className="-z-20 object-cover object-[62%_center] lg:object-center" />
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/90 via-black/65 to-black/20" />
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/90 via-black/75 to-black/60 lg:via-black/65 lg:to-black/20" />
         <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
         <div className="mx-auto w-full max-w-7xl px-5 pb-28 pt-40 sm:px-8 lg:py-44">
           <div className="max-w-2xl">

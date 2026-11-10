@@ -90,7 +90,7 @@ export async function testStudio(base, jar) {
     await page.waitForURL(base + "/wardrobe");
     assert.equal(await page.getByRole("button", { name: "Open account menu", exact: true }).getAttribute("aria-expanded"), "false", "account navigation closes the dropdown");
     await page.goto(base + "/ux-check-page-does-not-exist");
-    await page.getByRole("heading", { name: "This page is not here yet." }).waitFor();
+    await page.getByRole("main").getByRole("heading", { name: "This page doesn't exist." }).waitFor();
     const homeLink = page.getByRole("link", { name: "Back to home", exact: true });
     assert.equal(await homeLink.locator("button").count(), 0, "404 navigation does not nest interactive controls");
     await homeLink.click();

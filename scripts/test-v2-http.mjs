@@ -279,11 +279,16 @@ export async function testV2({ base, fixture, request, jar, owner, itemId, v2, a
       path: "test-results/v2-looks-desktop.png",
       fullPage: true,
     });
-    await page.getByRole("button", { name: "My style", exact: true }).click();
+    // CL-UX-FIX-46 F1/F5: English default occasion; one name for /looks across nav, footer and workspace pills.
+    assert.equal(await page.getByRole("combobox", { name: "Outfit occasion" }).locator("option:checked").textContent(), "From your quiz");
+    assert.equal(await page.getByText("Theo quiz").count(), 0, "no Vietnamese default option");
+    assert.equal(await page.getByRole("link", { name: "Outfit suggestions" }).count(), 0, "no stale /looks name");
+    assert.ok(await page.getByRole("link", { name: "Ideas & saved looks", exact: true }).count() >= 2, "nav and workspace use the same /looks name");
+    await page.getByRole("button", { name: "Matches my style", exact: true }).click();
     await page.waitForFunction(() =>
       [...document.querySelectorAll("button")].some(
         (b) =>
-          b.textContent === "My style" &&
+          b.textContent === "Matches my style" &&
           b.getAttribute("aria-pressed") === "true",
       ),
     );
