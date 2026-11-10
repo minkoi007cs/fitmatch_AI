@@ -343,3 +343,8 @@ App publication does not close canonical V2 migration, privateDB+Storage backup/
 ## 29. English interface and cover layout — LANG-40 / CL-UX-41
 
 Owner requests the whole website in English, including Studio/capture/errors/accessibility labels, and restores the original cover treatment with the image behind the text instead of a separate image column. This supersedes the Vietnamese interface choice recorded in UI-UX-39. Conversation/coordination documents may remain Vietnamese; user-entered data and legacy color aliases are preserved. Codex owns scoped implementation/testing/deployment on codex/hosted-38. Owner additionally asks Claude to help in parallel: CL-UX-41 is independent source/UI review with report-only output in a separate checkout, no overlapping source edits. Same backend/PC acceptance gates remain.
+
+
+## 30. Controlled connection execution — CONNECT-43
+
+Owner explicitly requests locating private DB configuration on this Mac, actual backup/restore and completing PC/Qwen connection for direct app testing. Codex may execute scoped canonical cutover and enrollment after actual recovery proof/exact review; previous preparation-only rules no longer block this requested execution. Preserve all user data, unrelated applications and native GPU guards. Existing PC owners retain implementation/coordinator ownership. No destructive reset/restore, password rotation, paid resources or extra GPU overlap is authorized. If administrator credentials are missing, complete unaffected preparation and report the precise missing prerequisite rather than substituting API keys or synthetic rehearsal for a database backup.
