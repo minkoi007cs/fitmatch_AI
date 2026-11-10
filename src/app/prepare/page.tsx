@@ -101,7 +101,7 @@ export default function PreparePage() {
             Từ ảnh đến phòng thử đồ.
           </h1>
           <p className="mt-4 text-fg-muted text-sm max-w-xl leading-6">
-            Tạo avatar một lần. Chuẩn bị từng chiếc áo. Kết quả đã xử lý sẽ được
+            Chuẩn bị avatar, áo thun và jeans. Kết quả đã xử lý sẽ được
             giữ lại để bạn mặc thử nhanh trong Studio.
           </p>
         </div>
@@ -111,12 +111,13 @@ export default function PreparePage() {
         </button>
       </header>
       {error && (
-        <p
+        <div
           role="alert"
           className="mb-5 rounded-xl border border-danger/40 p-4 text-danger text-sm"
         >
-          {error}
-        </p>
+          <p>{error}</p>
+          {!data && <p className="mt-2 text-fg-muted text-xs leading-6">Chưa thể tải thư viện 3D. Bạn vẫn có thể <Link href="/wardrobe" className="text-accent-text underline">thêm đồ vào tủ</Link> hoặc <Link href="/studio" className="text-accent-text underline">mở bộ 3D từ PC trong Studio</Link>. Bấm Làm mới để kiểm tra lại.</p>}
+        </div>
       )}
       {notice && (
         <p role="status" className="mb-5 text-success text-sm">
@@ -126,7 +127,7 @@ export default function PreparePage() {
       <div className="rounded-2xl border border-border p-4 mb-6 text-sm flex flex-wrap gap-3 justify-between">
         <span>
           {!data
-            ? "Đang kiểm tra máy xử lý…"
+            ? error ? "Chưa kiểm tra được trạng thái xử lý" : "Đang kiểm tra máy xử lý…"
             : data.connected
               ? "Máy xử lý đã kết nối"
               : "Máy xử lý đang ngoại tuyến · tác vụ mới sẽ chờ"}
@@ -211,7 +212,7 @@ export default function PreparePage() {
         </div>
         {data?.models.length === 0 && (
           <div className={`${panel} text-fg-muted text-sm`}>
-            Chưa có model. Hãy bắt đầu bằng bộ ảnh avatar của bạn.
+            Chưa có kết quả 3D. Bạn có thể bắt đầu bằng ảnh avatar hoặc thêm ảnh áo thun và jeans từ tủ đồ.
           </div>
         )}
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">

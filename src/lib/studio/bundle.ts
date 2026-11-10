@@ -17,7 +17,7 @@ export function parseBundle(value: unknown): StudioBundle {
   const ids = new Set<string>();
   const files = new Set([b.avatar.file]);
   for (const g of b.garments) {
-    if (!g || (!label(g.id) || g.id === "avatar") || !label(g.name) || !filename(g.file) || !(g.category in CATEGORY_SLOT) || (g.preset !== undefined && typeof g.preset !== "boolean") || g.avatarId !== b.avatar.id || ids.has(g.id) || files.has(g.file)) throw new Error("Mỗi món đồ phải có ID riêng, loại hợp lệ (áo thun, sơ mi, jeans) và được chuẩn bị cho đúng avatar.");
+    if (!g || (!label(g.id) || g.id === "avatar") || !label(g.name) || !filename(g.file) || typeof g.category !== "string" || !Object.hasOwn(CATEGORY_SLOT, g.category) || (g.preset !== undefined && typeof g.preset !== "boolean") || g.avatarId !== b.avatar.id || ids.has(g.id) || files.has(g.file)) throw new Error("Mỗi món đồ phải có ID riêng, loại hợp lệ (áo thun, sơ mi, jeans) và được chuẩn bị cho đúng avatar.");
     ids.add(g.id); files.add(g.file);
   }
   return b;

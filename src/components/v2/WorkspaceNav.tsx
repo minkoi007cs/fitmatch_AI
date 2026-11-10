@@ -12,6 +12,7 @@ export function WorkspaceNav({ current }: { current: string }) {
       className="mb-8 flex flex-wrap gap-2 text-xs"
     >
       {[
+        ["/wardrobe", "Tủ đồ"],
         ["/prepare", "Chuẩn bị 3D"],
         ["/quiz", "Gu của bạn"],
         ["/looks", "Gợi ý mặc thử"],

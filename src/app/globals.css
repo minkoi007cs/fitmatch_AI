@@ -9,7 +9,7 @@
   --border-strong: rgba(255, 255, 255, 0.18);
   --fg: #F4F2ED;            /* primary text, warm off-white */
   --fg-muted: #9C978E;      /* secondary text */
-  --fg-subtle: #6A665F;     /* labels, meta, disabled */
+  --fg-subtle: #8C877E;     /* readable labels and metadata on dark surfaces */
   --accent: #C4622D;        /* terracotta — FILLS ONLY */
   --accent-hover: #D97035;
   --accent-text: #E8834D;   /* terracotta as TEXT on dark (7.33:1 AA contrast) */
@@ -117,7 +117,7 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent-ring);
+  outline: 2px solid var(--accent-text);
   outline-offset: 2px;
 }
 

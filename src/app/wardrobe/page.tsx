@@ -25,6 +25,7 @@ import {
   getColorHex,
 } from "@/lib/utils";
 import { IMAGES } from "@/lib/images";
+import { categoryLabels, styleLabels, patternLabels } from "@/lib/wardrobe-labels";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -77,6 +78,7 @@ export default function WardrobePage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadedPreview, setUploadedPreview] = useState<string | null>(null);
@@ -102,7 +104,7 @@ export default function WardrobePage() {
         const styleMatch = !filters.style || item.style === filters.style;
         const colorMatch =
           !filters.color ||
-          item.color.toLowerCase().includes(filters.color.toLowerCase()) ||
+          (item.color ?? "").toLowerCase().includes(filters.color.toLowerCase()) ||
           (item.secondary_color &&
             item.secondary_color.toLowerCase().includes(filters.color.toLowerCase()));
         return categoryMatch && styleMatch && colorMatch;
@@ -115,9 +117,10 @@ export default function WardrobePage() {
     fetch("/api/wardrobe", { cache: "no-store", signal: controller.signal })
       .then(async response => {
         const data = await response.json();
-        if (!response.ok || !data.success) throw new Error("Could not load wardrobe items. Please reload.");
+        if (!response.ok || !data.success) throw new Error("Chưa tải được tủ đồ. Hãy thử lại; dữ liệu hiện có vẫn được giữ trên tài khoản.");
+        setLoadError("");
         setItems(data.items ?? []);
-      }).catch(error => { if (!controller.signal.aborted) toast(error.message, "error"); })
+      }).catch(error => { if (!controller.signal.aborted) setLoadError(error.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [toast, reloadKey]);
@@ -140,9 +143,9 @@ export default function WardrobePage() {
     setDraft({
       name: item.name,
       category: item.category,
-      color: item.color,
+      color: item.color ?? "",
       secondaryColor: item.secondary_color ?? "",
-      style: item.style,
+      style: item.style ?? "",
       pattern: item.pattern ?? "plain",
       material: item.material ?? "",
       description: item.description ?? "",
@@ -200,7 +203,7 @@ export default function WardrobePage() {
 
       const uploadData = await uploadResponse.json();
       if (!uploadResponse.ok || !uploadData.success) {
-        throw new Error(uploadData.error ?? "Could not analyze image.");
+        throw new Error(uploadData.error ?? "Chưa xử lý được ảnh. Bạn có thể tự điền thông tin.");
       }
 
       if (version !== uploadVersion.current) return;
@@ -218,10 +221,10 @@ export default function WardrobePage() {
         imagePath: uploadData.storagePath,
       }));
 
-      toast("Garment analyzed and fields auto-filled!", "success");
+      toast("Đã điền thông tin gợi ý. Hãy kiểm tra trước khi lưu.", "success");
     } catch (uploadError) {
       if (version !== uploadVersion.current) return;
-      toast(uploadError instanceof Error ? uploadError.message : "Upload failed.", "error");
+      toast(uploadError instanceof Error ? uploadError.message : "Chưa tải được ảnh. Hãy thử lại.", "error");
     } finally {
       if (version === uploadVersion.current) setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -245,7 +248,7 @@ export default function WardrobePage() {
 
       const data = await response.json();
       if (!response.ok || !data.success) {
-        throw new Error(data.error ?? "Could not save wardrobe item.");
+        throw new Error(data.error ?? "Chưa lưu được món đồ.");
       }
 
       if (itemId) {
@@ -258,7 +261,7 @@ export default function WardrobePage() {
 
       if (version === draftVersion.current) closeDrawer();
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Error saving wardrobe item.", "error");
+      toast(err instanceof Error ? err.message : "Chưa lưu được món đồ. Hãy thử lại.", "error");
     } finally {
       setSaving(false);
     }
@@ -270,7 +273,7 @@ export default function WardrobePage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error ?? "Could not delete wardrobe item.");
+        throw new Error(data.error ?? "Chưa xóa được món đồ.");
       }
 
       setItems((current) => current.filter((item) => item.id !== id));
@@ -281,21 +284,21 @@ export default function WardrobePage() {
         closeDrawer();
       }
     } catch (err) {
-      toast(err instanceof Error ? err.message : "Failed to delete item.", "error");
+      toast(err instanceof Error ? err.message : "Chưa xóa được món đồ. Hãy thử lại.", "error");
     }
   }
 
   return (
-    <main className="min-h-[calc(100vh-5rem)] bg-bg text-fg">
+    <main className="min-h-[calc(100vh-5rem)] bg-bg text-fg pt-20">
       {/* Sticky Top Header Bar */}
       <div className="sticky top-20 z-30 border-b border-border bg-bg/90 backdrop-blur-xl px-4 py-5 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div className="flex items-baseline gap-3">
             <h1 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight text-fg">
-              Your wardrobe
+              Tủ đồ của bạn
             </h1>
             <span className="font-mono text-xs sm:text-sm font-semibold tabular-nums text-accent-text">
-              ({items.length} {items.length === 1 ? "PIECE" : "PIECES"})
+              ({loadError && !items.length ? "—" : items.length} món)
             </span>
           </div>
 
@@ -305,7 +308,7 @@ export default function WardrobePage() {
             onClick={openAddDrawer}
             icon={<Plus className="h-4 w-4" />}
           >
-            Add item
+            Thêm đồ
           </Button>
         </div>
 
@@ -314,7 +317,7 @@ export default function WardrobePage() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs text-fg-subtle">
               <Filter className="h-3.5 w-3.5" />
-              <span className="eyebrow text-[10px]">Filter</span>
+              <span className="eyebrow text-[10px]">Bộ lọc</span>
             </div>
 
             {/* Category Chips Scroll */}
@@ -323,7 +326,7 @@ export default function WardrobePage() {
                 active={!filters.category}
                 onClick={() => setFilters((f) => ({ ...f, category: "" }))}
               >
-                All Categories
+                Tất cả loại đồ
               </Chip>
               {CLOTHING_CATEGORIES.map((cat) => (
                 <Chip
@@ -333,7 +336,7 @@ export default function WardrobePage() {
                     setFilters((f) => ({ ...f, category: f.category === cat ? "" : cat }))
                   }
                 >
-                  {cat}
+                  {categoryLabels[cat] ?? cat}
                 </Chip>
               ))}
             </div>
@@ -344,7 +347,7 @@ export default function WardrobePage() {
                 active={!filters.style}
                 onClick={() => setFilters((f) => ({ ...f, style: "" }))}
               >
-                All Styles
+                Tất cả phong cách
               </Chip>
               {STYLE_CATEGORIES.map((st) => (
                 <Chip
@@ -354,7 +357,7 @@ export default function WardrobePage() {
                     setFilters((f) => ({ ...f, style: f.style === st ? "" : st }))
                   }
                 >
-                  {st}
+                  {styleLabels[st] ?? st}
                 </Chip>
               ))}
             </div>
@@ -364,7 +367,8 @@ export default function WardrobePage() {
           <div className="flex items-center gap-3 self-end sm:self-auto">
             <div className="w-48 sm:w-56">
               <Input
-                placeholder="Search color..."
+                aria-label="Tìm đồ theo màu"
+                placeholder="Tìm theo màu…"
                 value={filters.color}
                 onChange={(e) => setFilters((f) => ({ ...f, color: e.target.value }))}
                 icon={<Search className="h-3.5 w-3.5" />}
@@ -379,7 +383,7 @@ export default function WardrobePage() {
                 className="inline-flex items-center gap-1 text-[11px] font-mono text-accent-text hover:underline cursor-pointer"
               >
                 <X className="h-3 w-3" />
-                Clear ({activeFilterCount})
+                Xóa lọc ({activeFilterCount})
               </button>
             ) : null}
           </div>
@@ -388,7 +392,8 @@ export default function WardrobePage() {
 
       {/* Main Wardrobe Grid / States */}
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {loading ? (
+        {loadError && <div role="alert" className="mb-6 rounded-2xl border border-danger/40 p-5 text-sm"><p className="text-danger">{loadError}</p><button type="button" disabled={loading} onClick={() => { setLoading(true); setReloadKey((k) => k + 1); }} className="mt-3 min-h-11 rounded-full border border-border px-5 py-2 disabled:opacity-50">{loading ? "Đang thử lại…" : "Thử tải lại tủ đồ"}</button></div>}
+        {loadError && !items.length && !loading ? null : loading ? (
           /* 8-Card Skeleton Loading */
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -403,36 +408,36 @@ export default function WardrobePage() {
           /* Empty State */
           <EmptyState
             imageSrc={IMAGES.emptyWardrobe.src}
-            imageAlt="Empty Wardrobe"
-            eyebrow="DIGITAL CLOSET"
-            headline="Your wardrobe is empty"
-            body="Add your first piece and FitMatch will start analyzing silhouettes and building outfits around it."
+            imageAlt="Tủ đồ chưa có món nào"
+            eyebrow="TỦ ĐỒ CÁ NHÂN"
+            headline="Tủ đồ của bạn is empty"
+            body="Thêm ảnh và thông tin món đồ đầu tiên. Bạn có thể quản lý tủ đồ trước khi tạo avatar."
             action={
               <Button variant="accent" onClick={openAddDrawer} icon={<Plus className="h-4 w-4" />}>
-                Add Your First Piece
+                Thêm món đồ đầu tiên
               </Button>
             }
           />
         ) : filteredItems.length === 0 ? (
           /* Filter Empty State */
           <div className="py-20 text-center space-y-3">
-            <p className="font-display text-2xl font-bold text-fg">No items match your filters.</p>
+            <p className="font-display text-2xl font-bold text-fg">Chưa có món nào khớp bộ lọc.</p>
             <p className="text-xs text-fg-muted">
-              Try clearing color, category, or style filters to see all pieces.
+              Xóa bớt bộ lọc màu, loại đồ hoặc phong cách để xem thêm.
             </p>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setFilters({ category: "", color: "", style: "" })}
             >
-              Reset Filters
+              Xóa bộ lọc
             </Button>
           </div>
         ) : (
           /* Responsive 2 / 3 / 4 / 5 Column Grid */
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
             {filteredItems.map((item) => {
-              const swatchColor = getColorHex(item.color);
+              const swatchColor = getColorHex(item.color ?? "");
               const isConfirmingDelete = deleteConfirmId === item.id;
 
               return (
@@ -479,7 +484,7 @@ export default function WardrobePage() {
                         type="button"
                         onClick={() => openEditDrawer(item)}
                         className="flex h-7 w-7 items-center justify-center rounded-full border border-border-strong bg-bg-elevated/90 text-fg hover:bg-bg-raised hover:text-accent-text transition cursor-pointer shadow-md"
-                        aria-label={`Edit ${item.name}`}
+                        aria-label={`Sửa ${item.name}`}
                       >
                         <Pencil className="h-3 w-3" />
                       </button>
@@ -488,16 +493,16 @@ export default function WardrobePage() {
                         type="button"
                         onClick={() => setDeleteConfirmId(item.id)}
                         className="flex h-7 w-7 items-center justify-center rounded-full border border-border-strong bg-bg-elevated/90 text-fg-muted hover:bg-danger/20 hover:text-danger transition cursor-pointer shadow-md"
-                        aria-label={`Delete ${item.name}`}
+                        aria-label={`Xóa ${item.name}`}
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
 
-                    {/* Delete Confirmation Popover (No browser confirm alert) */}
+                    {/* Delete Confirmation Popover (No chọn ảnhr confirm alert) */}
                     {isConfirmingDelete && (
                       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-bg/95 backdrop-blur-sm p-4 text-center space-y-3">
-                        <p className="text-xs font-semibold text-fg">Delete this piece?</p>
+                        <p className="text-xs font-semibold text-fg">Xóa món đồ này?</p>
                         <div className="flex items-center gap-2">
                           <Button
                             variant="danger"
@@ -511,7 +516,7 @@ export default function WardrobePage() {
                             size="sm"
                             onClick={() => setDeleteConfirmId(null)}
                           >
-                            Cancel
+                            Hủy
                           </Button>
                         </div>
                       </div>
@@ -524,7 +529,7 @@ export default function WardrobePage() {
                       {item.name}
                     </h3>
                     <p className="text-xs text-fg-muted uppercase tracking-wider font-mono text-[11px] truncate">
-                      {item.category}
+                      {categoryLabels[item.category] ?? item.category}
                       {item.material ? ` · ${item.material}` : ""}
                     </p>
                   </div>
@@ -551,9 +556,9 @@ export default function WardrobePage() {
       <Drawer
         isOpen={isDrawerOpen}
         onClose={closeDrawer}
-        eyebrow="WARDROBE MANAGER"
-        title={editingId ? "Edit Garment" : "Add New Garment"}
-        description="Upload an image to auto-detect category, palette, and styling attributes."
+        eyebrow="TỦ ĐỒ CỦA BẠN"
+        title={editingId ? "Sửa món đồ" : "Thêm món đồ"}
+        description="Thêm ảnh hoặc tự nhập thông tin. Kiểm tra các trường trước khi lưu."
       >
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Top Drag & Drop Upload Zone + Camera Capture */}
@@ -607,7 +612,7 @@ export default function WardrobePage() {
                     transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
                   />
                 </div>
-                <div className="eyebrow text-accent-text animate-pulse">Analyzing your item…</div>
+                <div className="eyebrow text-accent-text animate-pulse">Đang xử lý ảnh…</div>
               </div>
             ) : uploadedPreview ? (
               <div className="space-y-3">
@@ -615,7 +620,7 @@ export default function WardrobePage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={uploadedPreview}
-                    alt="Uploaded garment preview"
+                    alt="Ảnh món đồ bạn đã tải"
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -626,7 +631,7 @@ export default function WardrobePage() {
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    Change photo
+                    Đổi ảnh
                   </Button>
                 </div>
               </div>
@@ -637,17 +642,17 @@ export default function WardrobePage() {
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-fg">
-                    Drop your image here, or{" "}
+                    Kéo ảnh vào đây hoặc{" "}
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       className="text-accent-text hover:underline font-bold cursor-pointer"
                     >
-                      browse
+                      chọn ảnh
                     </button>
                   </p>
                   <p className="text-[11px] text-fg-subtle">
-                    Supports JPEG, PNG, WEBP up to 10MB
+                    JPG, PNG hoặc WebP · tối đa 10 MB
                   </p>
                 </div>
                 <div className="pt-1">
@@ -658,7 +663,7 @@ export default function WardrobePage() {
                     onClick={() => cameraInputRef.current?.click()}
                     icon={<Camera className="h-3.5 w-3.5" />}
                   >
-                    Take photo
+                    Chụp ảnh
                   </Button>
                 </div>
               </div>
@@ -674,18 +679,18 @@ export default function WardrobePage() {
               transition={{ duration: 0.3 }}
               className="space-y-4"
             >
-              <Field label="Piece Name" htmlFor="field-name" required>
+              <Field label="Tên món đồ" htmlFor="field-name" required>
                 <Input
                   id="field-name"
                   value={draft.name}
                   onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-                  placeholder="e.g. Oversized Charcoal Wool Blazer"
+                  placeholder="Ví dụ: Áo thun trắng cổ tròn"
                   required
                 />
               </Field>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Category" htmlFor="field-category">
+                <Field label="Loại đồ" htmlFor="field-category">
                   <Select
                     id="field-category"
                     value={draft.category}
@@ -693,21 +698,23 @@ export default function WardrobePage() {
                   >
                     {CLOTHING_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
-                        {cat}
+                        {categoryLabels[cat] ?? cat}
                       </option>
                     ))}
                   </Select>
                 </Field>
 
-                <Field label="Style Aesthetic" htmlFor="field-style">
+                <Field label="Phong cách" htmlFor="field-style">
                   <Select
                     id="field-style"
+                    required
                     value={draft.style}
                     onChange={(e) => setDraft((d) => ({ ...d, style: e.target.value }))}
                   >
+                    <option value="" disabled>Chọn phong cách</option>
                     {STYLE_CATEGORIES.map((st) => (
                       <option key={st} value={st}>
-                        {st}
+                        {styleLabels[st] ?? st}
                       </option>
                     ))}
                   </Select>
@@ -715,28 +722,28 @@ export default function WardrobePage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Primary Color" htmlFor="field-color" required>
+                <Field label="Màu chính" htmlFor="field-color" required>
                   <Input
                     id="field-color"
                     value={draft.color}
                     onChange={(e) => setDraft((d) => ({ ...d, color: e.target.value }))}
-                    placeholder="e.g. Black"
+                    placeholder="Ví dụ: Đen"
                     required
                   />
                 </Field>
 
-                <Field label="Secondary Color" htmlFor="field-sec-color">
+                <Field label="Màu phụ" htmlFor="field-sec-color">
                   <Input
                     id="field-sec-color"
                     value={draft.secondaryColor}
                     onChange={(e) => setDraft((d) => ({ ...d, secondaryColor: e.target.value }))}
-                    placeholder="e.g. Cream"
+                    placeholder="Ví dụ: Kem"
                   />
                 </Field>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Pattern" htmlFor="field-pattern">
+                <Field label="Họa tiết" htmlFor="field-pattern">
                   <Select
                     id="field-pattern"
                     value={draft.pattern}
@@ -744,38 +751,38 @@ export default function WardrobePage() {
                   >
                     {PATTERN_TYPES.map((p) => (
                       <option key={p} value={p}>
-                        {p}
+                        {patternLabels[p] ?? p}
                       </option>
                     ))}
                   </Select>
                 </Field>
 
-                <Field label="Material" htmlFor="field-material">
+                <Field label="Chất liệu" htmlFor="field-material">
                   <Input
                     id="field-material"
                     value={draft.material}
                     onChange={(e) => setDraft((d) => ({ ...d, material: e.target.value }))}
-                    placeholder="e.g. 100% Wool"
+                    placeholder="Ví dụ: Cotton"
                   />
                 </Field>
               </div>
 
-              <Field label="Visual Description" htmlFor="field-desc">
+              <Field label="Mô tả món đồ" htmlFor="field-desc">
                 <Textarea
                   id="field-desc"
                   value={draft.description}
                   onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
-                  placeholder="Detailed description of weave, cut, lapels, hardware..."
+                  placeholder="Kiểu cổ, tay áo, chi tiết logo hoặc đường may…"
                   rows={2}
                 />
               </Field>
 
-              <Field label="Styling & Fit Notes" htmlFor="field-notes">
+              <Field label="Ghi chú phối đồ" htmlFor="field-notes">
                 <Textarea
                   id="field-notes"
                   value={draft.notes}
                   onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
-                  placeholder="Care instructions, seasonal preference, sizing notes..."
+                  placeholder="Cách phối bạn thích, thời tiết hoặc ghi chú bảo quản…"
                   rows={2}
                 />
               </Field>
@@ -785,7 +792,7 @@ export default function WardrobePage() {
           {/* Drawer Actions */}
           <div className="pt-4 border-t border-border flex items-center justify-end gap-3">
             <Button type="button" variant="ghost" onClick={closeDrawer}>
-              Cancel
+              Hủy
             </Button>
             <Button
               type="submit"
@@ -794,7 +801,7 @@ export default function WardrobePage() {
               disabled={uploading}
               icon={<Check className="h-4 w-4" />}
             >
-              {editingId ? "Update Garment" : "Save to Wardrobe"}
+              {editingId ? "Lưu thay đổi" : "Lưu vào tủ đồ"}
             </Button>
           </div>
         </form>

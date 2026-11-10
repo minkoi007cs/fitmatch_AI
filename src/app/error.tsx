@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
@@ -21,18 +22,19 @@ export default function Error({
         <AlertCircle className="h-6 w-6" />
       </div>
       <div className="space-y-2 max-w-md">
-        <div className="eyebrow text-danger">System Disruption</div>
+        <div className="eyebrow text-danger">Chưa mở được trang</div>
         <h2 className="font-display text-3xl font-bold tracking-tight text-fg">
-          Something interrupted the lookbook.
+          Đã có lỗi khi tải nội dung.
         </h2>
         <p className="text-sm text-fg-muted font-normal">
-          An unexpected error occurred while rendering this view. You can safely retry or return to your wardrobe.
+          Hãy thử tải lại hoặc quay về tủ đồ để tiếp tục.
         </p>
       </div>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap justify-center gap-3">
         <Button variant="accent" onClick={() => reset()} icon={<RotateCcw className="h-4 w-4" />}>
-          Try Again
+          Thử tải lại
         </Button>
+        <Link href="/wardrobe" className="inline-flex min-h-11 items-center rounded-xl border border-border px-5 py-3 text-sm">Về tủ đồ</Link>
       </div>
     </div>
   );

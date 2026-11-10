@@ -1,10 +1,12 @@
 # FitMatch AI
 
+Online app: [fitmatch.minkoi.org](https://fitmatch.minkoi.org). Current UI/release audit: [UI-UX-39](docs/reports/review/ui-ux-20261110.md). Studio cloud jobs still require the reviewed canonical database cutover; a web deployment does not enable PC engines. Qwen stays OFF until integration gates pass.
+
 App System authentication integration and rollout instructions: [docs/app-system-auth.md](docs/app-system-auth.md).
 
-FitMatch AI is a production-ready Next.js App Router MVP for AI-powered fashion recommendations. Users can:
+FitMatch AI is a Next.js pilot for a private wardrobe, outfit recommendations, and a personal 3D fitting workflow. Users can:
 
-- sign in with Microsoft via Supabase Auth
+- sign in through App System (legacy Supabase sign-in remains available to link an existing wardrobe)
 - upload or capture clothing photos
 - extract item metadata with OpenAI vision
 - save items into a private digital wardrobe

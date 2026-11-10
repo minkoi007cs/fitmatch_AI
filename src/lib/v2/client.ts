@@ -13,7 +13,7 @@ const messages: Record<string, string> = {
   MODEL_NOT_READY: "Avatar và áo cần xử lý xong trước khi mặc thử.",
   QUOTA_EXCEEDED:
     "Đã đạt giới hạn xử lý. Hãy chờ hoặc hoàn tất các tác vụ đang có.",
-  DATA_UNAVAILABLE: "Kho 3D chưa sẵn sàng. Vui lòng thử lại sau.",
+  DATA_UNAVAILABLE: "Chưa kết nối được thư viện 3D. Hãy thử tải lại sau.",
   SERVICE_UNAVAILABLE: "Dịch vụ 3D chưa sẵn sàng. Hãy thử lại sau.",
   JOB_ACTION_NOT_ALLOWED:
     "Tác vụ đã đổi trạng thái hoặc đạt giới hạn 3 lần chạy. Hãy làm mới.",

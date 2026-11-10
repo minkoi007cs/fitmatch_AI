@@ -115,8 +115,8 @@ export function Drawer({
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-[4px] border border-border bg-bg-raised p-2 text-fg-muted hover:text-fg hover:border-border-strong transition"
-                aria-label="Close drawer"
+                className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-bg-raised p-2 text-fg-muted hover:text-fg hover:border-border-strong transition"
+                aria-label="Đóng bảng"
               >
                 <X className="h-4 w-4" />
               </button>

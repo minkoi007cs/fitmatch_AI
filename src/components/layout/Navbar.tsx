@@ -6,14 +6,16 @@ import { useEffect, useRef, useState } from "react";
 import { Menu, X, Sparkles, LogOut, ChevronDown, User } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { Drawer } from "@/components/ui/Drawer";
+
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 
 const navLinks = [
-  { href: "/studio", label: "3D Studio" },
-  { href: "/looks", label: "Gợi ý 3D" },
-  { href: "/prepare", label: "Tạo 3D" },
   { href: "/wardrobe", label: "Tủ đồ" },
+  { href: "/studio", label: "Studio 3D" },
+  { href: "/looks", label: "Gợi ý & bộ đã lưu" },
+  { href: "/prepare", label: "Chuẩn bị 3D" },
   { href: "/quiz", label: "Gu của bạn" },
 ];
 
@@ -63,14 +65,29 @@ export function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!mobileMenuOpen && !userDropdownOpen) return;
+    const media = window.matchMedia("(min-width: 1024px)");
+    const resize = () => { if (media.matches) setMobileMenuOpen(false); };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && userDropdownOpen) {
+        setUserDropdownOpen(false);
+        dropdownRef.current?.querySelector("button")?.focus();
+      }
+    };
+    media.addEventListener("change", resize);
+    document.addEventListener("keydown", escape);
+    return () => { media.removeEventListener("change", resize); document.removeEventListener("keydown", escape); };
+  }, [mobileMenuOpen, userDropdownOpen]);
+
   async function handleSignOut() {
     try {
       const response = await fetch("/auth/logout", { method: "POST" });
       // Clear all client route state after revoking both authentication sessions.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       if (response.ok) window.location.href = "/";
-      else toast("Could not finish signing out. Please retry.", "error");
-    } catch { toast("Connection interrupted. Please retry signing out.", "error"); }
+      else toast("Chưa đăng xuất được. Hãy thử lại.", "error");
+    } catch { toast("Mất kết nối. Hãy thử đăng xuất lại.", "error"); }
   }
 
   const userInitial = email ? email.charAt(0).toUpperCase() : "U";
@@ -97,13 +114,14 @@ export function Navbar() {
           </Link>
 
           {/* Nav Links Center */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav aria-label="Điều hướng chính" className="hidden lg:flex items-center gap-5 xl:gap-8">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "text-xs uppercase tracking-[0.16em] font-medium transition-colors duration-150 py-1 relative",
                     isActive
@@ -121,7 +139,7 @@ export function Navbar() {
           </nav>
 
           {/* Auth Cluster Right */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-4">
             {email ? (
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -129,7 +147,7 @@ export function Navbar() {
                   onClick={() => setUserDropdownOpen((prev) => !prev)}
                   className="flex items-center gap-2.5 rounded-full border border-border-strong bg-bg-raised/80 pl-1.5 pr-3 py-1 text-sm text-fg transition hover:border-accent-ring hover:bg-bg-raised focus-visible:outline-2 focus-visible:outline-accent-ring"
                   aria-expanded={userDropdownOpen}
-                  aria-haspopup="true"
+                  aria-label="Mở menu tài khoản"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent text-[#0A0A0B] text-xs font-bold font-mono">
                     {userInitial}
@@ -151,28 +169,31 @@ export function Navbar() {
                       className="absolute right-0 mt-2 w-56 rounded-[8px] border border-border-strong bg-bg-elevated/95 backdrop-blur-xl p-2 shadow-2xl z-50 text-xs"
                     >
                       <div className="px-3 py-2 border-b border-border/80 mb-1">
-                        <div className="text-[10px] uppercase tracking-wider text-fg-subtle">Signed In As</div>
+                        <div className="text-[10px] uppercase tracking-wider text-fg-subtle">Tài khoản</div>
                         <div className="text-fg font-medium truncate mt-0.5">{email}</div>
                       </div>
 
                       <div className="space-y-0.5">
                         <Link
                           href="/wardrobe"
+                          onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center gap-2 rounded-[4px] px-3 py-2 text-fg-muted hover:text-fg hover:bg-bg-raised transition"
                         >
-                          Wardrobe Collection
+                          Tủ đồ của bạn
                         </Link>
                         <Link
                           href="/outfits"
+                          onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center gap-2 rounded-[4px] px-3 py-2 text-fg-muted hover:text-fg hover:bg-bg-raised transition"
                         >
-                          Outfit Generator
+                          Ý tưởng phối đồ 2D
                         </Link>
                         <Link
                           href="/quiz"
+                          onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center gap-2 rounded-[4px] px-3 py-2 text-fg-muted hover:text-fg hover:bg-bg-raised transition"
                         >
-                          Personal Style Quiz
+                          Gu của bạn
                         </Link>
                       </div>
 
@@ -183,7 +204,7 @@ export function Navbar() {
                           className="flex w-full items-center gap-2 rounded-[4px] px-3 py-2 text-danger hover:bg-danger/10 transition text-left"
                         >
                           <LogOut className="h-3.5 w-3.5" />
-                          Sign Out
+                          Đăng xuất
                         </button>
                       </div>
                     </motion.div>
@@ -196,7 +217,7 @@ export function Navbar() {
                 className="inline-flex items-center gap-2 rounded-[8px] bg-accent hover:bg-accent-hover text-[#0A0A0B] px-4 py-2 text-xs uppercase tracking-[0.14em] font-bold transition shadow-sm"
               >
                 <User className="h-3.5 w-3.5" />
-                Sign In
+                Đăng nhập
               </Link>
             )}
           </div>
@@ -205,70 +226,28 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
-            className="flex md:hidden rounded-[4px] border border-border bg-bg-raised p-2 text-fg"
-            aria-label="Toggle navigation menu"
+            className="flex lg:hidden rounded-[4px] border border-border bg-bg-raised min-h-11 min-w-11 items-center justify-center p-2 text-fg"
+            aria-label={mobileMenuOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </header>
 
-      {/* Fullscreen Mobile Menu Overlay */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-30 flex flex-col justify-between bg-bg/98 backdrop-blur-2xl px-6 pt-28 pb-12 md:hidden"
-          >
-            <nav className="flex flex-col gap-6">
-              {navLinks.map((link, idx) => (
-                <motion.div
-                  key={link.href}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 * idx, duration: 0.3 }}
-                >
-                  <Link
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="font-display text-4xl font-extrabold tracking-tight text-fg hover:text-accent-text transition"
-                  >
-                    {link.label}
-                  </Link>
-                </motion.div>
-              ))}
-            </nav>
-
-            <div className="border-t border-border pt-6 space-y-4">
-              {email ? (
-                <div className="space-y-3">
-                  <div className="text-xs text-fg-subtle">Signed in as {email}</div>
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="w-full flex items-center justify-center gap-2 rounded-[8px] border border-border bg-bg-raised px-5 py-3 text-sm font-medium text-danger"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full flex items-center justify-center gap-2 rounded-[8px] bg-accent text-[#0A0A0B] px-5 py-3.5 text-sm font-bold uppercase tracking-wider"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Sign In / Register
-                </Link>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Drawer isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} title="Không gian của bạn" description="Tủ đồ, gu và bộ phối của riêng bạn.">
+        <nav id="mobile-navigation" aria-label="Điều hướng trên điện thoại" className="flex flex-col gap-2">
+          {navLinks.map((link) => (
+            <Link key={link.href} href={link.href} aria-current={pathname === link.href ? "page" : undefined} onClick={() => setMobileMenuOpen(false)} className={cn("flex min-h-12 items-center rounded-xl px-4 py-3 text-base", pathname === link.href ? "bg-accent-soft text-accent-text" : "text-fg hover:bg-bg-raised")}>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="mt-8 border-t border-border pt-6">
+          {email ? <div className="space-y-4"><p className="break-all text-xs text-fg-muted">Đang đăng nhập: {email}</p><button type="button" onClick={handleSignOut} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 text-sm text-danger"><LogOut size={16} />Đăng xuất</button></div> : <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-bg"><Sparkles size={16} />Đăng nhập</Link>}
+        </div>
+      </Drawer>
     </>
   );
 }

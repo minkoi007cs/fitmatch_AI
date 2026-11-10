@@ -28,7 +28,7 @@ export function Field({
           className="text-xs uppercase tracking-[0.14em] font-medium text-fg-muted select-none"
         >
           {label}
-          {required ? <span className="text-accent-text ml-1">*</span> : null}
+          {required ? <span aria-hidden="true" className="text-accent-text ml-1">*</span> : null}
         </label>
       </div>
       {children}

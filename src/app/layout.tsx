@@ -28,13 +28,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "FitMatch AI — Editorial AI Stylist & Digital Wardrobe",
+  title: "FitMatch AI — Tủ đồ và phòng thử đồ của bạn",
   description:
-    "Upload any wardrobe piece. FitMatch analyzes your clothing, learns your style, and generates high-fashion outfit combinations you can actually wear.",
+    "Giữ tủ đồ riêng, chọn gu theo dịp và chuẩn bị avatar cho phòng thử đồ 3D cá nhân.",
   openGraph: {
-    title: "FitMatch AI — Editorial AI Stylist",
+    title: "FitMatch AI — Tủ đồ của riêng bạn",
     description:
-      "One photo. A whole look. AI-powered outfit curation and digital wardrobe management.",
+      "Tủ đồ số, gợi ý phối đồ theo gu và Studio 3D trong giai đoạn thử nghiệm.",
     type: "website",
   },
 };
@@ -46,13 +46,14 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="vi"
       className={`${archivo.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <body className="min-h-screen bg-bg text-fg flex flex-col font-sans selection:bg-accent-soft selection:text-accent-text">
         <ToastProvider>
+          <a href="#app-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-fg focus:px-5 focus:py-3 focus:text-bg">Đến nội dung chính</a>
           <Navbar />
-          <div className="flex-1">{children}</div>
+          <div id="app-content" tabIndex={-1} className="flex-1">{children}</div>
           <Footer />
         </ToastProvider>
       </body>

@@ -46,6 +46,15 @@ test("reject path traversal, duplicate names and reserved IDs", () => {
   for (const bad of [null, [], {}, { ...manifest(), garments: [null] }])
     assert.throws(() => parseBundle(bad));
 });
+test("bundle import and local restore reject inherited or non-string garment categories", async () => {
+  const { validateWorkspace } = await import("../src/lib/studio/workspace");
+  for (const category of ["__proto__", "constructor", "toString", ["t-shirt"], null]) {
+    const b = manifest();
+    Object.assign(b.garments[0], { category });
+    assert.throws(() => parseBundle(b));
+    assert.throws(() => validateWorkspace({ version: 1, bundle: b, assets: [{ id: "avatar", name: "Body", bytes: glb({}) }, { id: "tee-v1", name: "Tee", bytes: glb({}) }], looks: [] }));
+  }
+});
 test("reject GLBs that could request arbitrary network or filesystem resources", () => {
   for (const uri of [
     "https://example.com/track.png",

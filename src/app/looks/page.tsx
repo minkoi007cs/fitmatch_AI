@@ -66,6 +66,7 @@ export default function LooksPage() {
         ),
       ]);
       if (alive.current) {
+        setError("");
         setVotes(feedback.feedback);
         setData(lib);
         setRec(recs.recommendation);
@@ -169,12 +170,16 @@ export default function LooksPage() {
         </div>
       </header>
       {error && (
-        <p
+        <div
           role="alert"
           className="mb-5 text-danger text-sm rounded-xl border border-danger/40 p-4"
         >
-          {error}
-        </p>
+          <p>{error}</p>
+          <div className="mt-3 flex flex-wrap gap-3 items-center">
+            <button className={button} disabled={busy} onClick={() => void refresh()}>Thử tải lại bộ phối</button>
+            <Link href="/wardrobe" className="inline-flex min-h-11 items-center text-accent-text text-xs">Về tủ đồ ảnh →</Link>
+          </div>
+        </div>
       )}
       {notice && (
         <p role="status" className="mb-5 text-success text-sm">
