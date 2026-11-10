@@ -54,3 +54,5 @@ covered by the PG17 legacy/fresh test).
 
 ## 4. Next steps (for the next AI)
 1. Codex reviews exact SQL + hashes; owner does §2–3 of the cutover README privately before any execute.
+
+> **Superseded status (APP-CLOSE-30):** the intermittent test:v2 timeout in §3 was root-caused and fixed (QINT-READSKEW), and R-MIGTARGET-29 is fixed; see [../app-close-30/report.md](../app-close-30/report.md).
