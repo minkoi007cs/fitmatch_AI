@@ -1,0 +1,14 @@
+$ npm run test:legacy-compat
+sha cf902d3fd393e6caf560a1ba9b1cc76928cdf996 2026-11-10T02:01:39Z
+
+> fitmatch-ai@0.1.0 test:legacy-compat
+> node scripts/test-legacy-compat-db.mjs
+
+REPRODUCED on the legacy shape (PG17): signup -> public.users does not exist; outfit insert without style_category -> NOT NULL violation.
+PASS comparator on legacy shape: base partial (aliases equivalent, owner FKs different-target, pgcrypto in extensions equal), identity applied, 11 absent, unrelated table/anon writes/overlapping policies reported.
+PASS legacy cutover (PG17): runner applied 11 + compat with per-step verification and refused a replay; data fingerprint unchanged; FK targets/cascades/legacy NOT NULL kept, no duplicates; signup provisions fm_users via the existing trigger; wardrobe NULL attributes + update; outfit save/reopen; cross-owner denied; buckets private; unrelated table untouched.
+PASS legacy per-owner analysis: reserve/enqueue/claim/result/confirm with NULL attributes, cross-owner reserve/claim/confirm denied, stale result fenced, shared quota, abort+cleanup claim (confirmed snapshot never claimed), browser roles denied.
+PASS refusals: unexpected trigger caller / required column / forced RLS abort the compat migration with nothing changed; runner refuses a partially present step; compat rerun is a no-op (same OID, one trigger).
+PASS fresh baseline (PG17): schema.sql + identity + runner (11 + compat) all applied; provisioning, outfit save with style_category/is_saved, one trigger.
+PASS CL-MIGRATION-26 legacy/fresh compatibility on PostgreSQL 17 (synthetic data; not a cloud restore).
+exit 0

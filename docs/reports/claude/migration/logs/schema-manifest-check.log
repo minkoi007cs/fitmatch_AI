@@ -1,0 +1,4 @@
+$ node scripts/schema-manifest.mjs --check
+sha cf902d3fd393e6caf560a1ba9b1cc76928cdf996 2026-11-10T02:01:28Z
+docs/infrastructure/schema-manifest.json current (14 steps, 426 objects)
+exit 0

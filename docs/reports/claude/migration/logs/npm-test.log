@@ -1,0 +1,473 @@
+$ npm test
+sha cf902d3fd393e6caf560a1ba9b1cc76928cdf996 2026-11-09T11:07:21Z
+
+> fitmatch-ai@0.1.0 test
+> node --import tsx --test tests/*.test.ts
+
+TAP version 13
+# Subtest: signed hub session binds both hub identity and local wardrobe owner
+ok 1 - signed hub session binds both hub identity and local wardrobe owner
+  ---
+  duration_ms: 1.9552
+  type: 'test'
+  ...
+# Subtest: tampered local identity cannot select another wardrobe
+ok 2 - tampered local identity cannot select another wardrobe
+  ---
+  duration_ms: 0.32827
+  type: 'test'
+  ...
+# Subtest: keys, cookie purpose, malformed encodings and invalid shape are rejected
+ok 3 - keys, cookie purpose, malformed encodings and invalid shape are rejected
+  ---
+  duration_ms: 0.2565
+  type: 'test'
+  ...
+# Subtest: PKCE flow rejects stale/future attempts and preserves explicit linking proof
+ok 4 - PKCE flow rejects stale/future attempts and preserves explicit linking proof
+  ---
+  duration_ms: 0.414511
+  type: 'test'
+  ...
+# Subtest: return paths preserve intent but reject redirect escapes and auth loops
+ok 5 - return paths preserve intent but reject redirect escapes and auth loops
+  ---
+  duration_ms: 0.286251
+  type: 'test'
+  ...
+# Subtest: each parallel sign-in attempt gets a safe independent cookie name
+ok 6 - each parallel sign-in attempt gets a safe independent cookie name
+  ---
+  duration_ms: 0.173111
+  type: 'test'
+  ...
+# Subtest: file ownership excludes traversal, encoded traversal, other tenants and absolute URLs
+ok 7 - file ownership excludes traversal, encoded traversal, other tenants and absolute URLs
+  ---
+  duration_ms: 0.180668
+  type: 'test'
+  ...
+# Subtest: independent instances share one durable refresh and return the same successor
+ok 8 - independent instances share one durable refresh and return the same successor
+  ---
+  duration_ms: 101.151966
+  type: 'test'
+  ...
+# Subtest: different tokens do not share refresh results
+ok 9 - different tokens do not share refresh results
+  ---
+  duration_ms: 0.621054
+  type: 'test'
+  ...
+# Subtest: ambiguous refresh transport failure is not retried with a possibly consumed token
+ok 10 - ambiguous refresh transport failure is not retried with a possibly consumed token
+  ---
+  duration_ms: 0.58058
+  type: 'test'
+  ...
+# Subtest: revocation verdict is shared rather than rotating again
+ok 11 - revocation verdict is shared rather than rotating again
+  ---
+  duration_ms: 0.240899
+  type: 'test'
+  ...
+# Subtest: backend identity: canonical project only, consistent URL and keys
+ok 12 - backend identity: canonical project only, consistent URL and keys
+  ---
+  duration_ms: 4.51124
+  type: 'test'
+  ...
+# Subtest: backend identity: wrong, retired or unbound configurations are refused before any client exists
+ok 13 - backend identity: wrong, retired or unbound configurations are refused before any client exists
+  ---
+  duration_ms: 1.125887
+  type: 'test'
+  ...
+# Subtest: backend identity: isolated-test mode is loopback only and never a cloud project
+ok 14 - backend identity: isolated-test mode is loopback only and never a cloud project
+  ---
+  duration_ms: 0.169063
+  type: 'test'
+  ...
+# Subtest: backend identity: admin client and the worker route refuse writes, enrollment and claims on a wrong project
+ok 15 - backend identity: admin client and the worker route refuse writes, enrollment and claims on a wrong project
+  ---
+  duration_ms: 684.910852
+  type: 'test'
+  ...
+# Subtest: failed or canceled reconstruction remains visible in Studio for recovery
+ok 16 - failed or canceled reconstruction remains visible in Studio for recovery
+  ---
+  duration_ms: 1.052353
+  type: 'test'
+  ...
+# Subtest: queued reconstruction remains pending; unrelated jobs cannot label it failed
+ok 17 - queued reconstruction remains pending; unrelated jobs cannot label it failed
+  ---
+  duration_ms: 1.429913
+  type: 'test'
+  ...
+# Subtest: prototype names are not garment categories
+ok 18 - prototype names are not garment categories
+  ---
+  duration_ms: 0.130245
+  type: 'test'
+  ...
+# Subtest: superseded fitting is ignored regardless of response ordering
+ok 19 - superseded fitting is ignored regardless of response ordering
+  ---
+  duration_ms: 0.230591
+  type: 'test'
+  ...
+# Subtest: committed v1-r2 schemas and fixture match the code that generates them
+ok 20 - committed v1-r2 schemas and fixture match the code that generates them
+  ---
+  duration_ms: 265.827966
+  type: 'test'
+  ...
+# Subtest: fixture body/top/bottom: valid GLBs, hashes match, one shared frame
+ok 21 - fixture body/top/bottom: valid GLBs, hashes match, one shared frame
+  ---
+  duration_ms: 5.392694
+  type: 'test'
+  ...
+# Subtest: jeans are a bottom with their own kinds; tops keep v1 kinds
+ok 22 - jeans are a bottom with their own kinds; tops keep v1 kinds
+  ---
+  duration_ms: 3.177566
+  type: 'test'
+  ...
+# Subtest: look request: both slots, camera, legacy fittingId
+ok 23 - look request: both slots, camera, legacy fittingId
+  ---
+  duration_ms: 3.35633
+  type: 'test'
+  ...
+# Subtest: job envelope schema accepts a bottom drape job and rejects an unknown content type
+ok 24 - job envelope schema accepts a bottom drape job and rejects an unknown content type
+  ---
+  duration_ms: 4.752074
+  type: 'test'
+  ...
+# Subtest: expired URL is re-signed once for the same version, then succeeds
+ok 25 - expired URL is re-signed once for the same version, then succeeds
+  ---
+  duration_ms: 38.072383
+  type: 'test'
+  ...
+# Subtest: 403 is also treated as expired; a second expiry is not retried again
+ok 26 - 403 is also treated as expired; a second expiry is not retried again
+  ---
+  duration_ms: 0.831549
+  type: 'test'
+  ...
+# Subtest: missing object, network failure and corrupt bytes are never refreshed
+ok 27 - missing object, network failure and corrupt bytes are never refreshed
+  ---
+  duration_ms: 1.940121
+  type: 'test'
+  ...
+# Subtest: refreshed record must be the identical asset; any change is refused without download
+ok 28 - refreshed record must be the identical asset; any change is refused without download
+  ---
+  duration_ms: 1.396702
+  type: 'test'
+  ...
+# Subtest: revoked or foreign model: the authenticated refresh fails and nothing is downloaded
+ok 29 - revoked or foreign model: the authenticated refresh fails and nothing is downloaded
+  ---
+  duration_ms: 0.307501
+  type: 'test'
+  ...
+# Subtest: pinned snapshot hash is checked before any download
+ok 30 - pinned snapshot hash is checked before any download
+  ---
+  duration_ms: 3.456525
+  type: 'test'
+  ...
+# Subtest: abort during refresh (selection changed A→B) stops before the second download
+ok 31 - abort during refresh (selection changed A→B) stops before the second download
+  ---
+  duration_ms: 0.504502
+  type: 'test'
+  ...
+# Subtest: outfit identities do not depend on duplicate model IDs and preferences reach the prompt
+ok 32 - outfit identities do not depend on duplicate model IDs and preferences reach the prompt
+  ---
+  duration_ms: 33.421245
+  type: 'test'
+  ...
+# Subtest: unrecognized vision categories and patterns fall back to editable enum values
+ok 33 - unrecognized vision categories and patterns fall back to editable enum values
+  ---
+  duration_ms: 0.643491
+  type: 'test'
+  ...
+# Subtest: changing the top keeps the jeans and the reverse
+ok 34 - changing the top keeps the jeans and the reverse
+  ---
+  duration_ms: 1.729506
+  type: 'test'
+  ...
+# Subtest: A→B→A with B finishing late never overrides the current choice
+ok 35 - A→B→A with B finishing late never overrides the current choice
+  ---
+  duration_ms: 0.382
+  type: 'test'
+  ...
+# Subtest: pending item auto-applies only if it is still selected
+ok 36 - pending item auto-applies only if it is still selected
+  ---
+  duration_ms: 0.187858
+  type: 'test'
+  ...
+# Subtest: full outfit switches both slots in one step, never half
+ok 37 - full outfit switches both slots in one step, never half
+  ---
+  duration_ms: 0.21132
+  type: 'test'
+  ...
+# Subtest: results for another avatar version are ignored
+ok 38 - results for another avatar version are ignored
+  ---
+  duration_ms: 0.10967
+  type: 'test'
+  ...
+# Subtest: a failed pending item falls back to what is shown
+ok 39 - a failed pending item falls back to what is shown
+  ---
+  duration_ms: 0.190811
+  type: 'test'
+  ...
+# Subtest: qwen v1: every valid fixture parses and stays within the byte budget
+ok 40 - qwen v1: every valid fixture parses and stays within the byte budget
+  ---
+  duration_ms: 5.313362
+  type: 'test'
+  ...
+# Subtest: qwen v1: every invalid fixture is rejected
+ok 41 - qwen v1: every invalid fixture is rejected
+  ---
+  duration_ms: 1.747123
+  type: 'test'
+  ...
+# Subtest: qwen v1: adapter input and error envelopes
+ok 42 - qwen v1: adapter input and error envelopes
+  ---
+  duration_ms: 2.227112
+  type: 'test'
+  ...
+# Subtest: qwen v1: human confirmation never accepts unknown or empty approvals
+ok 43 - qwen v1: human confirmation never accepts unknown or empty approvals
+  ---
+  duration_ms: 1.079357
+  type: 'test'
+  ...
+# Subtest: canonical JSON is key-order independent
+ok 44 - canonical JSON is key-order independent
+  ---
+  duration_ms: 0.178549
+  type: 'test'
+  ...
+# Subtest: flag OFF: a heartbeat never stores garment.analyze, 3D capabilities untouched
+ok 45 - flag OFF: a heartbeat never stores garment.analyze, 3D capabilities untouched
+  ---
+  duration_ms: 1.145843
+  type: 'test'
+  ...
+# Subtest: schema reconciliation: a fully migrated project reads applied for every step, nothing extra
+ok 46 - schema reconciliation: a fully migrated project reads applied for every step, nothing extra
+  ---
+  duration_ms: 5.2628
+  type: 'test'
+  ...
+# Subtest: schema reconciliation: base-only project, unrelated objects and drift are reported, never hidden
+ok 47 - schema reconciliation: base-only project, unrelated objects and drift are reported, never hidden
+  ---
+  duration_ms: 4.624645
+  type: 'test'
+  ...
+# Subtest: schema reconciliation: inventory flattening keeps FitMatch schema shape only
+ok 48 - schema reconciliation: inventory flattening keeps FitMatch schema shape only
+  ---
+  duration_ms: 0.347439
+  type: 'test'
+  ...
+# Subtest: CL-MIGRATION-26 comparator: legacy names are equivalent, a different FK target is a real difference
+ok 49 - CL-MIGRATION-26 comparator: legacy names are equivalent, a different FK target is a real difference
+  ---
+  duration_ms: 2.868564
+  type: 'test'
+  ...
+# Subtest: CL-MIGRATION-26 comparator: extension placement, forced RLS, permissive overlap and defaults are compared
+ok 50 - CL-MIGRATION-26 comparator: extension placement, forced RLS, permissive overlap and defaults are compared
+  ---
+  duration_ms: 4.150162
+  type: 'test'
+  ...
+# Subtest: CL-MIGRATION-26 precondition: sequential apply requires added objects absent and changed objects at their prior definition
+ok 51 - CL-MIGRATION-26 precondition: sequential apply requires added objects absent and changed objects at their prior definition
+  ---
+  duration_ms: 7.943966
+  type: 'test'
+  ...
+# Subtest: source cleanup collector: dry run never removes or reports
+ok 52 - source cleanup collector: dry run never removes or reports
+  ---
+  duration_ms: 1.899476
+  type: 'test'
+  ...
+# Subtest: source cleanup collector: claims before removing, one removal per owner, reports with the claim token
+ok 53 - source cleanup collector: claims before removing, one removal per owner, reports with the claim token
+  ---
+  duration_ms: 0.634073
+  type: 'test'
+  ...
+# Subtest: source cleanup collector: a failed claim removes nothing
+ok 54 - source cleanup collector: a failed claim removes nothing
+  ---
+  duration_ms: 0.33287
+  type: 'test'
+  ...
+# Subtest: source cleanup collector: storage failure is reported as a code, not a message
+ok 55 - source cleanup collector: storage failure is reported as a code, not a message
+  ---
+  duration_ms: 0.255421
+  type: 'test'
+  ...
+# Subtest: prepared garments must belong to the selected avatar version
+ok 56 - prepared garments must belong to the selected avatar version
+  ---
+  duration_ms: 1.260422
+  type: 'test'
+  ...
+# Subtest: reject path traversal, duplicate names and reserved IDs
+ok 57 - reject path traversal, duplicate names and reserved IDs
+  ---
+  duration_ms: 0.278874
+  type: 'test'
+  ...
+# Subtest: reject GLBs that could request arbitrary network or filesystem resources
+ok 58 - reject GLBs that could request arbitrary network or filesystem resources
+  ---
+  duration_ms: 0.750577
+  type: 'test'
+  ...
+# Subtest: reject corrupt GLB lengths and unsupported required decoders
+ok 59 - reject corrupt GLB lengths and unsupported required decoders
+  ---
+  duration_ms: 0.271141
+  type: 'test'
+  ...
+# Subtest: capture requires complete body views and a plausible height before packaging
+ok 60 - capture requires complete body views and a plausible height before packaging
+  ---
+  duration_ms: 8.162312
+  type: 'test'
+  ...
+# Subtest: local look restore rejects selection from another bundle or duplicate models
+ok 61 - local look restore rejects selection from another bundle or duplicate models
+  ---
+  duration_ms: 124.41873
+  type: 'test'
+  ...
+# Subtest: quiz selects real supported inventory, honors excluded patterns and gives transparent reasons
+ok 62 - quiz selects real supported inventory, honors excluded patterns and gives transparent reasons
+  ---
+  duration_ms: 2.868155
+  type: 'test'
+  ...
+# Subtest: recommendations remain deterministic and never fabricate more items to fill three cards
+ok 63 - recommendations remain deterministic and never fabricate more items to fill three cards
+  ---
+  duration_ms: 0.236283
+  type: 'test'
+  ...
+# Subtest: item feedback suppresses skipped inventory without inventing replacements
+ok 64 - item feedback suppresses skipped inventory without inventing replacements
+  ---
+  duration_ms: 0.415664
+  type: 'test'
+  ...
+# Subtest: strict input contracts reject ownership injection, duplicate photos and partial quizzes
+ok 65 - strict input contracts reject ownership injection, duplicate photos and partial quizzes
+  ---
+  duration_ms: 6.246983
+  type: 'test'
+  ...
+# Subtest: output publication requires reachable geometry and valid embedded buffer ranges
+ok 66 - output publication requires reachable geometry and valid embedded buffer ranges
+  ---
+  duration_ms: 1.634959
+  type: 'test'
+  ...
+# Subtest: Vietnamese blue preference does not treat every xanh garment as blue
+ok 67 - Vietnamese blue preference does not treat every xanh garment as blue
+  ---
+  duration_ms: 0.284776
+  type: 'test'
+  ...
+# Subtest: full look: three owned top+jeans outfits, varied, never invented; occasion changes the ranking
+ok 68 - full look: three owned top+jeans outfits, varied, never invented; occasion changes the ranking
+  ---
+  duration_ms: 12.55979
+  type: 'test'
+  ...
+# Subtest: photo normalization flattens transparent pixels onto white, keeps opaque colors
+ok 69 - photo normalization flattens transparent pixels onto white, keeps opaque colors
+  ---
+  duration_ms: 145.48763
+  type: 'test'
+  ...
+# Subtest: partial wardrobe updates preserve omitted values and keep explicit false/null
+ok 70 - partial wardrobe updates preserve omitted values and keep explicit false/null
+  ---
+  duration_ms: 4.25934
+  type: 'test'
+  ...
+# Subtest: empty and invalid profiles cannot erase saved data
+ok 71 - empty and invalid profiles cannot erase saved data
+  ---
+  duration_ms: 1.602666
+  type: 'test'
+  ...
+# Subtest: archive rejects malformed nested parts before persistence
+ok 72 - archive rejects malformed nested parts before persistence
+  ---
+  duration_ms: 1.555738
+  type: 'test'
+  ...
+# Subtest: legacy quiz hydration never passes null or malformed arrays into the form
+ok 73 - legacy quiz hydration never passes null or malformed arrays into the form
+  ---
+  duration_ms: 0.434832
+  type: 'test'
+  ...
+# Subtest: invalid JSON and oversized requests are client errors
+ok 74 - invalid JSON and oversized requests are client errors
+  ---
+  duration_ms: 42.131771
+  type: 'test'
+  ...
+# Subtest: CL-MIGRATION-26: archive style_category is the one shared style; mixed or contradicting payloads refused
+ok 75 - CL-MIGRATION-26: archive style_category is the one shared style; mixed or contradicting payloads refused
+  ---
+  duration_ms: 1.711732
+  type: 'test'
+  ...
+# Subtest: python worker: checkpoint safety, exit classification, adapter env (stdlib unittest)
+ok 76 - python worker: checkpoint safety, exit classification, adapter env (stdlib unittest)
+  ---
+  duration_ms: 1671.42412
+  type: 'test'
+  ...
+1..76
+# tests 76
+# suites 0
+# pass 76
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5788.834143
+exit 0
