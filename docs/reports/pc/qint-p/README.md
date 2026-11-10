@@ -1,6 +1,9 @@
 # QINT-P / AI-QUALITY-04 checkpoint — 07/11/2026
 
-Latest checkpoint: [PC-QWEN-BIND-25 native ACK and CPU bridge](bind25-native.md).
+Latest: [AI-NATIVE-COMPOSE-31 Windows HTTP/worker/CLI proof](compose31-native-http.md).
+4/4 CPU composition cases PASS:3real CLI refusals +1explicit CPU MOCK success;
+synthetic HTTP/queue only, native process/lock assertions, no torch/model/GPU.
+Prior checkpoint: [PC-QWEN-BIND-25 native ACK and CPU bridge](bind25-native.md).
 Focused policy/identity binding ACK PASS atf80749a; exact56tests retain a Windows
 fixture error (46PASS/9skip/1error), supplemental native4/4 and own bridge70/70PASS.
 No Qwen GPU grant; canonical migration/recovery, HTTPS/token and finite slot pending.

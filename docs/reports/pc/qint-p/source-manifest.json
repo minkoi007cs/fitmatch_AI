@@ -82,6 +82,22 @@
       "normalization": "CRLF to LF only"
     },
     {
+      "snapshot": "qint_p/compose31/source/scripts/fixtures/mock_qwen_adapter.py.txt",
+      "restore_to": "ai-service/qint_p/compose31/source/scripts/fixtures/mock_qwen_adapter.py",
+      "sha256": "4b66b038bfda86a4f8756db5f07c630bbe6216407837c50c28a2eb1cfbc50b9a",
+      "bytes": 2507,
+      "original_sha256": "4b66b038bfda86a4f8756db5f07c630bbe6216407837c50c28a2eb1cfbc50b9a",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/compose31_probe.py.txt",
+      "restore_to": "ai-service/qint_p/compose31_probe.py",
+      "sha256": "5f6500496e3c58fa470f9002d183b9226c141f0a8407691ee9e5eb5d605ea00a",
+      "bytes": 20201,
+      "original_sha256": "5f6500496e3c58fa470f9002d183b9226c141f0a8407691ee9e5eb5d605ea00a",
+      "normalization": "CRLF to LF only"
+    },
+    {
       "snapshot": "qint_p/contract_snapshot/docs/qwen-contract-v1.md.txt",
       "restore_to": "ai-service/qint_p/contract_snapshot/docs/qwen-contract-v1.md",
       "sha256": "aebf025eb48bcc0a04e628900d58a02fb98f43a254ad72f69ad30eb56341c533",
