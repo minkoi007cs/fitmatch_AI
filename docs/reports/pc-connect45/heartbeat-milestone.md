@@ -1,0 +1,13 @@
+# CONNECT45 heartbeat milestone — transport ready, no inference window
+
+10November2026, follow-up to [refresh002](./refresh-002.md). Codex explicitly reports canonical DB `last_seen` **2026-11-10T17:48:27.688Z** for worker **8f1cc6bb-6446-4a7f-9d67-6144deba29be**, stored capabilities `{}` with QwenflagOFF. Transport/backend identity readiness is now confirmed by the backend owner; PC3D did not query the database or use a token.
+
+The AI owner's existing local nonsecret checkpoint also records the same worker ID, reserved-token-hash match, exactly1authenticated heartbeat,0claims, no model/GPU load and runtime execution not authorized. Its DB-verification record attributes the canonical readback to Codex, not a second PC query. The older `proposedWorker` field is an enrollment preparation label, not the registered worker-ID comparison. No raw token/hash or private configuration is published here.
+
+This supersedes refresh002's **heartbeat-pending** condition only. **An execution window is still explicitly withheld** while the next UI/deployment and owner browser are verified. The next UI candidate is reported staged, not yet the serving revision. No slot is issued/refreshed, no model starts and no inference follows from a successful heartbeat. ThreeD GPU work stays paused; PC3D is not holding the canonical OS lock.
+
+The17:46sample passed unchanged RAM minimum4GiB with4612816896bytes free, margin317849600bytes, and11381MiB freeVRAM. Known-owned-tree scope passed at that snapshot; global GPU-idle was not claimed. Those samples are not a continuing authorization. At the actual Codex window signal, refresh RAM>=4294967296bytes, VRAM/headroom, policy789426/guard47331, lock volume3699583840/fileId2251799814103012 and current owned-tree evidence immediately before the single600second pc-ai slot. Refuse if any gate fails or is unknown; no threshold reduction/foreign kill/auto-refresh.
+
+Prepared bounds remain exactly1garment.analyze job,240second engine timeout+30second drain, worker sole existing byte0 lock owner/direct adapter/no nested guard. A new deployment/source/config must remain reviewed with unchanged immutable workeref25136b before capability/input activation. Owner-approved app input, human review and actual owned-tree drain/unload are still required. Native47PASS/9skip evidence is reused, not rerun. No CUDA/fit/render/weights/setup, UAC, publicPCport, paid or cloud write by PC3D.
+
+Current coordinator state: **WAIT_EXPLICIT_EXECUTION_WINDOW_AND_FRESH_GATE_RECHECK**. The ability to allocate600seconds is conditional and has not been exercised. Checkpoint retains the exact source/native reports, private resource/process evidence and this milestone for resumption.
