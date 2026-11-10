@@ -1,0 +1,33 @@
+{
+  "kind": "fitmatch.pc3d.connect45-slot-receipt.v1",
+  "task": "CONNECT45-RESUME2310-GRANT1",
+  "owner": "pc-ai",
+  "issuedAtUtc": "2026-11-10T23:17:14.701015+00:00",
+  "expiresAtUtc": "2026-11-10T23:27:14.701015+00:00",
+  "issuedAtUnix": 1794352634.7010155,
+  "admitUntilUnix": 1794353234.7010155,
+  "seconds": 600,
+  "slotSHA256": "16aa02234c791c09e14369ff598c8b568cd80954e37fd447b09b2bda27902f9a",
+  "slotFileId": 2814749767563627,
+  "slotVolume": 3699583840,
+  "lockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "RAMAvailableBytesAtGate": 5468221440,
+  "VRAMFreeMiBAtGate": 11429,
+  "jobsAuthorized": 1,
+  "kindAuthorized": "garment.analyze",
+  "engineTimeoutSeconds": 240,
+  "drainSeconds": 30,
+  "autoRefresh": false,
+  "workerId": "8f1cc6bb-6446-4a7f-9d67-6144deba29be",
+  "approvedServingRevision": "ca3466c79d42f4b8ff273b86d34734ebb8935443",
+  "workerSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "threeDGPUWorkPaused": true,
+  "modelLoadedByPC3D": false,
+  "slotFileIsAuthorityReceiptIsMetadataOnly": true,
+  "state": "ISSUED_ONE_BOUNDED_SLOT_WAIT_SINGLE_JOB_DRAIN"
+}
