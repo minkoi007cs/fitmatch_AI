@@ -1,5 +1,22 @@
 # CONNECT-PC-AI-45 — private enrollment reservation / disabled worker
 
+Current resume PC-QINT-P-20261110-13: read operations433922c/PROC0045 and exact
+codex/connect-45@7d042ed9 execution report. Codex confirms actual restore/canonical
+12APPLIED+VERIFIED/13history adopted, and registered the same token hash as worker
+`8f1cc6bb-6446-4a7f-9d67-6144deba29be`. Local hash/config/worker source match;
+no worker process or active config existed, so no unknown-delivery start was repeated.
+Codex then explicitly enabled that existing row and authorized exactly one
+heartbeat while QwenOFF. **One POST returned HTTP200, success=true, canonical
+backendgohczmqykjkrgdblgbog, grantedCapabilities=[] at2026-11-10T17:48:24.901704Z.**
+Claims0/model0/GPU0. Codex still must independently read back DB last_seen.
+See [heartbeat receipt](evidence/connect45/heartbeat-only-result.json).
+
+Fresh RAM at resume was4,680,658,944bytes (above4GiB); this is a point-in-time
+sample, not future inference admission. The runtime config remains disabled,
+operator approval absent, finite pc-ai slot absent and global quiescence unproven.
+Earlier pending-backup and below-RAM checkpoints below are historical, superseded
+by this resume where stated. No worker loop, live claim or inference is authorized.
+
 Session PC-QINT-P-20261110-12,10/11/2026. Own baselineaef81b5; fetched operations
 546ca647/PROC0043 and hosted branch6ec119a. The newer direct CONNECT45 handoff
 supersedes the published CONNECT43 missing-admin status: Codex reports actual
@@ -74,9 +91,42 @@ means no further dispatch/start, worker-owned drain/exit, native Job/process-han
 verification and coordinator handback. On timeout/unknown state, preserve evidence
 and quarantine; no blind PID kill, lock deletion or slot release/renewal.
 
-Remaining blockers: Codex actualPG17 restore/cutover/backend-ready handoff; scoped
-hash enrollment and live operator approval; reviewed serving binding/input snapshot
-and real app job; PC3D quiescence ACK and new finite pc-ai slot. No auth heartbeat,
-claim, inference, runtime start or CUDA was sent/performed. The token reservation
-is not enrollment or capability grant. Ready for review for private preparation;
-live execution remains blocked until the explicit coordinated handoff.
+Current remaining blockers: live operator approval/active exact config, reviewed
+serving/input snapshot and real app job, PC3D fresh quiescence/resource admission
+and explicit finite pc-ai grant, then a separate agreed Qwen flag/test window.
+The original private reservation is now linked to the Codex-registered row;
+only one authorized heartbeat has run, with no granted analysis capability while
+OFF. No claim, inference, runtime worker start or CUDA. No automatic polling.
+
+Earlier coordinator follow-up: PC3D reports published native logs at PR10/76437519 and
+readiness85e9d37f, with known-owned-tree scope PASS and3D GPU paused, but global
+idle unproven and no slot grant. This is peer-reported scope, not a new PC Qwen
+native rerun. That read-only RAM checkpoint was blocked: reported freeRAM
+4,179,521,536bytes and the fresh PC sample4,286,984,192bytes are both below the
+existing4GiB gate (4,294,967,296bytes). The runner rechecks this after heavy imports;
+near-threshold availability is not sufficient headroom assurance. No threshold
+was lowered and no foreign process was closed.
+
+The existing Q02 detail profile is reused, not rerun: load32.66s and its sampled
+RAM/device measurements are in [resource readiness](evidence/connect45/resource-readiness.json).
+PC3D's reported11,377MiB freeVRAM exceeds the existing8GiB admission minimum, but
+does not establish global idle or current post-import resources. Proposed600s slot
+with240s engine/30s drain remains unexecuted/ungranted. Refresh resources and full
+quiescence immediately before any later explicit admission.
+
+The owned heartbeat probe defaults to prepare-only and refuses --send before
+reading credentials if a fresh explicit row-enabled/QwenOFF heartbeat-only permit
+is absent. Both no-send/refusal checks passed without HTTP. After the enable
+signal, one permit was created and consumed; a private attempt marker prevents
+unknown-outcome replay under the same permit. The actual call uses a10s timeout,
+no retry, no redirects and only the heartbeat endpoint. It reads the credential
+into memory, never argv/log. Production transport is used for pure backend-binding
+validation only; worker.run/loop/claim, locks and model imports are never called.
+Source hash, prepared checks and [resume ACK](evidence/connect45/resume-ack.json)
+are published without token values, hashes or private config.
+
+PC3D refresh002 (peer reportd91907c4) also saw RAM above4GiB at17:46UTC, no new
+slot and known-owned-tree scope PASS with global idle still unclaimed. This agrees
+with the need for a fresh resource/quiescence check immediately before any later
+window. The actual enabled-row/heartbeat result above is newer than that peer's
+reported DISABLED-row snapshot. No inference permission follows from either.

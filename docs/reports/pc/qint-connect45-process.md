@@ -1,5 +1,15 @@
 # CONNECT-PC-AI-45 — PC-QINT-P-20261110-12
 
+RESUME receipt PC-QINT-P-20261110-13: owner continuation received after unknown
+14:20 delivery; preserve private reservation and pending resource publication,
+no duplicate start. Read operations433922c/PROC0045 root delta and exact source
+codex/connect-45@7d042ed9 execution report. New observed Codex handoff supersedes
+earlier blockers: actual recovery/canonical12APPLIED+VERIFIED/history13 adopted;
+registered worker8f1cc6bb-6446-4a7f-9d67-6144deba29be DISABLED, QwenOFF. PC performs
+local token/config/process/RAM ACK and prepares heartbeat-only/backend probe,
+without sending until explicit existing-row-enable signal. No claim/inference,
+runtime activation, native rerun, credential rotation or coordinator mutation.
+
 START: ownaef81b5 clean; operations546ca647/PROC0043 fetched/read, root rules and
 all new roadmap/process continuation reconciled with prior native33 checkpoint.
 Direct CONNECT45 handoff supersedes the older CONNECT43 missing-admin status:
@@ -35,3 +45,22 @@ observation/normaldrain-stop runbook, not executed. Codexbackendready/restorecut
 scopedenrollment/approval, serving/inputsnapshot and3Dquiescence/finitegrant remain.
 CPU/private preparation Ready for review via existingPR9; no sourceapp/SQL/model
 weights/photos/env/runtime changes beyond authorized private reservation/config.
+
+Peer/resource follow-up: PC3D reports native publication76437519/readiness85e9d37f,
+known-owned-tree PASS,3DGPUpaused, globalidleNOTPROVEN/no slot. Reused Q02 profile
+without model rerun. Current RAM sample4,286,984,192bytes and peer sample4,179,521,536
+both below existing4GiB admission; preserve threshold/refusal. ReportedfreeVRAM
+11377MiB exceeds8GiB gate but is not currentglobalidle/postimportproof.600s slot,
+240s engine/30s drain only proposed, not issued/executed. Resource receipt appended;
+no automatic cleanup, foreignkill, thresholdchange, secret rotation or runtime start.
+
+RESUME13 outcome: local hash matches disabled registeredworker8f1cc6bb, source/
+adapter/config ACK,0matchingworkerprocess/no activeconfig, freshRAM4,680,658,944bytes
+passes4GiB atsampletime. Prepared one-heartbeat-only probe; default no-sendPASS and
+missingpermitrefusal75 beforecredentialread/requestPASS. No new harness/model/native
+suite. ExplicitCodex existingrowenable signal then received: createfresh300spermit,
+send exactlyoneauthenticatedPOST heartbeat, HTTP200/successtrue/canonicalref/grants[]
+at2026-11-10T17:48:24.901704Z,0claim/model/GPU. No retries/redirects/autopoll; private
+attemptmarker deduplicatesunknownoutcomes. No rawtoken/header output/publication.
+CodexDBlast_seen readback remainsindependentnextstep. Runtimewrapper stilldisabled,
+slot/operatorapproval absent; waitfurther activation, no automaticinference.

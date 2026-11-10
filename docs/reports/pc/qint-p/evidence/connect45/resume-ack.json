@@ -1,0 +1,33 @@
+{
+  "session": "PC-QINT-P-20261110-13",
+  "workerId": "8f1cc6bb-6446-4a7f-9d67-6144deba29be",
+  "registeredRowStateReported": "DISABLED",
+  "QwenFlagReported": "OFF",
+  "backendStateReportedByCodex": "actual restore PASS;12APPLIED+VERIFIED;13history adopted",
+  "sourceReportRevision": "7d042ed9ef02046b52e24f2235bb434b64359ee8",
+  "tokenHashMatchesRegisteredHash": true,
+  "rawTokenOrHashIncludedHere": false,
+  "privateConfigReadyDisabled": true,
+  "appOrigin": "https://fitmatch.minkoi.org",
+  "canonicalProjectRef": "gohczmqykjkrgdblgbog",
+  "servingRevisionReported": "7397b6a954dbe877e425abd09abd125398c271c4",
+  "workerSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "adapterSHA256": {
+    "worker_cli.py": "1f3c26b10f67dd92461dbbba385d3499d10f1e726172454e320d7f2c8b3eebb8",
+    "worker_admission.py": "b5f92a1365a87cbd9d75ccba153b3967d6f57f3d79eedaba0b56f83626eca78a",
+    "wire.py": "66a329c51d518aa193fb3d289d42252da374cd35af11732158f7f69c4b35823a",
+    "runner.py": "4dfd7364e1f41c1c0ba5fe4187acb2a4c53e719424b9c819e10876e63f5d9d40"
+  },
+  "matchingWorkerProcessCount": 0,
+  "GPUCapableCandidateCount": 1,
+  "opaqueCandidateCount": 0,
+  "activeConfigExists": false,
+  "operatorApprovalExists": false,
+  "freshAvailableRAMBytes": 4680658944,
+  "minRAMBytes": 4294967296,
+  "freshRAMGatePass": true,
+  "heartbeatPermitExists": false,
+  "authHeartbeatClaimOrRuntimeStarted": false,
+  "GPUOrModelLoaded": false,
+  "recordedAtUtc": "2026-11-10T17:45:21.793993+00:00"
+}
