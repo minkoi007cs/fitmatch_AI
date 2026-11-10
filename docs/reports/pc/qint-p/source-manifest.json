@@ -378,6 +378,38 @@
       "normalization": "CRLF to LF only"
     },
     {
+      "snapshot": "qint_p/native33/source/docs/reports/claude/app-close-30/native-fixture-30.patch.txt",
+      "restore_to": "ai-service/qint_p/native33/source/docs/reports/claude/app-close-30/native-fixture-30.patch",
+      "sha256": "50ddd9cb14d893c4f6bdbf7c099e5e4e6c16dc54a333294c8837c2674bde5fd3",
+      "bytes": 1228,
+      "original_sha256": "50ddd9cb14d893c4f6bdbf7c099e5e4e6c16dc54a333294c8837c2674bde5fd3",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/native33/source/scripts/worker/gpu_coordinator_policy.py.txt",
+      "restore_to": "ai-service/qint_p/native33/source/scripts/worker/gpu_coordinator_policy.py",
+      "sha256": "9d600e87c44e70fdaa3e7f038dc15aea6ed125aad8d1c2ba3b204966eee1f47b",
+      "bytes": 4326,
+      "original_sha256": "9d600e87c44e70fdaa3e7f038dc15aea6ed125aad8d1c2ba3b204966eee1f47b",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/native33/source/scripts/worker/test_worker_unit.py.txt",
+      "restore_to": "ai-service/qint_p/native33/source/scripts/worker/test_worker_unit.py",
+      "sha256": "f178f7f0ff2723b8e0b5f3235c2da71a1565d9138bd04529362f4223d8a86429",
+      "bytes": 50815,
+      "original_sha256": "f178f7f0ff2723b8e0b5f3235c2da71a1565d9138bd04529362f4223d8a86429",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/native33/source/scripts/worker/worker.py.txt",
+      "restore_to": "ai-service/qint_p/native33/source/scripts/worker/worker.py",
+      "sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+      "bytes": 73502,
+      "original_sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+      "normalization": "CRLF to LF only"
+    },
+    {
       "snapshot": "qint_p/native_bind25/source/scripts/worker/gpu_coordinator_policy.py.txt",
       "restore_to": "ai-service/qint_p/native_bind25/source/scripts/worker/gpu_coordinator_policy.py",
       "sha256": "9d600e87c44e70fdaa3e7f038dc15aea6ed125aad8d1c2ba3b204966eee1f47b",
@@ -399,6 +431,14 @@
       "sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
       "bytes": 73502,
       "original_sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+      "normalization": "CRLF to LF only"
+    },
+    {
+      "snapshot": "qint_p/preflight33.disabled.json.txt",
+      "restore_to": "ai-service/qint_p/preflight33.disabled.json",
+      "sha256": "b1f17189e96caf51750bddecc633bfa3331cf6ce0d6734608e9dd06adf399e1a",
+      "bytes": 2909,
+      "original_sha256": "5ee0f306e81ee74df67e783d22b471cd2b5054943172d05b5b256d39bf8134b7",
       "normalization": "CRLF to LF only"
     },
     {
