@@ -11,6 +11,14 @@ backendgohczmqykjkrgdblgbog, grantedCapabilities=[] at2026-11-10T17:48:24.901704
 Claims0/model0/GPU0. Codex still must independently read back DB last_seen.
 See [heartbeat receipt](evidence/connect45/heartbeat-only-result.json).
 
+Follow-up Codex DB readback confirms `last_seen=2026-11-10T17:48:27.688Z` and
+stored capabilities `{}`: [confirmation](evidence/connect45/db-heartbeat-confirmation.json).
+No second request was sent. Exact executable/worker/active-config/--once/engine
+argv and private env/log paths are saved locally in
+coordination/qint-p-connect45-runtime-command.json, with executeAuthorized:false.
+No active config exists. Checkpoint now waits for owner browser readiness and
+the explicit Codex/PC3D test-window/finite-slot handoff; no automatic polling.
+
 Fresh RAM at resume was4,680,658,944bytes (above4GiB); this is a point-in-time
 sample, not future inference admission. The runtime config remains disabled,
 operator approval absent, finite pc-ai slot absent and global quiescence unproven.

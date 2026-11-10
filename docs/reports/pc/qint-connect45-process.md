@@ -64,3 +64,9 @@ at2026-11-10T17:48:24.901704Z,0claim/model/GPU. No retries/redirects/autopoll; p
 attemptmarker deduplicatesunknownoutcomes. No rawtoken/header output/publication.
 CodexDBlast_seen readback remainsindependentnextstep. Runtimewrapper stilldisabled,
 slot/operatorapproval absent; waitfurther activation, no automaticinference.
+
+Final heartbeat transport checkpoint: Codex DBreadback confirms last_seen
+2026-11-10T17:48:27.688Z/capabilities{}, QwenOFF. Confirmation saved sanitized;
+private exactoneclaim command saved with enabled/executeAuthorizedfalse and no
+activeconfig/tokenargv. NewUIca3466c is staged only; source7397stillserving asreported.
+Ownerbrowser/Codexwindow/PC3Dfinitegrant pending. No secondHTTP/model/native/GPU run.
