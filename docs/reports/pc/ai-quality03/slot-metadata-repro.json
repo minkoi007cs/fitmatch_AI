@@ -1,0 +1,23 @@
+{
+  "status": "KNOWN_GAP_REPRODUCED",
+  "scope": "Unmodified guard in isolated CPU namespace; no real machine coordination files changed",
+  "model_loaded": false,
+  "cases": [
+    {
+      "case": "nonfinite-nan",
+      "child_exit": 0,
+      "cpu_child_launched": true,
+      "desired_behavior": "refuse before child launch",
+      "actual_behavior": "accepted"
+    },
+    {
+      "case": "nonfinite-infinity",
+      "child_exit": 0,
+      "cpu_child_launched": true,
+      "desired_behavior": "refuse before child launch",
+      "actual_behavior": "accepted"
+    }
+  ],
+  "own_control_proposal": "quality03/control.py rejects nonfinite expiry before any load; existing guard not modified",
+  "action": "3D owner reviews finite timestamp validation; no live deployment or actual GPU exploit claimed"
+}

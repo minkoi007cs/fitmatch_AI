@@ -1,0 +1,70 @@
+"""CPU-testable controller proposal. No torch, process kill, GPU lock or transport."""
+from dataclasses import dataclass
+import math
+from jsonschema.exceptions import ValidationError
+
+GIB=1024**3
+
+@dataclass(frozen=True)
+class Budget:
+    attempts:int=2
+    seconds:float=60
+    output_tokens:int=192
+    response_bytes:int=8192
+    def __post_init__(self):
+        if type(self.attempts) is not int or not 1<=self.attempts<=2:raise ValueError('Attempts must be1..2')
+        if type(self.seconds) not in {int,float} or not math.isfinite(self.seconds) or not 0<self.seconds<=600:raise ValueError('Invalid timeout')
+        if type(self.output_tokens) is not int or not 1<=self.output_tokens<=192:raise ValueError('Invalid output cap')
+        if type(self.response_bytes) is not int or not 1<=self.response_bytes<=8192:raise ValueError('Invalid byte cap')
+
+class AdmissionDenied(RuntimeError):pass
+class InvalidOutput(ValueError):pass
+class CleanupPending(RuntimeError):pass
+
+def admit(snapshot,now):
+    expiry=snapshot.get('admit_until',0)
+    if any(type(value) not in {int,float} or not math.isfinite(value) for value in [now,expiry]):raise AdmissionDenied('Invalid clock/slot expiry')
+    if any(type(snapshot.get(key)) is not int or snapshot[key]<0 for key in ['host_available','gpu_free']):raise AdmissionDenied('Invalid headroom signal')
+    if snapshot.get('slot_owner')!='pc-ai' or snapshot.get('admit_until',0)<=now:raise AdmissionDenied('No current AI slot')
+    if snapshot.get('shared_lock_held') is not True or snapshot.get('guard_child_verified') is not True:raise AdmissionDenied('Guard not proved')
+    if snapshot.get('target_required') is True and snapshot.get('target_confirmed') is not True:raise AdmissionDenied('Ambiguous garment target')
+    if snapshot.get('host_available',0)<4*GIB or snapshot.get('gpu_free',0)<8*GIB:raise AdmissionDenied('Insufficient headroom')
+
+class PressureGate:
+    """Same1GiB/3consecutive-sample decision as Q02, injected values permitted in CPU tests."""
+    def __init__(self):self.low_count=0
+    def observe(self,available):
+        if type(available) is not int or available<0:raise ValueError('Invalid memory signal')
+        self.low_count=self.low_count+1 if available<GIB else 0
+        return self.low_count>=3
+
+def execute(*,snapshot,clock,acquire,load,generate,parse,unload,children_exited,release,budget=Budget()):
+    """External Windows guard supplies hard timeout; this loop enforces logical bounds."""
+    attempted_load=False;locked=False
+    def tick():
+        value=clock()
+        if type(value) not in {int,float} or not math.isfinite(value):raise AdmissionDenied('Invalid clock signal')
+        return value
+    deadline=tick()+budget.seconds
+    events=[]
+    try:
+        admit(snapshot(),tick())  # Refuse even lock admission when obviously unready.
+        if acquire() is False:raise AdmissionDenied('Lock acquisition refused')
+        locked=True
+        admit(snapshot(),tick())  # Recheck immediately before any model-load callback.
+        attempted_load=True;load();events.append('load')
+        for attempt in range(1,budget.attempts+1):
+            if tick()>=deadline:raise TimeoutError('Deadline before generation')
+            raw=generate(max_new_tokens=budget.output_tokens,attempt=attempt)
+            if tick()>=deadline:raise TimeoutError('Deadline after generation')
+            if not isinstance(raw,str) or len(raw.encode('utf-8'))>budget.response_bytes:raise InvalidOutput('Output type/size')
+            try:value=parse(raw)
+            except (ValueError,TypeError,ValidationError) as error:
+                events.append('invalid_output')
+                if attempt==budget.attempts:raise InvalidOutput('Schema/semantic retries exhausted') from error
+            else:return {'status':'proposal_only','value':value,'attempts':attempt,'events':events}
+    finally:
+        if locked:
+            if attempted_load:unload()
+            if not children_exited():raise CleanupPending('Cannot release before owned tree exit')
+            release()

@@ -1,0 +1,25 @@
+import hashlib
+import json
+from pathlib import Path
+import unittest
+
+ROOT=Path(__file__).resolve().parent;GPU=ROOT.parents[1]
+PLAN=json.loads((ROOT/'corpus-plan.json').read_text(encoding='utf-8'))
+class CorpusTests(unittest.TestCase):
+    def test_source_bytes_and_licenses(self):
+        for item in PLAN['provenance']:
+            path=(GPU/'ai-service'/'inputs'/'public-reference'/item['file']) if item['id'].startswith('legacy-') else ROOT/'fixtures'/'public-images'/item['file']
+            with self.subTest(item=item['id']):
+                self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(),item['sha256'])
+                self.assertTrue(item['author']);self.assertTrue(item['license']);self.assertTrue(item['source_page'])
+    def test_partition_and_annotation_are_not_inference(self):
+        old=set(PLAN['partition']['regression']);new=set(PLAN['partition']['new_cpu_labeled_holdout'])
+        self.assertFalse(old&new);self.assertEqual(len(old|new),7);self.assertEqual(PLAN['inference_runs_this_task'],0)
+        self.assertEqual(PLAN['annotation_status'],'single-annotator provisional, second review required')
+    def test_ambiguous_and_misleading_filename_labels(self):
+        labels={item['id']:item for item in PLAN['labels']}
+        self.assertTrue(labels['multi-hanger']['requires_target'])
+        self.assertEqual(labels['plain-white']['scoreable']['pattern'],['printed'])
+        self.assertEqual(labels['black-jeans']['ocr']['confirmed_texts'],[])
+
+if __name__=='__main__':unittest.main(verbosity=2)

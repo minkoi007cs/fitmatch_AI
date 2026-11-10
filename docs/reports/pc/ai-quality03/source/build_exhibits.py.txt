@@ -1,0 +1,56 @@
+"""Export proposal schemas, synthetic examples and a scoped guard patch for review."""
+import difflib
+import hashlib
+import json
+from pathlib import Path
+import uuid
+from envelope import build,confirm,ENVELOPE_SCHEMA,CONFIRM_SCHEMA
+
+ROOT=Path(__file__).resolve().parent;GPU=ROOT.parents[1];RAW=GPU/'reports'/'ai'/'quality03'
+def write(name,value):
+    (ROOT/name).write_text(json.dumps(value,indent=2)+'\n',encoding='utf-8')
+write('review-envelope.schema.json',ENVELOPE_SCHEMA);write('human-confirmation.schema.json',CONFIRM_SCHEMA)
+uid=lambda n:str(uuid.UUID(int=n))
+binding={'owner_id':uid(1),'job_id':uid(2),'item_id':uid(3),'source_revision':uid(4),'image_sha256':'a'*64}
+attributes={'schema_version':'pc-ai.grounded-attributes.v2','category':'tshirt','dominant_colors':['white'],'pattern':'printed',
+            'logo_presence':'visible','logo_texts':['UNVERIFIED'],'neckline':'crew','sleeves':'short',
+            'material_composition':'unknown','back_pocket_count':'unknown','pockets_total':'unknown'}
+envelope=build(json.dumps(attributes),trusted_binding=binding,result_id=uid(5),model_revision='ebb281ec70b05090aa6165b016eac8ec08e71b17')
+request={'contract_version':'pc-ai.human-confirmation.v1','confirmation_id':uid(6),'result_id':uid(5),
+         'binding':binding,'expected_envelope_digest':envelope['envelope_digest'],'decision':'approve_fields',
+         'approved_fields':{'logo_texts':['USER TRANSCRIPTION']}}
+receipt=confirm(envelope,request,authenticated_owner_id=uid(1),current_binding=binding)
+write('synthetic-confirmation-example.json',{'kind':'Synthetic DTO only; no image inference, no authenticated user or app update',
+      'envelope':envelope,'human_request_example':request,'validation_result_example':receipt})
+guard=GPU/'fitmatch_AI'/'workers'/'windows'/'gpu_guard.py'
+old=guard.read_text(encoding='utf-8')
+needle="""    if slot['owner'] == 'pc-ai' and time.time() > slot.get('admitUntilUnix', 0):
+        return 'pc-3d'
+    return slot['owner']"""
+replacement="""    if not isinstance(slot, dict) or slot.get('owner') not in ('pc-3d', 'pc-ai'):
+        raise ValueError('Invalid GPU admission metadata')
+    if slot['owner'] == 'pc-ai':
+        expiry = slot.get('admitUntilUnix')
+        if type(expiry) not in (int, float) or not math.isfinite(expiry):
+            raise ValueError('Invalid GPU admission expiry')
+        if time.time() > expiry:
+            return 'pc-3d'
+    return slot['owner']"""
+if old.count(needle)!=1:raise RuntimeError('Guard source changed; no blind patch')
+new=old.replace('import json\n','import json\nimport math\n',1).replace(needle,replacement)
+patch=''.join(difflib.unified_diff(old.splitlines(keepends=True),new.splitlines(keepends=True),
+    fromfile='a/workers/windows/gpu_guard.py',tofile='b/workers/windows/gpu_guard.py',n=0))
+(ROOT/'guard-slot-expiry-proposal.patch.txt').write_text(patch,encoding='utf-8')
+write('guard-proposal-metadata.json',{'owner':'PC-3D-02','status':'Proposal only; not applied or independently tested as a patched guard',
+      'base_source_sha256':hashlib.sha256(guard.read_bytes()).hexdigest(),'proposed_normalized_sha256':hashlib.sha256(new.encode()).hexdigest(),
+      'scope':'Finite slot metadata validation only; no lock path, wire, process or GPU behavior changes',
+      'format':'Zero-context review patch; git apply --unidiff-zero --check on exact base, owner review required',
+      'repro':'slot-metadata-repro.json; isolated CPU child admitted by NaN/Infinity expiry',
+      'next':'3D owner reviews, applies on own branch and tests before use; current Qwen control proposal already rejects these signals'})
+notice={'session':'PC-AI-QUALITY-20261106-03','status':'Controlled CPU finding, review requested','code_changed':False,
+        'guard_source_sha256':hashlib.sha256(guard.read_bytes()).hexdigest(),
+        'finding':'Nonfinite NaN/Infinity slot expiry admits isolated CPU child; exact real coordination files never changed',
+        'local_report':'reports/ai/quality03/slot-metadata-repro.json','local_patch_proposal':'ai-service/quality03/guard-slot-expiry-proposal.patch.txt',
+        'GPU':'No model/GPU run in this task; future admission must reject nonfinite metadata'}
+(GPU/'coordination'/'pc-ai-quality03-guard-findings.json').write_text(json.dumps(notice,indent=2)+'\n',encoding='utf-8')
+print(json.dumps({'schemas_exported':2,'synthetic_examples':1,'guard_patch_applied':False,'finding_notice_written':True}))

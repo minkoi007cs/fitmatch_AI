@@ -1,0 +1,33 @@
+import unittest
+from corpus_metrics import evaluate
+
+class MetricsTests(unittest.TestCase):
+    def setUp(self):
+        self.label={'scoreable':{'category':['tshirt'],'dominant_colors':[['white']]},'unknown_required':['pockets_total'],
+                    'ocr':{'confirmed_texts':['EXAMPLE'],'complete':True},'requires_target':False}
+    def test_wrong_color_is_error_not_json_pass(self):
+        r=evaluate({'category':'tshirt','dominant_colors':['red'],'logo_texts':['EXAMPLE']},self.label)
+        self.assertEqual(r['incorrect'],1);self.assertEqual(r['decision'],'needs_review')
+    def test_abstention_is_coverage_loss_not_correct(self):
+        r=evaluate({'category':'unknown','dominant_colors':['white']},self.label)
+        self.assertEqual(r['abstained'],1);self.assertEqual(r['coverage'],.5);self.assertEqual(r['correct'],1)
+    def test_all_abstained_accuracy_undefined(self):
+        r=evaluate({},self.label);self.assertIsNone(r['known_prediction_accuracy']);self.assertEqual(r['coverage'],0)
+    def test_invented_brand_counted_only_for_complete_truth(self):
+        r=evaluate({'logo_texts':['INVENTED']},self.label);self.assertEqual(r['ocr']['precision'],0)
+        self.label['ocr']['complete']=False;r=evaluate({'logo_texts':['INVENTED']},self.label)
+        self.assertIsNone(r['ocr']['precision']);self.assertEqual(r['ocr']['extra_status'],'unadjudicated_requires_review')
+    def test_multiple_items_needs_target_before_load(self):
+        self.label['requires_target']=True
+        self.assertEqual(evaluate({},self.label)['decision'],'needs_input_before_load')
+    def test_unknown_truth_does_not_award_correct_guess(self):
+        r=evaluate({'pockets_total':5},self.label);self.assertEqual(r['unsupported_nonvisible_claims'],1)
+        self.assertEqual(r['correct'],0)
+    def test_punctuation_normalization_does_not_repair_letters(self):
+        self.label['ocr']['confirmed_texts']=['DELO']
+        r=evaluate({'logo_texts':['DEL']},self.label);self.assertEqual(r['ocr']['matched_confirmed_texts'],[])
+    def test_model_does_not_get_fixture_truth(self):
+        r=evaluate({'category':'tshirt','dominant_colors':['white'],'logo_texts':['EXAMPLE']},self.label)
+        self.assertEqual(r['known_prediction_accuracy'],1);self.assertEqual(r['coverage'],1)
+
+if __name__=='__main__':unittest.main(verbosity=2)

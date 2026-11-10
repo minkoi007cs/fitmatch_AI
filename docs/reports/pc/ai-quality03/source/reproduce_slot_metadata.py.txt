@@ -1,0 +1,26 @@
+"""Controlled reproduction only; never changes the machine GPU slot/lock or loads a model."""
+import json
+from pathlib import Path
+import subprocess
+import unittest
+from test_native_cpu import NativeCPUTests,REPORTS
+
+class Repro(NativeCPUTests):
+    def runTest(self):
+        cases=[]
+        for label,value in [('nonfinite-nan',float('nan')),('nonfinite-infinity',float('inf'))]:
+            (self.root/'cpu-test-slot.json').write_text(json.dumps({'owner':'pc-ai','admitUntilUnix':value}))
+            marker=label+'.json'
+            result=subprocess.run(self.command('normal',marker=marker,label=label),env=self.env,capture_output=True,text=True,timeout=8)
+            cases.append({'case':label,'child_exit':result.returncode,'cpu_child_launched':(self.root/marker).exists(),
+                          'desired_behavior':'refuse before child launch','actual_behavior':'accepted' if result.returncode==0 else 'refused'})
+        evidence={'status':'KNOWN_GAP_REPRODUCED' if any(x['cpu_child_launched'] for x in cases) else 'NO_GAP_OBSERVED',
+            'scope':'Unmodified guard in isolated CPU namespace; no real machine coordination files changed',
+            'model_loaded':False,'cases':cases,
+            'own_control_proposal':'quality03/control.py rejects nonfinite expiry before any load; existing guard not modified',
+            'action':'3D owner reviews finite timestamp validation; no live deployment or actual GPU exploit claimed'}
+        (REPORTS/'slot-metadata-repro.json').write_text(json.dumps(evidence,indent=2)+'\n',encoding='utf-8')
+        print(json.dumps(evidence,indent=2))
+
+if __name__=='__main__':
+    case=Repro();result=unittest.TextTestRunner(verbosity=2).run(unittest.TestSuite([case]));raise SystemExit(0 if result.wasSuccessful() else 1)
