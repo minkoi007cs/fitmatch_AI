@@ -332,3 +332,10 @@ The owner explicitly stopped the previous Claude for usage limits and requests a
 ## 27. Native Windows closure and integration readiness — H-PC-NATIVE-33
 
 [PC review](./docs/reports/review/pc-native-progress-20261109.md) and [exact tasks](./docs/handoffs/pc-native-integration-20261109.md). Both PCs run reviewed fixturef591d96 on exact candidate499ead0, then AI prepares existing disabled preflight/config and 3D coordinator prepares bounded readiness checklist. CPU31 completed evidence is reused. No new GPU slot until backend/recovery/HTTPS/enrollment and native gates are verified; Qwen and 3D render remain mutually exclusive.
+
+
+## 28. Website publication and UI completion — HOSTED-38 / UI-UX-39
+
+Owner explicitly requested deploying the latest app on **fitmatch.minkoi.org**, then thorough UI/UX audit and app completion while awaiting PC acceptance. This authorizes the scoped existing-site deployment/UI continuation, superseding earlier no-deploy scope for this release. [UI audit/release checklist](./docs/reports/review/ui-ux-20261110.md), actual serving revision and evidence in current process. Preserve Claude recoveryba94505 and all worker/SQL fixes; source branchcodex/hosted-38. No automatic main merge, paidmodel usage or GPU grant follows.
+
+App publication does not close canonical V2 migration, privateDB+Storage backup/restore, scoped worker enrollment or real personal quality gates. User has confirmed a DBadminconfig file exists; path still pending. Complete recovery/cutover with actual private inputs before integratedPCacceptance. Keep one GPUtask, finitecoordinator slot and owned-tree drain; do not present UI/mock checks as realQwen/likeness PASS. Animation/latercategories remain after the static gate.
