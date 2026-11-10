@@ -1,0 +1,700 @@
+$ npm test (HEAD 8c425de + runner timeout change)
+
+> fitmatch-ai@0.1.0 test
+> node --import tsx --test tests/*.test.ts
+
+TAP version 13
+# Subtest: read skew hazard: (pending analysis, succeeded job) maps to a terminal, non-polling state
+ok 1 - read skew hazard: (pending analysis, succeeded job) maps to a terminal, non-polling state
+  ---
+  duration_ms: 0.676561
+  type: 'test'
+  ...
+# Subtest: readAnalyses re-reads analyses after jobs, so a result committed mid-poll shows as review
+ok 2 - readAnalyses re-reads analyses after jobs, so a result committed mid-poll shows as review
+  ---
+  duration_ms: 0.737373
+  type: 'test'
+  ...
+# Subtest: readAnalysis (single) uses the same skew-safe order
+ok 3 - readAnalysis (single) uses the same skew-safe order
+  ---
+  duration_ms: 0.158825
+  type: 'test'
+  ...
+# Subtest: no commit in between: states unchanged (queued / waiting_gpu / running / canceled / stale)
+ok 4 - no commit in between: states unchanged (queued / waiting_gpu / running / canceled / stale)
+  ---
+  duration_ms: 0.581318
+  type: 'test'
+  ...
+# Subtest: latest analysis per item; analysis deleted between reads is dropped, not reported failed
+ok 5 - latest analysis per item; analysis deleted between reads is dropped, not reported failed
+  ---
+  duration_ms: 0.315255
+  type: 'test'
+  ...
+# Subtest: signed hub session binds both hub identity and local wardrobe owner
+ok 6 - signed hub session binds both hub identity and local wardrobe owner
+  ---
+  duration_ms: 2.54381
+  type: 'test'
+  ...
+# Subtest: tampered local identity cannot select another wardrobe
+ok 7 - tampered local identity cannot select another wardrobe
+  ---
+  duration_ms: 0.241603
+  type: 'test'
+  ...
+# Subtest: keys, cookie purpose, malformed encodings and invalid shape are rejected
+ok 8 - keys, cookie purpose, malformed encodings and invalid shape are rejected
+  ---
+  duration_ms: 0.333196
+  type: 'test'
+  ...
+# Subtest: PKCE flow rejects stale/future attempts and preserves explicit linking proof
+ok 9 - PKCE flow rejects stale/future attempts and preserves explicit linking proof
+  ---
+  duration_ms: 0.364904
+  type: 'test'
+  ...
+# Subtest: return paths preserve intent but reject redirect escapes and auth loops
+ok 10 - return paths preserve intent but reject redirect escapes and auth loops
+  ---
+  duration_ms: 0.224781
+  type: 'test'
+  ...
+# Subtest: each parallel sign-in attempt gets a safe independent cookie name
+ok 11 - each parallel sign-in attempt gets a safe independent cookie name
+  ---
+  duration_ms: 0.267485
+  type: 'test'
+  ...
+# Subtest: file ownership excludes traversal, encoded traversal, other tenants and absolute URLs
+ok 12 - file ownership excludes traversal, encoded traversal, other tenants and absolute URLs
+  ---
+  duration_ms: 0.204999
+  type: 'test'
+  ...
+# Subtest: independent instances share one durable refresh and return the same successor
+ok 13 - independent instances share one durable refresh and return the same successor
+  ---
+  duration_ms: 101.841616
+  type: 'test'
+  ...
+# Subtest: different tokens do not share refresh results
+ok 14 - different tokens do not share refresh results
+  ---
+  duration_ms: 0.3904
+  type: 'test'
+  ...
+# Subtest: ambiguous refresh transport failure is not retried with a possibly consumed token
+ok 15 - ambiguous refresh transport failure is not retried with a possibly consumed token
+  ---
+  duration_ms: 0.397436
+  type: 'test'
+  ...
+# Subtest: revocation verdict is shared rather than rotating again
+ok 16 - revocation verdict is shared rather than rotating again
+  ---
+  duration_ms: 0.166654
+  type: 'test'
+  ...
+# Subtest: backend identity: canonical project only, consistent URL and keys
+ok 17 - backend identity: canonical project only, consistent URL and keys
+  ---
+  duration_ms: 1.358553
+  type: 'test'
+  ...
+# Subtest: backend identity: wrong, retired or unbound configurations are refused before any client exists
+ok 18 - backend identity: wrong, retired or unbound configurations are refused before any client exists
+  ---
+  duration_ms: 1.21743
+  type: 'test'
+  ...
+# Subtest: backend identity: isolated-test mode is loopback only and never a cloud project
+ok 19 - backend identity: isolated-test mode is loopback only and never a cloud project
+  ---
+  duration_ms: 0.177371
+  type: 'test'
+  ...
+# Subtest: backend identity: admin client and the worker route refuse writes, enrollment and claims on a wrong project
+ok 20 - backend identity: admin client and the worker route refuse writes, enrollment and claims on a wrong project
+  ---
+  duration_ms: 593.557287
+  type: 'test'
+  ...
+# Subtest: failed or canceled reconstruction remains visible in Studio for recovery
+ok 21 - failed or canceled reconstruction remains visible in Studio for recovery
+  ---
+  duration_ms: 0.759364
+  type: 'test'
+  ...
+# Subtest: queued reconstruction remains pending; unrelated jobs cannot label it failed
+ok 22 - queued reconstruction remains pending; unrelated jobs cannot label it failed
+  ---
+  duration_ms: 0.526817
+  type: 'test'
+  ...
+# Subtest: prototype names are not garment categories
+ok 23 - prototype names are not garment categories
+  ---
+  duration_ms: 0.106627
+  type: 'test'
+  ...
+# Subtest: superseded fitting is ignored regardless of response ordering
+ok 24 - superseded fitting is ignored regardless of response ordering
+  ---
+  duration_ms: 0.219883
+  type: 'test'
+  ...
+# Subtest: committed v1-r2 schemas and fixture match the code that generates them
+ok 25 - committed v1-r2 schemas and fixture match the code that generates them
+  ---
+  duration_ms: 234.642937
+  type: 'test'
+  ...
+# Subtest: fixture body/top/bottom: valid GLBs, hashes match, one shared frame
+ok 26 - fixture body/top/bottom: valid GLBs, hashes match, one shared frame
+  ---
+  duration_ms: 5.147582
+  type: 'test'
+  ...
+# Subtest: jeans are a bottom with their own kinds; tops keep v1 kinds
+ok 27 - jeans are a bottom with their own kinds; tops keep v1 kinds
+  ---
+  duration_ms: 1.126474
+  type: 'test'
+  ...
+# Subtest: look request: both slots, camera, legacy fittingId
+ok 28 - look request: both slots, camera, legacy fittingId
+  ---
+  duration_ms: 3.052796
+  type: 'test'
+  ...
+# Subtest: job envelope schema accepts a bottom drape job and rejects an unknown content type
+ok 29 - job envelope schema accepts a bottom drape job and rejects an unknown content type
+  ---
+  duration_ms: 3.412071
+  type: 'test'
+  ...
+# Subtest: target guard refuses: original repro: suffix user on arbitrary host
+ok 30 - target guard refuses: original repro: suffix user on arbitrary host
+  ---
+  duration_ms: 1.196519
+  type: 'test'
+  ...
+# Subtest: target guard refuses: suffix user on attacker pooler-looking host not in plan
+ok 31 - target guard refuses: suffix user on attacker pooler-looking host not in plan
+  ---
+  duration_ms: 0.241007
+  type: 'test'
+  ...
+# Subtest: target guard refuses: suffix user on a lookalike domain
+ok 32 - target guard refuses: suffix user on a lookalike domain
+  ---
+  duration_ms: 0.100176
+  type: 'test'
+  ...
+# Subtest: target guard refuses: other project's direct host
+ok 33 - target guard refuses: other project's direct host
+  ---
+  duration_ms: 0.091916
+  type: 'test'
+  ...
+# Subtest: target guard refuses: direct host but pooler-style user
+ok 34 - target guard refuses: direct host but pooler-style user
+  ---
+  duration_ms: 0.084971
+  type: 'test'
+  ...
+# Subtest: target guard refuses: direct host with another role
+ok 35 - target guard refuses: direct host with another role
+  ---
+  duration_ms: 0.077015
+  type: 'test'
+  ...
+# Subtest: target guard refuses: direct host wrong port
+ok 36 - target guard refuses: direct host wrong port
+  ---
+  duration_ms: 0.150351
+  type: 'test'
+  ...
+# Subtest: target guard refuses: trusted pooler wrong project user
+ok 37 - target guard refuses: trusted pooler wrong project user
+  ---
+  duration_ms: 0.119996
+  type: 'test'
+  ...
+# Subtest: target guard refuses: trusted pooler bare postgres user
+ok 38 - target guard refuses: trusted pooler bare postgres user
+  ---
+  duration_ms: 0.308025
+  type: 'test'
+  ...
+# Subtest: target guard refuses: trusted pooler transaction mode
+ok 39 - target guard refuses: trusted pooler transaction mode
+  ---
+  duration_ms: 0.290139
+  type: 'test'
+  ...
+# Subtest: target guard refuses: host query override
+ok 40 - target guard refuses: host query override
+  ---
+  duration_ms: 1.334569
+  type: 'test'
+  ...
+# Subtest: target guard refuses: hostaddr query override
+ok 41 - target guard refuses: hostaddr query override
+  ---
+  duration_ms: 0.134903
+  type: 'test'
+  ...
+# Subtest: target guard refuses: service query
+ok 42 - target guard refuses: service query
+  ---
+  duration_ms: 0.097656
+  type: 'test'
+  ...
+# Subtest: target guard refuses: options query
+ok 43 - target guard refuses: options query
+  ---
+  duration_ms: 0.068459
+  type: 'test'
+  ...
+# Subtest: target guard refuses: weak sslmode
+ok 44 - target guard refuses: weak sslmode
+  ---
+  duration_ms: 0.047027
+  type: 'test'
+  ...
+# Subtest: target guard refuses: multi-host
+ok 45 - target guard refuses: multi-host
+  ---
+  duration_ms: 0.040049
+  type: 'test'
+  ...
+# Subtest: target guard refuses: other database
+ok 46 - target guard refuses: other database
+  ---
+  duration_ms: 0.045896
+  type: 'test'
+  ...
+# Subtest: target guard refuses: unsupported scheme
+ok 47 - target guard refuses: unsupported scheme
+  ---
+  duration_ms: 0.043313
+  type: 'test'
+  ...
+# Subtest: target guard refuses: key=value string
+ok 48 - target guard refuses: key=value string
+  ---
+  duration_ms: 0.035613
+  type: 'test'
+  ...
+# Subtest: target guard refuses: no host
+ok 49 - target guard refuses: no host
+  ---
+  duration_ms: 0.041468
+  type: 'test'
+  ...
+# Subtest: target guard refuses: loopback without isolated flag
+ok 50 - target guard refuses: loopback without isolated flag
+  ---
+  duration_ms: 0.042321
+  type: 'test'
+  ...
+# Subtest: target guard refuses: malformed
+ok 51 - target guard refuses: malformed
+  ---
+  duration_ms: 0.110213
+  type: 'test'
+  ...
+# Subtest: target guard refuses: empty
+ok 52 - target guard refuses: empty
+  ---
+  duration_ms: 0.036353
+  type: 'test'
+  ...
+# Subtest: target guard accepts only the verified direct endpoint and a reviewed pooler
+ok 53 - target guard accepts only the verified direct endpoint and a reviewed pooler
+  ---
+  duration_ms: 0.636719
+  type: 'test'
+  ...
+# Subtest: target guard: refs, retired project and plan mismatch
+ok 54 - target guard: refs, retired project and plan mismatch
+  ---
+  duration_ms: 0.094136
+  type: 'test'
+  ...
+# Subtest: isolated tests stay loopback-only
+ok 55 - isolated tests stay loopback-only
+  ---
+  duration_ms: 0.137059
+  type: 'test'
+  ...
+# Subtest: plan pooler allowlist must itself be well-formed
+ok 56 - plan pooler allowlist must itself be well-formed
+  ---
+  duration_ms: 0.121562
+  type: 'test'
+  ...
+# Subtest: psql environment drops libpq variables that can retarget the connection
+ok 57 - psql environment drops libpq variables that can retarget the connection
+  ---
+  duration_ms: 0.103441
+  type: 'test'
+  ...
+# Subtest: runner (offline): original R-MIGTARGET-29 URL is refused with exit 2 and psql is never started
+ok 58 - runner (offline): original R-MIGTARGET-29 URL is refused with exit 2 and psql is never started
+  ---
+  duration_ms: 36.598494
+  type: 'test'
+  ...
+# Subtest: runner (offline): every refused form exits 2 before psql
+ok 59 - runner (offline): every refused form exits 2 before psql
+  ---
+  duration_ms: 800.003727
+  type: 'test'
+  ...
+# Subtest: runner (offline): bad plan pooler allowlist is refused before psql
+ok 60 - runner (offline): bad plan pooler allowlist is refused before psql
+  ---
+  duration_ms: 35.787765
+  type: 'test'
+  ...
+# Subtest: runner (offline): accepted targets reach the fake psql once with a sanitized environment
+ok 61 - runner (offline): accepted targets reach the fake psql once with a sanitized environment
+  ---
+  duration_ms: 132.993063
+  type: 'test'
+  ...
+# Subtest: runner (offline): malformed plan timeouts are refused before psql (they are interpolated into SET)
+ok 62 - runner (offline): malformed plan timeouts are refused before psql (they are interpolated into SET)
+  ---
+  duration_ms: 102.923059
+  type: 'test'
+  ...
+# Subtest: expired URL is re-signed once for the same version, then succeeds
+ok 63 - expired URL is re-signed once for the same version, then succeeds
+  ---
+  duration_ms: 23.461734
+  type: 'test'
+  ...
+# Subtest: 403 is also treated as expired; a second expiry is not retried again
+ok 64 - 403 is also treated as expired; a second expiry is not retried again
+  ---
+  duration_ms: 0.73661
+  type: 'test'
+  ...
+# Subtest: missing object, network failure and corrupt bytes are never refreshed
+ok 65 - missing object, network failure and corrupt bytes are never refreshed
+  ---
+  duration_ms: 2.001665
+  type: 'test'
+  ...
+# Subtest: refreshed record must be the identical asset; any change is refused without download
+ok 66 - refreshed record must be the identical asset; any change is refused without download
+  ---
+  duration_ms: 1.168274
+  type: 'test'
+  ...
+# Subtest: revoked or foreign model: the authenticated refresh fails and nothing is downloaded
+ok 67 - revoked or foreign model: the authenticated refresh fails and nothing is downloaded
+  ---
+  duration_ms: 0.282873
+  type: 'test'
+  ...
+# Subtest: pinned snapshot hash is checked before any download
+ok 68 - pinned snapshot hash is checked before any download
+  ---
+  duration_ms: 2.426825
+  type: 'test'
+  ...
+# Subtest: abort during refresh (selection changed A→B) stops before the second download
+ok 69 - abort during refresh (selection changed A→B) stops before the second download
+  ---
+  duration_ms: 0.518321
+  type: 'test'
+  ...
+# Subtest: outfit identities do not depend on duplicate model IDs and preferences reach the prompt
+ok 70 - outfit identities do not depend on duplicate model IDs and preferences reach the prompt
+  ---
+  duration_ms: 18.730906
+  type: 'test'
+  ...
+# Subtest: unrecognized vision categories and patterns fall back to editable enum values
+ok 71 - unrecognized vision categories and patterns fall back to editable enum values
+  ---
+  duration_ms: 0.541785
+  type: 'test'
+  ...
+# Subtest: changing the top keeps the jeans and the reverse
+ok 72 - changing the top keeps the jeans and the reverse
+  ---
+  duration_ms: 1.113704
+  type: 'test'
+  ...
+# Subtest: A→B→A with B finishing late never overrides the current choice
+ok 73 - A→B→A with B finishing late never overrides the current choice
+  ---
+  duration_ms: 0.245567
+  type: 'test'
+  ...
+# Subtest: pending item auto-applies only if it is still selected
+ok 74 - pending item auto-applies only if it is still selected
+  ---
+  duration_ms: 0.154857
+  type: 'test'
+  ...
+# Subtest: full outfit switches both slots in one step, never half
+ok 75 - full outfit switches both slots in one step, never half
+  ---
+  duration_ms: 0.194989
+  type: 'test'
+  ...
+# Subtest: results for another avatar version are ignored
+ok 76 - results for another avatar version are ignored
+  ---
+  duration_ms: 0.097243
+  type: 'test'
+  ...
+# Subtest: a failed pending item falls back to what is shown
+ok 77 - a failed pending item falls back to what is shown
+  ---
+  duration_ms: 0.185569
+  type: 'test'
+  ...
+# Subtest: qwen v1: every valid fixture parses and stays within the byte budget
+ok 78 - qwen v1: every valid fixture parses and stays within the byte budget
+  ---
+  duration_ms: 5.328449
+  type: 'test'
+  ...
+# Subtest: qwen v1: every invalid fixture is rejected
+ok 79 - qwen v1: every invalid fixture is rejected
+  ---
+  duration_ms: 2.2817
+  type: 'test'
+  ...
+# Subtest: qwen v1: adapter input and error envelopes
+ok 80 - qwen v1: adapter input and error envelopes
+  ---
+  duration_ms: 2.326416
+  type: 'test'
+  ...
+# Subtest: qwen v1: human confirmation never accepts unknown or empty approvals
+ok 81 - qwen v1: human confirmation never accepts unknown or empty approvals
+  ---
+  duration_ms: 1.063629
+  type: 'test'
+  ...
+# Subtest: canonical JSON is key-order independent
+ok 82 - canonical JSON is key-order independent
+  ---
+  duration_ms: 0.219078
+  type: 'test'
+  ...
+# Subtest: flag OFF: a heartbeat never stores garment.analyze, 3D capabilities untouched
+ok 83 - flag OFF: a heartbeat never stores garment.analyze, 3D capabilities untouched
+  ---
+  duration_ms: 0.59186
+  type: 'test'
+  ...
+# Subtest: schema reconciliation: a fully migrated project reads applied for every step, nothing extra
+ok 84 - schema reconciliation: a fully migrated project reads applied for every step, nothing extra
+  ---
+  duration_ms: 5.652055
+  type: 'test'
+  ...
+# Subtest: schema reconciliation: base-only project, unrelated objects and drift are reported, never hidden
+ok 85 - schema reconciliation: base-only project, unrelated objects and drift are reported, never hidden
+  ---
+  duration_ms: 4.715668
+  type: 'test'
+  ...
+# Subtest: schema reconciliation: inventory flattening keeps FitMatch schema shape only
+ok 86 - schema reconciliation: inventory flattening keeps FitMatch schema shape only
+  ---
+  duration_ms: 0.413472
+  type: 'test'
+  ...
+# Subtest: CL-MIGRATION-26 comparator: legacy names are equivalent, a different FK target is a real difference
+ok 87 - CL-MIGRATION-26 comparator: legacy names are equivalent, a different FK target is a real difference
+  ---
+  duration_ms: 3.089885
+  type: 'test'
+  ...
+# Subtest: CL-MIGRATION-26 comparator: extension placement, forced RLS, permissive overlap and defaults are compared
+ok 88 - CL-MIGRATION-26 comparator: extension placement, forced RLS, permissive overlap and defaults are compared
+  ---
+  duration_ms: 4.690068
+  type: 'test'
+  ...
+# Subtest: CL-MIGRATION-26 precondition: sequential apply requires added objects absent and changed objects at their prior definition
+ok 89 - CL-MIGRATION-26 precondition: sequential apply requires added objects absent and changed objects at their prior definition
+  ---
+  duration_ms: 13.015157
+  type: 'test'
+  ...
+# Subtest: source cleanup collector: dry run never removes or reports
+ok 90 - source cleanup collector: dry run never removes or reports
+  ---
+  duration_ms: 1.26952
+  type: 'test'
+  ...
+# Subtest: source cleanup collector: claims before removing, one removal per owner, reports with the claim token
+ok 91 - source cleanup collector: claims before removing, one removal per owner, reports with the claim token
+  ---
+  duration_ms: 0.616354
+  type: 'test'
+  ...
+# Subtest: source cleanup collector: a failed claim removes nothing
+ok 92 - source cleanup collector: a failed claim removes nothing
+  ---
+  duration_ms: 0.426588
+  type: 'test'
+  ...
+# Subtest: source cleanup collector: storage failure is reported as a code, not a message
+ok 93 - source cleanup collector: storage failure is reported as a code, not a message
+  ---
+  duration_ms: 0.188617
+  type: 'test'
+  ...
+# Subtest: prepared garments must belong to the selected avatar version
+ok 94 - prepared garments must belong to the selected avatar version
+  ---
+  duration_ms: 0.891616
+  type: 'test'
+  ...
+# Subtest: reject path traversal, duplicate names and reserved IDs
+ok 95 - reject path traversal, duplicate names and reserved IDs
+  ---
+  duration_ms: 0.185885
+  type: 'test'
+  ...
+# Subtest: reject GLBs that could request arbitrary network or filesystem resources
+ok 96 - reject GLBs that could request arbitrary network or filesystem resources
+  ---
+  duration_ms: 0.501737
+  type: 'test'
+  ...
+# Subtest: reject corrupt GLB lengths and unsupported required decoders
+ok 97 - reject corrupt GLB lengths and unsupported required decoders
+  ---
+  duration_ms: 0.153467
+  type: 'test'
+  ...
+# Subtest: capture requires complete body views and a plausible height before packaging
+ok 98 - capture requires complete body views and a plausible height before packaging
+  ---
+  duration_ms: 12.207188
+  type: 'test'
+  ...
+# Subtest: local look restore rejects selection from another bundle or duplicate models
+ok 99 - local look restore rejects selection from another bundle or duplicate models
+  ---
+  duration_ms: 115.972394
+  type: 'test'
+  ...
+# Subtest: quiz selects real supported inventory, honors excluded patterns and gives transparent reasons
+ok 100 - quiz selects real supported inventory, honors excluded patterns and gives transparent reasons
+  ---
+  duration_ms: 1.618748
+  type: 'test'
+  ...
+# Subtest: recommendations remain deterministic and never fabricate more items to fill three cards
+ok 101 - recommendations remain deterministic and never fabricate more items to fill three cards
+  ---
+  duration_ms: 0.164338
+  type: 'test'
+  ...
+# Subtest: item feedback suppresses skipped inventory without inventing replacements
+ok 102 - item feedback suppresses skipped inventory without inventing replacements
+  ---
+  duration_ms: 0.254175
+  type: 'test'
+  ...
+# Subtest: strict input contracts reject ownership injection, duplicate photos and partial quizzes
+ok 103 - strict input contracts reject ownership injection, duplicate photos and partial quizzes
+  ---
+  duration_ms: 4.597642
+  type: 'test'
+  ...
+# Subtest: output publication requires reachable geometry and valid embedded buffer ranges
+ok 104 - output publication requires reachable geometry and valid embedded buffer ranges
+  ---
+  duration_ms: 1.138544
+  type: 'test'
+  ...
+# Subtest: Vietnamese blue preference does not treat every xanh garment as blue
+ok 105 - Vietnamese blue preference does not treat every xanh garment as blue
+  ---
+  duration_ms: 0.209097
+  type: 'test'
+  ...
+# Subtest: full look: three owned top+jeans outfits, varied, never invented; occasion changes the ranking
+ok 106 - full look: three owned top+jeans outfits, varied, never invented; occasion changes the ranking
+  ---
+  duration_ms: 7.735508
+  type: 'test'
+  ...
+# Subtest: photo normalization flattens transparent pixels onto white, keeps opaque colors
+ok 107 - photo normalization flattens transparent pixels onto white, keeps opaque colors
+  ---
+  duration_ms: 121.202075
+  type: 'test'
+  ...
+# Subtest: partial wardrobe updates preserve omitted values and keep explicit false/null
+ok 108 - partial wardrobe updates preserve omitted values and keep explicit false/null
+  ---
+  duration_ms: 3.865162
+  type: 'test'
+  ...
+# Subtest: empty and invalid profiles cannot erase saved data
+ok 109 - empty and invalid profiles cannot erase saved data
+  ---
+  duration_ms: 1.415516
+  type: 'test'
+  ...
+# Subtest: archive rejects malformed nested parts before persistence
+ok 110 - archive rejects malformed nested parts before persistence
+  ---
+  duration_ms: 1.521634
+  type: 'test'
+  ...
+# Subtest: legacy quiz hydration never passes null or malformed arrays into the form
+ok 111 - legacy quiz hydration never passes null or malformed arrays into the form
+  ---
+  duration_ms: 0.323561
+  type: 'test'
+  ...
+# Subtest: invalid JSON and oversized requests are client errors
+ok 112 - invalid JSON and oversized requests are client errors
+  ---
+  duration_ms: 21.113281
+  type: 'test'
+  ...
+# Subtest: CL-MIGRATION-26: archive style_category is the one shared style; mixed or contradicting payloads refused
+ok 113 - CL-MIGRATION-26: archive style_category is the one shared style; mixed or contradicting payloads refused
+  ---
+  duration_ms: 1.71635
+  type: 'test'
+  ...
+# Subtest: python worker: checkpoint safety, exit classification, adapter env (stdlib unittest)
+ok 114 - python worker: checkpoint safety, exit classification, adapter env (stdlib unittest)
+  ---
+  duration_ms: 1547.248868
+  type: 'test'
+  ...
+1..114
+# tests 114
+# suites 0
+# pass 114
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6234.307823
+exit=0

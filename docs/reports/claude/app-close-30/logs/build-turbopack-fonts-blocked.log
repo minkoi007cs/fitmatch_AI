@@ -1,0 +1,129 @@
+$ NEXT_FONT_GOOGLE_MOCKED_RESPONSES=<local mock: exact Next font URLs -> one local TTF; sandbox blocks fonts.googleapis.com> npm run build  (HEAD f591d96)
+
+> fitmatch-ai@0.1.0 build
+> next build
+
+▲ Next.js 16.4.5 (Turbopack)
+✓ Running next.config.ts took 40ms
+
+  Creating an optimized production build ...
+
+thread 'tokio-rt-worker' (16490) panicked at turbopack/crates/turbo-tasks-fetch/src/client.rs:191:55:
+request should be cloneable
+stack backtrace:
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+> Build error occurred
+Error: Turbopack build failed with 3 errors:
+[next]/internal/font/google/archivo_86675b92.module.css:1:102
+Error: Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'
+[31m[1m>[0m [90m1 |[0m ...t-weight: [35m100[0m [35m900[0m; font-display: swap; src: url(@vercel/turbopack-next/internal/font/goo...
+  [90m  |[0m                                                [31m[1m^[0m
+  [90m2 |[0m ...
+  [90m3 |[0m ...
+  [90m4 |[0m ...
+
+request should be cloneable
+
+Debug info:
+- Execution of *<ModuleAssetContext as AssetContext>::process_resolve_result failed
+- Execution of resolve failed
+- Execution of resolve_internal failed
+- Execution of <NextFontGoogleFontFileReplacer as ImportMappingReplacement>::result failed
+- Execution of FetchClientConfig::fetch failed
+- Execution of FetchClientConfig::fetch_inner failed
+- request should be cloneable
+Error while looking up import map: request should be cloneable
+
+Debug info:
+- Execution of <NextFontGoogleFontFileReplacer as ImportMappingReplacement>::result failed
+- Execution of FetchClientConfig::fetch failed
+- Execution of FetchClientConfig::fetch_inner failed
+- request should be cloneable
+
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/archivo_86675b92.module.css
+    [next]/internal/font/google/archivo_86675b92.js
+    ./src/app/layout.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[next]/internal/font/google/geist_a71539c9.module.css:1:102
+Error: Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'
+[31m[1m>[0m [90m1 |[0m ...t-weight: [35m100[0m [35m900[0m; font-display: swap; src: url(@vercel/turbopack-next/internal/font/goo...
+  [90m  |[0m                                                [31m[1m^[0m
+  [90m2 |[0m ...
+  [90m3 |[0m ...
+  [90m4 |[0m ...
+
+request should be cloneable
+
+Debug info:
+- Execution of *<ModuleAssetContext as AssetContext>::process_resolve_result failed
+- Execution of resolve failed
+- Execution of resolve_internal failed
+- Execution of <NextFontGoogleFontFileReplacer as ImportMappingReplacement>::result failed
+- Execution of FetchClientConfig::fetch failed
+- Execution of FetchClientConfig::fetch_inner failed
+- request should be cloneable
+Error while looking up import map: request should be cloneable
+
+Debug info:
+- Execution of <NextFontGoogleFontFileReplacer as ImportMappingReplacement>::result failed
+- Execution of FetchClientConfig::fetch failed
+- Execution of FetchClientConfig::fetch_inner failed
+- request should be cloneable
+
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_a71539c9.module.css
+    [next]/internal/font/google/geist_a71539c9.js
+    ./src/app/layout.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+[next]/internal/font/google/geist_mono_8d43a2aa.module.css:1:102
+Error: Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'
+[31m[1m>[0m [90m1 |[0m ...t-weight: [35m100[0m [35m900[0m; font-display: swap; src: url(@vercel/turbopack-next/internal/font/goo...
+  [90m  |[0m                                                [31m[1m^[0m
+  [90m2 |[0m ...
+  [90m3 |[0m ...
+  [90m4 |[0m ...
+
+request should be cloneable
+
+Debug info:
+- Execution of *<ModuleAssetContext as AssetContext>::process_resolve_result failed
+- Execution of resolve failed
+- Execution of resolve_internal failed
+- Execution of <NextFontGoogleFontFileReplacer as ImportMappingReplacement>::result failed
+- Execution of FetchClientConfig::fetch failed
+- Execution of FetchClientConfig::fetch_inner failed
+- request should be cloneable
+Error while looking up import map: request should be cloneable
+
+Debug info:
+- Execution of <NextFontGoogleFontFileReplacer as ImportMappingReplacement>::result failed
+- Execution of FetchClientConfig::fetch failed
+- Execution of FetchClientConfig::fetch_inner failed
+- request should be cloneable
+
+
+Import trace:
+  Server Component:
+    [next]/internal/font/google/geist_mono_8d43a2aa.module.css
+    [next]/internal/font/google/geist_mono_8d43a2aa.js
+    ./src/app/layout.tsx
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+exit=1

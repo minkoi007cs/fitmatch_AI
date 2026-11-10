@@ -1,4 +1,4 @@
-$ cd scripts/worker && python3 -m unittest -v test_worker_unit   (Linux, Python 3.13.18, test file f178f7f0ff2723b8, worker.py ef25136b10ad14ea)
+$ cd scripts/worker && python3 -m unittest -v test_worker_unit (HEAD 8c425de, Linux Python 3.13.18)
 test_3d_input_digest_unchanged_and_analysis_digest_binds_identity (test_worker_unit.AnalysisTransportTests.test_3d_input_digest_unchanged_and_analysis_digest_binds_identity) ... ok
 test_analysis_exit_codes_only_for_analysis_jobs_and_only_with_matching_record (test_worker_unit.AnalysisTransportTests.test_analysis_exit_codes_only_for_analysis_jobs_and_only_with_matching_record) ... ok
 test_result_must_be_bounded_bound_and_never_self_approved (test_worker_unit.AnalysisTransportTests.test_result_must_be_bounded_bound_and_never_self_approved) ... ok
@@ -71,7 +71,7 @@ test_kernel_zero_is_not_enough_until_tracked_process_objects_are_signaled (test_
 test_placement_failure_refuses_to_run_the_adapter (test_worker_unit.WindowsJobPlacementTests.test_placement_failure_refuses_to_run_the_adapter) ... ok
 
 ----------------------------------------------------------------------
-Ran 56 tests in 0.963s
+Ran 56 tests in 1.478s
 
 OK
 exit=0

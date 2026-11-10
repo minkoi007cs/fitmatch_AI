@@ -15,7 +15,7 @@
  *      these files are not all rerunnable — never replay blindly. In a dry run, objects that an earlier
  *      planned step would create are accepted as pending;
  *   3. with --execute only: runs the file through psql with ON_ERROR_STOP, lock_timeout and
- *      statement_timeout (each file is one BEGIN..COMMIT transaction: all or nothing);
+ *      statement_timeout (each file is one BEGIN..COMMIT transaction: all or nothing), preceded by session SETs for the timeouts;
  *   4. re-inventories and requires "applied" (or "applied-with-differences" limited to the keys the plan
  *      allows, e.g. legacy fm_outfits columns that keep NOT NULL);
  *   5. appends a JSON line to the private audit log (file, sha256, timestamps, exit code, pre/post state).
@@ -56,6 +56,10 @@ const url = process.env.DATABASE_URL || fail("DATABASE_URL is not set");
 // Target identity (R-MIGTARGET-29): checked before any psql process is started; loopback only in isolated tests.
 const planPoolers = checkPlanPoolerHosts(plan.trustedPoolerHosts);
 if (!planPoolers.ok) fail(planPoolers.reason);
+const TIMEOUT_RE = /^[1-9][0-9]{0,5}(ms|s|min)$/;
+const lockTimeout = plan.lockTimeout ?? "5s";
+const statementTimeout = plan.statementTimeout ?? "120s";
+if (!TIMEOUT_RE.test(lockTimeout) || !TIMEOUT_RE.test(statementTimeout)) fail("plan lockTimeout/statementTimeout must look like 5s, 500ms or 2min");
 const target = checkTarget(url, { expectedRef, planRef: plan.projectRef, isolated, trustedPoolerHosts: plan.trustedPoolerHosts ?? [] });
 if (!target.ok) fail(`target identity: ${target.reason}`);
 
@@ -117,9 +121,9 @@ for (const step of plan.steps) {
     continue;
   }
   const started = Date.now();
-  const run = psql(bytes.toString("utf8"), {
-    PGOPTIONS: `-c lock_timeout=${plan.lockTimeout ?? "5s"} -c statement_timeout=${plan.statementTimeout ?? "120s"}`,
-  });
+  // Session SETs travel inside the SQL stream, so they also apply through `docker exec` (tests) and the
+  // session pooler, where a PGOPTIONS environment variable would not reach the server.
+  const run = psql(`SET lock_timeout = '${lockTimeout}';\nSET statement_timeout = '${statementTimeout}';\n` + bytes.toString("utf8"));
   const after = stepState(inventory(), step.path);
   const allowed = step.allowDifferences ?? [];
   const ok = run.status === 0 && (after.status === "applied" ||

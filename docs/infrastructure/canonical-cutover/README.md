@@ -143,7 +143,9 @@ For each step, in order:
    no same-name object and no equivalent definition. Objects the step changes must still have the definition
    the manifest recorded before it. A step that already reads applied, or any conflict, is **refused**.
    Only the guarded compatibility step is rerunnable.
-2. The file runs through `psql` with `ON_ERROR_STOP`, `lock_timeout=5s` and `statement_timeout=120s`. Each
+2. The file runs through `psql` with `ON_ERROR_STOP`, preceded in the same SQL stream by
+   `SET lock_timeout = '5s'` and `SET statement_timeout = '120s'` (validated plan values; APP-CLOSE-30 moved them
+   from `PGOPTIONS`, which did not reach the server through `docker exec` and may not through a pooler). Each
    file is a single `BEGIN … COMMIT`.
 3. The runner re-inventories. The step must read `applied`, or `applied-with-differences` limited to the
    plan's allowed key: the legacy `NOT NULL` `style_category`.

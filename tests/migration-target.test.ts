@@ -144,3 +144,14 @@ test("runner (offline): accepted targets reach the fake psql once with a sanitiz
     assert.equal(r.calls[0].hostaddr, null, "PGHOSTADDR must not reach psql");
   }
 });
+
+test("runner (offline): malformed plan timeouts are refused before psql (they are interpolated into SET)", () => {
+  for (const bad of [{ lockTimeout: "5s'; drop table x; --" }, { statementTimeout: "0" }, { lockTimeout: "5 seconds" }]) {
+    const p = join(work, `plan-timeout-${n}.json`);
+    writeFileSync(p, JSON.stringify({ ...plan, ...bad }));
+    const r = runRunner(`postgresql://postgres@db.${REF}.supabase.co/postgres`, p);
+    assert.equal(r.status, 2, r.stderr);
+    assert.match(r.stderr, /lockTimeout\/statementTimeout/);
+    assert.equal(r.calls.length, 0);
+  }
+});

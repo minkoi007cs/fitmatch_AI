@@ -1,0 +1,3 @@
+# timeout delivery check: PGOPTIONS via 'docker exec -i' (old) vs SET in stream (new), PG17 stand-in
+old: 0
+new: SET SET 5s 2min 
