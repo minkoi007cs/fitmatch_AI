@@ -1,5 +1,7 @@
 # CX-FRESH-HANDOFF-29 - Claude checkpoint review
 
+> Subsequent evidence: app0c4c44e adds the successful test:v2 run2 log without code changes. [Latest reconciliation](./progress-claude-pc-20261109.md) supersedes the interrupted-rerun status here; R-MIGTARGET-29 remains open because runner bytes are unchanged.
+
 Owner explicitly stopped Claude for usage limits and requested a fresh AI handoff. This is a focused source/evidence review, not full cloud acceptance.
 
 ## Exact revisions

@@ -1,5 +1,7 @@
 # Prompt đầy đủ cho AI mới - H-RESUME-29
 
+> **H-RESUME-30 cập nhật:** dùng [prompt Claude hiện hành](./prompt-claude-next-20261109.md). App đã lên0c4c44e (code vẫncf902d3); test:v2 run2 có logPASS, haiPC đã báo scoped policyACK nhưng suiteWindows còn lỗi fixture. R-MIGTARGET-29 vẫn chưa sửa. Nội dung H-RESUME-29 bên dưới giữ bối cảnh; baseline/ưu tiên mới trong H-RESUME-30 thay các dòng cũ tương ứng.
+
 Bạn là AI mới tiếp quản phần app/SQL/test của FitMatch AI từ Claude đã dừng theo yêu cầu chủ dự án vì giới hạn usage. Không cần lịch sử chat để bắt đầu: dùng các nguồn và thứ tự dưới đây. Nhiệm vụ là tiếp tục công việc, kiểm chứng và sửa lỗi có bằng chứng; không viết lại app hay chạy lại toàn bộ model. Model của bạn không quyết định vai trò: bạn là owner triển khai app trong phạm vi bàn giao này, Codex ở chat điều phối giữ review độc lập.
 
 ## 1. Lấy đúng hai nguồn và ghi receipt trước khi sửa

@@ -313,4 +313,10 @@ Cloud migration/deployment is not performed by the preparation request. Private 
 
 ## 23. Fresh app agent continuation - H-RESUME-29
 
+Latest task priorities are now H-RESUME-30 below; keep this section as transfer history.
+
 The owner explicitly stopped the previous Claude for usage limits and requests a fresh AI to continue. [Full successor prompt](./docs/handoffs/prompt-fresh-ai-migration-resume-20261109.md) and [checkpoint review](./docs/reports/review/claude-checkpoint-847aeea.md). APP-RESUME-29 transfers the scoped app/migration/test work after receipt from code847aeea (implementationcf902d3); do not restart older work. Close the unfinished Qwen browser verification and R-MIGTARGET-29 runner target-guard defect, then deliver a reviewable package. Codex retains independent review; PC engine/coordinator/runtime ownership and all cloud/GPU execution gates remain. PR15 is docs-only; verify actual app source revision separately.
+
+## 24. Current closure work - H-RESUME-30
+
+[Claude task APP-CLOSE-30](./docs/handoffs/prompt-claude-next-20261109.md) continues APP-RESUME-29 from0c4c44e, retainingcf902d3 implementation. Reported test:v2 rerun is PASS; no redundant UI rewrite. Close R-MIGTARGET-29 and Windows test fixture NATIVE-FIXTURE-30, then evidence/SQL review. [PC-SAVE-30](./docs/handoffs/pc-binding-checkpoint-next-20261109.md) preserves/publishes existing native/adapter evidence and reruns the exact fixture patch when capacity returns. [Current progress](./docs/reports/review/progress-claude-pc-20261109.md). Scoped PC policy ACK is partial progress, not permission for live inference. Cloud recovery/HTTPS/scoped-worker, native gate review and no-overlap GPU contract remain prerequisites.
