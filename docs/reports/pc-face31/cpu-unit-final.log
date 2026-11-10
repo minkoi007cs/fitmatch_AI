@@ -1,0 +1,8 @@
+test_outside_projected_surface_is_not_visible (test_visible_face_cpu.VisibilityTests) ... ok
+test_rear_surface_refused_at_same_image_location (test_visible_face_cpu.VisibilityTests) ... ok
+test_subpixel_triangle_requires_no_integer_pixel_owner (test_visible_face_cpu.VisibilityTests) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.006s
+
+OK

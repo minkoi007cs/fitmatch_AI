@@ -1,0 +1,91 @@
+"""Independent private GLB/atlas/source-footprint audit; no GPU/model imports."""
+import argparse
+from io import BytesIO
+import json
+from pathlib import Path
+import struct
+import time
+
+import numpy as np
+from PIL import Image
+import trimesh
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    for name in ('asset', 'photo', 'mesh', 'uv', 'head_vertices', 'output'):
+        p.add_argument('--'+name.replace('_','-'), type=Path, required=True)
+    a = p.parse_args(); start = time.perf_counter()
+    if a.output.exists():
+        raise ValueError('Refuse to overwrite prior evidence')
+    blob = (a.asset/'head-visible-partial-debug.glb').read_bytes()
+    n = struct.unpack_from('<I',blob,12)[0]
+    doc = json.loads(blob[20:20+n]); binary = blob[28+n:]
+    view = doc['bufferViews'][doc['images'][0]['bufferView']]
+    offset = view.get('byteOffset',0)
+    atlas = np.asarray(Image.open(BytesIO(binary[offset:offset+view['byteLength']])).convert('RGB'))
+    assert np.array_equal(atlas,np.asarray(Image.open(a.asset/'visible-face-atlas.png')))
+    mask = np.asarray(Image.open(a.asset/'observed-atlas-mask.png')) > 0
+    source = np.asarray(Image.open(a.photo).convert('RGBA'))
+    source_mask = np.asarray(Image.open(a.asset/'source-face-mask.png')) > 0
+    with np.load(a.asset/'projection-correspondence.npz',allow_pickle=False) as data:
+        ay,ax,sx,sy,ids = [data[k] for k in ('atlasY','atlasX','sourceX','sourceY','triangle')]
+    assert len(ay) == int(mask.sum()) and np.all(mask[ay,ax])
+    assert np.all(atlas[~mask] == [150,157,165])
+    ix,iy = np.floor(sx).astype(int),np.floor(sy).astype(int)
+    for dy,dx in ((0,0),(0,1),(1,0),(1,1)):
+        assert np.all(source_mask[iy+dy,ix+dx]) and np.all(source[iy+dy,ix+dx,3] >= 250)
+    fx,fy = (sx-ix)[:,None],(sy-iy)[:,None]
+    color = ((1-fx)*(1-fy)*source[iy,ix,:3]+fx*(1-fy)*source[iy,ix+1,:3]+
+             (1-fx)*fy*source[iy+1,ix,:3]+fx*fy*source[iy+1,ix+1,:3])
+    color_delta = int(np.max(np.abs(atlas[ay,ax].astype(int)-np.rint(color).astype(int))))
+    assert color_delta <= 1  # float32 private correspondence roundoff
+    mesh = trimesh.load_mesh(a.mesh,process=False)
+    with np.load(a.uv,allow_pickle=False) as saved:
+        uv,tris = saved['uv'],saved['triangles']
+    height,width = atlas.shape[:2]
+    coords = np.column_stack(((ax+.5)/width,1-(ay+.5)/height))
+    tri = uv[tris[ids]]; aa,bb,cc = tri[:,0],tri[:,1],tri[:,2]
+    den = (bb[:,1]-cc[:,1])*(aa[:,0]-cc[:,0])+(cc[:,0]-bb[:,0])*(aa[:,1]-cc[:,1])
+    u = ((bb[:,1]-cc[:,1])*(coords[:,0]-cc[:,0])+(cc[:,0]-bb[:,0])*(coords[:,1]-cc[:,1]))/den
+    v = ((cc[:,1]-aa[:,1])*(coords[:,0]-cc[:,0])+(aa[:,0]-cc[:,0])*(coords[:,1]-cc[:,1]))/den
+    bary = np.column_stack([u,v,1-u-v]); assert bary.min() > -1e-5
+    raw = np.asarray(mesh.vertices); faces = mesh.faces
+    size = source.shape[0]; assert source.shape[1] == size
+    projected = (bary[:,:,None]*raw[faces[ids],:2]).sum(1)*[size/2,-size/2]+[size/2,size/2]
+    projection_delta = float(np.max(np.abs(projected-np.column_stack([sx,sy]))))
+    assert projection_delta < .001
+    head = np.load(a.head_vertices,allow_pickle=False)
+    assert head[faces[ids]].all() and np.all(mesh.face_normals[ids,2] >= .15)
+    loaded = next(iter(trimesh.load(a.asset/'head-visible-partial-debug.glb',force='scene',process=False).geometry.values()))
+    uv_error = float(np.max(np.abs(loaded.visual.uv-uv))); assert uv_error < 1e-7
+    assert 'COLOR_0' not in doc['meshes'][0]['primitives'][0]['attributes']
+    assert doc['samplers'] == [{'magFilter':9728,'minFilter':9728,'wrapS':33071,'wrapT':33071}]
+    # Independent all-triangle ray tests, without the baker's spatial bins.
+    xy = raw[:,:2]*[size/2,-size/2]+[size/2,size/2]
+    aa,bb,cc = xy[faces[:,0]],xy[faces[:,1]],xy[faces[:,2]]
+    den = (bb[:,1]-cc[:,1])*(aa[:,0]-cc[:,0])+(cc[:,0]-bb[:,0])*(aa[:,1]-cc[:,1])
+    nz = np.abs(den) > 1e-12; errors = []
+    for j in np.linspace(0,len(sx)-1,128,dtype=int):
+        px,py = projected[j]; u,v = np.zeros(len(faces)),np.zeros(len(faces))
+        u[nz] = ((bb[nz,1]-cc[nz,1])*(px-cc[nz,0])+(cc[nz,0]-bb[nz,0])*(py-cc[nz,1]))/den[nz]
+        v[nz] = ((cc[nz,1]-aa[nz,1])*(px-cc[nz,0])+(aa[nz,0]-cc[nz,0])*(py-cc[nz,1]))/den[nz]
+        w = 1-u-v
+        hit = nz & (u >= -1e-8) & (v >= -1e-8) & (w >= -1e-8)
+        z = u*raw[faces[:,0],2]+v*raw[faces[:,1],2]+w*raw[faces[:,2],2]
+        own = float(bary[j]@raw[faces[ids[j]],2])
+        errors.append(abs(float(z[hit].max())-own))
+    assert max(errors) < 1e-7
+    report = dict(task='PC-CPU-FACE-31',status='PASS_format_UV_mask_visibility_only',
+        identityAccepted=False,acceptedAtlasTexels=len(ay),outsideMaskLeakageTexels=0,
+        sourceBilinearFootprintInsideMask=True,sourceRGBMaxRoundingDifference=color_delta,
+        uvToSavedCameraMaxPixelError=projection_delta,allTexturedTrianglesHeadOnly=True,
+        embeddedAtlasMatchesPNG=True,UVRoundtripMaxError=uv_error,
+        independentAllTriangleRaySamples=128,independentRayDepthMaxError=max(errors),
+        wallSeconds=time.perf_counter()-start,GPUUsed=False)
+    a.output.write_text(json.dumps(report,indent=2),encoding='utf-8')
+    print(json.dumps(report,indent=2))
+
+
+if __name__ == '__main__':
+    main()

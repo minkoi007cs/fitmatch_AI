@@ -1,0 +1,32 @@
+"""CPU regressions for hidden-surface rejection and subpixel face triangles."""
+import unittest
+import numpy as np
+from bake_visible_face_cpu import ray_bins, visible_rays
+
+
+class VisibilityTests(unittest.TestCase):
+    def test_rear_surface_refused_at_same_image_location(self):
+        xy = np.array([[4.,4.],[12.,4.],[4.,12.]] * 2)
+        raw = np.column_stack([xy, [0.,0.,0.,1.,1.,1.]])
+        faces = np.array([[0,1,2],[3,4,5]])
+        bins = ray_bins(xy,faces,32)
+        points = np.array([[5.,5.],[6.,5.]])
+        np.testing.assert_array_equal(visible_rays(points,np.array([0.,1.]),xy,raw,faces,bins,32),[False,True])
+
+    def test_subpixel_triangle_requires_no_integer_pixel_owner(self):
+        xy = np.array([[10.1,10.1],[10.2,10.1],[10.1,10.2]])
+        raw = np.column_stack([xy,[.2,.2,.2]])
+        faces = np.array([[0,1,2]])
+        result = visible_rays(np.array([[10.12,10.12]]),np.array([.2]),xy,raw,faces,ray_bins(xy,faces,32),32)
+        self.assertTrue(result[0])
+
+    def test_outside_projected_surface_is_not_visible(self):
+        xy = np.array([[4.,4.],[12.,4.],[4.,12.]])
+        raw = np.column_stack([xy,[.2,.2,.2]])
+        faces = np.array([[0,1,2]])
+        result = visible_rays(np.array([[11.,11.]]),np.array([.2]),xy,raw,faces,ray_bins(xy,faces,32),32)
+        self.assertFalse(result[0])
+
+
+if __name__ == '__main__':
+    unittest.main()

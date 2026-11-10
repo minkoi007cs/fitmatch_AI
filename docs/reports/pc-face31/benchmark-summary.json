@@ -1,0 +1,43 @@
+{
+  "task": "PC-CPU-FACE-31",
+  "attempt": "002",
+  "GPUUsed": false,
+  "VRAM": "not measured; CPU-only task",
+  "bakeSeconds": 4.861473000142723,
+  "exportValidationSeconds": 0.7401299998164177,
+  "bakeStageWallSeconds": 5.601603300077841,
+  "bakePeakWorkingSetBytes": 785084416,
+  "renderWallSeconds": 10.018686299910769,
+  "renderPeakWorkingSetBytes": 357277696,
+  "renderer": "4.5.3 LTS",
+  "engine": "CYCLES",
+  "device": "CPU",
+  "views": [
+    {
+      "file": "front.png",
+      "seconds": 1.3607760998420417
+    },
+    {
+      "file": "side.png",
+      "seconds": 2.1201529998797923
+    },
+    {
+      "file": "back.png",
+      "seconds": 3.092041099909693
+    },
+    {
+      "file": "face-closeup.png",
+      "seconds": 3.314606500091031
+    }
+  ],
+  "environment": {
+    "numpy": "1.24.1",
+    "trimesh": "4.6.13",
+    "Pillow": "12.3.0"
+  },
+  "GLBBytes": 989312,
+  "identityAccepted": false,
+  "visualQuality": "FAIL: saved shape/calibration misalignment; front-visible partial only",
+  "noNewFitUnwrapInferenceDownload": true,
+  "originalNative56Rerun": false
+}

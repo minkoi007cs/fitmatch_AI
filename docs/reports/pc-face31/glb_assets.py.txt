@@ -1,0 +1,221 @@
+"""Static GLB export with ONE explicit shared coordinate transform. No body fitting."""
+import argparse
+import hashlib
+import json
+import struct
+import time
+from pathlib import Path
+
+MAX_FILE_BYTES = 40_000_000
+MAX_SET_BYTES = 120_000_000
+
+
+def inspect_glb(path, require_texture=False):
+    """Contract checks, not a replacement for Khronos' full glTF validator."""
+    path = Path(path)
+    blob = path.read_bytes()
+    if len(blob) > MAX_FILE_BYTES:
+        raise ValueError(f'{path.name}: exceeds 40 MB')
+    if len(blob) < 20:
+        raise ValueError('Truncated GLB')
+    magic, version, length = struct.unpack_from('<4sII', blob)
+    if magic != b'glTF' or version != 2 or length != len(blob):
+        raise ValueError('Invalid GLB 2 header/length')
+    chunks, offset = [], 12
+    while offset < length:
+        if offset + 8 > length:
+            raise ValueError('Truncated chunk header')
+        size, kind = struct.unpack_from('<II', blob, offset)
+        offset += 8
+        if size % 4 or offset + size > length:
+            raise ValueError('Invalid chunk length')
+        chunks.append((kind, blob[offset:offset + size]))
+        offset += size
+    if not chunks or chunks[0][0] != 0x4E4F534A:
+        raise ValueError('Missing first JSON chunk')
+    doc = json.loads(chunks[0][1])
+    if doc.get('asset', {}).get('version') != '2.0':
+        raise ValueError('Asset must be glTF 2.0')
+    if doc.get('animations') or doc.get('skins'):
+        raise ValueError('Only static, unskinned meshes allowed')
+    for node in doc.get('nodes', []):
+        if 'skin' in node or node.get('weights'):
+            raise ValueError('Skins/morphs not allowed')
+    forbidden = {'KHR_draco_mesh_compression', 'KHR_texture_basisu', 'EXT_meshopt_compression'}
+    if forbidden.intersection(doc.get('extensionsUsed', []) + doc.get('extensionsRequired', [])):
+        raise ValueError('Compression extension not allowed')
+    meshes = doc.get('meshes', [])
+    if not meshes:
+        raise ValueError('No meshes')
+    for mesh in meshes:
+        for prim in mesh.get('primitives', []):
+            if prim.get('mode', 4) != 4 or prim.get('targets'):
+                raise ValueError('Only static triangle meshes allowed')
+            if 'POSITION' not in prim.get('attributes', {}):
+                raise ValueError('Missing POSITION')
+    buffers = doc.get('buffers', [])
+    binary = [data for kind, data in chunks if kind == 0x004E4942]
+    if len(buffers) != 1 or 'uri' in buffers[0] or len(binary) != 1:
+        raise ValueError('Exactly one embedded binary buffer required')
+    if not 0 <= len(binary[0]) - buffers[0]['byteLength'] <= 3:
+        raise ValueError('Binary length does not match buffer')
+    for view in doc.get('bufferViews', []):
+        if view.get('buffer') != 0 or view.get('byteOffset', 0) < 0 or view['byteLength'] < 0:
+            raise ValueError('Invalid buffer view')
+        if view.get('byteOffset', 0) + view['byteLength'] > buffers[0]['byteLength']:
+            raise ValueError('Buffer view outside binary')
+    for image in doc.get('images', []):
+        if 'uri' in image or 'bufferView' not in image or image.get('mimeType') not in ('image/png', 'image/jpeg'):
+            raise ValueError('Only embedded PNG/JPEG textures allowed')
+        if not 0 <= image['bufferView'] < len(doc.get('bufferViews', [])):
+            raise ValueError('Invalid image buffer view')
+    if require_texture:
+        # This is a structural image/UV gate, not evidence of photo appearance,
+        # likeness, shared units, garment separation or successful inference.
+        from io import BytesIO
+        from PIL import Image
+        images = doc.get('images', [])
+        textures = doc.get('textures', [])
+        materials = doc.get('materials', [])
+        if not images or not textures or not materials or any(not mesh.get('primitives') for mesh in meshes):
+            raise ValueError('Missing or invalid texture/material reference')
+        def indexed(items, index):
+            if type(index) is not int or not 0 <= index < len(items):
+                raise ValueError('Missing or invalid texture/material reference')
+            return items[index]
+        for mesh in meshes:
+            for prim in mesh.get('primitives', []):
+                material = indexed(materials, prim.get('material'))
+                info = material.get('pbrMetallicRoughness', {}).get('baseColorTexture', {})
+                texture = indexed(textures, info.get('index'))
+                texcoord = info.get('texCoord', 0)
+                if type(texcoord) is not int or texcoord < 0 or f'TEXCOORD_{texcoord}' not in prim.get('attributes', {}):
+                    raise ValueError('Textured mesh requires matching UV coordinates')
+                embedded = indexed(images, texture.get('source'))
+                view = doc['bufferViews'][embedded['bufferView']]
+                start = view.get('byteOffset', 0)
+                payload = binary[0][start:start + view['byteLength']]
+                with Image.open(BytesIO(payload)) as decoded:
+                    expected_format = {'image/png': 'PNG', 'image/jpeg': 'JPEG'}[embedded['mimeType']]
+                    if decoded.format != expected_format:
+                        raise ValueError('Embedded texture MIME/content mismatch')
+                    decoded.verify()
+    return dict(file=path.name, bytes=len(blob), sha256=hashlib.sha256(blob).hexdigest(),
+                meshes=len(meshes), embeddedImages=len(doc.get('images', [])))
+
+
+def export_mesh(source, destination, transform):
+    import numpy as np
+    import trimesh
+    scene = trimesh.load_scene(source, process=False)
+    if not scene.geometry:
+        raise ValueError('Source contains no geometry')
+    # Flatten source node transforms, then apply the SAME world transform to every file.
+    # Never center or normalize individual assets and never resize clothes to a new body.
+    baked = trimesh.Scene()
+    for node in scene.graph.nodes_geometry:
+        matrix, name = scene.graph[node]
+        mesh = scene.geometry[name].copy()
+        if not isinstance(mesh, trimesh.Trimesh) or len(mesh.faces) == 0:
+            raise ValueError('Only triangle mesh sources supported')
+        if not np.isfinite(mesh.vertices).all():
+            raise ValueError('Non-finite vertices')
+        mesh.apply_transform(transform @ matrix)
+        baked.add_geometry(mesh, geom_name=str(node), node_name=str(node))
+    destination.write_bytes(trimesh.exchange.gltf.export_glb(baked, include_normals=True))
+    result = inspect_glb(destination)
+    result['boundsMetres'] = baked.bounds.tolist()
+    return result
+
+
+def shared_transform(value):
+    import numpy as np
+    m = np.asarray(value, dtype=float)
+    if m.shape != (4, 4) or not np.isfinite(m).all() or not np.allclose(m[3], [0, 0, 0, 1]):
+        raise ValueError('Expected finite affine 4x4 matrix')
+    gram = m[:3, :3].T @ m[:3, :3]
+    scale2 = np.trace(gram) / 3
+    if scale2 <= 0 or not np.allclose(gram, np.eye(3) * scale2) or np.linalg.det(m[:3, :3]) <= 0:
+        raise ValueError('Only rotation + UNIFORM units conversion + shared translation allowed')
+    return m
+
+
+def package(config_file, output):
+    """Package only completed, reviewed assets. Missing inputs never become success stubs."""
+    config_file, output = Path(config_file), Path(output)
+    config = json.loads(config_file.read_text(encoding='utf-8-sig'))
+    if output.exists():
+        raise ValueError('Use a fresh run directory; existing results are never overwritten')
+    for field in ('avatar', 'garments', 'transformToMetresYUpZForward', 'benchmarkFile', 'qualityNotesFile'):
+        if field not in config:
+            raise ValueError(f'Missing {field}')
+    transform = shared_transform(config['transformToMetresYUpZForward'])
+    # These are human/source evidence attestations, not geometric guarantees.
+    if config.get('reviewedSharedPoseAndOrigin') is not True:
+        raise ValueError('Shared pose/origin review required')
+    if config.get('reviewedFrontSideBackAndCollisions') is not True:
+        raise ValueError('Front/side/back and collision review required')
+    avatar = config['avatar']
+    if not avatar.get('isPhotoReconstruction') or not avatar.get('sourceRights'):
+        raise ValueError('Personal/photo reconstructed avatar provenance required')
+    garments = config['garments']
+    if not garments:
+        raise ValueError('At least one completed garment required')
+    ids = {avatar['id'], 'avatar'}
+    files = {'avatar.glb'}
+    for garment in garments:
+        if garment['id'] in ids or garment['category'] not in ('t-shirt', 'shirt'):
+            raise ValueError('Invalid/duplicate garment ID or category')
+        ids.add(garment['id'])
+        if not garment.get('garmentOnlyReviewed') or not garment.get('physicalDimensionsCm'):
+            raise ValueError('Garment-only review and physical dimensions required')
+        if not garment.get('isPhotoReconstruction') or not garment.get('sourceRights'):
+            raise ValueError('Photo garment provenance required; templates belong in diagnostics')
+        filename = 'tee.glb' if garment['category'] == 't-shirt' else 'shirt.glb'
+        if filename in files:
+            raise ValueError('One garment per category per run; use another run for variants')
+        files.add(filename)
+    resolve = lambda name: (config_file.parent / name).resolve()
+    for asset in [avatar, *garments]:
+        if not resolve(asset['source']).is_file():
+            raise ValueError(f'Missing source: {asset["source"]}')
+    benchmark = json.loads(resolve(config['benchmarkFile']).read_text(encoding='utf-8-sig'))
+    for stage in ('avatar', 'garment', 'drape'):
+        if benchmark.get(stage, {}).get('status') != 'passed' or not isinstance(benchmark[stage].get('wallSeconds'), (float, int)):
+            raise ValueError(f'Missing measured successful stage: {stage}')
+    notes = resolve(config['qualityNotesFile']).read_text(encoding='utf-8-sig')
+    output.mkdir(parents=True)
+    started = time.perf_counter()
+    try:
+        evidence = [export_mesh(resolve(avatar['source']), output / 'avatar.glb', transform)]
+        manifest = {'version': 1, 'avatar': {'id': avatar['id'], 'name': avatar['name'], 'file': 'avatar.glb'}, 'garments': []}
+        for garment in garments:
+            filename = 'tee.glb' if garment['category'] == 't-shirt' else 'shirt.glb'
+            evidence.append(export_mesh(resolve(garment['source']), output / filename, transform))
+            manifest['garments'].append({'id': garment['id'], 'name': garment['name'], 'file': filename,
+                'category': garment['category'], 'avatarId': avatar['id']})
+        benchmark['export'] = {'status': 'passed', 'wallSeconds': time.perf_counter() - started, 'files': evidence}
+        (output / 'benchmark.json').write_text(json.dumps(benchmark, indent=2), encoding='utf-8')
+        (output / 'quality-notes.md').write_text(notes, encoding='utf-8')
+        manifest_data = json.dumps(manifest, ensure_ascii=False, indent=2)
+        if sum(f.stat().st_size for f in output.iterdir()) + len(manifest_data.encode('utf-8')) > MAX_SET_BYTES:
+            raise ValueError('Set exceeds 120 MB')
+        # Write the manifest LAST. A failed export cannot be loaded as a completed set.
+        (output / 'manifest.json').write_text(manifest_data, encoding='utf-8')
+    except Exception:
+        (output / 'FAILED.txt').write_text('Export failed. Do not load this directory as a completed run.', encoding='utf-8')
+        raise
+    return manifest
+
+
+if __name__ == '__main__':
+    p = argparse.ArgumentParser()
+    sub = p.add_subparsers(dest='mode', required=True)
+    v = sub.add_parser('validate')
+    v.add_argument('file', type=Path)
+    v.add_argument('--require-texture', action='store_true', help='Require linked, decodable embedded base-colour image and UVs; does not prove appearance quality')
+    e = sub.add_parser('package')
+    e.add_argument('--config', type=Path, required=True)
+    e.add_argument('--output', type=Path, required=True)
+    a = p.parse_args()
+    print(json.dumps(inspect_glb(a.file, require_texture=a.require_texture) if a.mode == 'validate' else package(a.config, a.output), indent=2))

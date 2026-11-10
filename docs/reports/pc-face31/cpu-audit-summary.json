@@ -1,0 +1,17 @@
+{
+  "task": "PC-CPU-FACE-31",
+  "status": "PASS_format_UV_mask_visibility_only",
+  "identityAccepted": false,
+  "acceptedAtlasTexels": 241717,
+  "outsideMaskLeakageTexels": 0,
+  "sourceBilinearFootprintInsideMask": true,
+  "sourceRGBMaxRoundingDifference": 1,
+  "uvToSavedCameraMaxPixelError": 3.068861963129166e-05,
+  "allTexturedTrianglesHeadOnly": true,
+  "embeddedAtlasMatchesPNG": true,
+  "UVRoundtripMaxError": 2.9802322387695312e-08,
+  "independentAllTriangleRaySamples": 128,
+  "independentRayDepthMaxError": 5.828670879282072e-16,
+  "wallSeconds": 0.856514299986884,
+  "GPUUsed": false
+}

@@ -1,0 +1,275 @@
+"""Private, masked orthographic appearance spike on an existing UV-mapped mesh.
+
+No fitting, unwrap, learned model, GPU API or coordinator admission. An explicit
+private annotation binds every input. The saved SiTH fit camera is reused without
+warping; misalignment is deliberately not corrected by changing the geometry.
+"""
+import argparse
+import ctypes
+from ctypes import wintypes
+import hashlib
+import json
+from pathlib import Path
+import struct
+import time
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFilter
+import trimesh
+
+from glb_assets import inspect_glb
+
+
+def digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def peak_rss():
+    class Counters(ctypes.Structure):
+        _fields_ = [('cb', wintypes.DWORD), ('PageFaultCount', wintypes.DWORD),
+                    *[(n, ctypes.c_size_t) for n in ('PeakWorkingSetSize', 'WorkingSetSize',
+                      'QuotaPeakPagedPoolUsage', 'QuotaPagedPoolUsage', 'QuotaPeakNonPagedPoolUsage',
+                      'QuotaNonPagedPoolUsage', 'PagefileUsage', 'PeakPagefileUsage')]]
+    c = Counters(); c.cb = ctypes.sizeof(c)
+    fn = ctypes.WinDLL('psapi').GetProcessMemoryInfo
+    fn.argtypes = [wintypes.HANDLE, ctypes.POINTER(Counters), wintypes.DWORD]
+    fn.restype = wintypes.BOOL
+    if not fn(wintypes.HANDLE(-1), ctypes.byref(c), c.cb):
+        raise ctypes.WinError()
+    return int(c.PeakWorkingSetSize)
+
+
+def raster_triangle(points, width, height, center=0.0):
+    """Return integer pixels and barycentrics, with an explicit sample convention."""
+    lo = np.maximum(np.ceil(points.min(0) - center).astype(int), 0)
+    hi = np.minimum(np.floor(points.max(0) - center).astype(int), [width - 1, height - 1])
+    if np.any(lo > hi):
+        return None
+    a, b, c = points
+    den = (b[1]-c[1])*(a[0]-c[0]) + (c[0]-b[0])*(a[1]-c[1])
+    if abs(den) < 1e-12:
+        return None
+    yy, xx = np.mgrid[lo[1]:hi[1]+1, lo[0]:hi[0]+1]
+    px, py = xx + center, yy + center
+    u = ((b[1]-c[1])*(px-c[0]) + (c[0]-b[0])*(py-c[1])) / den
+    v = ((c[1]-a[1])*(px-c[0]) + (a[0]-c[0])*(py-c[1])) / den
+    w = 1-u-v
+    inside = (u >= -1e-8) & (v >= -1e-8) & (w >= -1e-8)
+    return yy[inside], xx[inside], np.stack([u[inside], v[inside], w[inside]], axis=1)
+
+
+def nearest_sampler(blob):
+    """No filtering/mipmaps beyond the accepted texels at atlas boundaries."""
+    n, tag = struct.unpack_from('<II', blob, 12)
+    assert tag == 0x4E4F534A
+    doc = json.loads(blob[20:20+n])
+    doc['samplers'] = [{'magFilter': 9728, 'minFilter': 9728, 'wrapS': 33071, 'wrapT': 33071}]
+    for t in doc['textures']:
+        t['sampler'] = 0
+    payload = json.dumps(doc, separators=(',', ':')).encode('utf-8')
+    payload += b' ' * (-len(payload) % 4)
+    rest = blob[20+n:]
+    return struct.pack('<4sII', b'glTF', 2, 20+len(payload)+len(rest)) + struct.pack('<II', len(payload), tag) + payload + rest
+
+
+def ray_bins(xy, faces, width, cell=16):
+    """CPU broad phase only; each accepted ray still gets exact triangle tests."""
+    bins = {}
+    count = width // cell
+    for i, face in enumerate(faces):
+        lo = np.maximum(np.floor(xy[face].min(0)/cell).astype(int), 0)
+        hi = np.minimum(np.floor(xy[face].max(0)/cell).astype(int), count-1)
+        for y in range(lo[1], hi[1]+1):
+            for x in range(lo[0], hi[0]+1):
+                bins.setdefault(y*count+x, []).append(i)
+    return {k: np.asarray(v) for k,v in bins.items()}
+
+
+def visible_rays(points, z, xy, raw, faces, bins, width, cell=16):
+    """Exact orthographic nearest-surface comparison at the actual atlas rays.
+
+    Pixel-owner approximations discard subpixel face triangles. Testing exact
+    rays avoids those holes and does not borrow a neighbouring visible surface.
+    """
+    keys = (points[:, 1]//cell).astype(int)*(width//cell) + (points[:, 0]//cell).astype(int)
+    visible = np.zeros(len(points), bool)
+    for key in np.unique(keys):
+        ids = np.flatnonzero(keys == key)
+        nearby = bins.get(int(key), np.empty(0, dtype=int))
+        if not len(nearby):
+            continue
+        tri = xy[faces[nearby]]
+        a,b,c = tri[:,0],tri[:,1],tri[:,2]
+        den = (b[:,1]-c[:,1])*(a[:,0]-c[:,0]) + (c[:,0]-b[:,0])*(a[:,1]-c[:,1])
+        nonzero = np.abs(den) > 1e-12
+        a,b,c,den,nearby = [v[nonzero] for v in (a,b,c,den,nearby)]
+        if not len(nearby):
+            continue
+        for offset in range(0,len(ids),512):
+            chosen = ids[offset:offset+512]
+            px,py = points[chosen].T
+            u = ((b[:,1]-c[:,1])[:,None]*(px-c[:,0,None]) + (c[:,0]-b[:,0])[:,None]*(py-c[:,1,None]))/den[:,None]
+            v = ((c[:,1]-a[:,1])[:,None]*(px-c[:,0,None]) + (a[:,0]-c[:,0])[:,None]*(py-c[:,1,None]))/den[:,None]
+            w = 1-u-v
+            hit = (u >= -1e-8) & (v >= -1e-8) & (w >= -1e-8)
+            tz = raw[faces[nearby],2]
+            depth = u*tz[:,0,None]+v*tz[:,1,None]+w*tz[:,2,None]
+            nearest = np.where(hit,depth,-np.inf).max(0)
+            visible[chosen] = np.isfinite(nearest) & (np.abs(nearest-z[chosen]) <= 1e-7)
+    return visible
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    for name in ('photo', 'mesh', 'uv', 'head_vertices', 'reference_glb', 'mesh_qc', 'annotations', 'output'):
+        p.add_argument('--'+name.replace('_', '-'), type=Path, required=True)
+    a = p.parse_args()
+    started = time.perf_counter()
+    note = json.loads(a.annotations.read_text(encoding='utf-8'))
+    inputs = {k: getattr(a, k) for k in ('photo', 'mesh', 'uv', 'head_vertices', 'reference_glb', 'mesh_qc')}
+    before = {k: digest(v) for k, v in inputs.items()}
+    if before != note['inputSHA256']:
+        raise ValueError('Input identity does not match private annotation')
+    if note['camera'] != 'SiTH saved orthographic eye(0,0,3), xy identity; pixel=(x+1,1-y)*size/2':
+        raise ValueError('Unsupported camera; do not guess calibration')
+    if note.get('scope') != 'front-visible face appearance only; no neck/clothing/hair/background':
+        raise ValueError('Require explicit bounded mask scope')
+    photo = np.asarray(Image.open(a.photo).convert('RGBA'))
+    h, w = photo.shape[:2]
+    if h != w or w != 1024:
+        raise ValueError('Expected the actual saved 1024 fit input')
+    src = trimesh.load_mesh(a.mesh, process=False)
+    raw = np.asarray(src.vertices)
+    faces = np.asarray(src.faces)
+    qc = json.loads(a.mesh_qc.read_text(encoding='utf-8'))
+    world = raw / qc['cameraFitScaleRemoved'] + np.asarray(qc['translationOnlyAfterScaleRemoval'])
+    with np.load(a.uv, allow_pickle=False) as mapping:
+        vmap = mapping['vertexMap'].astype(np.int64)
+        tris = mapping['triangles'].astype(np.int64)
+        uv = mapping['uv'].astype(np.float64)
+    if (len(vmap) != len(uv) or tris.shape != faces.shape or
+            not np.isfinite(uv).all() or np.any(uv < 0) or np.any(uv > 1) or
+            np.any(vmap < 0) or np.any(vmap >= len(raw)) or
+            np.any(tris < 0) or np.any(tris >= len(vmap)) or
+            not np.array_equal(vmap[tris], faces)):
+        raise ValueError('Saved UV does not preserve original triangle correspondence')
+    mask_image = Image.new('L', (w, h))
+    ImageDraw.Draw(mask_image).polygon([tuple(x) for x in note['facePolygonPixels']], fill=255)
+    # Full bilinear source footprint must lie inside a conservative reviewed mask.
+    mask_image = mask_image.filter(ImageFilter.MinFilter(5))
+    mask = (np.asarray(mask_image) == 255) & (photo[..., 3] >= 250)
+    xy = raw[:, :2] * [w/2, -h/2] + [w/2, h/2]
+    bins = ray_bins(xy, faces, w)
+    size = int(note.get('atlasSize', 4096))
+    if size not in (2048, 4096):
+        raise ValueError('Bounded atlas size required')
+    neutral = np.array([150, 157, 165], np.uint8)
+    texture = np.empty((size, size, 3), np.uint8); texture[:] = neutral
+    coverage = np.zeros((size, size), bool)
+    sample_x = np.full((size, size), -1, np.float32)
+    sample_y = np.full((size, size), -1, np.float32)
+    triangle_id = np.full((size, size), -1, np.int32)
+    atlas_xy = uv * [size, -size] + [-.5, size-.5]
+    head_lower = float(world[:, 1].max() - note['headBandNominalMetres'])
+    head_vertices = np.load(a.head_vertices, allow_pickle=False)
+    if head_vertices.shape != (len(raw),) or head_vertices.dtype != np.bool_:
+        raise ValueError('Require an input-bound head-only vertex mask')
+    normals = src.face_normals
+    candidates = head_vertices[faces].all(1) & (world[faces, 1].min(1) >= head_lower) & (normals[:, 2] >= .15)
+    for i in np.flatnonzero(candidates):
+        face = faces[i]
+        r = raster_triangle(atlas_xy[tris[i]], size, size)
+        if r is None:
+            continue
+        yy, xx, bary = r
+        projected = bary @ xy[face]
+        sx, sy = projected.T
+        ix, iy = np.floor(sx).astype(int), np.floor(sy).astype(int)
+        valid = (ix >= 0) & (iy >= 0) & (ix < w-1) & (iy < h-1)
+        ix, iy = np.clip(ix, 0, w-2), np.clip(iy, 0, h-2)
+        valid &= mask[iy, ix] & mask[iy, ix+1] & mask[iy+1, ix] & mask[iy+1, ix+1]
+        selected = np.flatnonzero(valid)
+        valid[selected] &= visible_rays(projected[selected], (bary @ raw[face, 2])[selected],
+                                        xy, raw, faces, bins, w)
+        yy, xx, sx, sy, ix, iy = [v[valid] for v in (yy, xx, sx, sy, ix, iy)]
+        if not len(yy):
+            continue
+        fx, fy = (sx-ix)[:, None], (sy-iy)[:, None]
+        colors = ((1-fx)*(1-fy)*photo[iy, ix, :3] + fx*(1-fy)*photo[iy, ix+1, :3] +
+                  (1-fx)*fy*photo[iy+1, ix, :3] + fx*fy*photo[iy+1, ix+1, :3])
+        if coverage[yy, xx].any():
+            raise ValueError('Atlas accepted surfaces overlap; unsafe source ownership')
+        texture[yy, xx] = np.rint(colors).astype(np.uint8)
+        coverage[yy, xx] = True
+        sample_x[yy, xx], sample_y[yy, xx], triangle_id[yy, xx] = sx, sy, i
+    if not coverage.any():
+        raise ValueError('No visible head/mask intersection; report calibration gap')
+    a.output.mkdir(parents=True, exist_ok=False)
+    Image.fromarray(mask.astype(np.uint8)*255).save(a.output/'source-face-mask.png')
+    masked = photo.copy(); masked[~mask] = [0, 0, 0, 0]
+    Image.fromarray(masked).save(a.output/'source-face-only.png')
+    Image.fromarray(texture).save(a.output/'visible-face-atlas.png')
+    Image.fromarray(coverage.astype(np.uint8)*255).save(a.output/'observed-atlas-mask.png')
+    np.savez_compressed(a.output/'projection-correspondence.npz', atlasY=np.nonzero(coverage)[0],
+                        atlasX=np.nonzero(coverage)[1], sourceX=sample_x[coverage],
+                        sourceY=sample_y[coverage], triangle=triangle_id[coverage])
+    overlay = Image.fromarray(photo).convert('RGB')
+    d = ImageDraw.Draw(overlay)
+    d.line([tuple(x) for x in note['facePolygonPixels']] + [tuple(note['facePolygonPixels'][0])], fill='yellow', width=2)
+    for q in xy[np.unique(faces[candidates])]:
+        d.ellipse((q[0]-1, q[1]-1, q[0]+1, q[1]+1), fill='cyan')
+    overlay.save(a.output/'camera-mask-alignment-review.png')
+    baked_at = time.perf_counter()
+    material = trimesh.visual.material.PBRMaterial(name='FRONT_VISIBLE_PARTIAL_NOT_IDENTITY_ACCEPTED',
+        baseColorTexture=Image.fromarray(texture), baseColorFactor=[1., 1., 1., 1.],
+        metallicFactor=0., roughnessFactor=1., doubleSided=False)
+    mesh = trimesh.Trimesh(vertices=world[vmap], faces=tris, process=False,
+                           vertex_normals=src.vertex_normals[vmap],
+                           visual=trimesh.visual.TextureVisuals(uv=uv, material=material))
+    mesh.metadata.update(kind='FRONT_VISIBLE_PARTIAL_DEBUG', identityAccepted=False,
+        personalAvatar=False, hairReconstructed=False, geometryChanged=False,
+        unobserved='neutral; source body shape remains an uncalibrated model prior')
+    scene = trimesh.Scene(mesh)
+    target = a.output/'head-visible-partial-debug.glb'
+    target.write_bytes(nearest_sampler(scene.export(file_type='glb')))
+    check = inspect_glb(target, require_texture=True)
+    loaded = trimesh.load(target, force='scene', process=False)
+    new = next(iter(loaded.geometry.values()))
+    old = next(iter(trimesh.load(a.reference_glb, force='scene', process=False).geometry.values()))
+    expected = np.asarray(old.vertices)[old.faces]
+    actual = np.asarray(new.vertices)[new.faces]
+    delta = float(np.max(np.abs(actual-expected)))
+    if not np.array_equal(actual, expected):
+        raise ValueError('Output changes existing GLB triangle positions')
+    if np.any(texture[~coverage] != neutral):
+        raise ValueError('Photo leakage outside accepted atlas mask')
+    if {k: digest(v) for k, v in inputs.items()} != before:
+        raise ValueError('An input changed during CPU bake')
+    result = dict(task='PC-CPU-FACE-31', status='partial_debug_ready_for_review',
+        identityAccepted=False, personalAvatar=False, observed='front-visible face appearance only',
+        cameraRecalibrated=False, geometryChanged=False, originalVertices=len(raw),
+        uvVertices=len(vmap), triangles=len(tris), exactReferenceTrianglePositionDelta=delta,
+        units='same uncalibrated model-native metres as existing debug GLB', axes='+Y up, +Z front',
+        inputSHA256=before, annotationsSHA256=digest(a.annotations),
+        atlasSize=size, neutralRGB=neutral.tolist(), acceptedAtlasTexels=int(coverage.sum()),
+        atlasCoverageFraction=float(coverage.mean()), candidateHeadTriangles=int(candidates.sum()),
+        texturedTriangles=int(len(np.unique(triangle_id[coverage]))),
+        leakageOutsideAcceptedAtlasTexels=0, fullBilinearSourceFootprintInsideMask=True,
+        visibleNearestSurfaceOwnershipRequired=True, boundaryFiltering='nearest/no mipmaps/clamp',
+        visibility='exact orthographic ray/triangle depth at every accepted atlas sample',
+        headMask='existing model skinning weights head/jaw/eye joints; all triangle vertices required',
+        hair='unmodeled/neutral', hiddenRegions='neutral', metricHeightCalibration=False,
+        limitations=['Saved head/face projection is visibly misaligned; no manual UV warping or shape correction.',
+                    'Source includes lighting and makeup. No lighting removal, side/back observation or likeness acceptance.',
+                    'Conservative masks leave holes/neutral boundaries; this is not a production skin atlas.'],
+        bakeSeconds=baked_at-started, exportValidationSeconds=time.perf_counter()-baked_at,
+        wallSeconds=time.perf_counter()-started, processPeakWorkingSetBytes=peak_rss(),
+        CUDAUsed=False, GPUUsed=False, coordinatorTouched=False, staticEmbeddedGLBCheck=check,
+        environment={'numpy': np.__version__, 'trimesh': trimesh.__version__, 'Pillow': Image.__version__})
+    (a.output/'benchmark.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
+    print(json.dumps({k: result[k] for k in ('status','acceptedAtlasTexels','texturedTriangles',
+        'exactReferenceTrianglePositionDelta','wallSeconds','processPeakWorkingSetBytes','staticEmbeddedGLBCheck')}, indent=2))
+
+
+if __name__ == '__main__':
+    main()
