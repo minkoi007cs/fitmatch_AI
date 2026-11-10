@@ -19,3 +19,9 @@ The fixture patch SHA50ddd9cb14d893c4f6bdbf7c099e5e4e6c16dc54a333294c8837c2674bd
 Claude APP-CLOSE-30 Ready for review, focused source accepted; no claim all release gates closed. Assign [APP-RECOVERY-32](../../handoffs/prompt-claude-recovery-ready-20261109.md) to the same Claude after receipt. Close documented role restore/schema coverage/Storage bytes and data comparison gaps with an evidence-backed disposable local dump/restore rehearsal and exact runbook. This is useful independent work while PC validates native tests and texture. Do not repeat completed migrations/worker/model setup.
 
 Remaining before hosted integration: private canonical backup+restore proof, exact target/SQL execution review, reviewed HTTPS serving revision, scoped enrollment/native ACK, coordinated finite GPU slot and real Qwen via app. Personal avatar likeness, hair/texture, interchangeable real top+jeans and user quality approval remain product gates. No cloud migration/deployment/GPU in this session.
+
+## Final verification and dispatch
+
+Full npm run test:v2 exit0 on the reference Mac/default-build environment. Real routes + PostgreSQL + browser + worker.py passed R1 recovery, C1 two-slot/save/reopen, C2 capture/retention, QINT analysis human review/owner isolation/cleanup/binding and general auth/outfit/mobile flows. Adapter CPU MOCK and synthetic geometry remain explicit; no real Qwen/native Windows/likeness claim. No new source fix was needed by reviewer. Candidate checkout stays clean.
+
+Claude continuation was directly sent in the existing desktop session Branch save and handoff report after published handoff f0db00c; UI shows the submitted message and Claude Running/Working on it. This proves delivery/active response, not receipt commit or completion. No new chat/subagent created. APP-RECOVERY-32 is now the current app assignment after its receipt; Codex keeps independent review. PC fixture follow-up delivery remains UNKNOWN, no retry implied.
