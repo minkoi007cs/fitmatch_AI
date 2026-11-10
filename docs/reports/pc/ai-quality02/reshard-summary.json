@@ -1,0 +1,122 @@
+{
+  "status": "ReshardedAndTensorVerified",
+  "source_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "artifact": "BF16 byte-preserving local reshard; not quantized",
+  "downloaded_bytes": 0,
+  "target_budget_bytes": 536870912,
+  "files": [
+    {
+      "file": "model-00001-of-00017.safetensors",
+      "bytes": 777912472,
+      "sha256": "06ad5e33f0cdcae68e97ac9d884873d595ccafbb7ae71c1c95e6ae495bf74eae",
+      "tensor_bytes": 777912320
+    },
+    {
+      "file": "model-00002-of-00017.safetensors",
+      "bytes": 503346312,
+      "sha256": "d4dddf93569b35ac7cb21e938c51cd168f052add0ff680dffdf618f5e65d4be9",
+      "tensor_bytes": 503343104
+    },
+    {
+      "file": "model-00003-of-00017.safetensors",
+      "bytes": 505974184,
+      "sha256": "8a6adb348b6d257bdc4443ed3826d1f6f26f5461e27dd40083b750b70819717d",
+      "tensor_bytes": 505970176
+    },
+    {
+      "file": "model-00004-of-00017.safetensors",
+      "bytes": 503341104,
+      "sha256": "6158e6743b5a02f271ce07a2983ff3425c8cb408fdb9a78d6f627e1482014362",
+      "tensor_bytes": 503337984
+    },
+    {
+      "file": "model-00005-of-00017.safetensors",
+      "bytes": 505974184,
+      "sha256": "f51e66faa025bca0a4f9bd4a936da0815a266ed676d4d13fc691d9d45fee3a53",
+      "tensor_bytes": 505970176
+    },
+    {
+      "file": "model-00006-of-00017.safetensors",
+      "bytes": 503341096,
+      "sha256": "2e88446636cc539cf41ed01dd13645c6caed087977bbb4a110366cfc90ab07b6",
+      "tensor_bytes": 503337984
+    },
+    {
+      "file": "model-00007-of-00017.safetensors",
+      "bytes": 505974168,
+      "sha256": "06cb8fd7ee2e7e999f9d51b8796eddc196ac98f43753cadedbbc486d969fcbe4",
+      "tensor_bytes": 505970176
+    },
+    {
+      "file": "model-00008-of-00017.safetensors",
+      "bytes": 529561744,
+      "sha256": "dff8f690560d9da5de7f8e6b5acd09a132cac29dc5ac979ecc30138323a55aa6",
+      "tensor_bytes": 529558016
+    },
+    {
+      "file": "model-00009-of-00017.safetensors",
+      "bytes": 529560976,
+      "sha256": "e08e0d9e28d5d8b0027f5cd66cfbbf73c5b824755a06d49befe36303628550a0",
+      "tensor_bytes": 529557504
+    },
+    {
+      "file": "model-00010-of-00017.safetensors",
+      "bytes": 529561760,
+      "sha256": "96ca01f6993c5d29b28b0b75f0eeb5b98f90cc28722f4c1f629b9e969928ed40",
+      "tensor_bytes": 529558016
+    },
+    {
+      "file": "model-00011-of-00017.safetensors",
+      "bytes": 529561008,
+      "sha256": "ede4cb52c91857be9b9fc0933ad6720a274908dfe36fb07d60007b4299433b06",
+      "tensor_bytes": 529557504
+    },
+    {
+      "file": "model-00012-of-00017.safetensors",
+      "bytes": 505974184,
+      "sha256": "a5889457754d0dc67214d74b446d16a0f020ec254fac1b9d0d67c570c4dce47c",
+      "tensor_bytes": 505970176
+    },
+    {
+      "file": "model-00013-of-00017.safetensors",
+      "bytes": 503341104,
+      "sha256": "c4b36e28bfe2da068dd0637309dea9317f6de1616bf0b3a79840cab3aa693892",
+      "tensor_bytes": 503337984
+    },
+    {
+      "file": "model-00014-of-00017.safetensors",
+      "bytes": 505974184,
+      "sha256": "a1085c05f5c785b3adca3b090036cf91bd0a3f757982c9516f1d195d20dd61d9",
+      "tensor_bytes": 505970176
+    },
+    {
+      "file": "model-00015-of-00017.safetensors",
+      "bytes": 503341104,
+      "sha256": "f2b8d4c074f7c8460ed303b0168d0cb6dc2660ebbed57faf69096abb703fe199",
+      "tensor_bytes": 503337984
+    },
+    {
+      "file": "model-00016-of-00017.safetensors",
+      "bytes": 532648136,
+      "sha256": "bc27fe02c71cc4bf017aaf9413256abcf2f6d4f8252415f3706893e1b6dab9b4",
+      "tensor_bytes": 532623872
+    },
+    {
+      "file": "model-00017-of-00017.safetensors",
+      "bytes": 400330600,
+      "sha256": "bd2ac8556dd313f15ba7c0a0d771e211fcf2db44de31f5c4275fe5db37593d75",
+      "tensor_bytes": 400318464
+    }
+  ],
+  "ram_available_before_bytes": 4994752512,
+  "min_ram_available_bytes": 4872355840,
+  "tensor_count": 713,
+  "shard_count": 17,
+  "total_tensor_bytes": 8875631616,
+  "seconds": 144.788,
+  "peak_process_working_set_bytes": 44994560,
+  "max_target_shard_bytes": 777912472,
+  "full_local_tensor_manifest_sha256": "718a226a4856339cb813bcce2500f5002f31d3037a09ebd8735234990a1b65a2",
+  "full_local_tensor_manifest": "reports/ai/quality02/reshard-manifest.json",
+  "verification": "713 source tensor data SHA256 equal independent target disk reread; full per-tensor manifest retained locally"
+}

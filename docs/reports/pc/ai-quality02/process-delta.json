@@ -1,0 +1,16 @@
+{
+  "session": "PC-AI-QUALITY-20261106-02",
+  "task": "AI-QUALITY-02",
+  "docs_baseline": "a32f6fbf7a1ba7c744930a3f8b872dd801aab206",
+  "prepublication_docs_readback": "b23f071f852bea51cb746ee69359e6f089bc62bc",
+  "status": "Ready for review",
+  "memory": "Observed process peak reduced55.5%; changed starting host pressure noted",
+  "quality": "Tshirt OCR Needs changes; jeans fixture_pass; narrow labeled set only",
+  "cpu_tests": 14,
+  "gpu_runs": 2,
+  "both_guarded_children_exited": true,
+  "model_unloaded": true,
+  "central_process_modified": false,
+  "personal_photos": "needs_input",
+  "next_owner": "Codex review; app owner reviews proposal only; 3D retains GPU coordination"
+}

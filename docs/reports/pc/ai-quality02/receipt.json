@@ -1,0 +1,18 @@
+{
+  "session": "PC-AI-QUALITY-20261106-02",
+  "task": "AI-QUALITY-02",
+  "machine": "MIN_KOI",
+  "docsSha": "a32f6fbf7a1ba7c744930a3f8b872dd801aab206",
+  "processSource": "PROC-0014",
+  "baselinePR": "https://github.com/minkoi007cs/fitmatch_AI/pull/3",
+  "baselineCommit": "49d27d074a194c3f446ebc2ef38026959dc6dd95",
+  "branch": "docs/pc-ai-quality-02-20261106",
+  "recordedAtUtc": "2026-11-06T05:40:26.8096198Z",
+  "scope": "ai-service/quality02; reports/ai/quality02; local derived model reshard512m; new docs report/delta",
+  "env": "Existing envs/qwen-vl unchanged",
+  "sourceModel": "Existing original qwen3-vl-4b; no new model download",
+  "gpuPolicy": "Existing fixed absolute OS lock/3D receipt; current slot must still admit pc-ai; conservative RAM gate before any load",
+  "status": "In progress",
+  "centralProcessModified": false,
+  "personalImages": "needs_input; reuse licensed public reference illustration/photo"
+}

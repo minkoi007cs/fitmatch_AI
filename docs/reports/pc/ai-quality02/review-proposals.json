@@ -1,0 +1,53 @@
+{
+  "tshirt": {
+    "schema_version": "pc-ai.attribute-review.v1",
+    "status": "requires_review",
+    "approved_for_auto_apply": false,
+    "attributes": {
+      "schema_version": "pc-ai.grounded-attributes.v2",
+      "category": "tshirt",
+      "dominant_colors": [
+        "blue",
+        "white"
+      ],
+      "pattern": "striped",
+      "logo_presence": "visible",
+      "logo_texts": [],
+      "neckline": "crew",
+      "sleeves": "short",
+      "material_composition": "unknown",
+      "back_pocket_count": "unknown",
+      "pockets_total": "unknown"
+    },
+    "ocr_status": "unverified",
+    "candidate_logo_texts": [
+      "FON BET",
+      "DEL",
+      "RUSCON"
+    ],
+    "note": "Candidate OCR is not verified logo text; no normalization can establish pixel truth."
+  },
+  "jeans": {
+    "schema_version": "pc-ai.attribute-review.v1",
+    "status": "requires_review",
+    "approved_for_auto_apply": false,
+    "attributes": {
+      "schema_version": "pc-ai.grounded-attributes.v2",
+      "category": "jeans",
+      "dominant_colors": [
+        "blue"
+      ],
+      "pattern": "solid",
+      "logo_presence": "not_visible",
+      "logo_texts": [],
+      "neckline": "not_applicable",
+      "sleeves": "not_applicable",
+      "material_composition": "unknown",
+      "back_pocket_count": "unknown",
+      "pockets_total": "unknown"
+    },
+    "ocr_status": "not_extracted",
+    "candidate_logo_texts": [],
+    "note": "Candidate OCR is not verified logo text; no normalization can establish pixel truth."
+  }
+}
