@@ -1,0 +1,122 @@
+"""Read-only CPU readiness inventory; never acquire GPU lock or issue a slot.
+
+Private output includes real paths/process identities. Publish only a sanitized
+summary. A successful binding check is not operator approval or GPU admission.
+"""
+import argparse
+import ctypes
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import sys
+import time
+
+
+def load(path, name):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--workspace', type=Path, required=True)
+    p.add_argument('--app', type=Path, required=True)
+    p.add_argument('--output', type=Path, required=True)
+    a = p.parse_args()
+    if os.name != 'nt' or a.output.exists():
+        raise ValueError('Native Windows only; refuse overwriting prior evidence')
+    root = a.workspace.resolve(strict=True)
+    policy = root/'coordination/gpu-coordinator.json'
+    guard = root/'fitmatch_AI/workers/windows/gpu_guard.py'
+    lock = root/'coordination/gpu0.lock'
+    slot = root/'coordination/gpu0-slot.json'
+    state = root/'coordination/gpu0-state.json'
+    source = a.app/'scripts/worker/worker.py'
+    expected_policy = '789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039'
+    expected_guard = '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c'
+    assert sha(source) == 'ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6'
+    assert sha(policy) == expected_policy and sha(guard) == expected_guard
+    paths = [policy,guard,lock,slot,state]
+    before = {str(f): {'sha256':sha(f),'volume':f.stat().st_dev,'fileId':f.stat().st_ino} for f in paths}
+    w = load(source, 'native33_worker')
+    g = load(guard, 'native33_guard')  # stdlib ctypes; no guard CLI execution
+    cfg = {'gpuCoordinator':{'path':str(policy),'sha256':expected_policy},'gpuSlotOwner':'pc-ai'}
+    binding = w.SharedGpuAdmission(cfg)  # validates existing binding, no .make_lock()
+    with lock.open('rb') as f:
+        stat_identity = w.file_identity(os.stat(lock))
+        handle_identity = w.file_identity(os.fstat(f.fileno()))
+    assert stat_identity == handle_identity == binding.lock_identity
+    assert stat_identity == (3699583840,2251799814103012)
+    slot_data = json.loads(slot.read_text(encoding='utf-8'))
+    now = time.time(); decisions = {}
+    for name, fn in [('worker',w.validate_slot),('guard',g.validate_slot)]:
+        try:
+            decisions[name] = {'valid':True,'owner':fn(slot_data,now)}
+        except (ValueError,w.AdmissionError) as error:
+            decisions[name] = {'valid':False,'reason':str(error)}
+    old = json.loads(state.read_text(encoding='utf-8'))
+    observed = {}
+    for label in ('guard','child'):
+        pid = old.get(label+'Pid')
+        if not pid:
+            continue
+        try:
+            stamp = g.live_stamp(pid)
+            observed[label] = {'pid':pid,'currentCreationTime':stamp,
+                'savedCreationTime':old.get(label+'CreationTime'),
+                'sameAsSavedProcess':stamp is not None and stamp == old.get(label+'CreationTime')}
+        except OSError as error:
+            observed[label] = {'pid':pid,'query':'UNKNOWN','winerror':error.winerror}
+    job = {'query':'no saved job name'}
+    if old.get('jobName'):
+        handle = g.open_job(0x4,False,old['jobName'])  # JOB_OBJECT_QUERY only
+        if handle:
+            try:
+                info = g.Accounting()
+                g.check(g.query_job(handle,1,ctypes.byref(info),ctypes.sizeof(info),None))
+                job = {'query':'opened read-only','activeProcesses':int(info.activeProcesses)}
+            finally:
+                g.close(handle)
+        else:
+            error = ctypes.get_last_error()
+            job = {'query':'absent' if error == 2 else 'UNKNOWN','winerror':error}
+    peer = root/'coordination/qint-p-bind25-native-ack.json'
+    peer_doc = json.loads(peer.read_text(encoding='utf-8'))
+    adapters = {}
+    for name, pinned in peer_doc.get('adapterSourcesSHA256',{}).items():
+        file = root/'ai-service/qint_p'/name
+        adapters[name] = {'exists':file.is_file(), 'sha256':sha(file) if file.is_file() else None,
+                          'peerHistoricalSHA256':pinned}
+        adapters[name]['matchesHistoricalPeerACK'] = adapters[name]['sha256'] == pinned
+    for name, meta in before.items():
+        file = Path(name)
+        assert sha(file) == meta['sha256'] and file.stat().st_ino == meta['fileId']
+    result = {'task':'GPU-READY-33','utc':datetime.now(timezone.utc).isoformat(),
+        'bindingOnlyVerified':True,'policySHA256':expected_policy,'guardSHA256':expected_guard,
+        'lockStatIdentity':list(stat_identity),'lockHandleIdentity':list(handle_identity),
+        'protected':before,'protectedUnchanged':True,'slot':{'owner':slot_data.get('owner'),
+            'admitUntilUnix':slot_data.get('admitUntilUnix'),'evaluation':decisions},
+        'savedStateHistorical':True,'savedJobCurrentQuery':job,'savedProcessIdentityQueries':observed,
+        'adapterInventoryNotNewPeerReview':adapters,
+        'approvalFileExists':(root/'coordination/qint-worker-test-approval.json').exists(),
+        'slotGranted':False,'OSLockAcquired':False,'workerLoopStarted':False,'GPUUsed':False,
+        'globalIdleProven':False,'readyForRealQwen':False,
+        'remainingGates':['Codex scoped native/skips review and peer ACK','canonical private recovery and backend preflight',
+            'reviewed HTTPS origin/exact serving revision','private scoped worker credential/enrollment',
+            'reviewed bounded operator approval','fresh owned-tree/peer/OS-lock proof immediately before finite slot']}
+    a.output.write_text(json.dumps(result,indent=2),encoding='utf-8')
+    print(json.dumps({key:result[key] for key in ('task','bindingOnlyVerified','lockStatIdentity',
+        'slot','savedJobCurrentQuery','protectedUnchanged','slotGranted','readyForRealQwen')},indent=2))
+
+
+if __name__ == '__main__':
+    main()

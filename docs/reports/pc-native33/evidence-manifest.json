@@ -1,0 +1,51 @@
+{
+  "task": "PC-NATIVE-33/GPU-READY-33",
+  "probeSourceCommit": "74a97a3455e2bae70b9d0ed303d210948231e9c3",
+  "source": {
+    "path": "workers/windows/probe_native33_readiness.py",
+    "sha256": "613d8ab5cf9b4a57667bfb74d30895c303ec95b2edc84357af6f634bd0d8645e",
+    "bytes": 6223
+  },
+  "files": [
+    {
+      "file": "binding-readiness-ack.json",
+      "sha256": "a7ffadbb3d4b9083eac4f30aae5c4bfcbcbfc64532278758837b1feba0f35391",
+      "bytes": 2508
+    },
+    {
+      "file": "gpu-ready-checklist.md",
+      "sha256": "9a99c8119745521e44be6f4e16ad83d348963076b9b7c7c85f0b7de6f1ca4e9d",
+      "bytes": 2752
+    },
+    {
+      "file": "native-fixture-30.patch.txt",
+      "sha256": "50ddd9cb14d893c4f6bdbf7c099e5e4e6c16dc54a333294c8837c2674bde5fd3",
+      "bytes": 1228
+    },
+    {
+      "file": "probe_native33_readiness.py.txt",
+      "sha256": "613d8ab5cf9b4a57667bfb74d30895c303ec95b2edc84357af6f634bd0d8645e",
+      "bytes": 6223
+    },
+    {
+      "file": "report.md",
+      "sha256": "bca36a9d435a3accf5757e8882e866020d0bc46d73b13e0a3219015e4f964a6f",
+      "bytes": 7556
+    },
+    {
+      "file": "unit-summary.json",
+      "sha256": "f8d36fe6bb3cdf4215357fe4840de540ea3a4c200dd8da6522013ac9eb0d9bcf",
+      "bytes": 2796
+    },
+    {
+      "file": "worker-unit-native56.log",
+      "sha256": "f8dc14819e36960d37647a1e5f64a641aee8b39adcd4bd933296b1c9260dc034",
+      "bytes": 6334
+    },
+    {
+      "file": "worker-unit-stdout.log",
+      "sha256": "771792c2864e4824ea97dac5ff07d412ff5c15c45fc90d1c2f78c520e8ff149a",
+      "bytes": 950
+    }
+  ]
+}
