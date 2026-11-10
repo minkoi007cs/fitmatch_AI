@@ -1,8 +1,8 @@
-# CL-MIGRATION-26 — checkpoint report (session paused at owner request, limit)
+# CL-MIGRATION-26 — report (resumed after pause; verification complete)
 
 Session: CL-MIGRATION-20261109-01 · Claude/Mac · branch `codex/canonical-migration-26` · baseline `f80749a`
 · implementation commit `cf902d3` (logs in `logs/` are bound to cf902d3). **Not applied to any cloud
-database, no deploy, no worker grant, no GPU.** Status: **Ready for review (partial verification — see §3)**.
+database, no deploy, no worker grant, no GPU.** Status: **Ready for review** (all checks PASS on cf902d3; see §3 for one intermittent browser timeout).
 
 ## 1. What was delivered (diff: `git diff f80749a..cf902d3`)
 
@@ -46,13 +46,11 @@ database, no deploy, no worker grant, no GPU.** Status: **Ready for review (part
 | `npm run test:legacy-compat` (PG17) | PASS — reproduced signup (`public.users`) + outfit NOT NULL defects; comparator aliases/different-target; runner 11+compat applied+verified, replay refused; data fingerprint unchanged; FK/NOT NULL kept, no duplicates; signup/wardrobe/outfit/cross-owner; analysis reserve→confirm, stale, quota, cleanup claim; refusal cases; fresh baseline |
 | `npm run test:v2:db` | PASS |
 | `npm run test:http` | PASS (run before commit; outfit legacy assertions) |
-| `npm run test:v2` | **FAIL run 1** — earlier blocks PASS; Qwen browser block timed out waiting for "Đề xuất của AI" (15 s). Not touched by this change; rerun was **stopped** when the session paused. **NOT VERIFIED** — next AI: rerun; if it fails again, run the same at f80749a to tell flake from regression. |
+| `npm run test:v2` | Run 1 (`logs/test-v2-http-run1.log`): earlier blocks PASS, then the Qwen browser block timed out after 15 s waiting for "Đề xuất của AI". Run 2 (`logs/test-v2-http-run2.log`), same commit, **all blocks PASS**, exit 0. This diff does not touch the analysis UI or routes. The cause of the one 15 s wait was not root-caused: an intermittent browser wait, flagged for Codex. |
 
 Not done: cloud backup, PG17 restore proof, any cloud SQL, history adoption, HTTPS deploy, native PC ACK,
 real Qwen. `test:v2:db` / v2 HTTP fixtures still use PG16 minimal stubs (new migration not applicable there;
 covered by the PG17 legacy/fresh test).
 
 ## 4. Next steps (for the next AI)
-1. Rerun `npm run test:v2` on this branch (§3), record result.
-2. Push branch (if not already) and open/update the docs PR with this report; mark Ready for review.
-3. Codex reviews exact SQL + hashes; owner does §2–3 of the cutover README privately before any execute.
+1. Codex reviews exact SQL + hashes; owner does §2–3 of the cutover README privately before any execute.

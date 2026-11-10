@@ -26,3 +26,12 @@ Ngoài scope: áp SQL lên cloud, deploy, cấp quyền worker/GPU, PC adapter/g
   `npm run test:v2` run 1: Qwen browser block timed out (15 s); rerun stopped by the pause → NOT VERIFIED.
 - No cloud SQL, no deploy, no worker grant, no GPU. Report: `docs/reports/claude/migration/report.md`
   (also on the app branch). Next AI: rerun `npm run test:v2`, then Codex review; owner backup/restore before any execute.
+
+## RESUMED / READY FOR REVIEW — 09/11/2026 ~21:30 ET
+
+- Owner asked to continue. `npm run test:v2` rerun on cf902d3 passed every block (exit 0). Run 1 had one
+  15 s browser timeout in the Qwen block. This diff does not touch that UI; the cause was not root-caused and is
+  flagged for Codex. Both logs are on the app branch.
+- App branch head `0c4c44e` (implementation cf902d3). CL-MIGRATION-26 → **Ready for review**. Still no cloud SQL,
+  deploy, worker grant or GPU. Next: Codex review of the exact SQL + hashes; owner private backup + PG17 restore
+  proof before any execute.
