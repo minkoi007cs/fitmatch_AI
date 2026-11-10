@@ -1,6 +1,8 @@
 # QINT-P / AI-QUALITY-04 checkpoint — 07/11/2026
 
 Latest: [CONNECT45 private enrollment/config preparation](connect45-preparation.md).
+Execution attempt001 refused: freshRAM3.85GiB <4GiB, no slot/start/claim/model/GPU;
+wait for user to free RAM and explicit coordinated recheck, no automatic retry.
 Exact hosted origin/canonical ref prepared disabled; local owner-only credential.
 One explicitly authorized heartbeat200/canonicalref/grants[] while QwenOFF;
 no claim/worker runtime/GPU. Operator approval, quiescence and finite slot pending.

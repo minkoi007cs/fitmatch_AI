@@ -1,5 +1,19 @@
 # CONNECT-PC-AI-45 — private enrollment reservation / disabled worker
 
+Latest execution attempt001 **REFUSED_HOST_RAM / NO SLOT / NO START**. After Codex
+reported UIca3466c promoted/Qwen1 and owner ready to click, PC3D's authoritative
+psutil.available sample4,119,449,600bytes failed the unchanged4GiB gate. One fresh
+PC Qwen sample at2026-11-10T18:13:02.516963Z also failed:4,132,626,432bytes,
+short162,340,864bytes (~155MiB). No new slot, worker, claim, model/GPU or additional
+HTTP request; no start/expiryUTC exists. User must free RAM before a fresh explicit
+coordinated recheck. No threshold reduction, app close, foreign kill or automatic
+retry. [Exact refusal receipt](evidence/connect45/window-attempt001-refused.json).
+Historical successful heartbeat below remains transport evidence only.
+Codex then reported the same UI promoted with QwenOFF deployment
+`dpl_3isoxQrLB2yzL2kpr2KtuGgoEUMm` and the existing worker disabled. PC made no
+cloud change. No further heartbeat/claim/retry is permitted until owner confirms
+RAM was freed and a new explicit coordinated window/finite slot is granted.
+
 Current resume PC-QINT-P-20261110-13: read operations433922c/PROC0045 and exact
 codex/connect-45@7d042ed9 execution report. Codex confirms actual restore/canonical
 12APPLIED+VERIFIED/13history adopted, and registered the same token hash as worker
