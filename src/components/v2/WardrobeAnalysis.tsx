@@ -5,7 +5,7 @@
  * owner reviews the values and presses "Save to wardrobe". Unknown values and unverified logo text are
  * never applied automatically. Hidden entirely while the server-side flag is off.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { api } from "@/lib/v2/client";
 
 type Attributes = {
@@ -109,11 +109,21 @@ export function AnalysisPanel({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // CL-UX-47: when the user's own action swaps this panel's content (start, cancel, retry, save, dismiss), the
+  // pressed button disappears; move focus to the panel so keyboard and screen-reader users keep their place.
+  const groupRef = useRef<HTMLDivElement>(null);
+  const focusPending = useRef(false);
+  useEffect(() => {
+    if (!focusPending.current) return;
+    focusPending.current = false;
+    groupRef.current?.focus();
+  }, [analysis?.state, analysis?.id]);
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
     setError(null);
     try {
       await fn();
+      focusPending.current = true;
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -129,14 +139,15 @@ export function AnalysisPanel({
     run(async () => onUpdate((await api<{ analysis: AnalysisView }>(`analyses/${analysis!.id}/${action}`, {})).analysis));
 
   const box = "mt-2 rounded-[2px] border border-border bg-bg-raised/60 p-2.5 text-[11px] leading-4 text-fg-muted space-y-2";
-  const button = "rounded-[2px] border border-border-strong px-2 py-1 text-[11px] text-fg hover:bg-bg-elevated disabled:opacity-50";
+  // min-h-9: at least 36 px touch target (WCAG 2.5.8 needs 24 px); focus ring visible on the dark card.
+  const button = "inline-flex min-h-9 items-center rounded-[2px] border border-border-strong px-3 py-1.5 text-[11px] text-fg hover:bg-bg-elevated disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-ring";
   const label = `AI analysis for ${itemName}`;
 
   if (!analysis || analysis.state === "stale")
     return (
-      <div className={box} role="group" aria-label={label}>
+      <div ref={groupRef} tabIndex={-1} className={box} role="group" aria-label={label}>
         {analysis?.state === "stale" && <p>The image has changed since the previous analysis.</p>}
-        <button disabled={busy || !hasImage} className={button} onClick={() => void start()}>
+        <button type="button" disabled={busy || !hasImage} className={button} onClick={() => void start()}>
           {hasImage ? "Analyze with AI" : "Add an image to analyze"}
         </button>
         {error && <p role="alert" className="text-danger">{error}</p>}
@@ -145,7 +156,7 @@ export function AnalysisPanel({
 
   if (ACTIVE.has(analysis.state))
     return (
-      <div className={box} role="group" aria-label={label}>
+      <div ref={groupRef} tabIndex={-1} className={box} role="group" aria-label={label}>
         <p role="status">
           {analysis.state === "running"
             ? "AI is analyzing on your PC…"
@@ -159,7 +170,7 @@ export function AnalysisPanel({
                   ? "Your PC has limited free memory. It will retry automatically."
                   : "Your PC's GPU is busy. It will retry automatically."}
         </p>
-        <button disabled={busy} className={button} onClick={() => void act("cancel")}>
+        <button type="button" disabled={busy} className={button} onClick={() => void act("cancel")}>
           Cancel
         </button>
         {error && <p role="alert" className="text-danger">{error}</p>}
@@ -168,15 +179,17 @@ export function AnalysisPanel({
 
   if (analysis.state === "failed" || analysis.state === "canceled")
     return (
-      <div className={box} role="group" aria-label={label}>
+      <div ref={groupRef} tabIndex={-1} className={box} role="group" aria-label={label}>
         <p role="status">
           {analysis.state === "canceled" ? "Analysis canceled." : "Analysis failed."}{" "}
           {analysis.errorCode && !(analysis.state === "canceled" && analysis.errorCode === "CANCELED") ? `${failureNames[analysis.errorCode] ?? ""} ` : ""}You can still edit item details manually.
         </p>
-        {analysis.attempts < 3 && (
-          <button disabled={busy} className={button} onClick={() => void act("retry")}>
+        {analysis.attempts < 3 ? (
+          <button type="button" disabled={busy} className={button} onClick={() => void act("retry")}>
             Retry
           </button>
+        ) : (
+          <p>Retry limit reached (3 attempts). Add a new photo to analyze again.</p>
         )}
         {error && <p role="alert" className="text-danger">{error}</p>}
       </div>
@@ -184,7 +197,7 @@ export function AnalysisPanel({
 
   if (analysis.state === "confirmed" || analysis.state === "rejected")
     return (
-      <div className={box} role="group" aria-label={label}>
+      <div ref={groupRef} tabIndex={-1} className={box} role="group" aria-label={label}>
         <p role="status">
           {analysis.state === "rejected"
             ? "AI suggestion dismissed."
@@ -197,6 +210,7 @@ export function AnalysisPanel({
 
   return (
     <Review
+      groupRef={groupRef}
       analysis={analysis}
       label={label}
       busy={busy}
@@ -220,6 +234,7 @@ export function AnalysisPanel({
 }
 
 function Review({
+  groupRef,
   analysis,
   label,
   busy,
@@ -228,6 +243,7 @@ function Review({
   button,
   onSubmit,
 }: {
+  groupRef: RefObject<HTMLDivElement | null>;
   analysis: AnalysisView;
   label: string;
   busy: boolean;
@@ -249,9 +265,9 @@ function Review({
 
   if (!attrs || analysis.result?.outcome === "abstained")
     return (
-      <div className={box} role="group" aria-label={label}>
+      <div ref={groupRef} tabIndex={-1} className={box} role="group" aria-label={label}>
         <p role="status">AI has no suggestion: {abstainNames[analysis.result?.abstainReason ?? ""] ?? "uncertain."}</p>
-        <button disabled={busy} className={button} onClick={() => onSubmit("reject", {})}>
+        <button type="button" disabled={busy} className={button} onClick={() => onSubmit("reject", {})}>
           Close
         </button>
         {error && <p role="alert" className="text-danger">{error}</p>}
@@ -266,8 +282,9 @@ function Review({
   if (logoText.trim()) fields.logoText = logoText.trim();
 
   return (
-    <div className={box} role="group" aria-label={label}>
+    <div ref={groupRef} tabIndex={-1} className={box} role="group" aria-label={label}>
       <p className="font-semibold text-fg" role="status">AI suggestion — review before saving</p>
+      <p>These are suggestions only. Nothing changes in your wardrobe until you choose Save to wardrobe.</p>
       <label className="block">
         Category
         <select aria-label="Category" className={select} value={category} onChange={(e) => setCategory(e.target.value)}>
@@ -313,6 +330,7 @@ function Review({
                 key={t}
                 type="button"
                 className="mr-1 underline"
+                aria-label={`Use detected text “${t}”`}
                 onClick={() => {
                   setLogoText(t);
                   logoRef.current?.focus();
@@ -335,14 +353,15 @@ function Review({
           onChange={(e) => setLogoText(e.target.value)}
         />
       </label>
-      <div className="flex gap-2">
-        <button disabled={busy || Object.keys(fields).length === 0} className={button} onClick={() => onSubmit("approve", fields)}>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" disabled={busy || Object.keys(fields).length === 0} aria-describedby={Object.keys(fields).length === 0 ? `${analysis.id}-save-hint` : undefined} className={button} onClick={() => onSubmit("approve", fields)}>
           Save to wardrobe
         </button>
-        <button disabled={busy} className={button} onClick={() => onSubmit("reject", {})}>
+        <button type="button" disabled={busy} className={button} onClick={() => onSubmit("reject", {})}>
           Dismiss
         </button>
       </div>
+      {Object.keys(fields).length === 0 && <p id={`${analysis.id}-save-hint`}>Choose at least one value to save.</p>}
       {error && <p role="alert" className="text-danger">{error}</p>}
     </div>
   );

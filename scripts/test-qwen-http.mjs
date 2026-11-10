@@ -79,9 +79,15 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(base + "/wardrobe");
     const panel = page.getByRole("group", { name: `AI analysis for ${item.name}` });
+    // CL-UX-47: after the user's own action replaces the panel content, focus stays on the panel; state screenshots.
+    const panelFocused = () => page.evaluate((name) => document.activeElement?.getAttribute("aria-label") === name, `AI analysis for ${item.name}`);
+    const shot = async (state) => { await mkdir("test-results", { recursive: true }); await panel.screenshot({ path: `test-results/qint-state-${state}.png` }); };
+    await shot("idle");
     await panel.getByRole("button", { name: "Analyze with AI" }).click();
     // No worker granted for analysis is online: say so instead of pretending it is about to run.
     await panel.getByText("Your PC is offline", { exact: false }).waitFor();
+    assert.equal(await panelFocused(), true, "focus moves to the panel after Analyze replaces the button");
+    await shot("offline");
     assert.equal((await (await request("/api/v2/analyses")).json()).workerOnline, false);
     const a = JSON.parse(v2.sql(`select row_to_json(t) from (select id,status,image_asset_id,image_sha256,source_path from fm_v2_analyses where user_id='${owner}' and item_id='${itemId}') t;`));
     assert.equal(a.status, "pending");
@@ -122,6 +128,7 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     let status = await (await request("/api/v2/analyses")).json();
     assert.deepEqual([status.workerOnline, status.gpuBusy], [true, true]);
     await panel.getByText("Your PC's GPU is busy with another task", { exact: false }).waitFor({ timeout: 15000 });
+    await shot("queued-gpu-busy");
     await asSecond(async (req2) => {
       const other = await (await req2("/api/v2/analyses")).json();
       assert.deepEqual([other.workerOnline, other.gpuBusy], [false, false], "another owner never sees this PC's GPU state");
@@ -150,6 +157,7 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     out = await runWorker(token, "memory");
     assert.equal(v2.sql(`select state||':'||attempt||':'||deferrals||':'||error_code from fm_v2_jobs where id='${jobId}';`), "queued:0:2:MEMORY_PRESSURE");
     await panel.getByText("Your PC has limited free memory", { exact: false }).waitFor({ timeout: 15000 });
+    await shot("memory-pressure");
     // 2nd account: sees nothing of this owner's analyses and cannot act on them over HTTP.
     await asSecond(async (req2, owner2) => {
       assert.notEqual(owner2, owner);
@@ -188,9 +196,28 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     assert.equal(await panel.getByLabel("Garment text / logo").inputValue(), "", "OCR candidate is not pre-approved");
     await panel.getByText("unconfirmed", { exact: false }).waitFor();
     await page.screenshot({ path: "test-results/qint-review.png" });
+    await panel.getByText("Nothing changes in your wardrobe until you choose Save to wardrobe", { exact: false }).waitFor();
+    await panel.getByRole("button", { name: "Use detected text “FITMATCH”", exact: true }).waitFor();
+    assert.ok((await panel.getByRole("button", { name: "Save to wardrobe" }).boundingBox()).height >= 36, "touch target at least 36 px");
+    await shot("review");
+    const reviewViewport = page.viewportSize();
+    for (const width of [320, 390, 820, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `review fits ${width}px`);
+      const box = await panel.boundingBox();
+      assert.ok(box.x >= 0 && box.x + box.width <= width + 1, `review panel inside the viewport at ${width}px`);
+      for (const name of ["Save to wardrobe", "Dismiss"]) {
+        const b = await panel.getByRole("button", { name, exact: true }).boundingBox();
+        assert.ok(b.x >= box.x - 1 && b.x + b.width <= box.x + box.width + 1, `${name} not clipped by the panel at ${width}px`);
+      }
+      await panel.screenshot({ path: `test-results/qint-review-${width}.png` });
+    }
+    await page.setViewportSize(reviewViewport);
     await panel.getByLabel("Secondary color").selectOption("");
     await panel.getByRole("button", { name: "Save to wardrobe" }).click();
     await panel.getByText("Saved with your confirmation", { exact: false }).waitFor();
+    assert.equal(await panelFocused(), true, "focus stays on the panel after saving");
+    await shot("confirmed");
     assert.equal(v2.sql(`select category||':'||color||':'||pattern||':'||coalesce(secondary_color,'-') from fm_wardrobe_items where id='${itemId}';`), "t-shirt:red:graphic:-", "only reviewed values written; cleared secondary not invented");
     assert.equal(v2.sql(`select status||':'||(confirmed_fields ? 'logoText') from fm_v2_analyses where id='${a.id}';`), "confirmed:false");
     await page.reload();
@@ -303,13 +330,19 @@ export async function testQwen({ base, fixture, request, jar, owner, itemId, v2,
     assert.equal(v2.sql(`select status||':'||(result_json is null) from fm_v2_analyses where id='${second.analysis.id}';`), "pending:true", "self-approved output never stored");
     await page.reload();
     await panel.getByText("AI returned an invalid result", { exact: false }).waitFor();
+    await shot("failed");
     await panel.getByRole("button", { name: "Retry" }).click();
     await panel.getByText("Waiting for your PC to accept the job", { exact: false }).waitFor();
+    assert.equal(await panelFocused(), true, "focus stays on the panel after Retry");
+    await shot("queued");
     out = await runWorker(token, "abstain");
     assert.match(out, /Completed analysis job/);
     await panel.getByText("AI has no suggestion", { exact: false }).waitFor({ timeout: 15000 });
+    await shot("abstained");
     await panel.getByRole("button", { name: "Close" }).click();
     await panel.getByText("AI suggestion dismissed", { exact: false }).waitFor();
+    assert.equal(await panelFocused(), true, "focus stays on the panel after Close");
+    await shot("rejected");
     assert.equal(v2.sql(`select category||':'||color||':'||pattern from fm_wardrobe_items where id='${itemId}';`), "t-shirt:red:graphic", "abstention changes nothing");
     // Flag off: the UI hides the feature (server-side refusal is covered by the route).
     await page.route("**/api/v2/analyses", (route) => route.fulfill({ json: { enabled: false, analyses: [] } }));

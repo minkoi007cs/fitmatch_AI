@@ -26,6 +26,16 @@ export async function testStudio(base, jar) {
       await page.setViewportSize({ width, height: 900 });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `home fits ${width}px`);
     }
+    // CL-UX-47: un-scrolled landing header over the hero photo has a dark backdrop and light links (readable on any photo).
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const headerStyle = await page.evaluate(() => {
+      const h = document.querySelector("header"); const a = h.querySelector('nav[aria-label="Main navigation"] a:not([aria-current])');
+      return { bg: getComputedStyle(h).backgroundImage, link: getComputedStyle(a).color };
+    });
+    assert.match(headerStyle.bg, /gradient/, "landing header has a backdrop over the hero");
+    assert.match(headerStyle.link, /^(rgba?\(255, 255, 255|oklab\(0\.99)/, `landing nav links are light: ${headerStyle.link}`);
+    await page.screenshot({ path: "test-results/ux-home-header-1440.png", clip: { x: 0, y: 0, width: 1440, height: 120 } });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: "test-results/ux-home-mobile.png", fullPage: true });
     const menu = page.getByRole("button", { name: "Open navigation menu", exact: true });

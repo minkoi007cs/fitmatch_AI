@@ -102,7 +102,9 @@ export function Navbar() {
           "fixed inset-x-0 top-0 z-40 transition-all duration-300",
           showSolidBackground
             ? "border-b border-border bg-bg/90 backdrop-blur-xl py-3.5 shadow-lg shadow-black/20"
-            : "border-b border-transparent bg-transparent py-5"
+            // Over the landing hero photo: keep the image visible but guarantee readable text on any photo
+            // (CL-UX-47: links measured 2.4:1 over a bright image with a fully transparent header).
+            : "border-b border-transparent bg-gradient-to-b from-black/80 via-black/55 to-black/0 py-5"
         )}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -126,7 +128,9 @@ export function Navbar() {
                     "text-xs uppercase tracking-[0.16em] font-medium transition-colors duration-150 py-1 relative",
                     isActive
                       ? "text-fg"
-                      : "text-fg-muted hover:text-fg"
+                      : showSolidBackground
+                        ? "text-fg-muted hover:text-fg"
+                        : "text-white/85 hover:text-white"
                   )}
                 >
                   {link.label}
