@@ -1,0 +1,21 @@
+# APP-CLOSE-30 — independent progress review
+
+Reviewer CX-APP-CLOSE-REVIEW-32, 09/11/2026. Candidate499ead01e7f9274ddf310ab346fda4c2464588bd, six commits from0c4c44e. Claude session Branch save and handoff report was visibly finished, not assumed from an old GitHub head. Cloud push403 prevented publication. Codex downloaded the bundle, fetched its prerequisite, verified it and published the exact candidate to codex/app-close-30-claude-20261109; remote ref readback matches. Initial verify in docs-only repository lacked prerequisite and changed no source; verification succeeded in source review clone.
+
+## Assessment
+
+**Focused source review PASS; hosted/live acceptance NOT VERIFIED.** R-MIGTARGET-29 rejects the original arbitrary-host repro before psql; new offline cases cover redirect parameters/environment and reviewed endpoint forms. NATIVE-FIXTURE-30 only moves copy before lock acquisition and retains admission/split-lock assertions while canonical is held. Native Windows execution still belongs to PC. QINT-READSKEW identifies pending-analysis/succeeded-job skew and re-reads owner-filtered analyses after jobs; completed analysis status wins, deleted analyses are omitted. One extra bounded query per poll. R-TIMEOUT-30 delivers validated SETs within SQL, avoiding docker-exec loss of PGOPTIONS. Historical/compat SQL, plan/manifest and production worker bytes unchanged from0c4c44e.
+
+Direct and session-pooler endpoint forms were cross-checked against [official Supabase connection documentation](https://supabase.com/docs/guides/database/connecting-to-postgres) and [backup/restore documentation](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore). Exact canonical pooler host has not been observed; allowlist remains empty. No guessed host admitted. Listed local Supabase skill file was unavailable and search found no replacement; official primary documentation used instead. No connector/cloud access or credentials needed for this review.
+
+## Independent checks
+
+Separate detached checkout /private/tmp/fitmatch-app-close-review-20261109. npm ci uses unchanged lockfile. npm test114/114 PASS, lint exit0, Python56OK onMac, default npm run build/Turbopack exit0 without font mock. Official postgres:17-alpine Docker test:legacy-compat exit0, legacy/fresh, per-step apply/verify/refused replay, unchanged data fingerprint/FKs/nullability, auth/outfit/cross-owner/private buckets and refusal cases. This removes the implementer's stand-in image/build limitation for these checks. Full HTTP/browser result is appended below once the running check completes; not inferred from Claude's2/2 reported runs. Logs local /private/tmp/fitmatch-close32-{unit,lint,python,build,legacy,http}.log, private/non-versioned; no cloud data.
+
+The fixture patch SHA50ddd9cb14d893c4f6bdbf7c099e5e4e6c16dc54a333294c8837c2674bde5fd3 and resulting test file SHA f178f7f0ff2723b8e0b5f3235c2da71a1565d9138bd04529362f4223d8a86429 match Claude report. Worker remains ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6. PC follow-up attempted for exact fixture after CPU31 checkpoint, but bounded tool wait returned no acknowledgement before termination: delivery UNKNOWN, no completion claimed. Existing CPU31 assignments persist; no retry loop or GPU slot granted.
+
+## Next work
+
+Claude APP-CLOSE-30 Ready for review, focused source accepted; no claim all release gates closed. Assign [APP-RECOVERY-32](../../handoffs/prompt-claude-recovery-ready-20261109.md) to the same Claude after receipt. Close documented role restore/schema coverage/Storage bytes and data comparison gaps with an evidence-backed disposable local dump/restore rehearsal and exact runbook. This is useful independent work while PC validates native tests and texture. Do not repeat completed migrations/worker/model setup.
+
+Remaining before hosted integration: private canonical backup+restore proof, exact target/SQL execution review, reviewed HTTPS serving revision, scoped enrollment/native ACK, coordinated finite GPU slot and real Qwen via app. Personal avatar likeness, hair/texture, interchangeable real top+jeans and user quality approval remain product gates. No cloud migration/deployment/GPU in this session.

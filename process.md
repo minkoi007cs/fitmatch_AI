@@ -1,6 +1,6 @@
 # FitMatch — trạng thái thực thi và nhật ký AI
 
-Cập nhật: 09/11/2026, America/New_York. Revision: PROC-0031. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
+Cập nhật: 09/11/2026, America/New_York. Revision: PROC-0032. Dọn nhánh local hoàn tất; xem OPS-01/H-CLEAN-003. Đọc toàn bộ AGENTS → [agent.md](./agent.md) → [roadmap.md](./roadmap.md) → file này trước làm. Trạng thái dưới đã được reconcile với chat PC và worktree Mac; lịch sử PROC-0001 giữ bên dưới để đối chiếu.
 
 ## Current continuation - PROC-0031
 
@@ -565,3 +565,11 @@ PC save/push verified: AI PR9fbd46e57ba71b021cd0f030e18a732d442cad1f5, all83sour
 ### L-074 - 09/11/2026 - DISPATCH / HANDOFF - CX-PC-NEXT-31
 
 Published task package b1313e9fb5d057ad80f578143d74957d10e57a7f verified by remote ref. Both direct sends to existing PC chats returned success. Compact wait shows BOTH new turns inProgress: AI turn01a1c357-6a65-7fa0-be01-7cc1df99ebdc explicitly acknowledges AI-NATIVE-COMPOSE-31, isolated loopback and no model/torch/CUDA; 3D turn01a1c357-7121-7d70-b00f-a3e1b94c6fa1 active, detailed receipt not yet observed. This confirms delivery/active turns, not new outputs or completion. Finish current save/bundle before next task. No real GPU grant, coordination mutation, cloud apply, deployment or app edits by Codex. Claude ownership unchanged. Documentation checks/publication and explicit root-doc sync complete this reviewer handoff; final SHA from remote readback.
+
+### L-075 - 09/11/2026 - START - CX-APP-CLOSE-REVIEW-32
+
+Owner requests Claude progress review and continuation. Scope Codex: independent read-only source review/tests in separate review checkout, docs/reports/review/app-close-30-review-20261109.md, next Claude handoff, process/roadmap. Baseline ops5a69df3. Claude desktop session Branch save and handoff report observed finished: APP-CLOSE-30 candidate499ead0, six commits from0c4c44e; push blocked403. Downloaded owner-authorized bundle via Claude UI, not yet accepted. Preserve dirty root/Studio and Claude source ownership. No cloud SQL/deploy/GPU grants. Assess exact bundle before assigning successor scope; PC CPU tasks remain separate.
+
+### L-076 - 09/11/2026 - REVIEW / ASSIGN - CX-APP-CLOSE-REVIEW-32
+
+Claude CL-APPCLOSE-20261109-01 candidate499ead0 received via verified bundle; six commits, Ready for review, push403 externally. Codex published exact source review branch499ead01e7f9274ddf310ab346fda4c2464588bd, remote readback verified. Focused source R-MIGTARGET-29/NATIVE-FIXTURE-30/QINT-READSKEW/R-TIMEOUT-30 accepted. Independent114unit/lint/Python56Mac/defaultTurbopackbuild/officialPG17legacyfreshPASS; fullHTTP/browserrunning, finaloutcome follows. SQL/plan/manifest/worker unchanged. Native PCpatch dispatch attempted but noACK before boundedtermination, deliveryUNKNOWN; noGPU. Claude APP-RECOVERY-32 Assigned for local synthetic dump/restore + truthful role/schema/storage preservation runbook, not cloudexecution. Report/handoff/roadmap saved; direct Claude dispatch follows. No duplicate app owner or PC scope takeover.

@@ -324,3 +324,7 @@ The owner explicitly stopped the previous Claude for usage limits and requests a
 ## 25. Independent CPU work after saved PC handoffs - H-PC-31
 
 [Saved handoff verification](./docs/reports/review/pc-save-review-20261109.md) and [PC tasks](./docs/handoffs/pc-after-save-20261109.md). PCAI targets bounded native Windows HTTP/worker/CLI refusal composition with synthetic API and no model load. PC3D targets a small front-visible face/head texture projection feasibility spike from existing authorized private inputs/UV/calibration, CPU only, with masked unobserved regions and explicit quality limits. Finish existing checkpoint publication first. Claude retains app/SQL/fixture ownership. No new GPU slot, cloud write, admin install, model rerun or full likeness acceptance is implied by this assignment.
+
+## 26. Recovery readiness after APP-CLOSE-30 — H-RECOVERY-32
+
+[Independent review](./docs/reports/review/app-close-30-review-20261109.md) and [Claude continuation](./docs/handoffs/prompt-claude-recovery-ready-20261109.md). APP-RECOVERY-32 closes restore runbook gaps and rehearses private-backup validation on disposable synthetic local data/storage. Keep completed target/Windows fixture/read-skew/timeout fixes. No cloud writes, real backup data, deployment or GPU authorization follows from local rehearsal; actual canonical recovery and integration gates remain separate. PC CPU31 ownership unchanged.
