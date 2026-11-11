@@ -396,7 +396,7 @@ export default function WardrobePage() {
         {loadError && <div role="alert" className="mb-6 rounded-2xl border border-danger/40 p-5 text-sm"><p className="text-danger">{loadError}</p><button type="button" disabled={loading} onClick={() => { setLoading(true); setReloadKey((k) => k + 1); }} className="mt-3 min-h-11 rounded-full border border-border px-5 py-2 disabled:opacity-50">{loading ? "Retrying…" : "Try loading wardrobe again"}</button></div>}
         {loadError && !items.length && !loading ? null : loading ? (
           /* 8-Card Skeleton Loading */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={`skel-${i}`} className="space-y-3">
                 <Skeleton className="aspect-[3/4] w-full rounded-[2px]" />
@@ -436,7 +436,7 @@ export default function WardrobePage() {
           </div>
         ) : (
           /* Responsive 2 / 3 / 4 / 5 Column Grid */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 min-[380px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
             {filteredItems.map((item) => {
               const swatchColor = getColorHex(item.color ?? "");
               const isConfirmingDelete = deleteConfirmId === item.id;
