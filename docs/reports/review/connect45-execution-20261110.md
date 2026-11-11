@@ -66,3 +66,25 @@ Tracked-only source export (noenv/privatebackup/test-results) staged on Vercel d
 Owner chose manual app testing and requested release/PC execution. Promoted reviewedca3466c QwenON stageEK7gx; canonicalproductiontarget/metadataREADY andpublicHTTP200/newEnglishheroHTML verified. Both PCs acknowledged one-job/600-second window assignment, but coordinator refused before issuing a slot: Windowsfree4,067,241,984bytes and exactQwenpsutil.available4,119,449,600bytes, both below4GiB. Exact deficit175,517,696bytes(~167MiB). No slot/start/expiry, noGPU/modelinference/claim;0analysisjobs in canonicalaggregate. No threshold lowered or foreign process closed.
 
 To close this unsuccessful test window, promoted the already-built sameUIca3466c QwenOFFdeployment dpl_3isoxQrLB2yzL2kpr2KtuGgoEUMm and disabled the existing worker (readbackFALSE). NewUI remains online; Qwenrun remains NOTRUNpendingadequateRAM. Owner asked to close unneededPCapplications and signalready; resources must be measured fresh, not reused from the earlier4.30GiB sample. PCowners retain checkpoint and noautomaticretry or slotrenewal.
+
+
+## Actual online Qwen run and human confirmation
+
+After graceful Chrome closure (zeroChromeprocesses, restored-tabstate retained) and Claude window closure (ninebackgroundprocesses remained), threeRAMsamples4.565/4.624/4.612GiB exceeded4GiB; laterfreshsamples~4.91GiB andVRAM11434MiB. ChatGPT/Codex/RemoteControlpreserved. Prior usage-limit failures interrupted execution before claim; after normalreset, activeconfig/approval pinned fullappca3466c and immutableworkeref25136b; heartbeat200/canonicalref/grantedgarment.analyze independently matched DB.
+
+PC3D issued one600-second pc-ai slot expiring23:27:14UTC. First launcher refused Windows267invalidcwd withoutcreatingworker; pathfixedbeforeclaim. Job78ff5270-d27e-4e24-9137-d6b5f9dc0399 thenSUCCEEDEDstageREVIEW/attempt1/errorNULLat23:21:13.943884UTC. Canonicalresultproposal/hashpresent/autoApplyfalse/evidence1attempt117tokens86344ms. GPUmetricsinside resultNULL; PCreportedseparatelyobservedpeak5184MiB andRAMmin3.12GiB, notcontinuousinstrumentation. Worker/adapterexit0/allfourheldnativehandlesexited; drainreceiptwritten, afterRAM~4.97GiB/VRAM11430MiBfree. Workerdisabledafteronejob. CoordinatorwithdrawalACKnotreceivedbutslotfiniteexpiryhaspassed; nooldslotreuse.
+
+Owner screenshotandDBconfirmsave: analysisCONFIRMEDfourfields, notautomaticallyapplied. Pipelineclaim/result/review/confirmationPASSforoneactualsample; likeness/3D/quality/performanceSLAremainunaccepted. Asemanticqualityfindingremains: ownerphotoisvisiblyhoodedgarmentbutQwenproposedtshirt/longsleeves/necklineother, thenownerconfirmedcategorytshirt. Do not rewrite confirmed data or call classificationcorrect merelybecausecontractpassed. Unsupported-categoryabstentionneedsPCownerinvestigation. Privateimage/OCRnotpublished.
+
+Secondownerjob7a7362b8-c134-4501-9e91-deef68dd0da2 remainsQUEUEDattempt0, firstCONFIRMED/succeeded. Followupforseparateboundedsecondrunhadunknowndeliveryafterremotehostbecameunavailable. CurrentremotePCinventoryabsent, nosecondinference/newslotclaimed. SameUIQwenOFFpromotedagainwhilewaitingforreconnection; existingworkerFALSE. OwneraskedreconnectPC; queuedinputretained.
+
+## UI47 integration in progress
+
+Claudecompletedfcc23e0/datedreportandbundleSHA03d11b0d404f8c8d63815bbd8ce9c121f4830905eadfc239a76b779b101d713e verified. Code dd3071d reviewed/cherry-picked7a441b5, thenf580247 keepswardrobecards1columnbelow380px. ScopeNavbarphoto contrast, analysisfocusafteruseractions/buttonsize/wrapping/saveguidance/labels/retrylimit plusbrowserassertions. Allrawvalues/actions/auth/SQL/workerunchanged. Prior1.2contrastmeasurementpartlyincorrectduetotransition; Claude correctedbaseline2.37minandnew8.99–12.43(stand-inphoto). Independent121unit/lint0errors(1oldreporthelperwarning)/webpackrealfontbuildPASS; finalfullV2pending, nofinalreleaseclaimyet. NewUIstagedwithQwenOFF, neverenablesGPUbyUIrelease.
+
+
+## UI47 released
+
+Finalsourcef58024703bf4ec8be365bee2f8b3e1bd2248fdec independentlypasses121unit/lint0errors(oneunchangedpriorreporthelperwarning)/webpackwithactualGooglefonts/fulltest:v2exit0. ActualbrowsercheckscoverfocusafterAnalyze/Retry/Save/Close, 36pxbuttons, nounclippedSave/Dismiss at320/390/820/1440, Navbarlandinggradient/lightlinks and1-columnwardrobebelow380px. Syntheticbrowserimagesreviewed;notactualownerphotoquality. NoSQL/worker/queuechanges.
+
+Promoted dpl_ULqpC5fUMQewETvcnCQ1sjpRLXxz READY, exactproductionfullSHAreadbackandpublicHTTP200/EnglishheroHTMLPASS. QwenOFFoverride, existingworkerdisabled. AstaticSSRassertionforhydratedheaderclasseswasinvalid(initialSSRsolidheader), notcalledPASS; hydratedbehavioriscoveredbyactualbrowserregression. Localinteractiveproductionbrowserwasunavailable, so nofakeproductionvisualclaim. Firstanalysisconfirmed4fields; secondqueued0waitingPCreconnect. Remainingsemantichoodieclassificationissueandpersonal3D/physicaldevicegatesnotclosedbythisUIrelease.
