@@ -40,3 +40,24 @@ Status: Ready for review. STOP before GPU; Codex reviews exact source/config pin
 private existing hoodie regression and remaining queued job require separate fresh finite windows.
 CPU tests do not establish actual visual quality. No policy bump is needed for intended qint.1
 abstention behavior; reviewed adapter code hash/revision changes are explicit.
+
+CPU PREPARATION RESUME — PC-QWEN48-20261112-02. Codex accepted exact 3b7edbf CPU patch,
+independently verified seven hashes and 11 portable tests. Scope now: isolated offline helper,
+its CPU tests, private preserved-input run preparation, candidate config/disabled approval/source
+manifest pins, and sanitized report. Use admission.verify(label), real named Job membership and
+byte0 proof under unchanged external guard for the future offline run; AnalysisBackend48 +
+wire.execute only, no database/network operation. Keep all approvals disabled until final GO.
+No change to confirmed analysis/cache, original qint_p, token/env/weights/transport or real
+coordinator policy/slot/lock. Existing private input is checked locally, never published.
+
+CPU PREPARATION HANDOFF — private input/JPEG retained and verified, copied to a new owner-only
+private run without changing old input/result/cache. Candidate config and separate disabled
+worker/offline/guard approvals pin full app f580247 and a 98-file source manifest. The new helper
+selects AnalysisBackend48/wire.execute under actual external-guard admission.verify(label),
+named Job/native child identity and byte0 checks; no network/POST or verifier override.
+Actual Windows final 91/91 CPU tests PASS (10 helper cases plus prior81); real prepared input
+CPU inspection PASS, disabled execute refused before torch/marker. Private ACLs verified without
+elevation. Guard/policy/slot/lock/state, original runtime, token/env/weights/transport unchanged.
+New report: qint-p/qwen48/offline-preparation.md with helper patch, hashes and test evidence.
+Status: Ready for review; STOP before GPU. Mac reviews helper/source/config pins then separate
+finite slots for offline real hoodie regression and remaining queued job; no visual PASS yet.

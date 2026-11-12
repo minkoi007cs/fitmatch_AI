@@ -1,0 +1,315 @@
+--- /dev/null
++++ b/qint_p/offline_regression48.py
+@@ -0,0 +1,168 @@
++"""Private offline analysis under the canonical external guard. Default is CPU inspection.
++
++No network client, database operation, injected execution verifier or alternate backend.
++The label authenticates guard placement; it is never included in the model prompt.
++"""
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import sys
++import time
++
++from boundary import Refused, safe_file, strict_json
++import admission
++import worker_admission
++import wire
++
++ROOT = Path(__file__).resolve().parent
++GPU = ROOT.parents[1]
++PRIVATE = GPU / 'worker-data/qwen-pilot/private'
++
++
++def digest(path):
++    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
++
++
++def read_private(path, root=None):
++    root = PRIVATE if root is None else root
++    path = safe_file(Path(path), root)
++    return strict_json(path.read_text(encoding='utf-8-sig'), 32768)
++
++
++def prepare(request_path, approval_path):
++    plan = read_private(approval_path)
++    if (plan.get('kind') != 'qwen48.offline-approval.v1'
++            or type(plan.get('enabled')) is not bool
++            or plan.get('scope') != 'private_existing_input_no_network'
++            or plan.get('candidateRoot') != str(ROOT)
++            or plan.get('engineSeconds') != 240 or plan.get('drainSeconds') != 30
++            or type(plan.get('label')) is not str or not plan['label']):
++        raise Refused('offline_plan_invalid')
++    if (type(plan.get('appRevision')) is not str or len(plan['appRevision']) != 40
++            or any(c not in '0123456789abcdef' for c in plan['appRevision'])):
++        raise Refused('offline_app_revision_invalid')
++    run_root = Path(plan['runRoot'])
++    if not run_root.is_absolute():
++        raise Refused('offline_run_root')
++    try:
++        run_root.relative_to(PRIVATE)
++    except ValueError:
++        raise Refused('offline_run_root') from None
++    safe_file(approval_path, PRIVATE)
++    manifest_path = safe_file(Path(plan['runtimeManifestPath']), PRIVATE)
++    if digest(manifest_path) != plan['runtimeManifestSHA256']:
++        raise Refused('offline_manifest_changed')
++    manifest = read_private(manifest_path)
++    if (manifest.get('kind') != 'qwen48.reviewed-runtime.v1'
++            or manifest.get('reviewedCPUCommit') != plan['reviewedCPUCommit']
++            or manifest.get('appRevision') != plan['appRevision']
++            or not manifest.get('files')):
++        raise Refused('offline_manifest_invalid')
++    seen = set()
++    for row in manifest['files']:
++        relative = Path(row['path'])
++        if relative.is_absolute() or '..' in relative.parts or row['path'] in seen:
++            raise Refused('offline_manifest_path')
++        seen.add(row['path'])
++        source = safe_file(GPU / relative, GPU / 'ai-service')
++        if digest(source) != row['sha256']:
++            raise Refused('offline_source_changed')
++    required = {str((ROOT / name).relative_to(GPU)).replace('\\', '/') for name in
++                ['offline_regression48.py', 'assessment48.py', 'runner.py', 'wire.py', 'admission.py']}
++    if not required.issubset(seen):
++        raise Refused('offline_manifest_incomplete')
++    request_path = safe_file(Path(request_path), run_root)
++    if (str(request_path) != plan['requestPath'] or digest(request_path) != plan['requestSHA256']):
++        raise Refused('offline_request_changed')
++    value = wire.read_input(request_path)
++    if Path(value['outputPath']) != run_root / 'result.json':
++        raise Refused('offline_output_path')
++    if (run_root / 'result.json').exists() or (run_root / 'execution-started.json').exists():
++        raise Refused('offline_run_already_used')
++    if any(Path(asset['localPath']).parent != run_root for asset in value['assets']):
++        raise Refused('offline_image_path')
++    return plan, value, run_root
++
++
++def real_admission(plan, label):
++    if not plan['enabled']:
++        raise Refused('offline_approval_disabled')
++    if label != plan['label']:
++        raise Refused('offline_guard_label_mismatch')
++    if 'FITMATCH_WORKER_TOKEN' in os.environ:
++        raise Refused('offline_worker_credential_present')
++    if digest(admission.GUARD) != plan['guardSHA256']:
++        raise Refused('offline_guard_changed')
++    guard_approval = admission.read(admission.APPROVAL)
++    if (digest(admission.APPROVAL) != plan['guardApprovalSHA256']
++            or guard_approval.get('enabled') is not True
++            or guard_approval.get('app_revision') != plan['appRevision']):
++        raise Refused('offline_guard_approval_changed')
++    identity = worker_admission.coordinator_binding({'coordinator_sha256': plan['coordinatorSHA256']})
++    proof = admission.verify(label)  # Actual ancestors, named Job, native creation identity and byte0.
++    return {**proof, 'lock_identity': list(identity)}
++
++
++def main(argv=None):
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--request', type=Path, required=True)
++    parser.add_argument('--approval', type=Path, required=True)
++    parser.add_argument('--guard-label')
++    parser.add_argument('--execute', action='store_true')
++    args = parser.parse_args(argv)
++    try:
++        plan, value, run_root = prepare(args.request, args.approval)
++        if not args.execute:
++            wire.image_for(value, run_root)  # Exact bounded bytes/hash and JPEG decode, CPU only.
++            print(json.dumps({'status': 'cpu_inspection_passed', 'torchImported': 'torch' in sys.modules,
++                              'executionEnabled': plan['enabled'], 'networkUsed': False}))
++            return 0
++        proof = real_admission(plan, args.guard_label)
++        image = wire.image_for(value, run_root)
++        with (run_root / 'execution-started.json').open('x', encoding='utf-8') as stream:
++            json.dump({'startedUnix': time.time(), 'networkUsed': False}, stream)
++        def event(record):
++            with (run_root / 'events.jsonl').open('a', encoding='utf-8') as stream:
++                stream.write(json.dumps({'monotonic': time.monotonic(), **record}) + '\n')
++        def checker():
++            # Revalidate all pins before every native admission, including after heavy imports.
++            current = read_private(args.approval)
++            if current != plan:
++                raise Refused('offline_approval_changed')
++            manifest = read_private(plan['runtimeManifestPath'])
++            if digest(plan['runtimeManifestPath']) != plan['runtimeManifestSHA256']:
++                raise Refused('offline_manifest_changed')
++            for row in manifest['files']:
++                if digest(safe_file(GPU / row['path'], GPU / 'ai-service')) != row['sha256']:
++                    raise Refused('offline_source_changed')
++            return real_admission(plan, args.guard_label)
++        event({'phase': 'external_admission', **proof})
++        from runner import AnalysisBackend48, GuardedChild
++        backend = AnalysisBackend48(checker, event)
++        result = wire.execute(value, image, backend=backend, lease=GuardedChild(checker))
++        data = json.dumps(result, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
++        if len(data) > 8192:
++            raise Refused('INVALID_OUTPUT')
++        with (run_root / 'result.json').open('xb') as stream:
++            stream.write(data)
++            stream.flush()
++            os.fsync(stream.fileno())
++        # No attributes/OCR/binding/private path or source-image digest in stdout.
++        print(json.dumps({'status': 'completed', 'outcome': result['outcome'],
++                          'abstainReason': result['abstainReason'], 'approvedForAutoApply': False,
++                          'networkUsed': False, 'guardOwnsLockUntilTreeDrain': True}))
++        return 0
++    except Refused as error:
++        print(json.dumps({'status': 'refused', 'code': error.code,
++                          'torchImported': 'torch' in sys.modules, 'networkUsed': False}))
++        return wire.EXIT.get(error.code, 75)
++    except Exception:
++        print(json.dumps({'status': 'refused', 'code': 'offline_local_error',
++                          'torchImported': 'torch' in sys.modules, 'networkUsed': False}))
++        return 2
++
++
++if __name__ == '__main__':
++    raise SystemExit(main())
+--- /dev/null
++++ b/qint_p/test_offline_regression48.py
+@@ -0,0 +1,141 @@
++"""CPU metadata/refusal tests only; never supplies a positive native execution proof."""
++import contextlib
++import hashlib
++import io
++import json
++from pathlib import Path
++import sys
++import tempfile
++import unittest
++from unittest.mock import patch
++
++from PIL import Image
++from boundary import MODEL_REVISION, Refused
++import offline_regression48 as helper
++import wire
++
++
++class OfflinePreparationTests(unittest.TestCase):
++    def setUp(self):
++        self.tmp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.tmp.cleanup)
++        self.gpu = Path(self.tmp.name)
++        self.root = self.gpu / 'ai-service/candidate'
++        self.root.mkdir(parents=True)
++        self.private = self.gpu / 'private'
++        self.private.mkdir()
++        self.run = self.private / 'run'
++        self.run.mkdir()
++        self.stack = contextlib.ExitStack()
++        self.addCleanup(self.stack.close)
++        for name, value in [('ROOT', self.root), ('GPU', self.gpu), ('PRIVATE', self.private)]:
++            self.stack.enter_context(patch.object(helper, name, value))
++        files = []
++        for name in ['offline_regression48.py', 'assessment48.py', 'runner.py', 'wire.py', 'admission.py']:
++            path = self.root / name
++            path.write_text('# metadata-only CPU source fixture\n')
++            files.append({'path': path.relative_to(self.gpu).as_posix(), 'sha256': helper.digest(path)})
++        self.manifest = self.private / 'manifest.json'
++        self.manifest.write_text(json.dumps({'kind': 'qwen48.reviewed-runtime.v1',
++            'reviewedCPUCommit': 'a' * 40, 'appRevision': 'b' * 40, 'files': files}))
++        image = self.run / 'input.jpg'
++        Image.new('RGB', (64, 64), 'blue').save(image)
++        self.value = json.loads((wire.SNAPSHOT / 'fixtures/qwen-v1/adapter-input.json').read_text())
++        self.value['modelRevision']['revision'] = MODEL_REVISION
++        image_hash = helper.digest(image)
++        self.value['assets'][0].update(localPath=str(image), sha256=image_hash, bytes=image.stat().st_size)
++        self.value['binding']['imageSha256'] = image_hash
++        self.value['outputPath'] = str(self.run / 'result.json')
++        self.request = self.run / 'input.json'
++        self.request.write_text(json.dumps(self.value))
++        self.plan = {'kind': 'qwen48.offline-approval.v1', 'enabled': False,
++            'scope': 'private_existing_input_no_network', 'candidateRoot': str(self.root),
++            'engineSeconds': 240, 'drainSeconds': 30, 'appRevision': 'b' * 40,
++            'label': 'cpu-metadata-fixture', 'runRoot': str(self.run),
++            'runtimeManifestPath': str(self.manifest), 'runtimeManifestSHA256': helper.digest(self.manifest),
++            'requestPath': str(self.request), 'requestSHA256': helper.digest(self.request),
++            'reviewedCPUCommit': 'a' * 40}
++        self.approval = self.private / 'approval.json'
++        self.save()
++
++    def save(self):
++        self.approval.write_text(json.dumps(self.plan))
++
++    def invoke(self, *extra):
++        out = io.StringIO()
++        with contextlib.redirect_stdout(out):
++            code = helper.main(['--request', str(self.request), '--approval', str(self.approval), *extra])
++        return code, json.loads(out.getvalue())
++
++    def test_default_inspects_exact_private_bytes_without_execution(self):
++        code, out = self.invoke()
++        self.assertEqual(code, 0)
++        self.assertEqual(out['status'], 'cpu_inspection_passed')
++        self.assertFalse(out['torchImported'])
++        self.assertFalse(out['networkUsed'])
++        self.assertFalse((self.run / 'result.json').exists())
++        self.assertFalse((self.run / 'execution-started.json').exists())
++
++    def test_disabled_execute_refuses_before_native_or_backend(self):
++        with patch.object(helper.admission, 'verify', side_effect=AssertionError('must not be called')) as native:
++            code, out = self.invoke('--execute', '--guard-label', self.plan['label'])
++        self.assertEqual(code, 75)
++        self.assertEqual(out['code'], 'offline_approval_disabled')
++        native.assert_not_called()
++        self.assertNotIn('torch', sys.modules)
++        self.assertFalse((self.run / 'execution-started.json').exists())
++
++    def test_label_mismatch_refuses_before_native(self):
++        self.plan['enabled'] = True
++        self.save()
++        code, out = self.invoke('--execute', '--guard-label', 'different')
++        self.assertEqual(code, 75)
++        self.assertEqual(out['code'], 'offline_guard_label_mismatch')
++
++    def test_source_tamper_refuses_before_image_or_model(self):
++        (self.root / 'assessment48.py').write_text('# changed source')
++        self.assertEqual(self.invoke()[1]['code'], 'offline_source_changed')
++
++    def test_request_and_image_tamper_refuse(self):
++        original = self.request.read_bytes()
++        self.request.write_text('{}')
++        self.assertEqual(self.invoke()[1]['code'], 'offline_request_changed')
++        self.request.write_bytes(original)
++        (self.run / 'input.jpg').write_bytes(b'not the pinned image')
++        self.assertNotEqual(self.invoke()[0], 0)
++        self.assertNotIn('torch', sys.modules)
++
++    def test_used_run_never_overwrites_old_result(self):
++        output = self.run / 'result.json'
++        output.write_bytes(b'preserve')
++        self.assertEqual(self.invoke()[1]['code'], 'offline_run_already_used')
++        self.assertEqual(output.read_bytes(), b'preserve')
++
++    def test_incomplete_or_traversal_manifest_refused(self):
++        manifest = json.loads(self.manifest.read_text())
++        for bad_files in [manifest['files'][1:], [{'path': '../escape', 'sha256': 'a' * 64}]]:
++            self.manifest.write_text(json.dumps({**manifest, 'files': bad_files}))
++            self.plan['runtimeManifestSHA256'] = helper.digest(self.manifest)
++            self.save()
++            self.assertNotEqual(self.invoke()[0], 0)
++
++    def test_approval_duplicate_key_refused(self):
++        self.approval.write_text('{"enabled":false,"enabled":true}')
++        self.assertNotEqual(self.invoke()[0], 0)
++
++    def test_plan_cannot_redirect_output_or_run_outside_private_root(self):
++        self.plan['runRoot'] = str(self.gpu / 'not-private')
++        self.save()
++        self.assertEqual(self.invoke()[1]['code'], 'offline_run_root')
++
++    def test_worker_credential_cannot_enter_offline_execution(self):
++        self.plan['enabled'] = True
++        self.save()
++        with patch.dict('os.environ', {'FITMATCH_WORKER_TOKEN': 'synthetic_CPU_only'}):
++            code, out = self.invoke('--execute', '--guard-label', self.plan['label'])
++        self.assertEqual(code, 75)
++        self.assertEqual(out['code'], 'offline_worker_credential_present')
++
++
++if __name__ == '__main__':
++    unittest.main(verbosity=2)
