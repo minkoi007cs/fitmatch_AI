@@ -1,0 +1,83 @@
+{
+  "task": "PC-ACCEPT-49",
+  "atUtc": "2026-11-12T17:14:36.564377+00:00",
+  "mode": "read existing GLB headers/JSON chunk/byte lengths only; no decode/render/export/reload or official validator rerun",
+  "files": [
+    {
+      "label": "template-body",
+      "bytes": 856156,
+      "GLBVersion": 2,
+      "meshCount": 1,
+      "embeddedImageCount": 0,
+      "textureCount": 0,
+      "bufferCount": 1,
+      "externalURICount": 0,
+      "static": true,
+      "DracoOrKTX2": false,
+      "under40MillionBytes": true,
+      "originalFileUnchanged": true
+    },
+    {
+      "label": "template-tee",
+      "bytes": 344848,
+      "GLBVersion": 2,
+      "meshCount": 1,
+      "embeddedImageCount": 2,
+      "textureCount": 2,
+      "bufferCount": 1,
+      "externalURICount": 0,
+      "static": true,
+      "DracoOrKTX2": false,
+      "under40MillionBytes": true,
+      "originalFileUnchanged": true
+    },
+    {
+      "label": "template-denim-style-pants",
+      "bytes": 941952,
+      "GLBVersion": 2,
+      "meshCount": 1,
+      "embeddedImageCount": 2,
+      "textureCount": 2,
+      "bufferCount": 1,
+      "externalURICount": 0,
+      "static": true,
+      "DracoOrKTX2": false,
+      "under40MillionBytes": true,
+      "originalFileUnchanged": true
+    },
+    {
+      "label": "photo-conditioned-debug-body",
+      "bytes": 419772,
+      "GLBVersion": 2,
+      "meshCount": 1,
+      "embeddedImageCount": 0,
+      "textureCount": 0,
+      "bufferCount": 1,
+      "externalURICount": 0,
+      "static": true,
+      "DracoOrKTX2": false,
+      "under40MillionBytes": true,
+      "originalFileUnchanged": true
+    },
+    {
+      "label": "front-visible-face-debug",
+      "bytes": 989312,
+      "GLBVersion": 2,
+      "meshCount": 1,
+      "embeddedImageCount": 1,
+      "textureCount": 1,
+      "bufferCount": 1,
+      "externalURICount": 0,
+      "static": true,
+      "DracoOrKTX2": false,
+      "under40MillionBytes": true,
+      "originalFileUnchanged": true
+    }
+  ],
+  "templateSetBytes": 2142956,
+  "templateSetUnder120MillionBytes": true,
+  "newModelGPUOrRenderer": false,
+  "qualityAccepted": false,
+  "frameAndReopening": "historical receipts only, not newly measured from headers",
+  "privateSourceHashesPublished": false
+}
