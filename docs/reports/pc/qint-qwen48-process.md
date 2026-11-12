@@ -61,3 +61,18 @@ elevation. Guard/policy/slot/lock/state, original runtime, token/env/weights/tra
 New report: qint-p/qwen48/offline-preparation.md with helper patch, hashes and test evidence.
 Status: Ready for review; STOP before GPU. Mac reviews helper/source/config pins then separate
 finite slots for offline real hoodie regression and remaining queued job; no visual PASS yet.
+
+ACTUAL OFFLINE A / END — authorized one-run external-guard execution completed12Nov17:27:30Z.
+Actual outcome abstained/unsupported_category, attrsnull/noOCR/autoApplyfalse,1attempt19tokens,
+85.250s wire/86.637s guard. Cleanup recorded; namedJob0/four retained native handles exit0.
+PC3D independently proved free-byte0/owned0 and withdrew actual slot17:29:17.143123Z;
+PC readback hash/identity/UTC agrees, validators refuse. Guard/offline approvals disabled after
+drain; worker approval stayed disabled. No HTTP/DB/claim, confirmed-data rewrite, rerun or renewal.
+Mac accepted this single unsupported-input regression, not general classifier/3D quality.
+Report qint-p/qwen48/offline-actual.md + sanitized receipt. Remaining queued app job not run.
+
+WORKER CPU PREP — same98 candidate pins and exact config52c108ec reverified with full
+appf580247, canonical policy/guard/lock and token hash (local only). Prepared worker-held
+approval remains disabled/backendpending; offline/guard approvals remain disabled. Future
+worker direct--once, no external guard nesting, at most one existing queued job, no new click.
+Wait fresh backend signal for one heartbeat then separate PC3D slot+Mac worker GO; no GPU now.

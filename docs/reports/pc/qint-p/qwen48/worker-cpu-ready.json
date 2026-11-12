@@ -1,0 +1,41 @@
+{
+  "utc": "2026-11-12T17:31:53.582412+00:00",
+  "state": "WORKER_CPU_PINS_READY_DISABLED; WAIT_BACKEND_SIGNAL; NO_START",
+  "appSHA": "f58024703bf4ec8be365bee2f8b3e1bd2248fdec",
+  "runtimeManifestSHA256": "55e306ef4fc510d2fdfb083293a2cd448aaddb0940e7b698cb3028a69f522c3b",
+  "sourcePinsVerified": 98,
+  "activeConfigSHA256": "52c108ec8afd8c77be0283e5dfe49ea5dfffed8099c901d9b9ddec7ee831e6f9",
+  "workerAdmissionApprovalSHA256": "e0894083d8bc54a67216d65ce6cb13227ad6cab21db72e6e5e0637e6dd88fb24",
+  "workerAdmissionApprovalEnabled": false,
+  "approvalBackendGate": "PENDING",
+  "workerPlacement": "worker sole canonical byte0 owner; direct candidate worker_cli; no external guard nesting",
+  "candidateEngine240sDrain30s": true,
+  "onlyCapability": "garment.analyze",
+  "tokenHashMatchesRegistered": true,
+  "originalTransportSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "canonicalLockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "offlineAndGuardApprovalsDisabled": true,
+  "previousOfflineSlotWithdrawn": {
+    "withdrawnAtUTC": "2026-11-12T17:29:17.143123+00:00",
+    "coordinatorVerifiedAtUTC": "2026-11-12T17:29:17.188640+00:00",
+    "slotSHA256": "cec3b66bd522e011622a178d5bbbf114d6684111c7c700a8cc3e2a11fcf4061f",
+    "actualCanonicalSlotReadbackMatches": true,
+    "actualSlotExpired": true,
+    "bothValidatorsRefusedReportedAndLocalBoundaryRefused": true,
+    "coordinatorFreeByte0ProbeReleased": true,
+    "independentCapturedHandlesSignalled": 4,
+    "freshSameOwnedLive": 0,
+    "canonicalPolicyGuardLockUnchanged": true,
+    "globalGPUIdleClaimed": false
+  },
+  "localExistingJobCheckpointsCompleted": true,
+  "logicalQueuedJobLimit": 1,
+  "newUploadClickOrEnqueueRequired": false,
+  "heartbeatHTTPClaimOrModelThisCPUPhase": false,
+  "next": "Fresh explicit backend/worker-enabled signal -> exactly one bounded canonical heartbeat; then separate fresh PC3D slot plus Mac worker GO -> --once at most one existing job"
+}
