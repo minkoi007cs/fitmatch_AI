@@ -1,0 +1,28 @@
+{
+  "session": "PC-20261112-QWEN48-OFFLINE-WINDOW-001",
+  "state": "PHASE_A_CLOSED_WAIT_SEPARATE_PHASE_B_GO",
+  "files": [
+    {
+      "file": "offline-window-001-benchmark.json",
+      "bytes": 2083,
+      "sha256": "af85343f6915a4e4b6776388236c119440535d7c8d22e4108761e8c87ee00096"
+    },
+    {
+      "file": "offline-window-001-issued.json",
+      "bytes": 1942,
+      "sha256": "5ad14c9094f4a695f55e13d7bea2d6620159e37f7ae32a4577755c445788c700"
+    },
+    {
+      "file": "offline-window-001-withdrawn.json",
+      "bytes": 2281,
+      "sha256": "b9e435bd6ff50ef075b9eb77335b8e8d948d28ecfea0578eae6f78767a090c30"
+    },
+    {
+      "file": "offline-window-001.md",
+      "bytes": 4876,
+      "sha256": "5ea2d3448e159ac8cd662cb97a407f50aa9f43d95c7a8afb7122cbd5e614fc45"
+    }
+  ],
+  "noSecondSlotOrJob": true,
+  "new3DWork": false
+}

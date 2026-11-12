@@ -1,0 +1,64 @@
+{
+  "kind": "fitmatch.qwen48.offline-slot-withdrawn.v1",
+  "session": "PC-20261112-QWEN48-OFFLINE-WINDOW-001",
+  "state": "WITHDRAWN_AFTER_ONE_OFFLINE_RUN_AND_ACTUAL_OWNED_DRAIN",
+  "withdrawnAtUtc": "2026-11-12T17:29:17.143123+00:00",
+  "verifiedAtUtc": "2026-11-12T17:29:17.188640+00:00",
+  "originalIssuedAtUtc": "2026-11-12T17:24:29.835988+00:00",
+  "originalExpiryUtc": "2026-11-12T17:34:29.835988+00:00",
+  "ownerStill": "pc-ai",
+  "onlyChangedFields": [
+    "admitUntilUnix"
+  ],
+  "slotSHA256": "cec3b66bd522e011622a178d5bbbf114d6684111c7c700a8cc3e2a11fcf4061f",
+  "slotVolume": 3699583840,
+  "slotFileIdDecimal": "5066549580997913",
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "canonicalLock": {
+    "volume": 3699583840,
+    "fileIdDecimal": "2251799814103012"
+  },
+  "bothValidatorsRefuse": {
+    "worker": {
+      "valid": false,
+      "reason": "Invalid or expired GPU admission window"
+    },
+    "guard": {
+      "valid": false,
+      "reason": "Invalid or expired GPU admission window"
+    }
+  },
+  "canonicalByte0FreeAndAcquiredForWithdrawal": true,
+  "coordinatorWithdrawalLockReleased": true,
+  "independentCapturedProcessHandles": 4,
+  "independentAllCapturedSignalled": true,
+  "peerCapturedHandles": 4,
+  "peerExitCodes": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "freshSameOwnedObjectLive": 0,
+  "freshOwnedIdentityQueries": 5,
+  "nativeJobCurrentQuery": {
+    "query": "absent",
+    "winerror": 2
+  },
+  "actualGuardDrainAtUtc": "2026-11-12T17:27:30.706493+00:00",
+  "guardActiveProcessesAtDrain": 0,
+  "guardExitCode": 0,
+  "peerDrainSHA256": "e639c3d9b871179de866fe8698a90b78bd1550c4cd3957d26fcc1be02f5761ad",
+  "policyGuardLockAndActualCompletedStateUnchanged": true,
+  "postDrainAvailableRAMBytes": 5884284928,
+  "postDrainVRAMFreeUsedMiB": "11405, 706",
+  "globalGPUIdleClaimed": false,
+  "modelOrCUDAStartedByCoordinator": false,
+  "noSecondSlotOrJob": true,
+  "autoRenew": false,
+  "noHTTPHeartbeatClaim": true,
+  "threeDGpuStillPaused": true,
+  "MSVC_UAC": "paused",
+  "semanticOutcomeAcceptance": "separate PCAI/Codex review; no quality inference from exit0"
+}

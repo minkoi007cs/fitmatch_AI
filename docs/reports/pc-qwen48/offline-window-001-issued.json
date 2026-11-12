@@ -1,0 +1,55 @@
+{
+  "kind": "fitmatch.qwen48.offline-slot-issued.v1",
+  "session": "PC-20261112-QWEN48-OFFLINE-WINDOW-001",
+  "state": "ISSUED_ONE_OFFLINE_REGRESSION_WAIT_ACTUAL_DRAIN",
+  "issuedAtUtc": "2026-11-12T17:24:29.835988+00:00",
+  "expiresAtUtc": "2026-11-12T17:34:29.835988+00:00",
+  "seconds": 600,
+  "owner": "pc-ai",
+  "slotSHA256": "99f6c95c91dfc8aed50f1ef7d9786d66166c1709f5718c591f79274196d2da63",
+  "slotVolume": 3699583840,
+  "slotFileIdDecimal": "12384898975474943",
+  "canonicalLock": {
+    "volume": 3699583840,
+    "fileIdDecimal": "2251799814103012"
+  },
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "immediateRAMAvailableBytes": 5707083776,
+  "immediateVRAMFreeMiB": 11496,
+  "savedOwnedCurrentLiveOrUnknown": 0,
+  "knownEngineCountBeforeGrant": 0,
+  "nonblockingByte0AvailabilityProbe": {
+    "attempted": true,
+    "availability": "free at sample",
+    "slotWrite": false,
+    "nestedGuard": false,
+    "startedAtUtc": "2026-11-12T17:23:00.150320+00:00",
+    "acquired": true,
+    "nativeOpenedIdentity": [
+      3699583840,
+      2251799814103012
+    ],
+    "workerAdmissionWhileHeld": {
+      "allowed": false,
+      "reason": "Invalid or expired GPU admission window"
+    },
+    "released": true,
+    "endedAtUtc": "2026-11-12T17:23:00.152399+00:00"
+  },
+  "retainedReadHandleAcrossAllocation": true,
+  "coordinatorParentByte0Held": false,
+  "allocationCalls": 1,
+  "guardExitCode": 0,
+  "autoRenew": false,
+  "label": "qwen48-private-regression-001",
+  "engineSeconds": 240,
+  "drainObservationSeconds": 30,
+  "scope": "ONE existing private hoodie OFFLINE regression only",
+  "cloudJobOrDBRequestAuthorized": false,
+  "secondSlotOrJobAuthorized": false,
+  "threeDGpuPaused": true,
+  "MSVC_UAC": "paused",
+  "GPUOrModelStartedByCoordinator": false,
+  "doNotReleaseQuarantinedOrUndrainedTree": true
+}
