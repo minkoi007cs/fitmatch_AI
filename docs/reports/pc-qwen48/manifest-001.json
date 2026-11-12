@@ -1,0 +1,16 @@
+{
+  "task": "QWEN-48",
+  "session": "PC-20261112-QWEN48-READY-001",
+  "files": [
+    {
+      "file": "readiness-001.json",
+      "bytes": 5165,
+      "sha256": "7f19c24c53886914be71ba425178b2da51b8ad41b6727c0083c682182fba52da"
+    },
+    {
+      "file": "report-001.md",
+      "bytes": 4787,
+      "sha256": "bd3d19c330da3bb41ea3d5c48c821d14b3292641003e8b9194dc90bbc8298941"
+    }
+  ]
+}
