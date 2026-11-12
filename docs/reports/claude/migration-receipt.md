@@ -1,0 +1,37 @@
+# Receipt — CL-MIGRATION-20261109-01 (CL-MIGRATION-26)
+
+| Mục | Giá trị |
+|---|---|
+| Session | CL-MIGRATION-20261109-01 — Claude (cloud Linux), owner app/migration/transport theo `docs/handoffs/prompt-claude-migration-prep-20261109.md` |
+| Docs đã đọc | ops `1bebba5` (PROC-0026): AGENTS→agent→roadmap→process; `qwen-migration-preparation-20261109/{plan.md,migration-plan.json,preflight.sql,rehearsal.log}`; `canonical-binding-20261109/review.md`; `backend-canonical-20261109.md` |
+| App baseline | `f80749a65b47441958e7c6fc485034d7efe446df` (= origin `codex/qwen-review-fixes`, không có commit mới hơn). Giữ R1/full-look/cleanup claim/QREV/binding/ENV-CANON |
+| Branch | mới `codex/canonical-migration-26` từ `f80749a` (không ghi đè `codex/qwen-review-fixes`, không dùng worktree Studio gốc) |
+| Truy cập cloud | Phiên này **không** có connector/credential tới `gohczmqykjkrgdblgbog`; dùng sự kiện đã làm sạch trong plan/rehearsal + fixture legacy tổng hợp. Không xin key trong chat |
+| Supabase CLI | 3.0.0 (cài tạm qua npx ngoài repo, không đổi package.json); `migration new`/`db dump` help đã kiểm |
+
+## File scope (chính xác)
+- Mới: `supabase/migrations/<CLI timestamp>_legacy_compat_auth_outfits.sql` (tên do `supabase migration new` sinh).
+- Sửa: `src/app/api/outfits/route.ts`, `src/lib/validation.ts` (payload outfit), `tests/*.test.ts` liên quan outfit.
+- Sửa/mở rộng: `scripts/schema-inventory.sql`, `scripts/schema-inventory-lib.mjs`, `scripts/compare-schema-inventory.mjs`, `scripts/schema-manifest.mjs`, `docs/infrastructure/schema-manifest.json`, `tests/schema-inventory.test.ts`.
+- Mới: `scripts/test-legacy-compat-db.mjs` (fixture legacy tổng hợp + fresh, Docker), `scripts/fixtures/legacy-canonical-shape.sql`, `scripts/migration-cutover/` (preflight/apply runner/postflight/history-adoption), `docs/infrastructure/canonical-cutover/` (plan, backup/restore, HTTPS/env + smoke handoff), báo cáo `docs/reports/claude/migration/`.
+- Có thể sửa: `scripts/test-v2-db.mjs`, `scripts/v2-http-fixture.mjs`, `scripts/test-auth-http.mjs` (thêm migration mới vào chuỗi test), `package.json` chỉ thêm script npm (không thêm dependency).
+
+Ngoài scope: áp SQL lên cloud, deploy, cấp quyền worker/GPU, PC adapter/guard, transport worker (chỉ sửa nếu PC repro lỗi thật), bảng không thuộc FitMatch, migration lịch sử (bất biến).
+
+## CHECKPOINT — 09/11/2026 21:08 ET — paused at owner request (usage limit)
+
+- App branch `codex/canonical-migration-26` pushed: implementation `cf902d3`, report/logs `847aeea` (baseline `f80749a`).
+- Status: **Ready for review — partial verification.** All checks PASS on cf902d3 (npm test 76/76, lint, build,
+  contracts, python 56, manifest current, PG17 legacy/fresh compat test, test:v2:db, test:http) **except**
+  `npm run test:v2` run 1: Qwen browser block timed out (15 s); rerun stopped by the pause → NOT VERIFIED.
+- No cloud SQL, no deploy, no worker grant, no GPU. Report: `docs/reports/claude/migration/report.md`
+  (also on the app branch). Next AI: rerun `npm run test:v2`, then Codex review; owner backup/restore before any execute.
+
+## RESUMED / READY FOR REVIEW — 09/11/2026 ~21:30 ET
+
+- Owner asked to continue. `npm run test:v2` rerun on cf902d3 passed every block (exit 0). Run 1 had one
+  15 s browser timeout in the Qwen block. This diff does not touch that UI; the cause was not root-caused and is
+  flagged for Codex. Both logs are on the app branch.
+- App branch head `0c4c44e` (implementation cf902d3). CL-MIGRATION-26 → **Ready for review**. Still no cloud SQL,
+  deploy, worker grant or GPU. Next: Codex review of the exact SQL + hashes; owner private backup + PG17 restore
+  proof before any execute.
