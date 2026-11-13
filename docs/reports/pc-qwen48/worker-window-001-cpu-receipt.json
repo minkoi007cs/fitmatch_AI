@@ -1,0 +1,99 @@
+{
+  "session": "PC-20261112-QWEN48-WORKER-WINDOW-001",
+  "task": "QWEN-48 phaseB CPU closure",
+  "recordedAtUtc": "2026-11-13T04:44:15.515476+00:00",
+  "sourceBaseline": "368d775d2f7a4e37056ed23ad0230987eb427577",
+  "state": "PREVIOUS_PHASE_B_GO_CLOSED_NO_SLOT_NO_JOB",
+  "macReconciliation": "Previous GO closed, scoped DB worker disabled, AI approvals OFF; 99CPU job-gate candidate receipt publishing per Mac, not PC3D-executed tests",
+  "initialProbeAtUtc": "2026-11-13T03:13:40.654836+00:00",
+  "initialResourceSnapshotHistorical": {
+    "RAMAvailableBytes": 5916741632,
+    "RAMAtUtc": "2026-11-13T03:13:40.599251+00:00",
+    "RAMMinimumBytes": 4294967296,
+    "RAMPassAtSample": true,
+    "GPU": {
+      "name": "NVIDIA GeForce RTX 3060",
+      "driver": "610.88",
+      "totalMiB": 12288,
+      "usedMiB": 736,
+      "freeMiB": 11375,
+      "atUtc": "2026-11-13T03:13:40.653778+00:00"
+    },
+    "VRAMMinimumMiB": 8192,
+    "VRAMPassAtSample": true
+  },
+  "initialNativeQueriesUnknown": 3,
+  "initialByte0ProbeAttempted": false,
+  "approvedReadOnlyNativeRecheckAtUtc": "2026-11-13T04:42:32.630461+00:00",
+  "nativeRecheck": {
+    "savedPIDQueries": 3,
+    "absent": 1,
+    "exitedDifferentCreationIdentity": 2,
+    "unknown": 0,
+    "sameSavedOwnedLive": 0,
+    "userApprovedOutsideSandboxQuery": true,
+    "OSAdministratorOrUACUsed": false
+  },
+  "protectedFiles": {
+    "gpu-coordinator.json": {
+      "sha256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+      "volume": 3699583840,
+      "fileIdDecimal": "2814749767545609",
+      "unchangedSincePhaseAWithdrawal": true
+    },
+    "gpu_guard.py": {
+      "sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+      "volume": 3699583840,
+      "fileIdDecimal": "5348024557618470",
+      "unchangedSincePhaseAWithdrawal": true
+    },
+    "gpu0.lock": {
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "volume": 3699583840,
+      "fileIdDecimal": "2251799814103012",
+      "unchangedSincePhaseAWithdrawal": true
+    },
+    "gpu0-state.json": {
+      "sha256": "2edde4282b41aff9f04cf4f2639c7706f082c83c4a94a5fa20b5d194395300a1",
+      "volume": 3699583840,
+      "fileIdDecimal": "34339947158905977",
+      "unchangedSincePhaseAWithdrawal": true
+    }
+  },
+  "lastSlotSHA256": "cec3b66bd522e011622a178d5bbbf114d6684111c7c700a8cc3e2a11fcf4061f",
+  "lastSlotOwner": "pc-ai",
+  "lastSlotIssuedAtUtc": "2026-11-12T17:24:29.835988+00:00",
+  "allocationCommandInvoked": false,
+  "newSlotIssued": false,
+  "workerOrModelOrGPUStartedByCoordinator": false,
+  "new3DRenderOrFitting": false,
+  "noCurrentWholeSystemIdleOrReadyClaim": true,
+  "MSVC_UAC": "paused",
+  "threeDGPU": "paused",
+  "remainingGates": [
+    "new explicit Mac backend/DB/job GO bound to current reviewed candidate/config/approval",
+    "new bounded heartbeat and simultaneous fresh resource/native-owned-tree/Job/policy/guard/file identity/free-byte0 gates after new GO"
+  ],
+  "macCPUPrototypeReportedOnly": "New four-view reference .blend/GLB exported/reopened on Mac; not inspected by PC, no replacement of PC artifacts or likeness/real garment acceptance",
+  "newPrivateInputRequested": false,
+  "currentPCAIReceiptNotPC3DTest": {
+    "publicationCommit": "c8b33d743ec6458093e06362a8cf14e6ae3ad03c",
+    "acceptedReviewCommit": "183923bfd8733e87061f2b7b3565d61988530e94",
+    "runtimeManifestSHA256": "d79a0738e31f08e04de2fc41b8b825ef04e1f78732bcdaeae5ede3e58f383f0e",
+    "activeConfigSHA256": "643b8b47b6eac98e27083ff4ea86e971a8e9fc4a733ef293917cd610abfcef31",
+    "installedAdmissionRawAndLFSHA256": "bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37",
+    "appFullSHA": "f58024703bf4ec8be365bee2f8b3e1bd2248fdec",
+    "allApprovalsDisabled": true,
+    "sourcePinsCount": 98,
+    "sourcePinsAllMatch": true,
+    "testsRun": 99,
+    "passed": 99,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "exitCode": 0,
+    "backendPreflight": "PENDING",
+    "noHeartbeatClaimGPUOrSlotWrite": true,
+    "queuedJobNotClaimedOrRequeuedByPC": true
+  }
+}
