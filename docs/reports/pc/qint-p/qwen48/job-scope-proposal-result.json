@@ -1,0 +1,17 @@
+{
+  "utc": "2026-11-13T03:24:04.855114+00:00",
+  "proposalOnly": true,
+  "installed": false,
+  "testsRun": 8,
+  "passed": 8,
+  "errors": 0,
+  "failures": 0,
+  "skips": 0,
+  "torchImported": false,
+  "patchSHA256": "24bc102bf7572e233752f2904db3cdfc6bc08315670bee7e0aca74ee74fcb876",
+  "proposedAdmissionSHA256": "9809179982a3f08d9aeed8744de4c16f9d537299aa1bb8a4f5029d0e591a3e04",
+  "testSHA256": "bf7f9d820022b80e5babeb1f108c2209c6120f503725321440a9cb8becdce115",
+  "workerStarted": false,
+  "claimsSent": 0,
+  "GPUStarted": false
+}

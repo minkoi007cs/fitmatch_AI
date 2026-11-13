@@ -1,6 +1,6 @@
 # QWEN-48 PC AI scope and process delta
 
-START — PC-QWEN48-20261112-01. Owner: existing PC Qwen chat; Windows PC.
+START â€” PC-QWEN48-20261112-01. Owner: existing PC Qwen chat; Windows PC.
 Task: QWEN-48 CPU prompt/assessment/mapper correction and Windows regressions.
 Owned branch: docs/pc-qint-p-20261107, baseline 1629937530dca92ef25f4b87d1ea631dc7b7509a.
 Operations read: 433922c52d0561dcd931bdb96a80d7115b652cdf (full previous body plus current deltas).
@@ -28,7 +28,7 @@ queued job require separate finite GPU windows after review; no reupload/click o
 Status: In progress. Next: verify candidate/base hashes, review internal assessment, adapt only
 analysis test fixtures, run Windows CPU regressions, publish sanitized receipt then STOP before GPU.
 
-UPDATE / TEST / HANDOFF — 2026-11-12T17:00:36Z. Reviewed/adopted the Mac proposal in an
+UPDATE / TEST / HANDOFF â€” 2026-11-12T17:00:36Z. Reviewed/adopted the Mac proposal in an
 isolated sibling candidate directory, not the live runtime. Three base hashes and five initial
 candidate LF hashes match. Added one prompt-selection regression and adapted only successful
 analysis mock responses in existing Windows wire/bridge tests; assertions and public fixtures preserved.
@@ -41,7 +41,7 @@ private existing hoodie regression and remaining queued job require separate fre
 CPU tests do not establish actual visual quality. No policy bump is needed for intended qint.1
 abstention behavior; reviewed adapter code hash/revision changes are explicit.
 
-CPU PREPARATION RESUME — PC-QWEN48-20261112-02. Codex accepted exact 3b7edbf CPU patch,
+CPU PREPARATION RESUME â€” PC-QWEN48-20261112-02. Codex accepted exact 3b7edbf CPU patch,
 independently verified seven hashes and 11 portable tests. Scope now: isolated offline helper,
 its CPU tests, private preserved-input run preparation, candidate config/disabled approval/source
 manifest pins, and sanitized report. Use admission.verify(label), real named Job membership and
@@ -50,7 +50,7 @@ wire.execute only, no database/network operation. Keep all approvals disabled un
 No change to confirmed analysis/cache, original qint_p, token/env/weights/transport or real
 coordinator policy/slot/lock. Existing private input is checked locally, never published.
 
-CPU PREPARATION HANDOFF — private input/JPEG retained and verified, copied to a new owner-only
+CPU PREPARATION HANDOFF â€” private input/JPEG retained and verified, copied to a new owner-only
 private run without changing old input/result/cache. Candidate config and separate disabled
 worker/offline/guard approvals pin full app f580247 and a 98-file source manifest. The new helper
 selects AnalysisBackend48/wire.execute under actual external-guard admission.verify(label),
@@ -62,7 +62,7 @@ New report: qint-p/qwen48/offline-preparation.md with helper patch, hashes and t
 Status: Ready for review; STOP before GPU. Mac reviews helper/source/config pins then separate
 finite slots for offline real hoodie regression and remaining queued job; no visual PASS yet.
 
-ACTUAL OFFLINE A / END — authorized one-run external-guard execution completed12Nov17:27:30Z.
+ACTUAL OFFLINE A / END â€” authorized one-run external-guard execution completed12Nov17:27:30Z.
 Actual outcome abstained/unsupported_category, attrsnull/noOCR/autoApplyfalse,1attempt19tokens,
 85.250s wire/86.637s guard. Cleanup recorded; namedJob0/four retained native handles exit0.
 PC3D independently proved free-byte0/owned0 and withdrew actual slot17:29:17.143123Z;
@@ -71,8 +71,17 @@ drain; worker approval stayed disabled. No HTTP/DB/claim, confirmed-data rewrite
 Mac accepted this single unsupported-input regression, not general classifier/3D quality.
 Report qint-p/qwen48/offline-actual.md + sanitized receipt. Remaining queued app job not run.
 
-WORKER CPU PREP — same98 candidate pins and exact config52c108ec reverified with full
+WORKER CPU PREP â€” same98 candidate pins and exact config52c108ec reverified with full
 appf580247, canonical policy/guard/lock and token hash (local only). Prepared worker-held
 approval remains disabled/backendpending; offline/guard approvals remain disabled. Future
 worker direct--once, no external guard nesting, at most one existing queued job, no new click.
 Wait fresh backend signal for one heartbeat then separate PC3D slot+Mac worker GO; no GPU now.
+
+PHASE B GO / JOB-SCOPE HOLD â€” fresh Mac DB/job GO13Nov03:08â€“03:10UTC received, fresh
+heartbeat03:17:33UTC HTTP200 canonical/soleanalysis, source98/config52 unchanged. Existing
+runtime has no exact-job-ID gate before inference under strict policy. Disposable ACL CPU
+alternative failed and was not applied to actual runtime. No worker/claim/GPU started.
+Local worker approval disabled for hold; offline/externalguard remain disabled. Prepared
+adapter-only approved_job_id proposal outside candidate,8/8 CPU tests PASS, no installation.
+Mac review needed for new source/config pins versus GO's no-source-change instruction.
+Report qint-p/qwen48/job-scope-hold.md. No new slot, inference, enqueue, click or automatic retry.
