@@ -1,0 +1,23 @@
+{
+  "kind": "fitmatch.qwen48.bounded-proposal-control-receipt.v2",
+  "recordedAtUtc": "2026-11-13T16:25:43.723375+00:00",
+  "previousPrivateScriptSHA256": "821c16757f84bd061968ac711fc206767685be0d55e86ecc04b50613acfc5d8a",
+  "rawPrivateScriptSHA256": "af1c22b0ec092e61810b794a561c57a1d1f3c51639d55e2d0e1a008dd14b14a0",
+  "sanitizedScriptSHA256": "47fc6b7eaf9813f1e8f7dd3d279ab544c310e4edc6ab1d3fc848cff4dd96675e",
+  "redactionCount": 2,
+  "privateV2TestsPassed": 21,
+  "sanitizedV2TestsPassed": 21,
+  "sanitizedTestExitCode": 0,
+  "testScope": "actual-producer-shaped synthetic metadata/control only; no native/model/GPU/job",
+  "disabledApprovalSHA256": "4a8f39f3d6a3cbe3fd822943614bded7f2b3e2c0284bcd86c93f334e0ae2968b",
+  "approvalEnabledRequired": false,
+  "heartbeatTimestampField": "completedUTC",
+  "protectedFilesUnchanged": true,
+  "frozenV1Unchanged": true,
+  "actualDrainProducerACK": "PENDING; no same-run Job0/modelUnloaded trace accepted",
+  "rootCodeSchemaReReview": "PENDING",
+  "liveIssueOrWithdrawExecuted": false,
+  "newSlotIssued": false,
+  "executionApprovalOpened": false,
+  "newGO": false
+}

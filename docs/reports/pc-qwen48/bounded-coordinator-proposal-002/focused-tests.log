@@ -1,0 +1,26 @@
+test_actual_shaped_completedUTC_heartbeat_metadata_only (__main__.Control) ... ok
+test_actual_shaped_disabled_approval_metadata_only (__main__.Control) ... ok
+test_actual_shaped_heartbeat_changed_pins_refused (__main__.Control) ... ok
+test_actual_shaped_heartbeat_execution_or_approval_change_refused (__main__.Control) ... ok
+test_actual_shaped_heartbeat_stale_future_or_before_gate_refused (__main__.Control) ... ok
+test_actual_shaped_heartbeat_wrong_backend_or_grant_refused (__main__.Control) ... ok
+test_boolean_zero_counter_refused (__main__.Control) ... ok
+test_changed_disabled_approval_bytes_refused (__main__.Control) ... ok
+test_complete_synthetic_metadata_is_not_native_execution (__main__.Control) ... ok
+test_enabled_approval_refused_even_with_expected_hash_argument (__main__.Control) ... ok
+test_expired_go155_refuses (__main__.Control) ... ok
+test_float_duration_refused (__main__.Control) ... ok
+test_heartbeat_cannot_omit_no_claim_evidence (__main__.Control) ... ok
+test_missing_actual_job_counter_blocks_withdrawal (__main__.Control) ... ok
+test_observedAtUTC_is_not_a_completedUTC_alias (__main__.Control) ... ok
+test_old_source_pin_refused (__main__.Control) ... ok
+test_other_job_refused (__main__.Control) ... ok
+test_two_second_write_margin (__main__.Control) ... ok
+test_valid_metadata_is_not_admission (__main__.Control) ... ok
+test_wrong_approval_job_or_config_refused (__main__.Control) ... ok
+test_wrong_run_drain_refused (__main__.Control) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.001s
+
+OK
