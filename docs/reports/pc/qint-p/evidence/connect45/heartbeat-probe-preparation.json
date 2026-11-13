@@ -1,0 +1,35 @@
+{
+  "checks": [
+    {
+      "mode": "prepare-only",
+      "exit": 0,
+      "result": {
+        "prepared": true,
+        "workerId": "8f1cc6bb-6446-4a7f-9d67-6144deba29be",
+        "sendPerformed": false,
+        "credentialRead": false,
+        "rowEnablePermitPresent": false,
+        "claimsAllowed": false,
+        "GPUAllowed": false
+      }
+    },
+    {
+      "mode": "send-without-permit",
+      "exit": 75,
+      "result": {
+        "status": "REFUSED",
+        "reason": "explicit fresh existing-row-enabled / QwenOFF heartbeat-only permit required",
+        "credentialRead": false,
+        "requestSent": false,
+        "claimOrModelLoad": false
+      }
+    }
+  ],
+  "actualHTTPRequests": 0,
+  "claims": 0,
+  "modelLoads": 0,
+  "requiresFreshExplicitEnableSignal": true,
+  "preparationChecksProbeSHA256": "d3f7ce06cca52c350d6c54238496dcc947d2dd15761082cdf625bfcfd069cf59",
+  "executedHeartbeatProbeSHA256": "33c140e3a61f59a092fac0242e61c760272b17ea33e4cb4a5627f128aab6202d",
+  "sourceNote": "No-send and missing-permit branches tested before adding status capture/dedup; exactly one later authorized heartbeat succeeded with current source."
+}

@@ -1,0 +1,39 @@
+{
+  "files": [
+    {
+      "path": "qint_p/assessment48.py",
+      "baseSHA256": null,
+      "candidateSHA256": "f070fdf106b5eac9a86a3bcaa960372a4d4b69bc1242a7fb161294730e326544"
+    },
+    {
+      "path": "qint_p/runner.py",
+      "baseSHA256": "4dfd7364e1f41c1c0ba5fe4187acb2a4c53e719424b9c819e10876e63f5d9d40",
+      "candidateSHA256": "e666b3a367345ae22c3fb40f053b11002055ec3162b66e6424321e0c80a483f2"
+    },
+    {
+      "path": "qint_p/wire.py",
+      "baseSHA256": "66a329c51d518aa193fb3d289d42252da374cd35af11732158f7f69c4b35823a",
+      "candidateSHA256": "ecb5acf58eb26fdfe5ab7790796949c2bf0f65a58944af81dd874ff19e8d5caf"
+    },
+    {
+      "path": "qint_p/worker_cli.py",
+      "baseSHA256": "1f3c26b10f67dd92461dbbba385d3499d10f1e726172454e320d7f2c8b3eebb8",
+      "candidateSHA256": "32a48d2f0eb33935e34860a9cdcab5d45cd96e1ef78e4c431aedb645509a4c55"
+    },
+    {
+      "path": "qint_p/test_assessment48.py",
+      "baseSHA256": null,
+      "candidateSHA256": "e1d7e49d163f957b80209f0431e5c6c16e920537ffd42431438605772b049c74"
+    },
+    {
+      "path": "qint_p/test_wire.py",
+      "baseSHA256": "ae8c471171c1fb36efcb0eecd5dae227292c28d6ff1961654f37cb8333bd63bb",
+      "candidateSHA256": "4838ffb685e74638b1da8bffcc5a3b3cb588187c8e2cdb26ef8174e2625e4675"
+    },
+    {
+      "path": "qint_p/test_worker_bridge.py",
+      "baseSHA256": "95ea62895c030bd14a1213f8bc6443550b20af36dd224f2f991deb0dce162e8a",
+      "candidateSHA256": "28b39d19ae8c4c2d6e699389b8789b12b97b054968acfd071908bbf3f6ae4336"
+    }
+  ]
+}

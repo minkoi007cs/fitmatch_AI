@@ -1,0 +1,300 @@
+"""Native Windows worker + real Qwen CLI refusal over synthetic loopback HTTP. No model or live approval."""
+import ctypes
+from ctypes import wintypes
+from datetime import datetime,timezone
+import hashlib
+from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+import uuid
+
+from PIL import Image
+import psutil
+import wire
+from boundary import MODEL_REVISION
+
+ROOT=Path(__file__).resolve().parent
+GPU=ROOT.parents[1]
+SOURCE=ROOT/'native_bind25/source/scripts/worker'
+WORKER_SHA='ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6'
+MOCK=ROOT/'compose31/source/scripts/fixtures/mock_qwen_adapter.py'
+REPORT=GPU/'reports/ai/qint_p/compose31'
+RUNS=ROOT/'compose31/runs'
+spec=importlib.util.spec_from_file_location('compose31_exact_worker',SOURCE/'worker.py')
+worker=importlib.util.module_from_spec(spec);spec.loader.exec_module(worker)
+
+AUDIT_SOURCE='''# Witness only: no approval/transport monkeypatch or admission bypass.
+import atexit,json,os,sys,time
+from pathlib import Path
+folder=Path(os.environ['COMPOSE31_AUDIT_DIR'])
+target=folder/(str(os.getpid())+'.jsonl')
+def record(phase,**extra):
+    with target.open('a') as out:
+        out.write(json.dumps(dict(phase=phase,pid=os.getpid(),script=Path(sys.argv[0]).name,**extra))+'\\n')
+record('start',workerTokenPresent=bool(os.environ.get('FITMATCH_WORKER_TOKEN')))
+def audit(event,args):
+    if event=='import' and (args[0]=='torch' or args[0].startswith('torch.')):
+        record('FORBIDDEN_TORCH_IMPORT');raise RuntimeError('CPU composition forbids torch')
+sys.addaudithook(audit)
+atexit.register(lambda:record('exit',torchImported='torch' in sys.modules))
+'''
+
+def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def safe_env():
+    values={key:os.environ[key] for key in ['SystemRoot','WINDIR','PATH','TEMP','TMP','COMSPEC','PATHEXT'] if key in os.environ}
+    values.update(PYTHONIOENCODING='utf-8',PYTHONUNBUFFERED='1',NO_PROXY='127.0.0.1,localhost',no_proxy='127.0.0.1,localhost')
+    return values
+
+def peer_acquires(path):
+    code=('import msvcrt,sys;f=open(sys.argv[1],"r+");f.seek(0)\n'
+          'try:msvcrt.locking(f.fileno(),msvcrt.LK_NBLCK,1)\n'
+          'except OSError:sys.exit(3)\n'
+          'f.seek(0);msvcrt.locking(f.fileno(),msvcrt.LK_UNLCK,1)')
+    return subprocess.run([psutil.Process().exe(),'-c',code,str(path)],env=safe_env(),
+                          creationflags=0x08000000,timeout=5).returncode==0
+
+class NativeWitness:
+    """Retain SYNCHRONIZE handles to adapter interpreters inside our owned outer Job Object."""
+    def __init__(self,audit_dir,outer):
+        self.audit_dir=audit_dir;self.outer=outer;self.handles={};self.stopped=threading.Event()
+        self.mutex=threading.RLock();self.events=[]
+        self.k=ctypes.WinDLL('kernel32',use_last_error=True)
+        self.k.OpenProcess.restype=wintypes.HANDLE
+        self.k.OpenProcess.argtypes=(wintypes.DWORD,wintypes.BOOL,wintypes.DWORD)
+        self.k.IsProcessInJob.argtypes=(wintypes.HANDLE,wintypes.HANDLE,ctypes.POINTER(wintypes.BOOL))
+        self.k.WaitForSingleObject.argtypes=(wintypes.HANDLE,wintypes.DWORD)
+        self.k.WaitForSingleObject.restype=wintypes.DWORD
+        self.k.CloseHandle.argtypes=(wintypes.HANDLE,)
+        self.thread=threading.Thread(target=self.loop,daemon=True);self.thread.start()
+    def read_events(self):
+        events=[]
+        for path in self.audit_dir.glob('*.jsonl'):
+            for line in path.read_text().splitlines():
+                try:events.append(json.loads(line))
+                except ValueError:pass
+        return events
+    def scan(self):
+        with self.mutex:
+            self.events=self.read_events()
+            for event in self.events:
+                pid=event['pid']
+                if event['script'] not in ['worker_cli.py','mock_qwen_adapter.py'] or pid in self.handles:continue
+                handle=self.k.OpenProcess(0x00100000|0x1000,False,pid)
+                if not handle:continue
+                inside=wintypes.BOOL()
+                if self.k.IsProcessInJob(handle,self.outer.job.handle,ctypes.byref(inside)) and inside.value:
+                    self.handles[pid]=handle
+                else:self.k.CloseHandle(handle)
+    def loop(self):
+        while not self.stopped.wait(.002):self.scan()
+    def at_report(self):
+        self.scan()
+        with self.mutex:
+            adapters={row['pid'] for row in self.events if row['phase']=='start' and row['script'] in ['worker_cli.py','mock_qwen_adapter.py']}
+            assert adapters,'real adapter interpreter was not witnessed'
+            assert adapters<=set(self.handles),'adapter native handle missed; cannot prove signal-before-release'
+            signaled=all(self.k.WaitForSingleObject(self.handles[pid],0)==0 for pid in adapters)
+            assert signaled,'worker reported before adapter process object was signaled'
+            assert all(not row.get('workerTokenPresent',False) for row in self.events if row['script'] in ['worker_cli.py','mock_qwen_adapter.py'])
+            assert not any(row['phase']=='FORBIDDEN_TORCH_IMPORT' or row.get('torchImported') for row in self.events)
+            return {'adapterInterpreterCount':len(adapters),'nativeAdapterHandlesAllSignaledAtHTTPReport':signaled,
+                    'adapterCredentialsRemoved':True,'torchImportAttempted':False}
+    def close(self):
+        self.stopped.set();self.thread.join(timeout=2)
+        with self.mutex:
+            for handle in self.handles.values():self.k.CloseHandle(handle)
+
+class SyntheticAPI:
+    """In-memory HTTP fixture, not Next.js/Postgres or evidence of hosted queue/attempt transactions."""
+    def __init__(self,case,root,image):
+        self.case,self.root,self.image=case,root,image
+        self.token='compose31-synthetic-'+uuid.uuid4().hex
+        self.lease=str(uuid.uuid4());self.events=[];self.errors=[];self.witness=None
+        self.state={'state':'queued','attempt':0,'deferrals':0,'errorCode':None,'resultStored':False}
+        self.job_id='11111111-2222-4333-8444-555555555555'
+        self.binding=json.loads((wire.SNAPSHOT/'fixtures/qwen-v1/adapter-input.json').read_text())['binding']
+        self.binding['imageSha256']=hashlib.sha256(image).hexdigest()
+        self.revision={'model':'Qwen/Qwen3-VL-4B-Instruct','revision':MODEL_REVISION}
+        if case=='model_unavailable':self.revision['revision']='0'*40
+        if case=='MOCK_success':self.revision={'model':'mock/qwen-cpu','revision':'test-only'}
+        self.policy={'policyRevision':'qint.1','maxOutputTokens':192,'maxSchemaAttempts':2,
+                     'maxResultBytes':8192,'timeoutSeconds':120,'imageIsUntrustedData':True}
+        if case=='invalid_input':self.policy['maxSchemaAttempts']=3
+        api=self
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self,*args):pass
+            def send(self,status,value=None,raw=None):
+                data=raw if raw is not None else (json.dumps(value).encode() if value is not None else b'')
+                self.send_response(status);self.send_header('Content-Length',str(len(data)))
+                self.send_header('Content-Type','image/jpeg' if raw is not None else 'application/json')
+                self.end_headers();self.wfile.write(data)
+            def do_GET(self):
+                if self.path!='/synthetic-image.jpg':self.send(404,{});return
+                api.events.append({'HTTP':'GET','route':'synthetic-image','bytes':len(api.image)})
+                self.send(200,raw=api.image)
+            def do_POST(self):
+                try:
+                    assert self.headers.get('Authorization')=='Bearer '+api.token,'wrong synthetic worker credential'
+                    body=json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                    path=self.path.removeprefix('/api/v2/worker/')
+                    if path=='heartbeat':
+                        api.events.append({'HTTP':'POST','route':'heartbeat','gpuBusy':body['gpuBusy'],'authorizationMatched':True})
+                        self.send(200,{'backend':{'projectRef':'isolated-test'},'grantedCapabilities':['garment.analyze']});return
+                    if path=='claim':
+                        assert api.state['state']=='queued' and not any(row.get('route')=='claim' for row in api.events)
+                        api.state.update(state='running',attempt=api.state['attempt']+1)
+                        api.events.append({'HTTP':'POST','route':'claim','stateAfter':dict(api.state)})
+                        job={'protocolVersion':1,'protocolRevision':'v1-r2','jobId':api.job_id,'modelId':None,
+                            'kind':'garment.analyze','modelRevision':api.revision,'lease':{'token':api.lease,'attempt':api.state['attempt']},
+                            'outputContract':{'format':'json-v1'},'input':{'params':{},'binding':api.binding,'policy':api.policy,
+                            'assets':[{'role':'garment_image','assetId':api.binding['imageAssetId'],'mediaType':'image/jpeg',
+                                'sha256':api.binding['imageSha256'],'bytes':len(api.image),'url':api.origin+'/synthetic-image.jpg'}]}}
+                        self.send(200,job);return
+                    assert body['leaseToken']==api.lease,'lease mismatch'
+                    if path.endswith('/heartbeat'):
+                        api.events.append({'HTTP':'POST','route':'job-heartbeat','stage':body['stage']});self.send(200,{});return
+                    assert path in ['jobs/'+api.job_id+'/fail','jobs/'+api.job_id+'/result'],path
+                    proof=api.witness.at_report()
+                    assert not peer_acquires(api.root/'Synthetic-GPU/coordination/gpu0.lock'),'lock already released at HTTP report'
+                    proof['syntheticLockHeldAtHTTPReport']=True
+                    if path.endswith('/fail'):
+                        code=body['code']
+                        expected={'missing_approval':'GPU_BUSY','model_unavailable':'MODEL_UNAVAILABLE','invalid_input':'INVALID_INPUT'}[api.case]
+                        assert code==expected,(code,expected)
+                        if code in ['GPU_BUSY','MEMORY_PRESSURE']:
+                            api.state.update(state='queued',attempt=max(api.state['attempt']-1,0),deferrals=api.state['deferrals']+1,errorCode=code)
+                        else:api.state.update(state='failed',errorCode=code)
+                        api.events.append({'HTTP':'POST','route':'fail','code':code,'stateAfter':dict(api.state),'nativeProof':proof})
+                    else:
+                        assert api.case=='MOCK_success','real CLI must not fabricate a success'
+                        result=json.loads(body['resultJson']);wire.validator('analysis-result').validate(result)
+                        assert body['sha256']==hashlib.sha256(body['resultJson'].encode()).hexdigest()
+                        assert result['binding']==api.binding and result['approvedForAutoApply'] is False
+                        api.state.update(state='succeeded',resultStored=True)
+                        api.events.append({'HTTP':'POST','route':'result','explicitlyMOCK':True,'humanReviewRequired':True,
+                            'resultSHA256':body['sha256'],'stateAfter':dict(api.state),'nativeProof':proof})
+                    self.send(200,{'ok':True})
+                except Exception as error:
+                    api.errors.append(type(error).__name__+': '+str(error));self.send(500,{'code':'HARNESS_ASSERTION'})
+        self.server=ThreadingHTTPServer(('127.0.0.1',0),Handler)
+        self.origin='http://127.0.0.1:'+str(self.server.server_address[1])
+        self.thread=threading.Thread(target=self.server.serve_forever,daemon=True);self.thread.start()
+    def close(self):
+        self.server.shutdown();self.server.server_close();self.thread.join(timeout=2)
+
+def coordination_fingerprint():
+    root=GPU/'coordination'
+    paths=['gpu-coordinator.json','gpu0-slot.json','gpu0-state.json']
+    result={name:sha(root/name) for name in paths}
+    stat=(root/'gpu0.lock').stat()
+    result['lockMetadata']=[stat.st_dev,stat.st_ino,stat.st_size,stat.st_mtime_ns]
+    result['guardSHA256']=sha(GPU/'fitmatch_AI/workers/windows/gpu_guard.py')
+    result['operatorApprovalPresent']=(root/'qint-worker-test-approval.json').exists()
+    return result
+
+def run_case(case):
+    RUNS.mkdir(parents=True,exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=case+'-',dir=RUNS) as temporary:
+        root=Path(temporary).resolve();root.relative_to(RUNS.resolve())
+        (root/'SYNTHETIC-COMPOSE31').write_text('CPU only; no real coordination or live credentials')
+        image=root/'fixture.jpg';Image.new('RGB',(64,64),'blue').save(image)
+        api=SyntheticAPI(case,root,image.read_bytes())
+        workspace=root/'Synthetic-GPU';coord=workspace/'coordination';coord.mkdir(parents=True)
+        lock=coord/'gpu0.lock';lock.write_bytes(b'0')
+        guard=workspace/'fitmatch_AI/workers/windows/gpu_guard.py';guard.parent.mkdir(parents=True)
+        guard.write_text('# synthetic CPU fixture; not a GPU guard and never executed\n')
+        helper=subprocess.run([sys.executable,str(SOURCE/'gpu_coordinator_policy.py'),'write','--workspace',str(workspace),
+            '--expected-guard-sha256',sha(guard)],env=safe_env(),capture_output=True,text=True,timeout=10,creationflags=0x08000000)
+        assert helper.returncode==0,helper.stderr
+        pin=json.loads(helper.stdout)
+        issued=time.time();(coord/'gpu0-slot.json').write_text(json.dumps({'version':1,'owner':'pc-ai',
+            'issuedAtUtc':datetime.fromtimestamp(issued,timezone.utc).isoformat(),'issuedAtUnix':issued,'admitUntilUnix':issued+120}))
+        command=[sys.executable,str(ROOT/'worker_cli.py'),'--input','{input}','--output','{output}',
+                 '--policy',str(root/'ABSENT-local-approval.json')]
+        if case=='MOCK_success':command=[sys.executable,str(MOCK),'{input}','{output}']
+        config={'appUrl':api.origin,'workDir':str(root/'data'),'processContainment':'required','pollSeconds':.1,
+            'heartbeatSeconds':.2,'requestTimeoutSeconds':5,'retry':{'attempts':1,'baseSeconds':.01,'maxSeconds':.01},
+            'gpuSlotOwner':'pc-ai','gpuCoordinator':{'path':pin['policy'],'sha256':pin['sha256']},
+            'expectedBackend':{'projectRef':'isolated-test','appOrigin':api.origin},
+            'engines':{'garment.analyze':{**api.revision,'command':command,'timeoutSeconds':15,'drainSeconds':8,'exitCodes':{'124':'TIMEOUT'}}}}
+        config_path=root/'synthetic-config.json';config_path.write_text(json.dumps(config))
+        audit_dir=root/'audit';audit_dir.mkdir();audit_hook=root/'audit-hook';audit_hook.mkdir()
+        (audit_hook/'sitecustomize.py').write_text(AUDIT_SOURCE)
+        env=safe_env();env.update(FITMATCH_WORKER_TOKEN=api.token,COMPOSE31_AUDIT_DIR=str(audit_dir),
+            PYTHONPATH=os.pathsep.join([str(audit_hook),str(Path(sys.prefix)/'Lib/site-packages')]))
+        outer=None;witness=None;started=time.monotonic()
+        try:
+            with (root/'worker.log').open('wb') as log,(root/'worker.err').open('wb') as err:
+                outer=worker.OwnedProcessTree([sys.executable,str(SOURCE/'worker.py'),'--config',str(config_path),'--once'],
+                    env=env,stdout=log,stderr=err,creationflags=0x08000000)
+                witness=NativeWitness(audit_dir,outer);api.witness=witness
+                outer.process.wait(timeout=25)
+                assert outer.drain(timeout=8),'outer owned tree not drained'
+            assert outer.returncode==0,'worker exit '+str(outer.returncode)+': '+(root/'worker.log').read_text()
+            assert not api.errors,api.errors
+            witness.scan();events=witness.events
+            assert any(row['script']=='worker.py' and row['phase']=='exit' for row in events),'worker audit not installed'
+            assert not any(row['phase']=='FORBIDDEN_TORCH_IMPORT' or row.get('torchImported') for row in events)
+            report_events=[row for row in api.events if row['route'] in ['fail','result']]
+            assert len(report_events)==1,'missing HTTP outcome: '+json.dumps(api.events)
+            assert peer_acquires(lock),'synthetic lock not released after drain'
+            checkpoint=json.loads((root/'data/jobs'/api.job_id/'checkpoint.json').read_text())
+            adapter_pid=checkpoint.get('adapterPid')
+            if adapter_pid:
+                assert not psutil.pid_exists(adapter_pid),'launcher PID still exists after owned drain'
+            results=list((root/'data').rglob('result.json'))
+            assert bool(results)==(case=='MOCK_success'),'fabricated result on refusal'
+            if case!='MOCK_success':
+                assert not any(row['route']=='result' for row in api.events)
+                errors=list((root/'data').rglob('adapter.err'));assert len(errors)==1
+                structured=json.loads(errors[0].read_text().strip().splitlines()[-1])
+                assert structured=={'success':False,'code':report_events[0]['code']}
+            else:structured=None
+            if case=='missing_approval':assert api.state['attempt']==0 and api.state['deferrals']==1
+            else:assert api.state['attempt']==1 and api.state['deferrals']==0
+            receipt={'case':case,'passed':True,'adapter':'CPU MOCK' if case=='MOCK_success' else 'real unmodified qint_p CLI',
+                'workerExit':outer.returncode,'CLIError':structured,'HTTPEvents':api.events,'syntheticFinalJobState':api.state,
+                'syntheticStateModelOnly':True,'actualWorkerCheckpointStage':checkpoint['stage'],
+                'resultFileCreated':bool(results),'syntheticLockReleasableAfterOwnedTreeDrain':True,
+                'outerWindowsJobDrained':True,'torchImportedOrAttempted':False,'seconds':round(time.monotonic()-started,3)}
+            log=(root/'worker.log').read_text().replace(str(root),'<SYNTHETIC_ROOT>')
+            (REPORT/(case+'.log')).write_text(log)
+            return receipt
+        finally:
+            if outer is not None:outer.drain(timeout=8)
+            if witness is not None:witness.close()
+            api.close()
+
+def main():
+    if os.name!='nt':raise RuntimeError('Windows native task; do not substitute POSIX')
+    if sha(SOURCE/'worker.py')!=WORKER_SHA:raise RuntimeError('Worker bytes changed')
+    REPORT.mkdir(parents=True,exist_ok=True)
+    before=coordination_fingerprint()
+    receipts=[]
+    for case in ['missing_approval','model_unavailable','invalid_input','MOCK_success']:
+        receipt=run_case(case);receipts.append(receipt)
+        (REPORT/(case+'.json')).write_text(json.dumps(receipt,indent=2)+'\n')
+        print(json.dumps({'case':case,'passed':True,'syntheticState':receipt['syntheticFinalJobState'],'torchImported':False}),flush=True)
+    after=coordination_fingerprint()
+    if before!=after:raise RuntimeError('Real coordination changed during probe; no unchanged claim')
+    summary={'session':'PC-QINT-P-20261109-10','task':'AI-NATIVE-COMPOSE-31','cases':receipts,'passed':len(receipts),
+        'workerRevision':'f80749a65b47441958e7c6fc485034d7efe446df','workerSHA256':WORKER_SHA,
+        'adapterSourcesSHA256':{name:sha(ROOT/name) for name in ['worker_cli.py','worker_admission.py','wire.py']},
+        'mockSourceSHA256':sha(MOCK),'probeSHA256':sha(Path(__file__)),'python':sys.version.split()[0],
+        'realCoordinationFingerprintUnchanged':True,'realPolicySHA256':before['gpu-coordinator.json'],
+        'realLockIdentity':before['lockMetadata'][:2],'realGPUOrOperatorApprovalOrEnrollmentGranted':False,
+        'liveCloudOrDBOrHTTPSAppTest':False,'torchImportedOrAttempted':False,
+        'limits':'Synthetic HTTP/queue-state model only; MOCK success is not Qwen inference, DB transactions or hosted acceptance.',
+        'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
+    (REPORT/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    print(json.dumps({key:summary[key] for key in ['task','passed','realCoordinationFingerprintUnchanged','torchImportedOrAttempted']}))
+
+if __name__=='__main__':main()

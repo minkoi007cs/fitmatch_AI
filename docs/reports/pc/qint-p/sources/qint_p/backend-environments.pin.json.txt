@@ -1,0 +1,6 @@
+{
+  "source_revision": "7b247ba6cb0e08f3360f42a3cda56825dfbfcde1",
+  "source_path": "docs/infrastructure/backend-environments.json",
+  "sha256": "5ea746851bf4f52819953c41c0446fde92604859eed6bafbc5848a5635d13e7c",
+  "authority": "Operations environment manifest; this file is a pinned metadata copy, not a second authority"
+}

@@ -1,0 +1,170 @@
+"""BACKEND-024: bounded presence-only inventory, registry-derived canonical metadata, no cloud/env writes."""
+from datetime import datetime,timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+from urllib.parse import urlsplit
+
+from boundary import MODEL_REVISION
+from worker_admission import GPU,COORD,GUARD,LOCK,GUARD_HASH,POLICY
+
+AI=GPU/'ai-service'
+ROOT=Path(__file__).resolve().parent
+REPORT=GPU/'reports/ai/qint_p/backend024'
+ENDPOINT_KEYS={'FITMATCH_TEST_APP_URL','FITMATCH_QWEN_TEST_ENDPOINT','QWEN_TEST_APP_URL','FITMATCH_APP_URL'}
+TOKEN_KEYS={'FITMATCH_WORKER_TOKEN','FITMATCH_TEST_WORKER_TOKEN','FITMATCH_QWEN_WORKER_TOKEN'}
+LABEL_KEYS={'FITMATCH_TEST_PROJECT_LABEL','FITMATCH_ENVIRONMENT','FITMATCH_TEST_LABEL'}
+TEST_LABELS={'test','dedicated-test','disposable-test','qwen-test','qwen-pilot-test'}
+
+def load_backend_registry():
+    raw=(ROOT/'backend-environments.snapshot.json').read_bytes()
+    pin=json.loads((ROOT/'backend-environments.pin.json').read_text())
+    registry=json.loads(raw)
+    if hashlib.sha256(raw).hexdigest()!=pin['sha256']:
+        raise RuntimeError('Backend registry snapshot hash mismatch; no fallback')
+    canonical=registry['canonical']
+    parsed=urlsplit(canonical['apiUrl'])
+    if (registry.get('version')!=1 or registry.get('decision')!='BACKEND-024' or canonical.get('projectName')!='fitmatch-ai'
+        or canonical.get('projectRef')!='gohczmqykjkrgdblgbog'
+        or parsed.scheme!='https' or parsed.hostname!=canonical['projectRef']+'.supabase.co'
+        or parsed.username is not None or parsed.password is not None or parsed.query or parsed.fragment
+        or any(item['projectRef']==canonical['projectRef'] for item in registry['deprecatedForFitMatch'])):
+        raise RuntimeError('Backend registry does not match BACKEND-024; no legacy target fallback')
+    return registry,pin
+
+def configured(value):
+    if not isinstance(value,str) or not value.strip():return False
+    text=value.strip().strip('\"\'')
+    if re.search(r'(?i)(replace|placeholder|your[-_ ]|required|example|change[-_]?me|not[-_]a[-_]credential)',text):return False
+    return not (text.startswith('<') or (text.startswith('%') and text.endswith('%')))
+
+def endpoint(value):
+    if not configured(value):return False
+    try:
+        parsed=urlsplit(value)
+        return (parsed.scheme=='https' and bool(parsed.hostname) and parsed.username is None
+                and not parsed.hostname.endswith(('.invalid','.example','.supabase.co')) and parsed.hostname not in {'localhost','127.0.0.1'})
+    except ValueError:return False
+
+def summary(alias,values,*,kind='environment'):
+    urls=ENDPOINT_KEYS if kind=='environment' else {'appUrl','testAppUrl','testEndpoint'}
+    tokens=TOKEN_KEYS if kind=='environment' else {'workerToken','testWorkerToken','token'}
+    labels=LABEL_KEYS if kind=='environment' else {'environment','testLabel','projectLabel'}
+    label_values=[str(values[k]).strip().lower() for k in labels if k in values]
+    designated=any(v in TEST_LABELS for v in label_values)
+    return {'source_alias':alias,'endpoint_candidate_present':any(endpoint(values.get(k)) for k in urls),
+        'worker_token_candidate_present':any(configured(values.get(k)) for k in tokens),
+        'explicit_test_designation_present':designated,
+        'test_label_classification':'known test label' if designated else 'missing or unverified',
+        'values_emitted':False}
+
+def read_small(path):
+    try:
+        # No symlinks/reparse or external references; inspect only named local config files.
+        relative=path.absolute().relative_to(GPU.absolute())
+        current=GPU
+        for component in [None,*relative.parts]:
+            if component is not None:current=current/component
+            info=current.lstat()
+            if current.is_symlink() or getattr(info,'st_file_attributes',0)&0x400:return None,'reparse_skipped'
+        with path.open('rb') as stream:raw=stream.read(65537)
+        if len(raw)>65536:return None,'oversize_skipped'
+        if path.name.startswith('.env'):
+            result={}
+            for line in raw.decode('utf-8-sig','replace').splitlines():
+                match=re.match(r'\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)',line)
+                if match:result[match[1]]=match[2].strip().strip('\"\'')
+            return result,'environment'
+        value=json.loads(raw.decode('utf-8-sig'))
+        return (value,'json') if isinstance(value,dict) else (None,'non_object_skipped')
+    except FileNotFoundError:return None,'missing'
+    except (OSError,ValueError):return None,'unreadable_or_invalid'
+
+def inventory():
+    registry,pin=load_backend_registry()
+    sources=[summary('current_process_environment',os.environ)]
+    # Targeted registry reads, no enumeration of unrelated secrets, no mutation/elevation.
+    if os.name=='nt':
+        import winreg
+        for alias,hive,key in [('user_environment',winreg.HKEY_CURRENT_USER,'Environment'),
+            ('machine_environment',winreg.HKEY_LOCAL_MACHINE,r'SYSTEM\CurrentControlSet\Control\Session Manager\Environment')]:
+            values={}
+            try:
+                with winreg.OpenKey(hive,key) as handle:
+                    for name in ENDPOINT_KEYS|TOKEN_KEYS|LABEL_KEYS:
+                        try:values[name]=winreg.QueryValueEx(handle,name)[0]
+                        except FileNotFoundError:pass
+            except OSError:pass
+            sources.append(summary(alias,values))
+    candidates=[('own_worker_approval',POLICY),('own_standalone_approval',COORD/'qint-test-approval.json'),
+        ('own_runtime_config',AI/'config.json'),('own_runtime_local_config',AI/'config.local.json'),
+        ('own_runtime_worker_config',AI/'worker-config.json'),('own_qwen_config',AI/'qint_p/config.json'),
+        ('own_qwen_local_config',AI/'qint_p/config.local.json'),('own_runtime_dotenv',AI/'.env'),
+        ('own_runtime_dotenv_local',AI/'.env.local'),('own_runtime_dotenv_test',AI/'.env.test'),
+        ('worker_data_config',GPU/'worker-data/config.json'),
+        ('shared_worker_private_config',GPU/'fitmatch_AI/scripts/worker/config.json')]
+    file_states=[]
+    for alias,path in candidates:
+        values,state=read_small(path);file_states.append({'source_alias':alias,'state':state})
+        if values is not None:sources.append(summary(alias,values,kind=state))
+    endpoint_any=any(s['endpoint_candidate_present'] for s in sources)
+    token_any=any(s['worker_token_candidate_present'] for s in sources)
+    return {'session':'PC-QINT-P-20261109-08','decision':'BACKEND-024','scope':'named own/shared worker configs and targeted process/user/machine environment only',
+        'pilot_application_HTTPS_endpoint':'candidate present; canonical backend/identity binding unverified' if endpoint_any else 'not found in inspected sources',
+        'any_unclassified_HTTPS_candidate_present':endpoint_any,
+        'scoped_worker_token':'candidate present; NOT accepted for canonical backend until newly verified' if token_any else 'not found in inspected sources',
+        'canonical_backend_label':registry['canonical']['projectName'],
+        'canonical_backend_role':registry['canonical']['purpose'],
+        'canonical_registry_source':pin,
+        'former_smoke_target':'deprecated for FitMatch, not a fallback, not deleted',
+        'application_endpoint_kind':'FitMatch HTTPS application; Supabase project API is not counted as worker appUrl',
+        'canonical_backend_target_metadata_present':(COORD/'qint-p-backend024-canonical-target.json').is_file(),
+        'old_smoke_key_or_worker_token_reuse_allowed':False,'URL_only_credential_swap_allowed':False,
+        'sources':sources,'named_file_states':file_states,'credential_or_URL_values_emitted':False,
+        'reviewed_worker_approval_policy_present':POLICY.is_file(),
+        'worker_owner_bridge_source_present':(AI/'qint_p/worker_cli.py').is_file(),
+        'reviewed_worker_owner_config_ready':False,
+        'external_secret_stores_or_other_user_folders_inspected':False,'network_or_auth_probe':False,
+        'controlled_pilot_ready':False,'unscoped_or_destructive_main_changes_authorized':False,
+        'remote_project_note':'Canonical fitmatch-ai connector permission denied reported; correct account/project connection flow required; no password/RLS/ACL remedy by PC Qwen',
+        'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
+
+if __name__=='__main__':
+    REPORT.mkdir(exist_ok=True)
+    result=inventory();(REPORT/'testenv-presence.json').write_text(json.dumps(result,indent=2)+'\n')
+    registry,pin=load_backend_registry()
+    guard=hashlib.sha256(GUARD.read_bytes()).hexdigest()
+    if guard!=GUARD_HASH:raise RuntimeError('Guard revision changed; checkpoint withheld')
+    checkpoint={'version':'qint-p.canonical-checkpoint.v1','kind':'metadata only, not an installed worker config',
+        'session':'PC-QINT-P-20261109-08','backendDecision':'BACKEND-024','backendRegistrySource':pin,
+        'canonicalBackend':registry['canonical'],'expectedConfig':{'gpuLock':str(LOCK),'gpuSlot':str(COORD/'gpu0-slot.json'),
+            'gpuSlotOwner':'pc-ai','gpuGuard':{'path':str(GUARD),'sha256':guard}},
+        'placement':'worker sole byte0 owner, direct Qwen adapter; no nested guard/env-only proof',
+        'modelRevision':MODEL_REVISION,'latestAppUnderReview':'579ece2f4d7eb1b5336fec1469d5965ab9d8f919',
+        'finalApprovedTransport':None,'startupBindingACK':'WITHHELD QREV-BIND-02',
+        'cleanupGate':'FOCUSED PASS by Codex PROC0023 on579ece2; not whole privacy/integration acceptance',
+        'knownCleanupLimit':'long upload plus app death after grace remains documented',
+        'canonicalBackendOwnerAuthorized':True,'controlledPilotReady':False,'QwenSlotGranted':False,'operatorApprovalInstalled':POLICY.exists(),
+        'reuseSmokeCredentials':False,'URLOnlyCredentialsSwap':False,
+        'beforeMainMigration':'canonical access+existing-data inventory+private recovery route/snapshot+schema reconciliation; none performed by PC Qwen',
+        'GPUStarted':False,'personalImageRead':False,'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
+    (COORD/'qint-p-backend024-canonical-checkpoint.json').write_text(json.dumps(checkpoint,indent=2)+'\n')
+    prepared={'session':'PC-QINT-P-20261109-08','kind':'nonsecret canonical config plan; no environment install',
+        'decision':'BACKEND-024','canonical_backend_project_label':registry['canonical']['projectName'],
+        'backend_role':registry['canonical']['purpose'],'existing_user_data_must_be_preserved':True,
+        'smoke_reuse_allowed':False,'smoke_cloud_project_deleted':False,
+        'FitMatch_application_HTTPS_endpoint':result['pilot_application_HTTPS_endpoint'],
+        'scoped_worker_token':result['scoped_worker_token'],'actual_credentials_read_or_stored':False,
+        'connector_status':'Codex reported canonical project permission denied; correct account connection required, not retried by PC Qwen',
+        'root_public_backend_env':'Codex reports already canonical; not read/edited by PC Qwen',
+        'old_credentials_or_URL_only_swap':False,'canonical_identity_or_key_binding_verified':False,
+        'main_migration_preflight':'inventory/recovery/reconciliation required; no SQL or backup performed by PC Qwen',
+        'DB_role_or_password_modified':False,'SQL_migration_or_enrollment':False,
+        'cleanup_gate':'Codex focused PASS579ece2','canonical_binding_gate':'NEEDS CHANGES; startup ACK WITHHELD',
+        'app_environment_installed':False,'test_capability_granted':False,'Qwen_slot_granted':False,'GPU_started':False}
+    (REPORT/'preparation-summary.json').write_text(json.dumps(prepared,indent=2)+'\n')
+    print(json.dumps({key:result[key] for key in ['pilot_application_HTTPS_endpoint','scoped_worker_token',
+        'canonical_backend_label','canonical_backend_role','former_smoke_target','controlled_pilot_ready',
+        'credential_or_URL_values_emitted','network_or_auth_probe']}))

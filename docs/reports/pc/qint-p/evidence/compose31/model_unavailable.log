@@ -1,0 +1,3 @@
+Process containment: windows-job-object
+Shared host GPU lock bound to the PC3D coordinator (single owner, never nested): <SYNTHETIC_ROOT>\Synthetic-GPU\coordination\gpu0.lock
+Reported failure MODEL_UNAVAILABLE for 11111111-2222-4333-8444-555555555555

@@ -1,0 +1,47 @@
+"""CPU adapter suite plus preserved Q03 suite; writes new reports, never overwrites Q03 evidence."""
+import contextlib
+import hashlib
+import io
+import json
+from pathlib import Path
+import sys
+import time
+import unittest
+import psutil
+import test_adapter
+import test_wire
+import retest_candidate
+import test_worker_bridge
+
+ROOT = Path(__file__).resolve().parent
+REPORT = ROOT.parents[1] / 'reports' / 'ai' / 'qint_p'
+QREV_FINAL='--qrev-final' in sys.argv
+WORKER_BRIDGE='--worker-bridge' in sys.argv or QREV_FINAL
+if QREV_FINAL:REPORT=REPORT/'qrev-7631cb00114d'
+elif WORKER_BRIDGE:REPORT=REPORT/'worker_bridge'
+REPORT.mkdir(exist_ok=True)
+sys.path.insert(0, str(ROOT.parent/'quality03'))
+import test_control, test_envelope, test_retention, test_metrics, test_corpus, test_native_cpu
+
+started = time.monotonic()
+stream = io.StringIO()
+modules=[test_adapter,test_wire,test_control,test_envelope,test_retention,test_metrics,test_corpus,retest_candidate]
+if WORKER_BRIDGE:modules.append(test_worker_bridge)
+suite = unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromModule(module) for module in modules)
+result = unittest.TextTestRunner(stream=stream, verbosity=2).run(suite)
+raw = stream.getvalue()
+(REPORT/'cpu-suite-private.log').write_text(raw, encoding='utf-8')
+safe = raw.replace(str(ROOT.parents[1]), '<GPU_ROOT>')
+(REPORT/'cpu-suite.log').write_text(safe, encoding='utf-8')
+output = {'session':'PC-QINT-P-20261108-04' if QREV_FINAL else ('PC-QINT-P-20261107-02' if WORKER_BRIDGE else 'PC-QINT-P-20261107-01'),'tests_run':result.testsRun,
+    'passed':result.testsRun-len(result.failures)-len(result.errors)-len(result.skipped),
+    'failures':len(result.failures),'errors':len(result.errors),
+    'skipped':[reason for _,reason in result.skipped], 'seconds':round(time.monotonic()-started,3),
+    'cuda_imported':'torch' in sys.modules, 'model_loaded':False,
+    'native_guard_sha256':retest_candidate.HASH,
+    'native_events':test_native_cpu.EVENTS, 'peak_working_set':psutil.Process().memory_info().peak_wset,
+    'exit_code':0 if result.wasSuccessful() else 1}
+(REPORT/'cpu-suite.json').write_text(json.dumps(output,indent=2)+'\n',encoding='utf-8')
+print(safe)
+print(json.dumps({k:v for k,v in output.items() if k!='native_events'}))
+raise SystemExit(output['exit_code'])

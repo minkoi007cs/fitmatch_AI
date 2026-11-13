@@ -1,0 +1,45 @@
+--- a/qint_p/worker_admission.py
++++ b/qint_p/worker_admission.py
+@@ -14,7 +14,7 @@
+ from urllib.parse import urlsplit
+ 
+ import psutil
+-from boundary import Refused, strict_json, finite, slot, safe_file
++from boundary import Refused, strict_json, finite, slot, safe_file, canonical_uuid
+ from admission import GPU, COORD, GUARD, LOCK
+ 
+ GUARD_HASH = '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c'
+@@ -39,7 +39,7 @@
+     fields = {'version','enabled','scope','reviews','app_revision','contract_revision',
+         'transport_revision','transport_path','transport_sha256','transport_python_exe',
+         'config_path','config_sha256','work_dir','guard_sha256','lock_path','coordinator_sha256','app_origin'}
+-    if (type(policy) is not dict or set(policy)!=fields or policy['version']!='qint-p.worker-admission.v2'
++    if (type(policy) is not dict or set(policy) not in (fields, fields | {'approved_job_id'}) or policy['version']!='qint-p.worker-admission.v2'
+         or policy['enabled'] is not True or policy['scope']!='authorized_wardrobe_pilot'
+         or type(policy['reviews']) is not dict or set(policy['reviews'])!=GATES
+         or any(value!='PASS' for value in policy['reviews'].values())
+@@ -54,6 +54,9 @@
+         if type(policy[key]) is not str or not Path(policy[key]).is_absolute():
+             raise Refused('GPU_BUSY')
+     if not reviewed_origin(policy['app_origin']):raise Refused('GPU_BUSY')
++    if 'approved_job_id' in policy:
++        try:canonical_uuid(policy['approved_job_id'])
++        except Refused:raise Refused('GPU_BUSY') from None
+     return policy
+ 
+ def reviewed_origin(value):
+@@ -153,9 +156,14 @@
+     # Anonymous per-adapter Job ownership is vouched for by the pinned reviewed
+     # transport. This generic membership check alone does not authenticate a parent.
+ 
++def check_job_scope(policy,value):
++    if 'approved_job_id' in policy and value.get('jobId') != policy['approved_job_id']:
++        raise Refused('INVALID_INPUT')
++
+ def verify(manifest,value,policy_path=POLICY):
+     try:
+         policy=validate_policy(read(policy_path))
++        check_job_scope(policy,value)  # Before environment, native probes or any model import.
+         if (os.environ.get('FITMATCH_GPU_LOCK_HELD_BY')!='worker'
+             or os.environ.get('FITMATCH_GPU_LOCK_PATH')!=str(LOCK)):
+             raise Refused('GPU_BUSY')

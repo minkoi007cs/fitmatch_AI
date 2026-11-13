@@ -1,0 +1,6 @@
+{
+  "check": "synthetic canary values never emitted",
+  "passed": true,
+  "actual_credentials_used": false,
+  "network": false
+}

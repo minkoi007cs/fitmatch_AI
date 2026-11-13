@@ -1,0 +1,13 @@
+{
+  "workerId": "8f1cc6bb-6446-4a7f-9d67-6144deba29be",
+  "verificationSource": "Codex canonical DB readback reported in explicit handoff; not queried by PC",
+  "lastSeenUtc": "2026-11-10T17:48:27.688Z",
+  "storedCapabilities": {},
+  "QwenFlagReported": "OFF",
+  "inferenceAuthorized": false,
+  "oneHeartbeatAlreadySent": true,
+  "additionalRequestsSent": 0,
+  "currentServingRevisionReported": "7397b6a954dbe877e425abd09abd125398c271c4",
+  "nextUICandidateReported": "ca3466c staged only; not aliased",
+  "pendingOwnerBrowserAndCodexWindow": true
+}

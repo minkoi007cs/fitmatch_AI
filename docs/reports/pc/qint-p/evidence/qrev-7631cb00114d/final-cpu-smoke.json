@@ -1,0 +1,126 @@
+{
+  "session": "PC-QINT-P-20261108-04",
+  "app_revision": "7631cb00114ddf559c234f1c0f13285dbb7305ab",
+  "worker_sha256": "5f03f523a78e9cb805850e5d7df8e2a37a5b550c205633a1d2f2ba00fb509604",
+  "Git_LF_worker_sha256": "4035abe547fc42621e9dad237c8f429ddb521253c3e0c2b5aab0a590eed09ceb",
+  "tested_copy": "CRLF, same source text as pinned Git blob",
+  "guard_sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "contract_files_matched": 28,
+  "records": [
+    {
+      "case": "guard_worker_slot_matrix",
+      "invalid": 35,
+      "valid": 3,
+      "passed": true
+    },
+    {
+      "case": "default_lock",
+      "desired_reject_before_worker": true,
+      "actual_main_exit": 5,
+      "worker_constructor_reached": false,
+      "scope": "actual main; DirLock/containment/Worker.loop injected CPU stubs",
+      "shared_lock_acquired": false,
+      "CUDA_or_network": false
+    },
+    {
+      "case": "relative_lock",
+      "desired_reject_before_worker": true,
+      "actual_main_exit": 5,
+      "worker_constructor_reached": false,
+      "scope": "actual main; DirLock/containment/Worker.loop injected CPU stubs",
+      "shared_lock_acquired": false,
+      "CUDA_or_network": false
+    },
+    {
+      "case": "missing_lock_file",
+      "desired_reject_before_worker": true,
+      "actual_main_exit": 5,
+      "worker_constructor_reached": false,
+      "scope": "actual main; DirLock/containment/Worker.loop injected CPU stubs",
+      "shared_lock_acquired": false,
+      "CUDA_or_network": false
+    },
+    {
+      "case": "guard_hash_mismatch",
+      "desired_reject_before_worker": true,
+      "actual_main_exit": 5,
+      "worker_constructor_reached": false,
+      "scope": "actual main; DirLock/containment/Worker.loop injected CPU stubs",
+      "shared_lock_acquired": false,
+      "CUDA_or_network": false
+    },
+    {
+      "case": "unknown_owner",
+      "desired_reject_before_worker": true,
+      "actual_main_exit": 5,
+      "worker_constructor_reached": false,
+      "scope": "actual main; DirLock/containment/Worker.loop injected CPU stubs",
+      "shared_lock_acquired": false,
+      "CUDA_or_network": false
+    },
+    {
+      "case": "wrong_existing_lock",
+      "desired_reject_before_worker": true,
+      "actual_main_exit": 0,
+      "worker_constructor_reached": true,
+      "scope": "actual main; DirLock/containment/Worker.loop injected CPU stubs",
+      "shared_lock_acquired": false,
+      "CUDA_or_network": false
+    },
+    {
+      "case": "wrong_absolute_slot_path",
+      "desired_reject_before_worker": true,
+      "actual_main_exit": 0,
+      "worker_constructor_reached": true,
+      "scope": "actual main; DirLock/containment/Worker.loop injected CPU stubs",
+      "shared_lock_acquired": false,
+      "CUDA_or_network": false
+    },
+    {
+      "case": "configured_fixed_paths",
+      "desired_reject_before_worker": false,
+      "actual_main_exit": 0,
+      "worker_constructor_reached": true,
+      "scope": "actual main; DirLock/containment/Worker.loop injected CPU stubs",
+      "shared_lock_acquired": false,
+      "CUDA_or_network": false
+    },
+    {
+      "case": "preclaim_wrong_owner",
+      "passed": true,
+      "isolated_metadata": true
+    },
+    {
+      "case": "preclaim_expired",
+      "passed": true,
+      "isolated_metadata": true
+    },
+    {
+      "case": "preclaim_NaN",
+      "passed": true,
+      "isolated_metadata": true
+    },
+    {
+      "case": "preclaim_duplicate",
+      "passed": true,
+      "isolated_metadata": true
+    },
+    {
+      "case": "preclaim_guard_hash_swap",
+      "passed": true,
+      "isolated_metadata": true
+    }
+  ],
+  "gaps": [
+    "wrong_existing_lock",
+    "wrong_absolute_slot_path"
+  ],
+  "startup_ACK": "WITHHELD",
+  "placement": "worker owns one fixed byte0 lock; direct adapter; no nested guard",
+  "real_GPU": false,
+  "torch_imported": false,
+  "shared_lock_taken": false,
+  "personal_image_read": false,
+  "real_policy_installed": false,
+  "recordedAtUtc": "2026-11-08T13:58:44.267135+00:00"
+}

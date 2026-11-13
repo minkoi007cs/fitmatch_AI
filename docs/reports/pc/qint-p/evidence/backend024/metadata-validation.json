@@ -1,0 +1,10 @@
+{
+  "registry_digest_identity": "PASS",
+  "deprecated_smoke_authorization_disabled": "PASS",
+  "tampered_snapshot_refused": "PASS",
+  "backend_API_excluded_from_app_endpoint": "PASS",
+  "source_snapshots_verified": 78,
+  "python_snapshots_parsed": 38,
+  "torch_imported": false,
+  "cloud_or_environment_mutation": false
+}

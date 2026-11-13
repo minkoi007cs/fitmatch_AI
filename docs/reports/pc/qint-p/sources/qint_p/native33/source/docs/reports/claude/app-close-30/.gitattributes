@@ -1,0 +1,2 @@
+# Preserve the exact unified diff, including its blank context line.
+native-fixture-30.patch.txt -whitespace

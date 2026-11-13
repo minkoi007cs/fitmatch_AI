@@ -1,0 +1,26 @@
+"""One-time local inventory; compares each new shard hash with Q02's prior tensor-verification receipt."""
+import hashlib
+import json
+from pathlib import Path
+from boundary import MODEL_REVISION
+from checkpoint import MODEL, ROOT
+
+prior = json.loads((ROOT.parents[1] / 'reports' / 'ai' / 'quality02' / 'reshard-manifest.json').read_text())
+assert prior['status'] == 'ReshardedAndTensorVerified' and prior['source_revision'] == MODEL_REVISION
+expected = {item['file']: item for item in prior['files']}
+files = []
+for path in sorted(MODEL.iterdir()):
+    if not path.is_file(): raise RuntimeError('Unexpected model entry')
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for block in iter(lambda: stream.read(4 * 1024**2), b''): digest.update(block)
+    item = {'file': path.name, 'bytes': path.stat().st_size, 'sha256': digest.hexdigest()}
+    if path.suffix == '.safetensors':
+        assert item['sha256'] == expected[path.name]['sha256'] and item['bytes'] == expected[path.name]['bytes']
+    files.append(item)
+assert len(files) == 28
+output = ROOT / 'checkpoint-pin.json'
+if output.exists(): raise RuntimeError('Pin already exists; do not overwrite')
+output.write_text(json.dumps({'model_revision': MODEL_REVISION, 'files': files,
+    'provenance': '17 shards matched existing Q02 per-tensor-verified manifest; small assets inventoried from that derived local checkpoint'}, indent=2)+'\n')
+print(json.dumps({'status':'pinned_and_prior_shards_matched','files':len(files),'bytes':sum(item['bytes'] for item in files)}))

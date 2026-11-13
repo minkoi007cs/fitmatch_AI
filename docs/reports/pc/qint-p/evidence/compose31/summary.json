@@ -1,0 +1,471 @@
+{
+  "session": "PC-QINT-P-20261109-10",
+  "task": "AI-NATIVE-COMPOSE-31",
+  "cases": [
+    {
+      "case": "missing_approval",
+      "passed": true,
+      "adapter": "real unmodified qint_p CLI",
+      "workerExit": 0,
+      "CLIError": {
+        "success": false,
+        "code": "GPU_BUSY"
+      },
+      "HTTPEvents": [
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "claim",
+          "stateAfter": {
+            "state": "running",
+            "attempt": 1,
+            "deferrals": 0,
+            "errorCode": null,
+            "resultStored": false
+          }
+        },
+        {
+          "HTTP": "GET",
+          "route": "synthetic-image",
+          "bytes": 693
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "fail",
+          "code": "GPU_BUSY",
+          "stateAfter": {
+            "state": "queued",
+            "attempt": 0,
+            "deferrals": 1,
+            "errorCode": "GPU_BUSY",
+            "resultStored": false
+          },
+          "nativeProof": {
+            "adapterInterpreterCount": 1,
+            "nativeAdapterHandlesAllSignaledAtHTTPReport": true,
+            "adapterCredentialsRemoved": true,
+            "torchImportAttempted": false,
+            "syntheticLockHeldAtHTTPReport": true
+          }
+        }
+      ],
+      "syntheticFinalJobState": {
+        "state": "queued",
+        "attempt": 0,
+        "deferrals": 1,
+        "errorCode": "GPU_BUSY",
+        "resultStored": false
+      },
+      "syntheticStateModelOnly": true,
+      "actualWorkerCheckpointStage": "failed",
+      "resultFileCreated": false,
+      "syntheticLockReleasableAfterOwnedTreeDrain": true,
+      "outerWindowsJobDrained": true,
+      "torchImportedOrAttempted": false,
+      "seconds": 1.328
+    },
+    {
+      "case": "model_unavailable",
+      "passed": true,
+      "adapter": "real unmodified qint_p CLI",
+      "workerExit": 0,
+      "CLIError": {
+        "success": false,
+        "code": "MODEL_UNAVAILABLE"
+      },
+      "HTTPEvents": [
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "claim",
+          "stateAfter": {
+            "state": "running",
+            "attempt": 1,
+            "deferrals": 0,
+            "errorCode": null,
+            "resultStored": false
+          }
+        },
+        {
+          "HTTP": "GET",
+          "route": "synthetic-image",
+          "bytes": 693
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "fail",
+          "code": "MODEL_UNAVAILABLE",
+          "stateAfter": {
+            "state": "failed",
+            "attempt": 1,
+            "deferrals": 0,
+            "errorCode": "MODEL_UNAVAILABLE",
+            "resultStored": false
+          },
+          "nativeProof": {
+            "adapterInterpreterCount": 1,
+            "nativeAdapterHandlesAllSignaledAtHTTPReport": true,
+            "adapterCredentialsRemoved": true,
+            "torchImportAttempted": false,
+            "syntheticLockHeldAtHTTPReport": true
+          }
+        }
+      ],
+      "syntheticFinalJobState": {
+        "state": "failed",
+        "attempt": 1,
+        "deferrals": 0,
+        "errorCode": "MODEL_UNAVAILABLE",
+        "resultStored": false
+      },
+      "syntheticStateModelOnly": true,
+      "actualWorkerCheckpointStage": "failed",
+      "resultFileCreated": false,
+      "syntheticLockReleasableAfterOwnedTreeDrain": true,
+      "outerWindowsJobDrained": true,
+      "torchImportedOrAttempted": false,
+      "seconds": 1.265
+    },
+    {
+      "case": "invalid_input",
+      "passed": true,
+      "adapter": "real unmodified qint_p CLI",
+      "workerExit": 0,
+      "CLIError": {
+        "success": false,
+        "code": "INVALID_INPUT"
+      },
+      "HTTPEvents": [
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "claim",
+          "stateAfter": {
+            "state": "running",
+            "attempt": 1,
+            "deferrals": 0,
+            "errorCode": null,
+            "resultStored": false
+          }
+        },
+        {
+          "HTTP": "GET",
+          "route": "synthetic-image",
+          "bytes": 693
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "fail",
+          "code": "INVALID_INPUT",
+          "stateAfter": {
+            "state": "failed",
+            "attempt": 1,
+            "deferrals": 0,
+            "errorCode": "INVALID_INPUT",
+            "resultStored": false
+          },
+          "nativeProof": {
+            "adapterInterpreterCount": 1,
+            "nativeAdapterHandlesAllSignaledAtHTTPReport": true,
+            "adapterCredentialsRemoved": true,
+            "torchImportAttempted": false,
+            "syntheticLockHeldAtHTTPReport": true
+          }
+        }
+      ],
+      "syntheticFinalJobState": {
+        "state": "failed",
+        "attempt": 1,
+        "deferrals": 0,
+        "errorCode": "INVALID_INPUT",
+        "resultStored": false
+      },
+      "syntheticStateModelOnly": true,
+      "actualWorkerCheckpointStage": "failed",
+      "resultFileCreated": false,
+      "syntheticLockReleasableAfterOwnedTreeDrain": true,
+      "outerWindowsJobDrained": true,
+      "torchImportedOrAttempted": false,
+      "seconds": 1.281
+    },
+    {
+      "case": "MOCK_success",
+      "passed": true,
+      "adapter": "CPU MOCK",
+      "workerExit": 0,
+      "CLIError": null,
+      "HTTPEvents": [
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "claim",
+          "stateAfter": {
+            "state": "running",
+            "attempt": 1,
+            "deferrals": 0,
+            "errorCode": null,
+            "resultStored": false
+          }
+        },
+        {
+          "HTTP": "GET",
+          "route": "synthetic-image",
+          "bytes": 693
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "heartbeat",
+          "gpuBusy": false,
+          "authorizationMatched": true
+        },
+        {
+          "HTTP": "POST",
+          "route": "job-heartbeat",
+          "stage": "reconstructing"
+        },
+        {
+          "HTTP": "POST",
+          "route": "result",
+          "explicitlyMOCK": true,
+          "humanReviewRequired": true,
+          "resultSHA256": "d924e5b22e8dcfc976634b66ff9cc2fcfd440774aa7a6563a5844c93e16a2c86",
+          "stateAfter": {
+            "state": "succeeded",
+            "attempt": 1,
+            "deferrals": 0,
+            "errorCode": null,
+            "resultStored": true
+          },
+          "nativeProof": {
+            "adapterInterpreterCount": 1,
+            "nativeAdapterHandlesAllSignaledAtHTTPReport": true,
+            "adapterCredentialsRemoved": true,
+            "torchImportAttempted": false,
+            "syntheticLockHeldAtHTTPReport": true
+          }
+        }
+      ],
+      "syntheticFinalJobState": {
+        "state": "succeeded",
+        "attempt": 1,
+        "deferrals": 0,
+        "errorCode": null,
+        "resultStored": true
+      },
+      "syntheticStateModelOnly": true,
+      "actualWorkerCheckpointStage": "completed",
+      "resultFileCreated": true,
+      "syntheticLockReleasableAfterOwnedTreeDrain": true,
+      "outerWindowsJobDrained": true,
+      "torchImportedOrAttempted": false,
+      "seconds": 1.281
+    }
+  ],
+  "passed": 4,
+  "workerRevision": "f80749a65b47441958e7c6fc485034d7efe446df",
+  "workerSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "adapterSourcesSHA256": {
+    "worker_cli.py": "1f3c26b10f67dd92461dbbba385d3499d10f1e726172454e320d7f2c8b3eebb8",
+    "worker_admission.py": "b5f92a1365a87cbd9d75ccba153b3967d6f57f3d79eedaba0b56f83626eca78a",
+    "wire.py": "66a329c51d518aa193fb3d289d42252da374cd35af11732158f7f69c4b35823a"
+  },
+  "mockSourceSHA256": "4b66b038bfda86a4f8756db5f07c630bbe6216407837c50c28a2eb1cfbc50b9a",
+  "probeSHA256": "5f6500496e3c58fa470f9002d183b9226c141f0a8407691ee9e5eb5d605ea00a",
+  "python": "3.10.22",
+  "realCoordinationFingerprintUnchanged": true,
+  "realPolicySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "realLockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "realGPUOrOperatorApprovalOrEnrollmentGranted": false,
+  "liveCloudOrDBOrHTTPSAppTest": false,
+  "torchImportedOrAttempted": false,
+  "limits": "Synthetic HTTP/queue-state model only; MOCK success is not Qwen inference, DB transactions or hosted acceptance.",
+  "recordedAtUtc": "2026-11-10T02:50:47.674692+00:00"
+}

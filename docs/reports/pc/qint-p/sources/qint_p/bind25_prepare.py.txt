@@ -1,0 +1,95 @@
+"""Verify the PC3D-issued binding and prepare disabled nonsecret config metadata. No network/CUDA/lock writes."""
+from datetime import datetime,timezone
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+import worker_admission as own
+import qfinal_inventory
+
+ROOT=Path(__file__).resolve().parent
+GPU=ROOT.parents[1]
+COORD=GPU/'coordination'
+REPORT=GPU/'reports/ai/qint_p/bind25'
+SOURCE=ROOT/'native_bind25/source/scripts/worker'
+REV='f80749a65b47441958e7c6fc485034d7efe446df'
+POLICY_SHA='789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039'
+
+def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def main():
+    REPORT.mkdir(exist_ok=True)
+    peer=json.loads((COORD/'qint-g-bind25-policy-receipt.json').read_text())
+    if peer['appRevision']!=REV or peer['policySHA256']!=POLICY_SHA or peer['guardSHA256']!=own.GUARD_HASH:
+        raise RuntimeError('PC3D receipt differs; ACK withheld')
+    if sha(own.GUARD)!=own.GUARD_HASH:raise RuntimeError('Guard bytes changed')
+    identity=own.coordinator_binding({'coordinator_sha256':POLICY_SHA})
+    if list(identity)!=peer['statIdentity'] or list(identity)!=peer['fstatIdentity']:
+        raise RuntimeError('Native identity differs from PC3D receipt')
+    now=datetime.now(timezone.utc).isoformat()
+    config={'appUrl':None,'workDir':str(GPU/'worker-data/qwen-pilot'), 'processContainment':'required',
+        'gpuCoordinator':{'path':str(COORD/'gpu-coordinator.json'),'sha256':POLICY_SHA},'gpuSlotOwner':'pc-ai',
+        'expectedBackend':{'projectRef':own.BACKEND_REF,'appOrigin':None},'engines':{'garment.analyze':{
+            'model':'Qwen/Qwen3-VL-4B-Instruct','revision':qfinal_inventory.MODEL_REVISION,
+            'command':[sys.executable,str(ROOT/'worker_cli.py'),'--input','{input}','--output','{output}',
+                       '--policy',str(own.POLICY)],'timeoutSeconds':240,'drainSeconds':30,'exitCodes':{'124':'TIMEOUT'}}}}
+    # Binding-only input to the helper. Missing origin/token deliberately makes this non-runnable.
+    binding_config=COORD/'qint-p-bind25-binding-only-config.json'
+    binding_config.write_text(json.dumps(config,indent=2)+'\n')
+    verified=subprocess.run([sys.executable,str(SOURCE/'gpu_coordinator_policy.py'),'verify','--config',str(binding_config)],
+        capture_output=True,text=True,timeout=10,creationflags=0x08000000)
+    if verified.returncode!=0:raise RuntimeError('Exact helper did not verify real binding')
+    result=json.loads(verified.stdout)
+    if result['admitted'] is not True or result['lockIdentity']!=list(identity):raise RuntimeError('Helper identity mismatch')
+    helper={'admitted':True,'scope':'binding only; no lock acquired, no slot or backend readiness evaluation',
+        'policySHA256':POLICY_SHA,'lockIdentity':list(identity),'derivedCanonicalPathsMatch':
+        all(result[key]==str(expected) for key,expected in [('lock',own.LOCK),('slot',COORD/'gpu0-slot.json'),('guard',own.GUARD)]),
+        'owner':result['owner'],'realPolicyOrLockOrSlotWrittenByQwen':False}
+    if not helper['derivedCanonicalPathsMatch']:raise RuntimeError('Derived path mismatch')
+    (REPORT/'real-policy-verification.json').write_text(json.dumps(helper,indent=2)+'\n')
+    inventory=qfinal_inventory.inventory()
+    inventory.update(session='PC-QINT-P-20261109-09',task='PC-QWEN-BIND-25',
+        remote_project_note='Canonical connector restored per operations PROC0027 L061; no DB retry by PC Qwen',
+        bindingPolicySHA256=POLICY_SHA,bindingNativeACK='focused policy/identity PASS; exact56 has Windows fixture-order error',
+        reviewedServingHTTPSOriginPresent=False,reviewedServingAppRevisionVerified=False,
+        backendMigrationRecoveryGate='Claude implementation/Codex review still pending at PROC0027',
+        gpuCoordinatorBindingVerified=True,canonicalConfigInstalled=False)
+    (REPORT/'presence-inventory.json').write_text(json.dumps(inventory,indent=2)+'\n')
+    raw=(GPU/'reports/ai/qint_p/bind25-native-worker.log').read_text(encoding='utf-8-sig')
+    if 'Ran 56 tests' not in raw or 'FAILED (errors=1, skipped=9)' not in raw:raise RuntimeError('Original suite receipt differs')
+    summary={'session':'PC-QINT-P-20261109-09','appRevision':REV,'python':sys.version.split()[0],
+        'workerSHA256':sha(SOURCE/'worker.py'),'testedWindowsSourceLineEndings':'LF bytes from Git blob',
+        'originalSuite':{'run':56,'passed':46,'skipped':9,'errors':1,'failures':0,
+            'skipReasons':{'POSIX_only_drain':5,'symlink_privilege':4},
+            'error':'shutil.copytree reads synthetic locked byte before binding assertion; Windows PermissionError',
+            'test':'SharedGpuAdmissionTests.test_copied_coordination_with_identical_policy_refused_while_canonical_held'},
+        'coordinatorPolicySHA256':POLICY_SHA,'guardSHA256':own.GUARD_HASH,'lockIdentity':list(identity),
+        'nativePolicyBindingACK':'PASS focused identity/hash/shape; original suite is NOT all-PASS',
+        'placement':'worker sole OS byte0 owner; direct Qwen adapter; no nested guard; release after owned-tree drain',
+        'actualOperatorApprovalInstalled':own.POLICY.exists(),'reviewedHTTPSOrigin':False,'scopedTokenVerified':False,
+        'canonicalProjectRef':own.BACKEND_REF,'smokeFallbackAllowed':False,'CUDAStarted':False,'QwenSlotGranted':False,
+        'backendPreflightComplete':False,'readyForRealAppQwen':False,'recordedAtUtc':now}
+    crlf=SOURCE/'worker.py'
+    mirror=ROOT/'native_bind25/checkout-crlf/scripts/worker/worker.py'
+    mirror.parent.mkdir(parents=True,exist_ok=True)
+    mirror.write_bytes(crlf.read_bytes().replace(b'\r\n',b'\n').replace(b'\n',b'\r\n'))
+    summary['workerCRLFReviewMirrorSHA256']=sha(mirror)
+    summary['workerCRLFMirrorNormalizedMatchesTestedLF']=mirror.read_bytes().replace(b'\r\n',b'\n')==crlf.read_bytes()
+    summary['adapterSourcesSHA256']={name:sha(ROOT/name) for name in ['worker_cli.py','worker_admission.py','wire.py','runner.py','boundary.py']}
+    (REPORT/'checkpoint.json').write_text(json.dumps(summary,indent=2)+'\n')
+    plan={'session':summary['session'],'kind':'disabled config plan; binding helper only, not runtime enrollment/config',
+        'ready':False,'missing':['reviewed serving HTTPS origin and exact revision','private scoped canonical worker enrollment/token',
+            'backend migration/recovery preflight','reviewed operator approval','finite pc-ai slot from PC3D'],
+        'workerConfig':config,'credentialsReadOrStored':False,'operatorApprovalInstalled':False}
+    (COORD/'qint-p-bind25-private-config-plan.json').write_text(json.dumps(plan,indent=2)+'\n')
+    (COORD/'qint-p-bind25-native-ack.json').write_text(json.dumps(summary,indent=2)+'\n')
+    (COORD/'qint-p-runtime-checkpoint.json').write_text(json.dumps(summary,indent=2)+'\n')
+    print(json.dumps({'policyVerified':True,'lockIdentity':list(identity),'policySHA256':POLICY_SHA,
+        'workerCRLFsha256':summary['workerCRLFReviewMirrorSHA256'],'nativeBindingACK':'focused PASS',
+        'originalSuiteAllPass':False,'realAppReady':False,'CUDAStarted':False}))
+
+if __name__=='__main__':main()

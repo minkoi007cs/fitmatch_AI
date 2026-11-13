@@ -1,0 +1,112 @@
+{
+  "session": "PC-QINT-P-20261107-01",
+  "tests_run": 100,
+  "passed": 99,
+  "failures": 0,
+  "errors": 0,
+  "skipped": [
+    "Native file-link case Not run: Windows1314; no elevation requested"
+  ],
+  "seconds": 6.437,
+  "cuda_imported": false,
+  "model_loaded": false,
+  "native_events": [
+    {
+      "test": "test_cpu_child_crash_exit7",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "exit": 7,
+      "all_job_processes_exited": true
+    },
+    {
+      "test": "test_exclusion_then_normal_unload",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "contender_exit": 75,
+      "child_launch_refused": true,
+      "launcher_pid": 556,
+      "actual_interpreter": {
+        "pid": 22772,
+        "parent_pid": 556,
+        "creation_time": 1794057837.2058992,
+        "mode": "hold",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false
+      },
+      "all_job_processes_exited": true
+    },
+    {
+      "test": "test_injected_low_ram_exit86_without_real_pressure",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "exit": 86,
+      "injected_values": [
+        2147483648,
+        536870912,
+        536870912,
+        536870912
+      ],
+      "physical_pressure_created": false,
+      "all_job_processes_exited": true
+    },
+    {
+      "test": "test_owned_guard_crash_kill_on_close",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "guard_creation_time": 1794057838.194332,
+      "actual_interpreter": {
+        "pid": 31568,
+        "parent_pid": 11720,
+        "creation_time": 1794057838.2972155,
+        "mode": "tree",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false,
+        "grandchild_launcher_pid": 13164
+      },
+      "grandchild": {
+        "pid": 31604,
+        "parent_pid": 13164,
+        "creation_time": 1794057838.4750872,
+        "mode": "hold",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false
+      },
+      "unrelated_sentinel_survived": true,
+      "recovery_exit": 0
+    },
+    {
+      "test": "test_slot_refused_before_child_launch",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "exit": 75,
+      "child_launch_refused": true
+    },
+    {
+      "test": "test_timeout_drains_child_and_grandchild",
+      "passed": true,
+      "scope": "isolated CPU-only Windows processes",
+      "exit": 124,
+      "launcher_pid": 6532,
+      "actual_interpreter": {
+        "pid": 18816,
+        "parent_pid": 6532,
+        "creation_time": 1794057839.2831779,
+        "mode": "tree",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false,
+        "grandchild_launcher_pid": 12096
+      },
+      "grandchild": {
+        "pid": 29716,
+        "parent_pid": 12096,
+        "creation_time": 1794057839.4744937,
+        "mode": "hold",
+        "synthetic_cpu_load": true,
+        "gpu_model_loaded": false
+      },
+      "all_job_processes_exited": true
+    }
+  ],
+  "peak_working_set": 41754624,
+  "exit_code": 0
+}

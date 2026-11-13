@@ -1,0 +1,47 @@
+{
+  "reason": "candidates need logoPresence=visible",
+  "value": {
+    "contractVersion": "fitmatch.garment-analysis.result.v1",
+    "binding": {
+      "jobId": "11111111-2222-4333-8444-555555555555",
+      "analysisId": "22222222-3333-4444-8555-666666666666",
+      "itemId": "33333333-4444-4555-8666-777777777777",
+      "imageAssetId": "44444444-5555-4666-8777-888888888888",
+      "imageSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "modelRevision": {
+      "model": "Qwen/Qwen3-VL-4B-Instruct",
+      "revision": "0123456789abcdef0123456789abcdef01234567"
+    },
+    "policyRevision": "qint.1",
+    "rawOutputSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "outcome": "proposal",
+    "abstainReason": null,
+    "attributes": {
+      "category": "tshirt",
+      "dominantColors": [
+        "red",
+        "white"
+      ],
+      "pattern": "printed",
+      "logoPresence": "not_visible",
+      "neckline": "crew",
+      "sleeves": "short"
+    },
+    "candidateLogoTexts": [
+      "FITMATCH"
+    ],
+    "ocrStatus": "unverified",
+    "approvedForAutoApply": false,
+    "evidence": {
+      "attempts": 1,
+      "outputTokens": 120,
+      "durationMs": 8400,
+      "gpuMiB": {
+        "baseline": 600,
+        "peak": 5300,
+        "after": 610
+      }
+    }
+  }
+}

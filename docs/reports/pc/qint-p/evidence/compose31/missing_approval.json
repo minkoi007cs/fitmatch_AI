@@ -1,0 +1,111 @@
+{
+  "case": "missing_approval",
+  "passed": true,
+  "adapter": "real unmodified qint_p CLI",
+  "workerExit": 0,
+  "CLIError": {
+    "success": false,
+    "code": "GPU_BUSY"
+  },
+  "HTTPEvents": [
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "claim",
+      "stateAfter": {
+        "state": "running",
+        "attempt": 1,
+        "deferrals": 0,
+        "errorCode": null,
+        "resultStored": false
+      }
+    },
+    {
+      "HTTP": "GET",
+      "route": "synthetic-image",
+      "bytes": 693
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "fail",
+      "code": "GPU_BUSY",
+      "stateAfter": {
+        "state": "queued",
+        "attempt": 0,
+        "deferrals": 1,
+        "errorCode": "GPU_BUSY",
+        "resultStored": false
+      },
+      "nativeProof": {
+        "adapterInterpreterCount": 1,
+        "nativeAdapterHandlesAllSignaledAtHTTPReport": true,
+        "adapterCredentialsRemoved": true,
+        "torchImportAttempted": false,
+        "syntheticLockHeldAtHTTPReport": true
+      }
+    }
+  ],
+  "syntheticFinalJobState": {
+    "state": "queued",
+    "attempt": 0,
+    "deferrals": 1,
+    "errorCode": "GPU_BUSY",
+    "resultStored": false
+  },
+  "syntheticStateModelOnly": true,
+  "actualWorkerCheckpointStage": "failed",
+  "resultFileCreated": false,
+  "syntheticLockReleasableAfterOwnedTreeDrain": true,
+  "outerWindowsJobDrained": true,
+  "torchImportedOrAttempted": false,
+  "seconds": 1.328
+}

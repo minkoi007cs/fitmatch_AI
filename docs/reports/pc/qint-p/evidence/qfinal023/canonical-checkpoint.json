@@ -1,0 +1,27 @@
+{
+  "version": "qint-p.canonical-checkpoint.v1",
+  "kind": "metadata only, not an installed worker config",
+  "session": "PC-QINT-P-20261108-06",
+  "expectedConfig": {
+    "gpuLock": "<GPU_ROOT>/coordination/gpu0.lock",
+    "gpuSlot": "<GPU_ROOT>/coordination/gpu0-slot.json",
+    "gpuSlotOwner": "pc-ai",
+    "gpuGuard": {
+      "path": "<GPU_ROOT>/fitmatch_AI/workers/windows/gpu_guard.py",
+      "sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c"
+    }
+  },
+  "placement": "worker sole byte0 owner, direct Qwen adapter; no nested guard/env-only proof",
+  "modelRevision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "latestAppUnderReview": "579ece2f4d7eb1b5336fec1469d5965ab9d8f919",
+  "finalApprovedTransport": null,
+  "startupBindingACK": "WITHHELD QREV-BIND-02",
+  "cleanupGate": "FOCUSED PASS by Codex PROC0023 on579ece2; not whole privacy/integration acceptance",
+  "knownCleanupLimit": "long upload plus app death after grace remains documented",
+  "dedicatedTestEnvironmentReady": false,
+  "QwenSlotGranted": false,
+  "operatorApprovalInstalled": false,
+  "GPUStarted": false,
+  "personalImageRead": false,
+  "recordedAtUtc": "2026-11-09T02:26:20.370651+00:00"
+}

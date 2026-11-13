@@ -1,0 +1,197 @@
+"""Review-only worker-held admission bridge. Reads/probes; never owns/releases the GPU lock.
+
+Local operator approval + pinned worker/config + actual ancestor + Job membership
+are required in addition to the environment hint. No approval file is installed.
+"""
+import ctypes as C
+from ctypes import wintypes as W
+import hashlib
+import msvcrt
+import os
+import re
+from pathlib import Path
+import time
+from urllib.parse import urlsplit
+
+import psutil
+from boundary import Refused, strict_json, finite, slot, safe_file
+from admission import GPU, COORD, GUARD, LOCK
+
+GUARD_HASH = '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c'
+POLICY = COORD/'qint-worker-test-approval.json'
+BACKEND_REF = 'gohczmqykjkrgdblgbog'
+GATES = {'contract','production_drain','worker_placement','slot_bridge','backend_preflight','native_binding','serving_revision'}
+
+def read(path, limit=32768):
+    with Path(path).open('rb') as stream:
+        data = stream.read(limit+1)
+    try:
+        return strict_json(data.decode('utf-8-sig'),limit)
+    except (UnicodeError,ValueError):
+        raise Refused('GPU_BUSY') from None
+
+def digest(path):
+    if Path(path).stat().st_size > 1024**2:
+        raise Refused('GPU_BUSY')
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+def validate_policy(policy):
+    fields = {'version','enabled','scope','reviews','app_revision','contract_revision',
+        'transport_revision','transport_path','transport_sha256','transport_python_exe',
+        'config_path','config_sha256','work_dir','guard_sha256','lock_path','coordinator_sha256','app_origin'}
+    if (type(policy) is not dict or set(policy)!=fields or policy['version']!='qint-p.worker-admission.v2'
+        or policy['enabled'] is not True or policy['scope']!='authorized_wardrobe_pilot'
+        or type(policy['reviews']) is not dict or set(policy['reviews'])!=GATES
+        or any(value!='PASS' for value in policy['reviews'].values())
+        or policy['guard_sha256']!=GUARD_HASH or policy['lock_path']!=str(LOCK)):
+        raise Refused('GPU_BUSY')
+    for key,length in [('app_revision',40),('contract_revision',40),('transport_revision',40),
+                       ('transport_sha256',64),('config_sha256',64),('coordinator_sha256',64)]:
+        value=policy[key]
+        if type(value) is not str or len(value)!=length or any(c not in '0123456789abcdef' for c in value):
+            raise Refused('GPU_BUSY')
+    for key in ['transport_path','transport_python_exe','config_path','work_dir']:
+        if type(policy[key]) is not str or not Path(policy[key]).is_absolute():
+            raise Refused('GPU_BUSY')
+    if not reviewed_origin(policy['app_origin']):raise Refused('GPU_BUSY')
+    return policy
+
+def reviewed_origin(value):
+    if type(value) is not str:return False
+    try:
+        url=urlsplit(value)
+        return (url.scheme=='https' and bool(url.hostname) and url.username is None and url.password is None
+                and url.path=='' and not url.query and not url.fragment
+                and url.hostname not in {'localhost','127.0.0.1','::1'}
+                and not url.hostname.endswith(('.invalid','.example','.supabase.co'))
+                and (url.port is None or 1<=url.port<=65535))
+    except ValueError:return False
+
+def job_root_for(manifest, value, policy):
+    manifest=Path(manifest).absolute()
+    root=manifest.parent
+    expected=Path(policy['work_dir'])/'jobs'/value['jobId']
+    if (manifest.name!='input.json' or root.parent!=expected or not re.fullmatch(r'a[1-3]-[0-9a-f]{8}',root.name)):
+        raise Refused('INVALID_INPUT')
+    safe_file(manifest,Path(policy['work_dir']))
+    return root
+
+def worker_ancestor(policy, ancestors):
+    """Records must be obtained from psutil in verify(), never from the request/env."""
+    matches=[]
+    for process in ancestors:
+        args=process['cmdline']
+        if (process['exe']!=policy['transport_python_exe'] or not finite(process['creation_time'])
+            or process['creation_time']<=0 or type(process['pid']) is not int or process['pid']<=0):
+            continue
+        # Deliberately require absolute operator launch paths. No cwd guessing or module alias.
+        expected=[policy['transport_path'],'--config',policy['config_path']]
+        if len(args) in {4,5} and args[1:4]==expected and (len(args)==4 or args[4]=='--once'):
+            matches.append(process)
+    if len(matches)!=1:
+        raise Refused('GPU_BUSY')
+    return matches[0]
+
+def validate_worker_config(config,policy):
+    if (type(config) is not dict or any(key in config for key in ['gpuLock','gpuSlot','gpuGuard'])
+        or config.get('processContainment','required')!='required'
+        or config.get('workDir')!=policy['work_dir']
+        or config.get('gpuSlotOwner')!='pc-ai'
+        or config.get('gpuCoordinator')!={'path':str(COORD/'gpu-coordinator.json'),'sha256':policy['coordinator_sha256']}
+        or config.get('expectedBackend')!={'projectRef':BACKEND_REF,'appOrigin':policy['app_origin']}
+        or type(config.get('appUrl')) is not str
+        or config.get('appUrl','').rstrip('/')!=policy['app_origin']):
+        raise Refused('GPU_BUSY')
+
+def coordinator_binding(policy):
+    """Read the 3D-issued policy; never creates a policy/lock/slot or acquires the GPU lock."""
+    path=COORD/'gpu-coordinator.json'
+    for item in [path,LOCK,COORD/'gpu0-slot.json',GUARD]:
+        safe_file(item,GPU)
+    if digest(path)!=policy['coordinator_sha256']:raise Refused('GPU_BUSY')
+    value=read(path)
+    if (type(value) is not dict or set(value)-{'kind','coordinator','lock','slot','guard','owners','issuedAtUtc','note'}
+        or value.get('kind')!='fitmatch.gpu-coordinator.v1' or value.get('coordinator')!='pc-3d'
+        or value.get('owners')!=['pc-3d','pc-ai'] or value.get('slot')!={'name':'gpu0-slot.json'}
+        or value.get('guard')!={'relativeToWorkspace':'fitmatch_AI/workers/windows/gpu_guard.py','sha256':GUARD_HASH}):
+        raise Refused('GPU_BUSY')
+    identity=value.get('lock')
+    if (type(identity) is not dict or set(identity)!={'name','volume','fileId'} or identity['name']!='gpu0.lock'
+        or any(type(identity[key]) is not int or identity[key]<0 for key in ['volume','fileId'])):
+        raise Refused('GPU_BUSY')
+    expected=(identity['volume'],identity['fileId'])
+    actual=LOCK.stat()
+    with LOCK.open('rb') as handle:
+        opened=os.fstat(handle.fileno())
+        if any((row.st_dev,row.st_ino)!=expected for row in [actual,opened]):raise Refused('GPU_BUSY')
+    return expected
+
+def lock_is_held():
+    """A failed nonblocking byte0 probe is required. An unlocked file is immediately released/refused."""
+    if LOCK.stat().st_size<1:
+        raise Refused('GPU_BUSY')
+    with LOCK.open('r+b') as stream:
+        stream.seek(0)
+        try:
+            msvcrt.locking(stream.fileno(),msvcrt.LK_NBLCK,1)
+        except OSError as error:
+            if error.errno not in {13,36}:
+                raise Refused('GPU_BUSY') from error
+        else:
+            stream.seek(0)
+            msvcrt.locking(stream.fileno(),msvcrt.LK_UNLCK,1)
+            raise Refused('GPU_BUSY')
+
+def in_windows_job():
+    kernel=C.WinDLL('kernel32',use_last_error=True)
+    kernel.GetCurrentProcess.restype=W.HANDLE
+    kernel.IsProcessInJob.argtypes=[W.HANDLE,W.HANDLE,C.POINTER(W.BOOL)]
+    kernel.IsProcessInJob.restype=W.BOOL
+    inside=W.BOOL()
+    if not kernel.IsProcessInJob(kernel.GetCurrentProcess(),None,C.byref(inside)) or not inside.value:
+        raise Refused('GPU_BUSY')
+    # Anonymous per-adapter Job ownership is vouched for by the pinned reviewed
+    # transport. This generic membership check alone does not authenticate a parent.
+
+def verify(manifest,value,policy_path=POLICY):
+    try:
+        policy=validate_policy(read(policy_path))
+        if (os.environ.get('FITMATCH_GPU_LOCK_HELD_BY')!='worker'
+            or os.environ.get('FITMATCH_GPU_LOCK_PATH')!=str(LOCK)):
+            raise Refused('GPU_BUSY')
+        if digest(GUARD)!=GUARD_HASH:
+            raise Refused('GPU_BUSY')
+        for path_key,hash_key in [('transport_path','transport_sha256'),('config_path','config_sha256')]:
+            path=Path(policy[path_key]);safe_file(path,path.parent)
+            if digest(path)!=policy[hash_key]:raise Refused('GPU_BUSY')
+        config=read(policy['config_path'])
+        validate_worker_config(config,policy)
+        identity=coordinator_binding(policy)
+        root=job_root_for(manifest,value,policy)
+        records=[]
+        for process in psutil.Process().parents():
+            records.append({'pid':process.pid,'creation_time':process.create_time(),
+                'exe':process.exe(),'cmdline':process.cmdline()})
+        parent=worker_ancestor(policy,records)
+        # Recheck PID creation identity after source/config reads.
+        if psutil.Process(parent['pid']).create_time()!=parent['creation_time']:
+            raise Refused('GPU_BUSY')
+        slot(read(COORD/'gpu0-slot.json'),time.time())
+        lock_is_held()
+        in_windows_job()
+        if psutil.virtual_memory().available<4*1024**3:
+            raise Refused('MEMORY_PRESSURE')
+        return {'placement':'worker_owns_byte0','worker_pid':parent['pid'],
+            'worker_creation_time':parent['creation_time'],'actual_pid':os.getpid(),
+            'actual_creation_time':psutil.Process().create_time(),'guard_sha256':GUARD_HASH,
+            'coordinator_sha256':policy['coordinator_sha256'],'lock_identity':list(identity)}
+    except Refused as error:
+        if error.code in {'INVALID_INPUT','MEMORY_PRESSURE'}:raise
+        raise Refused('GPU_BUSY') from None
+    except (OSError,ValueError,KeyError,TypeError,psutil.Error):
+        raise Refused('GPU_BUSY') from None
+
+class WorkerChild:
+    def __init__(self,verify_callback):self.verify=verify_callback
+    def admit(self):self.verify()
+    def finish(self):return 'awaiting_worker_owned_tree_drain'

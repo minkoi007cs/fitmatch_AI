@@ -1,0 +1,47 @@
+{
+  "session": "PC-QINT-P-20261109-09",
+  "appRevision": "f80749a65b47441958e7c6fc485034d7efe446df",
+  "python": "3.10.22",
+  "workerSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "testedWindowsSourceLineEndings": "LF bytes from Git blob",
+  "originalSuite": {
+    "run": 56,
+    "passed": 46,
+    "skipped": 9,
+    "errors": 1,
+    "failures": 0,
+    "skipReasons": {
+      "POSIX_only_drain": 5,
+      "symlink_privilege": 4
+    },
+    "error": "shutil.copytree reads synthetic locked byte before binding assertion; Windows PermissionError",
+    "test": "SharedGpuAdmissionTests.test_copied_coordination_with_identical_policy_refused_while_canonical_held"
+  },
+  "coordinatorPolicySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "lockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "nativePolicyBindingACK": "PASS focused identity/hash/shape; original suite is NOT all-PASS",
+  "placement": "worker sole OS byte0 owner; direct Qwen adapter; no nested guard; release after owned-tree drain",
+  "actualOperatorApprovalInstalled": false,
+  "reviewedHTTPSOrigin": false,
+  "scopedTokenVerified": false,
+  "canonicalProjectRef": "gohczmqykjkrgdblgbog",
+  "smokeFallbackAllowed": false,
+  "CUDAStarted": false,
+  "QwenSlotGranted": false,
+  "backendPreflightComplete": false,
+  "readyForRealAppQwen": false,
+  "recordedAtUtc": "2026-11-10T02:14:27.769314+00:00",
+  "workerCRLFReviewMirrorSHA256": "ec9df0b049feac6a14580da525657d25fb29f2663166a4b4c96a52a6baa33ddd",
+  "workerCRLFMirrorNormalizedMatchesTestedLF": true,
+  "adapterSourcesSHA256": {
+    "worker_cli.py": "1f3c26b10f67dd92461dbbba385d3499d10f1e726172454e320d7f2c8b3eebb8",
+    "worker_admission.py": "b5f92a1365a87cbd9d75ccba153b3967d6f57f3d79eedaba0b56f83626eca78a",
+    "wire.py": "66a329c51d518aa193fb3d289d42252da374cd35af11732158f7f69c4b35823a",
+    "runner.py": "4dfd7364e1f41c1c0ba5fe4187acb2a4c53e719424b9c819e10876e63f5d9d40",
+    "boundary.py": "34c3dae15a7c1087c0f7a93b2698660d291be65f01a869a4e7e55eb68e4a3657"
+  }
+}

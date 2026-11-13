@@ -1,0 +1,34 @@
+{
+  "cases": [
+    {
+      "case": "CPU_image_inspection",
+      "exit_code": 0,
+      "result": {
+        "status": "cpu_inspection_passed",
+        "model_loaded": false,
+        "wire_contract": "pending_Claude_ACK",
+        "image_size": [
+          214,
+          320
+        ],
+        "approved_for_auto_apply": false,
+        "gpu_execution": "Not run",
+        "torch_imported": false
+      }
+    },
+    {
+      "case": "execute_without_new_ACK",
+      "exit_code": 2,
+      "result": {
+        "status": "error",
+        "model_loaded": false,
+        "wire_contract": "pending_Claude_ACK",
+        "error_code": "admission_evidence_unavailable",
+        "torch_imported": false
+      }
+    }
+  ],
+  "network_used": false,
+  "model_loaded": false,
+  "guard_lock_taken": false
+}

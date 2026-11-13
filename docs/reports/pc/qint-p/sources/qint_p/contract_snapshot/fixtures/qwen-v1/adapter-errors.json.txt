@@ -1,0 +1,35 @@
+{
+  "valid": [
+    {
+      "success": false,
+      "code": "GPU_BUSY"
+    },
+    {
+      "success": false,
+      "code": "MEMORY_PRESSURE"
+    },
+    {
+      "success": false,
+      "code": "INVALID_OUTPUT"
+    },
+    {
+      "success": false,
+      "code": "MODEL_UNAVAILABLE"
+    }
+  ],
+  "invalid": [
+    {
+      "success": false,
+      "code": "FAKE"
+    },
+    {
+      "success": true,
+      "code": "OOM"
+    },
+    {
+      "success": false,
+      "code": "OOM",
+      "message": "traceback"
+    }
+  ]
+}

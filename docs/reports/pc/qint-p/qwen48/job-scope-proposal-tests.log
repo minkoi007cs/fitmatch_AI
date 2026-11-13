@@ -1,0 +1,13 @@
+test_exact_target_accepts_as_pure_data (test_job_scope48.JobScopeTests) ... ok
+test_existing_unpinned_policy_shape_is_preserved (test_job_scope48.JobScopeTests) ... ok
+test_invalid_job_pin_is_not_a_wildcard (test_job_scope48.JobScopeTests) ... ok
+test_mismatch_refuses_before_environment_or_native_proof (test_job_scope48.JobScopeTests) ... ok
+test_other_or_missing_job_refuses (test_job_scope48.JobScopeTests) ... ok
+test_target_pin_does_not_bypass_existing_review_gates (test_job_scope48.JobScopeTests) ... ok
+test_target_pin_does_not_bypass_real_admission (test_job_scope48.JobScopeTests) ... ok
+test_unrecognized_policy_field_still_refuses (test_job_scope48.JobScopeTests) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.006s
+
+OK

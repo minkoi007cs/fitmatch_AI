@@ -1,0 +1,155 @@
+{
+  "source_revision": "f80749a65b47441958e7c6fc485034d7efe446df",
+  "files": [
+    {
+      "path": "docs/qwen-contract-v1.md",
+      "sha256": "aebf025eb48bcc0a04e628900d58a02fb98f43a254ad72f69ad30eb56341c533",
+      "bytes": 8869
+    },
+    {
+      "path": "fixtures/qwen-v1/adapter-errors.json",
+      "sha256": "88f41b906f5d27c9ec40e18e7ab7460aa287cc59360dc7c4ecf98f8bfc45d7ca",
+      "bytes": 510
+    },
+    {
+      "path": "fixtures/qwen-v1/adapter-input.json",
+      "sha256": "4faaf65f6feefa5b881eb0f58c5a99e9f2d61b73f136144e6a7831602193c6ae",
+      "bytes": 1222
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/abstained-with-attributes.json",
+      "sha256": "d780ba8d9c56daf1d185d623e55eecfc7e077638c6afc2d166f8c5ce43e8626c",
+      "bytes": 1340
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/bad-binding-hash.json",
+      "sha256": "6df07b114fb9eae5dc1e8d6b49451c65f27469f8b0863b5f1b94514f5f0f0475",
+      "bytes": 1315
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/duplicate-colors.json",
+      "sha256": "cb101f350b6d90fbb5813c3a05466296edd5f58fceb3498eef14254bde629b09",
+      "bytes": 1310
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/extra-field.json",
+      "sha256": "d587b72b638e0af7717af5278b8eb58c88b215a3a1476ea4844440de36c20bba",
+      "bytes": 1380
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/logo-without-visible.json",
+      "sha256": "cf0a4f5f931d74e3f918577cd55592a929192873ad58f93b8f24ca05b9975723",
+      "bytes": 1339
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/long-logo-text.json",
+      "sha256": "3350b98a8ffcd601effc2bbc9157e3c2bc4cdc2ee954710cccf30a3ec40cd788",
+      "bytes": 1336
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/material-field.json",
+      "sha256": "8c2a1428e8a02e61fc09a876cedc412a79000f5961d3995f5d3b602259de064b",
+      "bytes": 1350
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/ocr-status-mismatch.json",
+      "sha256": "1814becaa3077ed8e4b346a8167dfa972e0183532d0446fdd0cc055f989146ed",
+      "bytes": 1352
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/proposal-without-attributes.json",
+      "sha256": "2c413002ef8ea8c1dec9a459a9990145a7f742015b845cd2d8ef93119022e33d",
+      "bytes": 1115
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/self-approved.json",
+      "sha256": "e78df14e23e968fbeab0900b337515daa49c32a57d4d3dea82566a2728e7ee83",
+      "bytes": 1318
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/too-many-attempts.json",
+      "sha256": "11b55d997c416c1f0ae7d43e3e715d8c3cb7d01c98d1bca8eaa7fea0ff43559c",
+      "bytes": 1320
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/too-many-logo-texts.json",
+      "sha256": "86905b736fe73cbdcafc2af02122fc608d73fdfcb80e2b229c2a6b9cc04c6577",
+      "bytes": 1352
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/too-many-tokens.json",
+      "sha256": "9184e01576dd7e82d81307be26a600989293db3a78f21bc4a794be359651ac52",
+      "bytes": 1320
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/unknown-contract-version.json",
+      "sha256": "9693cf669df9f4a6e7399e21085f2a1e97db65362fc3ae5e2bd35e795826cde2",
+      "bytes": 1312
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/url-instead-of-binding.json",
+      "sha256": "a070dbb2a43557a964dd111cd2430680ed91d68475716591a866346d9a0e0dd7",
+      "bytes": 1364
+    },
+    {
+      "path": "fixtures/qwen-v1/invalid/wrong-policy.json",
+      "sha256": "63100c476971313f3be724e6344e87d2ae4920ec2454359f989dcc0bbe9d0394",
+      "bytes": 1328
+    },
+    {
+      "path": "fixtures/qwen-v1/valid/result-abstained-ambiguous.json",
+      "sha256": "6f19d505c7a4cb0d95b3eb3ea6d314584afa265d2c8b9aa06ddfbe086aa21bcd",
+      "bytes": 993
+    },
+    {
+      "path": "fixtures/qwen-v1/valid/result-proposal-jeans-no-logo.json",
+      "sha256": "7f6592de5a15a1ad1b207d2ef5cfe00a62a58e13e4164238f4d5ff0ee4492ad9",
+      "bytes": 1107
+    },
+    {
+      "path": "fixtures/qwen-v1/valid/result-proposal-tee.json",
+      "sha256": "5c8d8ef6b0b1fb5e0ea6dd65cd6d3366f3fe01d33aa2c0edb7f50d664f9b87b1",
+      "bytes": 1182
+    },
+    {
+      "path": "fixtures/qwen-v1/valid/result-unknown-values.json",
+      "sha256": "173fa803e118aaff38586ab10d65854ddffa8806268fccae63ecd2de76848225",
+      "bytes": 1162
+    },
+    {
+      "path": "schemas/qwen-v1/analysis-adapter-error.json",
+      "sha256": "44dc51bc1c344cdf94e62444d53591a971eab6010b11448d06446c4c5760173c",
+      "bytes": 592
+    },
+    {
+      "path": "schemas/qwen-v1/analysis-adapter-input.json",
+      "sha256": "8ae32f516680f9a48a37646a3cbf3ea6b4a939c0565011634ddf11722d74c60f",
+      "bytes": 4491
+    },
+    {
+      "path": "schemas/qwen-v1/analysis-confirm-request.json",
+      "sha256": "9b6fbe00ee4ecce1866be05e2b223eff35e60a06932fe8635c58fcf0c5078999",
+      "bytes": 2099
+    },
+    {
+      "path": "schemas/qwen-v1/analysis-request.json",
+      "sha256": "6a1b744c95c47c00fc0b8d7b79262729497139d503948185978ae68afd70714a",
+      "bytes": 386
+    },
+    {
+      "path": "schemas/qwen-v1/analysis-result-request.json",
+      "sha256": "2280706ff85e2101ae2378640edb73b9a300f244e1b9c75cc2158b06182fe529",
+      "bytes": 611
+    },
+    {
+      "path": "schemas/qwen-v1/analysis-result.json",
+      "sha256": "3e8d58507657442245bed47b2ebd0f98a46317cfa423c54055daa6cef4101b0f",
+      "bytes": 8067
+    },
+    {
+      "path": "scripts/check-qwen-contract.py",
+      "sha256": "9993eefc2c2d851fb6104e92ea3212a2b5a0d5aef93b17821d663004c707c1e8",
+      "bytes": 2403
+    }
+  ]
+}

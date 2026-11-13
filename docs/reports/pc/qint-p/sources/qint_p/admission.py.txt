@@ -1,0 +1,104 @@
+"""Read-only verification of external guard placement; no slot writes or lock wrapper."""
+import ctypes as C
+from ctypes import wintypes as W
+import hashlib
+import msvcrt
+import os
+from pathlib import Path
+import time
+import psutil
+from boundary import Refused, OLD_GUARD, strict_json, slot
+
+GPU = Path(__file__).resolve().parents[2]
+COORD = GPU / 'coordination'
+GUARD = GPU / 'fitmatch_AI' / 'workers' / 'windows' / 'gpu_guard.py'
+LOCK = COORD / 'gpu0.lock'
+ACK = COORD / 'qint-p-guard-ack.json'
+APPROVAL = COORD / 'qint-test-approval.json'
+
+def read(path):
+    return strict_json(path.read_text(encoding='utf-8-sig'), 32768)
+
+def approval(ack, approved, guard_hash):
+    if (type(ack) is not dict or ack.get('version') != 'qint-p.guard-ack.v1'
+        or ack.get('guardSha256') != guard_hash or guard_hash == OLD_GUARD
+        or ack.get('lockPath') != str(LOCK) or ack.get('guardPath') != str(GUARD)
+        or ack.get('placement') != 'external_guard_owns_byte0'
+        or ack.get('independent_cpu_retest') is not True):
+        raise Refused('guard_ack_missing_or_stale')
+    if (type(approved) is not dict or approved.get('status') != 'approved_for_disposable_test'
+        or approved.get('guardSha256') != guard_hash
+        or approved.get('contract_review') != 'PASS' or approved.get('production_drain_review') != 'PASS'
+        or any(not isinstance(approved.get(key), str) or len(approved[key]) != 40
+               or any(ch not in '0123456789abcdef' for ch in approved[key])
+               for key in ['app_revision', 'contract_revision', 'transport_revision'])):
+        raise Refused('integration_review_pending')
+
+def windows_membership(state):
+    kernel = C.WinDLL('kernel32', use_last_error=True)
+    kernel.OpenJobObjectW.argtypes = [W.DWORD, W.BOOL, W.LPCWSTR]
+    kernel.OpenJobObjectW.restype = W.HANDLE
+    kernel.GetCurrentProcess.restype = W.HANDLE
+    kernel.IsProcessInJob.argtypes = [W.HANDLE, W.HANDLE, C.POINTER(W.BOOL)]
+    kernel.IsProcessInJob.restype = W.BOOL
+    kernel.CloseHandle.argtypes = [W.HANDLE]
+    kernel.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
+    kernel.OpenProcess.restype = W.HANDLE
+    kernel.GetProcessTimes.argtypes = [W.HANDLE, C.POINTER(W.FILETIME), C.POINTER(W.FILETIME), C.POINTER(W.FILETIME), C.POINTER(W.FILETIME)]
+    kernel.GetProcessTimes.restype = W.BOOL
+    name = state.get('jobName')
+    if not isinstance(name, str) or not name.startswith('Global\\FitmatchGPU0Setup-'):
+        raise Refused('job_membership_missing')
+    handle = kernel.OpenJobObjectW(4, False, name)
+    if not handle:
+        raise Refused('job_membership_unavailable')
+    try:
+        inside = W.BOOL()
+        if not kernel.IsProcessInJob(kernel.GetCurrentProcess(), handle, C.byref(inside)) or not inside.value:
+            raise Refused('not_in_guard_job')
+    finally:
+        kernel.CloseHandle(handle)
+    process = kernel.OpenProcess(0x1000, False, state['childPid'])
+    if not process:
+        raise Refused('guard_child_missing')
+    try:
+        times = [W.FILETIME() for _ in range(4)]
+        if not kernel.GetProcessTimes(process, *(C.byref(item) for item in times)):
+            raise Refused('guard_child_identity_unavailable')
+        stamp = (times[0].dwHighDateTime << 32) | times[0].dwLowDateTime
+        if type(state.get('childCreationTime')) is not int or stamp != state['childCreationTime']:
+            raise Refused('guard_child_identity_mismatch')
+    finally:
+        kernel.CloseHandle(process)
+
+def verify(label):
+    try:
+        guard_hash = hashlib.sha256(GUARD.read_bytes()).hexdigest()
+        approval(read(ACK), read(APPROVAL), guard_hash)
+        slot(read(COORD / 'gpu0-slot.json'), time.time())
+        state = read(COORD / 'gpu0-state.json')
+        ancestors = {process.pid for process in psutil.Process().parents()}
+        if (type(state) is not dict or state.get('status') != 'running' or state.get('owner') != 'pc-ai'
+            or state.get('label') != label or state.get('killOnJobClose') is not True
+            or type(state.get('guardPid')) is not int or state['guardPid'] not in ancestors
+            or type(state.get('childPid')) is not int or state['childPid'] not in ancestors | {os.getpid()}
+            or state.get('lock') != str(LOCK)):
+            raise Refused('external_guard_not_proved')
+        windows_membership(state)
+        with LOCK.open('r+b') as stream:
+            stream.seek(0)
+            try:
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+            except OSError as error:
+                if error.errno not in {13, 36}:
+                    raise Refused('lock_probe_failed') from error
+            else:
+                stream.seek(0)
+                msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+                raise Refused('guard_lock_not_held')
+        if psutil.virtual_memory().available < 4 * 1024**3:
+            raise Refused('host_memory_admission')
+        return {'guard_sha256': guard_hash, 'placement': 'external_guard_owns_byte0',
+                'actual_pid': os.getpid(), 'creation_time': psutil.Process().create_time()}
+    except (OSError, KeyError, psutil.Error) as error:
+        raise Refused('admission_evidence_unavailable') from error

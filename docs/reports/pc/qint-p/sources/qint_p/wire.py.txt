@@ -1,0 +1,80 @@
+"""Claude v1-r2 contract mapper; schemas/fixtures unchanged at f80749a. GPU still gated by local approval."""
+import hashlib
+import json
+from pathlib import Path
+import time
+from jsonschema import Draft202012Validator
+from boundary import strict_json, Refused, MODEL_REVISION, read_image, safe_file
+from runner import execute_budget, semantic
+
+ROOT = Path(__file__).resolve().parent
+SNAPSHOT = ROOT/'contract_snapshot'
+EXIT = {'GPU_BUSY':75,'MEMORY_PRESSURE':74,'INVALID_OUTPUT':70,'OOM':71,'MODEL_UNAVAILABLE':78,
+        'INVALID_INPUT':2,'TIMEOUT':124,'INFERENCE_FAILED':1}
+
+def validator(name):
+    return Draft202012Validator(json.loads((SNAPSHOT/'schemas/qwen-v1'/f'{name}.json').read_text()))
+
+def validate_input(value, *, require_pinned_model=True):
+    try:
+        validator('analysis-adapter-input').validate(value)
+        asset = value['assets'][0]; binding = value['binding']
+        if value['protocolVersion'] != 1 or value['protocolRevision'] != 'v1-r2':
+            raise ValueError()
+        if (value['jobId'] != binding['jobId'] or asset['assetId'] != binding['imageAssetId']
+            or asset['sha256'] != binding['imageSha256']):
+            raise ValueError()
+    except Exception:
+        raise Refused('INVALID_INPUT') from None
+    if require_pinned_model and value['modelRevision'] != {'model':'Qwen/Qwen3-VL-4B-Instruct','revision':MODEL_REVISION}:
+        raise Refused('MODEL_UNAVAILABLE')
+    return value
+
+def project(raw):
+    return {'attributes':semantic.parse(raw),'hash':hashlib.sha256(raw.encode()).hexdigest()}
+
+def execute(value, image, *, backend, lease, clock=time.monotonic):
+    validate_input(value)
+    start = clock()
+    policy = value['policy']
+    budget = {'attempts':policy['maxSchemaAttempts'],'seconds':policy['timeoutSeconds'],
+              'output_tokens':policy['maxOutputTokens'],'response_bytes':policy['maxResultBytes']}
+    local = execute_budget(budget,image,backend=backend,lease=lease,project=project,clock=clock)
+    if local['status'] != 'requires_human_review':
+        errors = {'gpu_busy':'GPU_BUSY','host_memory_admission':'MEMORY_PRESSURE','gpu_memory_admission':'MEMORY_PRESSURE',
+                  'model_unavailable':'MODEL_UNAVAILABLE',
+                  'out_of_memory':'OOM','timeout':'TIMEOUT','invalid_output':'INVALID_OUTPUT',
+                  'invalid_output_size':'INVALID_OUTPUT','checkpoint_hash_mismatch':'MODEL_UNAVAILABLE',
+                  'checkpoint_size_mismatch':'MODEL_UNAVAILABLE','checkpoint_file_set_changed':'MODEL_UNAVAILABLE'}
+        reason=local.get('error_code')
+        raise Refused(reason if reason in EXIT else errors.get(reason,'INFERENCE_FAILED'))
+    parsed = local['proposal']['attributes']
+    duration = round((clock()-start)*1000)
+    if duration > policy['timeoutSeconds']*1000:
+        raise Refused('TIMEOUT')
+    result = {'contractVersion':'fitmatch.garment-analysis.result.v1','binding':value['binding'],
+        'modelRevision':value['modelRevision'],'policyRevision':policy['policyRevision'],
+        'rawOutputSha256':local['proposal']['hash'],'outcome':'proposal','abstainReason':None,
+        'attributes':{key:parsed[source] for key,source in [('category','category'),('dominantColors','dominant_colors'),
+            ('pattern','pattern'),('logoPresence','logo_presence'),('neckline','neckline'),('sleeves','sleeves')]},
+        'candidateLogoTexts':parsed['logo_texts'], 'ocrStatus':'unverified' if parsed['logo_texts'] else 'not_extracted',
+        'approvedForAutoApply':False,'evidence':{'attempts':local['attempts'],
+            'outputTokens':getattr(backend,'output_tokens',0),'durationMs':duration,'gpuMiB':None}}
+    validator('analysis-result').validate(result)
+    if len(json.dumps(result,ensure_ascii=False).encode()) > policy['maxResultBytes']:
+        raise Refused('INVALID_OUTPUT')
+    return result
+
+def read_input(path):
+    path = Path(path).absolute()
+    if path.stat().st_size > 16384: raise Refused('INVALID_INPUT')
+    return validate_input(strict_json(path.read_text(encoding='utf-8'),16384))
+
+def image_for(value, job_root):
+    asset = value['assets'][0]
+    # The transport creates a private jobdir; it must pass the input file from that directory.
+    path = Path(asset['localPath'])
+    if not path.is_absolute(): path = Path(job_root)/path
+    path = safe_file(path,job_root)
+    if path.stat().st_size != asset['bytes']: raise Refused('INVALID_INPUT')
+    return read_image(path,job_root,asset['sha256'],byte_limit=10*1024**2,require_format='JPEG')

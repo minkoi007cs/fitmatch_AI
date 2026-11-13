@@ -1,0 +1,134 @@
+"""Exact7631 CPU admission inspection. Upstream main uses injected CPU stubs, never networking/GPU."""
+import argparse
+import contextlib
+from datetime import datetime,timezone
+import hashlib
+import importlib.util
+import io
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+from types import SimpleNamespace
+from unittest.mock import patch
+
+import worker_admission as own
+from boundary import Refused
+from candidate_driver import candidate
+from retest_candidate import CASES,NOW,valid
+import wire
+
+ROOT=Path(__file__).resolve().parent
+DOCS=ROOT.parents[2]/'fitmatch-pc-ai-01-docs'
+REV='7631cb00114ddf559c234f1c0f13285dbb7305ab'
+EXPECTED='5f03f523a78e9cb805850e5d7df8e2a37a5b550c205633a1d2f2ba00fb509604'
+
+def sha(data):return hashlib.sha256(data).hexdigest()
+
+def main():
+    report=ROOT.parents[1]/'reports/ai/qint_p/qrev-7631cb00114d'
+    report.mkdir(exist_ok=True)
+    git_source=subprocess.check_output(['git','show',REV+':scripts/worker/worker.py'],cwd=DOCS)
+    assert sha(git_source)=='4035abe547fc42621e9dad237c8f429ddb521253c3e0c2b5aab0a590eed09ceb'
+    source=git_source.replace(b'\r\n',b'\n').replace(b'\n',b'\r\n')  # Exact raw Windows checkout used by QINT-G.
+    assert sha(source)==EXPECTED
+    installed=own.GUARD.read_bytes();assert sha(installed)==own.GUARD_HASH
+    path=report/'worker-source-private.py';path.write_bytes(source)
+    spec=importlib.util.spec_from_file_location('qintp_qrev_readonly_worker',path)
+    worker=importlib.util.module_from_spec(spec);spec.loader.exec_module(worker)
+    contract_count=0
+    for item in json.loads((wire.SNAPSHOT/'pin.json').read_text())['files']:
+        if not item['path'].startswith(('schemas/qwen-v1/','fixtures/qwen-v1/')):continue
+        assert sha(subprocess.check_output(['git','show',REV+':'+item['path']],cwd=DOCS))==item['sha256']
+        contract_count+=1
+    records=[];gaps=[]
+    # Identical finite/type/window decisions, including precise max3600 regression.
+    guard=candidate()
+    for row in CASES:
+        for module,error in [(guard,ValueError),(worker,worker.AdmissionError)]:
+            try:module.validate_slot(row,NOW)
+            except error:pass
+            else:raise AssertionError('Invalid slot accepted')
+    precise=1794057600.1234562
+    for row,now in [(valid(),NOW),({k:v for k,v in valid().items() if k not in {'version','issuedAtUnix'}},NOW),
+                    ({**valid(now=precise),'admitUntilUnix':precise+3600},precise)]:
+        assert worker.validate_slot(row,now)==guard.validate_slot(row,now)=='pc-ai'
+    records.append({'case':'guard_worker_slot_matrix','invalid':len(CASES),'valid':3,'passed':True})
+    with tempfile.TemporaryDirectory(prefix='cpu-',dir=report) as temporary:
+        root=Path(temporary).absolute();config_path=root/'config.json'
+        other=root/'other-existing.lock';other.write_bytes(b'0')
+        other_slot=root/'other-slot.json';other_slot.write_text(json.dumps(valid()))
+        base={'appUrl':'https://unused.invalid','workDir':str(root/'work'),
+            'gpuLock':str(own.LOCK),'gpuSlot':str(own.COORD/'gpu0-slot.json'),'gpuSlotOwner':'pc-ai',
+            'gpuGuard':{'path':str(own.GUARD),'sha256':own.GUARD_HASH},'processContainment':'required',
+            'engines':{'garment.analyze':{'model':'Qwen/Qwen3-VL-4B-Instruct','revision':'ebb281ec70b05090aa6165b016eac8ec08e71b17','command':['never-run']}}}
+        cases=[('default_lock',{'gpuLock':'default'},True),('relative_lock',{'gpuLock':'gpu0.lock'},True),
+            ('missing_lock_file',{'gpuLock':str(root/'missing.lock')},True),
+            ('guard_hash_mismatch',{'gpuGuard':{'path':str(own.GUARD),'sha256':'0'*64}},True),
+            ('unknown_owner',{'gpuSlotOwner':'unknown'},True),
+            ('wrong_existing_lock',{'gpuLock':str(other)},True),
+            ('wrong_absolute_slot_path',{'gpuSlot':str(other_slot)},True),
+            ('configured_fixed_paths',{},False)]
+        class CpuDirLock:
+            def __init__(self,*args):pass
+            def acquire(self,*args):return True
+        for name,changes,should_reject in cases:
+            config={**base,**changes};config_path.write_text(json.dumps(config))
+            reached=[]
+            def cpu_worker(*args,**kw):
+                reached.append(True)
+                return SimpleNamespace(loop=lambda *a:0)
+            output=io.StringIO()
+            with patch.object(worker,'DirLock',CpuDirLock), \
+                 patch.object(worker,'ensure_process_containment',return_value='injected CPU-only fixture'), \
+                 patch.object(worker,'Worker',side_effect=cpu_worker), \
+                 patch.object(worker.sys,'argv',[str(path),'--config',str(config_path),'--once']), \
+                 patch.dict('os.environ',{'FITMATCH_WORKER_TOKEN':'CPU_TEST_UNUSED_NOT_A_CREDENTIAL'}), \
+                 contextlib.redirect_stdout(output):
+                result=worker.main()
+            rejected=result==5 and not reached
+            record={'case':name,'desired_reject_before_worker':should_reject,'actual_main_exit':result,
+                    'worker_constructor_reached':bool(reached),'scope':'actual main; DirLock/containment/Worker.loop injected CPU stubs',
+                    'shared_lock_acquired':False,'CUDA_or_network':False}
+            if should_reject and not rejected:gaps.append(name)
+            if not should_reject:assert reached and result==0
+            records.append(record)
+            # Qwen bridge independently requires exact installation paths/new fields.
+            try:own.validate_worker_config(config,{'work_dir':base['workDir']})
+            except Refused:own_reject=True
+            else:own_reject=False
+            if name in {'wrong_existing_lock','wrong_absolute_slot_path'}:assert own_reject
+        # Hash/slot swaps in a disposable namespace only. No shared metadata changes.
+        local_guard=root/'guard-copy.py';local_guard.write_bytes(installed)
+        cfg={**base,'gpuLock':str(other),'gpuSlot':str(other_slot),
+             'gpuGuard':{'path':str(local_guard),'sha256':own.GUARD_HASH}}
+        admission=worker.SharedGpuAdmission(cfg)
+        admission.check(NOW)
+        local_guard.write_bytes(installed+b'\n# injected CPU-only hash change\n')
+        try:admission.check(NOW)
+        except worker.AdmissionError:pass
+        else:raise AssertionError('Changed guard hash accepted before claim')
+        local_guard.write_bytes(installed)
+        for name,raw in [('wrong_owner',json.dumps({**valid(),'owner':'pc-3d'})),
+            ('expired',json.dumps({**valid(),'admitUntilUnix':NOW-1})),
+            ('NaN','{"owner":"pc-ai","admitUntilUnix":NaN}'),
+            ('duplicate','{"owner":"pc-ai","owner":"pc-3d"}')]:
+            other_slot.write_text(raw)
+            try:admission.check(NOW)
+            except worker.AdmissionError:records.append({'case':'preclaim_'+name,'passed':True,'isolated_metadata':True})
+            else:raise AssertionError('Invalid preclaim slot accepted')
+        records.append({'case':'preclaim_guard_hash_swap','passed':True,'isolated_metadata':True})
+    result={'session':'PC-QINT-P-20261108-04','app_revision':REV,'worker_sha256':EXPECTED,
+        'Git_LF_worker_sha256':sha(git_source),'tested_copy':'CRLF, same source text as pinned Git blob',
+        'guard_sha256':own.GUARD_HASH,'contract_files_matched':contract_count,'records':records,
+        'gaps':gaps,'startup_ACK':'WITHHELD' if gaps else 'CPU_ONLY_CONDITIONAL',
+        'placement':'worker owns one fixed byte0 lock; direct adapter; no nested guard',
+        'real_GPU':False,'torch_imported':'torch' in sys.modules,'shared_lock_taken':False,
+        'personal_image_read':False,'real_policy_installed':own.POLICY.exists(),
+        'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
+    (report/'final-cpu-smoke.json').write_text(json.dumps(result,indent=2)+'\n')
+    print(json.dumps({k:result[k] for k in ['app_revision','worker_sha256','contract_files_matched','gaps','startup_ACK','real_GPU','torch_imported']}))
+    return 1 if gaps else 0
+
+if __name__=='__main__':raise SystemExit(main())
