@@ -1,0 +1,19 @@
+{
+  "session": "PC-20261113-QWEN48-DRAIN-CONTRACT-003",
+  "recordedAtUtc": "2026-11-13T17:40:24.283456+00:00",
+  "kind": "private-audit-contract-proposal-not-installed",
+  "proposalModuleSHA256": "1343b7f328ca74059fbade5c6242fd4fc3dec9cb9c4d6dca51e8ba265054f95e",
+  "tests": 18,
+  "passed": 18,
+  "testScope": "synthetic metadata only; no native/server/job/lock/model",
+  "evidenceBasis": "reviewed_completed_checkpoint_control_path",
+  "counterIndependentlyRecorded": false,
+  "modelPythonUnloadCallbackNotExported": true,
+  "AIProducerACK": "PENDING",
+  "actualSameRunEvidenceProduced": false,
+  "coordinatorV2Unchanged": true,
+  "protectedFilesUnchanged": true,
+  "executionApprovalOpened": false,
+  "newGOOrSlot": false,
+  "MSVC_UAC": "paused"
+}
