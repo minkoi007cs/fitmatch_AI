@@ -1,5 +1,9 @@
 # Phase B exact-job scope: CPU proposal, not installed
 
+Historical hold below. Mac subsequently accepted the proposal and LF/CRLF reconciliation;
+[the exact reviewed gate is now installed/tested only in the isolated CPU candidate](job-scope-installed.md).
+Execution remains paused and every approval disabled.
+
 Fresh Mac DB/job-readback GO received for one existing queued analysis. The new heartbeat
 at 2026-11-13T03:17:33Z (12Nov22:17EST) returned HTTP200, canonical project and sole
 garment.analyze capability. All98 reviewed source pins and config52c108ec remained equal.

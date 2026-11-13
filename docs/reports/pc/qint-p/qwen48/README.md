@@ -4,6 +4,8 @@ Current status: **CPU candidate accepted; one private offline unsupported-scope 
 accepted for its single input. STOP before the remaining app job.** Original runtime is preserved.
 See [actual offline result/drain/withdrawal](offline-actual.md) and separate worker CPU readiness.
 The following sections retain the CPU review evidence; they do not claim general image accuracy.
+Latest CPU handoff: [reviewed job-ID gate installation and99-test receipt](job-scope-installed.md).
+All approvals are disabled; no coordinator window or remaining app-job execution is authorized.
 PC session `PC-QWEN48-20261112-01`, branch `docs/pc-qint-p-20261107`,
 base `1629937530dca92ef25f4b87d1ea631dc7b7509a`.
 

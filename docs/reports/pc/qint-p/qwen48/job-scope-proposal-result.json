@@ -13,5 +13,9 @@
   "testSHA256": "bf7f9d820022b80e5babeb1f108c2209c6120f503725321440a9cb8becdce115",
   "workerStarted": false,
   "claimsSent": 0,
-  "GPUStarted": false
+  "GPUStarted": false,
+  "patchSHA256Representation": "Windows CRLF bytes in original PC proposal receipt",
+  "publishedPatchLFSHA256": "1fd343ed9b2f8f84be169a90378544d66d3bbcc67505c2448cb12489ebe8969e",
+  "proposedAdmissionSHA256Representation": "Windows CRLF bytes; raw digest differs from published/installed LF representation",
+  "equivalentAdmissionLFSHA256": "bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37"
 }

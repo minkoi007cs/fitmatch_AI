@@ -85,3 +85,21 @@ Local worker approval disabled for hold; offline/externalguard remain disabled. 
 adapter-only approved_job_id proposal outside candidate,8/8 CPU tests PASS, no installation.
 Mac review needed for new source/config pins versus GO's no-source-change instruction.
 Report qint-p/qwen48/job-scope-hold.md. No new slot, inference, enqueue, click or automatic retry.
+
+REVIEWED CPU INSTALL — PC-QWEN48-20261112-03. Mac accepted exact183923b job-scope patch
+24bc102b and proposed admission98091799. Install only that patch in isolated candidate;
+preserve original qint_p and private prior bytes. Update98-source manifest/config/disabled
+worker approval coherently, pin the already queued job, and run91 compatibility+8 scope tests
+against actual candidate. All approvals stay disabled. Coordinator weekly usage prevents a new
+slot; prior execution GO is paused. No heartbeat/claim/GPU/slotwriter or coordinator takeover.
+Publish final CPU pins/tests and STOP; existing private input/token/model remain available.
+
+CPU INSTALL END — actual installed admissionLFbbbee777 matches independently reviewed source;
+old98091799 is its CRLF representation. PublishedpatchLF1fd343ed and WindowsCRLF24bc102b are
+explicitly distinct. InitialCRLFcheck refused without mutation; reviewedLFapply passed.
+Only candidate worker_admission.py changed; originalruntime/privatebackups preserved.
+Actual91compatibility+8scope tests on installed candidate:99/99PASS,0error/fail/skip,notorch.
+Same98 entries repinned, manifestd79a0738/config643b8b47/workerapproval4a8f39f3; exact job pin
+and fullappf580247 checked as pure data. Allapprovalsdisabled/backendPENDING. NoHB/claim/GPU/
+slotwrite or queued-job mutation. Report qint-p/qwen48/job-scope-installed.md. Ready for final
+pin review; execution paused for coordinatoravailability/explicitoperationalhandoff, no takeover.
