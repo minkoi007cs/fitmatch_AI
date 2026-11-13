@@ -1,0 +1,61 @@
+{
+  "kind": "fitmatch.pc-native33-scoped-ack.v1",
+  "session": "PC-20261109-NATIVE33",
+  "docsRead": "8ab74aca3c2d994d2d44b149a3f9a46fdd536e42",
+  "appRevision": "499ead01e7f9274ddf310ab346fda4c2464588bd",
+  "workerRawAndGitLFSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "testRawAndGitLFSHA256": "f178f7f0ff2723b8e0b5f3235c2da71a1565d9138bd04529362f4223d8a86429",
+  "patchSHA256": "50ddd9cb14d893c4f6bdbf7c099e5e4e6c16dc54a333294c8837c2674bde5fd3",
+  "patchAlreadyIntegrated": true,
+  "reverseApplyCheck": true,
+  "nativeWindowsResult": {
+    "run": 56,
+    "passed": 47,
+    "skipped": 9,
+    "errors": 0,
+    "failures": 0,
+    "exitCode": 0
+  },
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "lockIdentity": {
+    "volume": 3699583840,
+    "fileId": 2251799814103012
+  },
+  "statAndOpenHandleIdentityMatch": true,
+  "realProtectedHashesAndFileIdentitiesUnchanged": true,
+  "currentSlotValid": false,
+  "slotNotRefreshed": true,
+  "workerAndGuardRefuseExpiredSlot": true,
+  "savedJobCurrentQuery": {
+    "query": "absent",
+    "winerror": 2
+  },
+  "savedChildAndGuardObjectsCurrentlyAbsent": true,
+  "boundedProcessInventory": {
+    "matchingKnownPythonBlender": 0,
+    "totalProcesses": 316,
+    "commandLineUnavailable": 120,
+    "globalIdleProven": false
+  },
+  "historicalSupplementalNativeCasesReusedNotRerun": 18,
+  "historicalDrainCasesReusedNotRerun": 3,
+  "adapterSourcesMatchHistoricalPeerACK": true,
+  "operatorApprovalInstalled": false,
+  "actualOSLockAcquired": false,
+  "slotGranted": false,
+  "GPUUsed": false,
+  "readyForRealQwen": false,
+  "CodexFinalNativeReviewPending": true,
+  "placement": "worker sole existing canonical byte0 OS-lock owner; direct adapter; no nested guard; release only after actual owned-tree drain",
+  "remainingGates": [
+    "Codex scoped native/skips review and peer ACK",
+    "canonical private recovery and backend preflight",
+    "reviewed HTTPS origin/exact serving revision",
+    "private scoped worker credential/enrollment",
+    "reviewed bounded operator approval",
+    "fresh owned-tree/peer/OS-lock proof immediately before finite slot"
+  ],
+  "scope": "PASS fixture/specified native units and read-only binding only; skips explicit; not live Qwen/avatar/garment acceptance",
+  "recordedAtUtc": "2026-11-10T04:08:33.251634+00:00"
+}

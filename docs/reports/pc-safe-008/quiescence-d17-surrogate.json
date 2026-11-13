@@ -1,0 +1,18 @@
+{
+  "containmentMode": "windows-job-object",
+  "launcherDistinctFromInterpreter": true,
+  "launcherKind": "CPU-surrogate",
+  "actualAdapterAliveAfterStopProcess": true,
+  "isolatedLockAcquiredByAnotherProcess": true,
+  "liveGPUJobStarted": false,
+  "networkAPIUsed": false,
+  "sourceDeleted": false,
+  "scope": "native CPU method-level fault injection, not live worker E2E",
+  "reproduced": true,
+  "ownedDescendantsExitedWhenActualWorkerExited": true,
+  "workerRevision": "d17ca355cccb039c496c805667d43a7ddcf63ab2",
+  "transportSourceEdited": false,
+  "externalSentinelSurvived": true,
+  "workerGitBlob": "41ee24291c1129626c9461397d14d5c2ee993768",
+  "interpretation": "stop_process on an already-exited launcher does not prove adapter-tree quiescence; transport owner must fence per-job cleanup/admission"
+}

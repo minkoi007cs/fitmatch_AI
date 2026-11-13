@@ -1,0 +1,18 @@
+{
+  "session": "PC-20261112-QWEN48-WORKER-WINDOW-001",
+  "state": "PREVIOUS_PHASE_B_GO_CLOSED_NO_SLOT_NO_JOB",
+  "files": [
+    {
+      "file": "worker-window-001-closed-go.md",
+      "bytes": 3835,
+      "sha256": "b40cca02fea52d3cc21737cc125b42904d2a7fc23dcf83dde7580e08685190b0"
+    },
+    {
+      "file": "worker-window-001-cpu-receipt.json",
+      "bytes": 4178,
+      "sha256": "85a82fd431ed98643f20482ceb6460504e7465c0592a3213161afe6108b9edc2"
+    }
+  ],
+  "allocationCommandInvoked": false,
+  "newGPUOrSlot": false
+}

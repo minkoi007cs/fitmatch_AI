@@ -1,0 +1,15 @@
+{
+  "task": "QWEN-48",
+  "files": [
+    {
+      "file": "followup-002.md",
+      "bytes": 4024,
+      "sha256": "c2ea15186d015a46360245030027e2405d326609a49dc457efc0289b8828607f"
+    },
+    {
+      "file": "followup-002.json",
+      "bytes": 1615,
+      "sha256": "2c0dac17ed4996046081ab4d57aee6e2eb24651e83de9d18a3e17330b17618c7"
+    }
+  ]
+}

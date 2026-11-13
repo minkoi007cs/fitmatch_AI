@@ -1,0 +1,18 @@
+{
+  "run": 56,
+  "passed": 46,
+  "skipped": 9,
+  "errors": 1,
+  "failures": 0,
+  "exitCode": 1,
+  "launcherWallSeconds": 1.539329299936071,
+  "internalWallSeconds": 1.408,
+  "python": "3.10.22 native Windows",
+  "skipReasons": {
+    "POSIXOnly": 5,
+    "symlinkPrivilege": 4
+  },
+  "fullSuiteRerunAfterProposal": false,
+  "proposalSingleTargetedTestPassed": true,
+  "unitTestsIncludeMocksAndSyntheticGuards": true
+}

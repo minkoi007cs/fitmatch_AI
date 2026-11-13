@@ -1,0 +1,9 @@
+test_copied_coordination_with_identical_policy_refused_while_canonical_held (test_worker_unit.SharedGpuAdmissionTests)
+QFINAL-022 case 1, fixed: another existing lock cannot be admitted even with byte-identical policy. ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.015s
+
+OK
+
+exit 0

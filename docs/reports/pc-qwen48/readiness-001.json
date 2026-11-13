@@ -1,0 +1,161 @@
+{
+  "kind": "fitmatch.pc-qwen48.readiness.v1",
+  "session": "PC-20261112-QWEN48-READY-001",
+  "task": "QWEN-48",
+  "state": "FRESH_SNAPSHOT_ONLY_WAIT_CPU_FIX_CONFIG_REVIEW_BACKEND_GO",
+  "measuredAtUtc": "2026-11-12T14:40:10.778564+00:00",
+  "docsRead": "433922c52d0561dcd931bdb96a80d7115b652cdf",
+  "sourceBaseline": "83b11b36911f4c082beedbc78f07858ea1ba1c02",
+  "appRevisionReportedNotLocallyVerified": "f58024703bf4ec8be365bee2f8b3e1bd2248fdec",
+  "workerSHA256Verified": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "canonicalLockIdentity": {
+    "volume": 3699583840,
+    "fileIdDecimal": "2251799814103012"
+  },
+  "statFstatNativeAndPolicyIdentityMatch": true,
+  "protectedFilesUnchanged": {
+    "gpu-coordinator.json": {
+      "sha256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+      "volume": 3699583840,
+      "fileIdDecimal": "2814749767545609"
+    },
+    "gpu_guard.py": {
+      "sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+      "volume": 3699583840,
+      "fileIdDecimal": "5348024557618470"
+    },
+    "gpu0.lock": {
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+      "volume": 3699583840,
+      "fileIdDecimal": "2251799814103012"
+    },
+    "gpu0-slot.json": {
+      "sha256": "c02ec350a55bf169d4e4cb3a2f2560c6b1c9e48c5ea8731c5426bacb4b7c3412",
+      "volume": 3699583840,
+      "fileIdDecimal": "60235645016150717"
+    },
+    "gpu0-state.json": {
+      "sha256": "cfc6820ba52ca8e3178e085135b3d5a9f4e1cb25ea8eea97f6f5efa04c90b48f",
+      "volume": 3699583840,
+      "fileIdDecimal": "74309393851768545"
+    }
+  },
+  "resources": {
+    "RAMAvailableBytes": 5307346944,
+    "RAMAtUtc": "2026-11-12T14:40:10.731951+00:00",
+    "RAMMinimumBytes": 4294967296,
+    "RAMPassAtSample": true,
+    "GPU": {
+      "name": "NVIDIA GeForce RTX 3060",
+      "driver": "610.88",
+      "totalMiB": 12288,
+      "usedMiB": 619,
+      "freeMiB": 11492,
+      "atUtc": "2026-11-12T14:40:10.774690+00:00"
+    },
+    "VRAMMinimumMiB": 8192,
+    "VRAMPassAtSample": true
+  },
+  "nativeOwnedProcessQueries": {
+    "count": 12,
+    "sameSavedOwnedObjectLive": 0,
+    "unknown": 0,
+    "pidReusedDifferentObject": 0
+  },
+  "boundedProcessInventory": {
+    "total": 269,
+    "commandLineUnavailable": 106,
+    "pythonProcesses": 2,
+    "knownEngineMatchCount": 0
+  },
+  "savedHistoricalJobCurrentQuery": {
+    "query": "absent",
+    "winerror": 2
+  },
+  "byte0Probe": {
+    "attempted": true,
+    "availability": "free at sample",
+    "slotWrite": false,
+    "nestedGuard": false,
+    "startedAtUtc": "2026-11-12T14:40:10.775697+00:00",
+    "acquired": true,
+    "nativeOpenedIdentity": [
+      3699583840,
+      2251799814103012
+    ],
+    "workerAdmissionWhileHeld": {
+      "allowed": false,
+      "reason": "Invalid or expired GPU admission window"
+    },
+    "released": true,
+    "endedAtUtc": "2026-11-12T14:40:10.778564+00:00"
+  },
+  "globalGPUIdleProven": false,
+  "lastDrainHistorical": {
+    "utc": "2026-11-10T23:21:19.255900+00:00",
+    "sha256": "5c849d9c4f13ee9813eff89104c11a6fb2bb84f7748d253af50ca2239ace459f",
+    "capturedHandles": 4,
+    "exitCodes": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "historical": true
+  },
+  "lastSlot": {
+    "owner": "pc-ai",
+    "issuedAtUtc": "2026-11-10T23:17:14.701015+00:00",
+    "withdrawnAtUtc": "2026-11-10T23:24:23.204896+00:00",
+    "sha256": "c02ec350a55bf169d4e4cb3a2f2560c6b1c9e48c5ea8731c5426bacb4b7c3412",
+    "fileIdDecimal": "60235645016150717",
+    "unchangedSinceWithdrawal": true,
+    "validators": {
+      "worker": {
+        "valid": false,
+        "reason": "Invalid or expired GPU admission window"
+      },
+      "guard": {
+        "valid": false,
+        "reason": "Invalid or expired GPU admission window"
+      }
+    }
+  },
+  "newSlotIssued": false,
+  "slotRefreshed": false,
+  "readyForLiveQwen": false,
+  "modelOrCUDAStarted": false,
+  "workerStarted": false,
+  "threeDGpuPaused": true,
+  "nativeSuiteRerun": false,
+  "historicalNativeTests": {
+    "run": 56,
+    "passed": 47,
+    "skipped": 9,
+    "errors": 0
+  },
+  "MSVC_UAC": "paused",
+  "placement": "sole worker canonical byte0 owner during real job; direct adapter, no nested guard; actual owned-tree drain before release",
+  "futureBoundsOnly": {
+    "owner": "pc-ai",
+    "seconds": 600,
+    "engineSeconds": 240,
+    "drainSeconds": 30,
+    "autoRefresh": false
+  },
+  "remainingGates": [
+    "PCAI hoodie CPU fix and reproducible tests reviewed",
+    "exact current adapter/config/operator approval and serving/backend readiness GO",
+    "fresh immediate resource, owned-tree and bound byte0 proof at new GO"
+  ],
+  "reportedBackendNotReprobed": {
+    "source": "latest Codex dispatch",
+    "qwenLiveEnabled": false,
+    "workerEnabled": false,
+    "remainingJob": "QUEUED attempt0",
+    "actualBackupAndMigration": "reported complete"
+  },
+  "probeSourceSHA256": "2b8b27ecebd7277e987ddee9ee1c4590f6eb306369d4a3599e38f92f64b90c59"
+}

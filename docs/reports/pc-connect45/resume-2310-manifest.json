@@ -1,0 +1,15 @@
+{
+  "task": "CONNECT45-RESUME2310",
+  "files": [
+    {
+      "file": "resume-2310.md",
+      "sha256": "b808152996ea6659f0c28ff70988b08d253b3f6b5e900dd3de4213c07906c9ee",
+      "bytes": 3352
+    },
+    {
+      "file": "resume-2310.json",
+      "sha256": "f76d64ac9393ea2cc555b1c66dd414b336a868f0394b07215400c52f7d16a068",
+      "bytes": 2252
+    }
+  ]
+}

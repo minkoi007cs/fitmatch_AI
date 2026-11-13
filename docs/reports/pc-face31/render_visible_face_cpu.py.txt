@@ -1,0 +1,105 @@
+"""Render a private partial-face GLB with Cycles CPU, without GPU admission.
+
+Run with Blender --background --factory-startup --python this.py -- --mesh ...
+No real coordination files, model imports or GPU enumeration are needed.
+"""
+import argparse
+import ctypes
+from ctypes import wintypes
+import hashlib
+import json
+import math
+from pathlib import Path
+import sys
+import time
+
+import bpy
+from mathutils import Vector
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--mesh', type=Path, required=True)
+    p.add_argument('--output', type=Path, required=True)
+    a = p.parse_args(sys.argv[sys.argv.index('--')+1:])
+    a.mesh = a.mesh.resolve(strict=True); a.output = a.output.resolve()
+    a.output.mkdir(parents=True, exist_ok=False)
+    start = time.perf_counter()
+    source_hash = hashlib.sha256(a.mesh.read_bytes()).hexdigest()
+    bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False)
+    scene = bpy.context.scene
+    scene.render.engine = 'CYCLES'
+    scene.cycles.device = 'CPU'
+    # No get_devices()/CUDA/OptiX probe; opt out of GPU backend preferences too.
+    bpy.context.preferences.addons['cycles'].preferences.compute_device_type = 'NONE'
+    scene.render.threads_mode = 'FIXED'; scene.render.threads = 2
+    scene.cycles.samples = 16; scene.cycles.use_denoising = False
+    scene.render.resolution_x = 480; scene.render.resolution_y = 640
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.view_settings.view_transform = 'Standard'
+    scene.view_settings.look = 'None'; scene.view_settings.exposure = 0
+    scene.world.use_nodes = True
+    scene.world.node_tree.nodes['Background'].inputs['Color'].default_value = (.55, .55, .55, 1)
+    scene.world.node_tree.nodes['Background'].inputs['Strength'].default_value = .65
+    bpy.ops.import_scene.gltf(filepath=str(a.mesh))
+    objects = [o for o in scene.objects if o.type == 'MESH']
+    if len(objects) != 1:
+        raise ValueError('Expected the single existing 3D body, no image plane')
+    body = objects[0]
+    if not body.data.uv_layers or not body.data.materials:
+        raise ValueError('Missing actual UV/material')
+    image_nodes = [n for m in body.data.materials for n in m.node_tree.nodes if n.type == 'TEX_IMAGE']
+    if len(image_nodes) != 1 or image_nodes[0].image is None:
+        raise ValueError('Expected one embedded observed/neutral atlas')
+    # Keep the imported GLB material/UV. No photo plane or replacement surface.
+    points = [body.matrix_world @ Vector(v) for v in body.bound_box]
+    low = Vector(tuple(min(v[i] for v in points) for i in range(3)))
+    high = Vector(tuple(max(v[i] for v in points) for i in range(3)))
+    center = (low+high)*.5; height = high.z-low.z
+    for pos, power, size in [((2,-3,4), 100, 4), ((-2,-2,3), 70, 3), ((0,3,4), 80, 3)]:
+        bpy.ops.object.light_add(type='AREA', location=pos)
+        light = bpy.context.object; light.data.energy = power; light.data.size = size
+        light.rotation_euler = (center-light.location).to_track_quat('-Z','Y').to_euler()
+    bpy.ops.object.camera_add()
+    camera = bpy.context.object; scene.camera = camera; camera.data.type = 'ORTHO'
+    views = []
+    for name, angle, close in [('front',0,False), ('side',math.pi/2,True), ('back',math.pi,True), ('face-closeup',0,True)]:
+        target = Vector((center.x,center.y,high.z-.14)) if close else center
+        # Blender glTF importer maps +Y up -> +Z and +Z front -> -Y.
+        camera.location = target + Vector((3*math.sin(angle),-3*math.cos(angle),0))
+        camera.rotation_euler = (target-camera.location).to_track_quat('-Z','Y').to_euler()
+        camera.data.ortho_scale = .40 if close else height*1.12
+        if scene.render.engine != 'CYCLES' or scene.cycles.device != 'CPU':
+            raise RuntimeError('Refuse non-CPU rendering')
+        scene.render.filepath = str(a.output/(name+'.png'))
+        t = time.perf_counter(); bpy.ops.render.render(write_still=True)
+        views.append({'file': name+'.png', 'seconds': time.perf_counter()-t})
+    if hashlib.sha256(a.mesh.read_bytes()).hexdigest() != source_hash:
+        raise ValueError('Input GLB changed')
+    # Blender's bundled Python needs no third-party environment packages.
+    class Counters(ctypes.Structure):
+        _fields_ = [('cb',wintypes.DWORD),('PageFaultCount',wintypes.DWORD),
+            *[(n,ctypes.c_size_t) for n in ('PeakWorkingSetSize','WorkingSetSize',
+                'QuotaPeakPagedPoolUsage','QuotaPagedPoolUsage','QuotaPeakNonPagedPoolUsage',
+                'QuotaNonPagedPoolUsage','PagefileUsage','PeakPagefileUsage')]]
+    counters= Counters(); counters.cb=ctypes.sizeof(counters)
+    memory=ctypes.WinDLL('psapi').GetProcessMemoryInfo
+    memory.argtypes=[wintypes.HANDLE,ctypes.POINTER(Counters),wintypes.DWORD]
+    memory.restype=wintypes.BOOL
+    if not memory(wintypes.HANDLE(-1),ctypes.byref(counters),counters.cb):
+        raise ctypes.WinError()
+    report = {'task':'PC-CPU-FACE-31', 'renderer':bpy.app.version_string,
+        'engine':scene.render.engine, 'device':scene.cycles.device, 'threads':2,
+        'samples':scene.cycles.samples, 'resolution':[480,640], 'denoising':False,
+        'views':views, 'wallSeconds':time.perf_counter()-start,
+        'processPeakWorkingSetBytes':int(counters.PeakWorkingSetSize), 'GPUUsed':False, 'CUDAUsed':False,
+        'noPhotoPlane':True, 'sourceGLBSHA256':source_hash, 'identityAccepted':False,
+        'materialPreserved':True, 'coordinatorTouched':False,
+        'label':'FRONT-VISIBLE PARTIAL / MISALIGNED GENERIC HEAD / NOT ACCEPTED LIKENESS'}
+    (a.output/'render-benchmark.json').write_text(json.dumps(report,indent=2),encoding='utf-8')
+    print(json.dumps(report,indent=2))
+
+
+if __name__ == '__main__':
+    main()

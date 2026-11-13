@@ -1,0 +1,49 @@
+{
+  "task": "CONNECT-PC-GPU-45-window001",
+  "session": "PC-20261110-CONNECT45-WINDOW1",
+  "atUtc": "2026-11-10T18:12:34.178486+00:00",
+  "status": "REFUSED_HOST_RAM_NO_SLOT",
+  "executionWindowAuthorizedByCodex": true,
+  "servingSourceReported": "ca3466c",
+  "deploymentReported": "dpl_EK7gxYYHUXsUocAPcGaa5igD7wsE",
+  "QwenRuntimeOverrideReported": 1,
+  "backendHeartbeatVerifiedByCodex": true,
+  "authoritativeRAM": {
+    "atUtc": "2026-11-10T18:11:57.578962+00:00",
+    "metric": "psutil.virtual_memory().available; same Qwen admission metric",
+    "availableBytes": 4119449600,
+    "requiredMinimumBytes": 4294967296,
+    "PASS": false,
+    "thresholdLowered": false,
+    "processesKilled": false,
+    "psutilVersion": "7.1.3"
+  },
+  "RAMShortfallBytes": 175517696,
+  "VRAMFreeMiB": 11370,
+  "minimumVRAMBytes": 8589934592,
+  "VRAMGateSamplePASS": true,
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "lockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "protectedUnchanged": true,
+  "savedNamedJobQuery": {
+    "query": "absent",
+    "winerror": 2
+  },
+  "fullQuiescenceGrantCheckNotCompletedBecauseRAMAlreadyFailed": true,
+  "slotIssued": false,
+  "slotRefreshed": false,
+  "slotStartUtc": null,
+  "slotExpiryUtc": null,
+  "canonicalOSLockAcquiredByCoordinator": false,
+  "GPUOrModelStarted": false,
+  "thresholdLowered": false,
+  "foreignProcessKilled": false,
+  "automaticRetryScheduled": false,
+  "threeDGPUWorkPaused": true,
+  "QwenNoSlotRefusalMessageDelivered": true,
+  "nextStep": "Resource condition must change; then explicit coordinated recheck/window. Do not press live test before a real finite-slot ACK."
+}

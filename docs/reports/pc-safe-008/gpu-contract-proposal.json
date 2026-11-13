@@ -1,0 +1,98 @@
+{
+  "schema": "fitmatch.gpu-execution-contract-proposal.v1",
+  "taskIds": [
+    "PC-SAFE-008",
+    "QINT-G"
+  ],
+  "status": "proposal-awaiting-Claude-and-Codex-review",
+  "transportRoute": "/api/v2/worker",
+  "newWorkerTransport": false,
+  "guardCandidateSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "lock": {
+    "absolutePathPrivateReceipt": "coordination/qintg008-guard-candidate.json",
+    "workspaceRelativePath": "coordination/gpu0.lock",
+    "mechanism": "msvcrt byte0 exclusive OS lock",
+    "neverDeleteOrReplaceLockFile": true,
+    "oneOwnerPerExecution": true
+  },
+  "placement": {
+    "preferredProposal": "worker owns byte0 lock for integrated jobs; invoke adapter directly with verified worker admission, never invoke same-lock guard inside it; standalone3D/Qwen commands still use guard as sole lock owner",
+    "selectedByTransportOwner": true,
+    "standaloneGuardTested": true,
+    "existingWorkerFileLockMustNotWrapGuard": true,
+    "noUnlockedRuntimeBypassAdded": true,
+    "liveWorkerAllowed": false,
+    "sourceRevision": "931109906089e20738090613086b73c3677d3a40",
+    "PC3DAck": "conditional CPU placement only; slot bridge, exact path and drain semantics need reviewed evidence",
+    "envVariablesAloneAuthorizeBypass": false
+  },
+  "slot": {
+    "metadataOnlyNotExclusionOrAuthentication": true,
+    "writerVersion": 1,
+    "readers": [
+      0,
+      1
+    ],
+    "owners": [
+      "pc-3d",
+      "pc-ai"
+    ],
+    "maxSlotSeconds": 3600,
+    "maxFutureClockSkewSeconds": 5,
+    "issuedUTCUnixAgreementSeconds": 0.001,
+    "presentExpiredMetadata": "reject both owners; idle coordinator must renew explicitly",
+    "missingFile": "pc-3d-only bootstrap",
+    "invalidShapeTypeNonfiniteClockExpiryWindow": "refuse before spawn",
+    "metadataCannotPreemptHeldLock": true
+  },
+  "outcomes": {
+    "busyOrWrongOwnerExit": 75,
+    "semanticMetadataRefusalExit": 70,
+    "CLIParseRefusalExit": 2,
+    "timeoutAfterWholeTreeDrainExit": 124,
+    "busyDoesNotConsumeInferenceAttempt": true
+  },
+  "nativeLifecycle": {
+    "spawn": "suspended -> assign kill-on-close Job Object -> resume",
+    "hold": "until successful activeProcesses==0 query, including surviving descendant after launcher exit",
+    "queryUnknown": "quarantine and retain guard/lock until verified drain; no next admission",
+    "crashRecovery": "inspect previous named Job Object and PID creation identity before takeover",
+    "neverKillForeignProcesses": true
+  },
+  "model": {
+    "loadOnlyAfterAdmissionAndMemoryCheck": true,
+    "residentAfterExecution": false,
+    "releaseRequiresOwnedTreeExit": true,
+    "workerInputsCannotChooseArbitraryCommand": true,
+    "viewerWebGLIsNotWorkerGPUExecution": true
+  },
+  "requiredACKs": [
+    "PC3D exact guard hash and absolute byte0 lock",
+    "PCQwen independent exact guard hash and policy",
+    "Claude explicit transport revision and one lock-owner placement",
+    "Codex contract and native production drain review"
+  ],
+  "requiredFutureEvidence": [
+    "native Claude production cancel/timeout/root-launcher failure with surviving interpreter/grandchild; no release until drain",
+    "CPU producer-consumer conformance exact contract/fixtures and unknown-revision rejection",
+    "licensed image through authenticated test browser/API/durable job/PC actual Qwen/review",
+    "actual GPU contention both Qwen->3D and3D->Qwen with baseline/peak/after VRAM timestamps",
+    "owner/sourceversion/tombstone/lease/confirmation fencing on dedicated test environment"
+  ],
+  "explicitNotRun": [
+    "real integrated GPU",
+    "actual SiTH/nativeWarp",
+    "production worker drain fix",
+    "test-server capability enrollment",
+    "public PC port",
+    "production migration/deploy",
+    "personal image processing"
+  ],
+  "guardSharedPromoted": true,
+  "integrationGaps": [
+    "worker default ProgramData lock differs; testconfig must point to fixed coordination/gpu0.lock",
+    "worker FileLock is not finite slot admission; Claude/Qwen must agree slot bridge without nested lock or env-only bypass",
+    "native job activeProcesses0 precedes descendant WaitForSingleObject signal by small observed interval; strict release semantics require Codex review",
+    "931 contract is proposal; Qwen producer/consumer conformance and full JSON job transport pending"
+  ]
+}

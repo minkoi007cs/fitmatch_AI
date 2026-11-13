@@ -1,0 +1,22 @@
+{
+  "session": "PC-20261112-PC-ACCEPT49-001",
+  "task": "PC-ACCEPT-49",
+  "sourceBaseline": "41a9b90112c8c597da4f9c26ae772f458ad8c71d",
+  "operationsRead": "433922c52d0561dcd931bdb96a80d7115b652cdf",
+  "state": "READY_FOR_REVIEW_INVENTORY_ONLY_PRODUCT_NOT_ACCEPTED",
+  "files": [
+    {
+      "file": "glb-metadata.json",
+      "bytes": 2318,
+      "sha256": "bdaad0254f06c664b6f0b2ec3f350841b311d87d0fed2a92ba9d9de2fe301264"
+    },
+    {
+      "file": "report.md",
+      "bytes": 6355,
+      "sha256": "4e5bd60c19637849c244670b67af582dc27650f695198946e797f202337ed5f5"
+    }
+  ],
+  "newGPUModelRenderFit": false,
+  "newBroadOrNativeTests": false,
+  "QWEN48Priority": true
+}

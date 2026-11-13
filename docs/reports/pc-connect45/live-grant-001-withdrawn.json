@@ -1,0 +1,47 @@
+{
+  "task": "CONNECT45-RESUME2310-GRANT1",
+  "state": "WITHDRAWN_AFTER_ONE_JOB_AND_OBSERVED_OWNED_DRAIN",
+  "withdrawnAtUtc": "2026-11-10T23:24:23.204896+00:00",
+  "verifiedAtUtc": "2026-11-10T23:25:12.731019+00:00",
+  "actualAdmitUntilUtc": "2026-11-10T23:24:23.204896+00:00",
+  "originalIssuedUtc": "2026-11-10T23:17:14.701015+00:00",
+  "originalExpiryUtc": "2026-11-10T23:27:14.701015+00:00",
+  "renewed": false,
+  "newSlotGranted": false,
+  "ownerStill": "pc-ai",
+  "changedFieldsOnly": [
+    "admitUntilUnix"
+  ],
+  "actualSlotSHA256": "c02ec350a55bf169d4e4cb3a2f2560c6b1c9e48c5ea8731c5426bacb4b7c3412",
+  "slotFileId": 60235645016150717,
+  "slotVolume": 3699583840,
+  "canonicalLockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "canonicalByte0FreeThenAcquiredForCoordinatorVerification": true,
+  "coordinatorVerificationLockReleased": true,
+  "peerAllCapturedHandlesExited": true,
+  "independentObservedHandlesSignalled": 4,
+  "sameOwnedObjectLiveCount": 0,
+  "independentSignalAtUtc": "2026-11-10T23:21:17.556629+00:00",
+  "peerDrainAtUtc": "2026-11-10T23:21:19.255900+00:00",
+  "peerDrainSHA256": "5c849d9c4f13ee9813eff89104c11a6fb2bb84f7748d253af50ca2239ace459f",
+  "bothValidatorsRefuseWithdrawnSlot": true,
+  "policyGuardLockStateUnchanged": true,
+  "globalGPUIdleClaimed": false,
+  "threeDGPUWorkStillPaused": true,
+  "GPUOrModelLoadedByPC3D": false,
+  "noForeignKill": true,
+  "withdrawalAppliedBeforeVerificationError": true,
+  "verificationErrorCorrected": "Windows denied re-reading locked byte from a second handle while coordinator held byte0; finally released lock. No second slot write or renewal, readback reconciled.",
+  "backendResultReportedByCodex": {
+    "status": "SUCCEEDED",
+    "stage": "REVIEW",
+    "attempt": 1,
+    "completedAtUtc": "2026-11-10T23:21:13.943Z",
+    "secondJob": "QUEUED attempt0",
+    "scopedWorkerDisabledReported": true
+  },
+  "slotFileIdDecimal": "60235645016150717"
+}

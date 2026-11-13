@@ -1,0 +1,76 @@
+{
+  "schema": "fitmatch.guard-native-cpu.v1",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "status": "passed",
+  "tests": [
+    {
+      "test": "pure-slot-shape-type-finite-clock-window",
+      "passed": true,
+      "invalidSlotCases": 42,
+      "validV1AndLegacy": true
+    },
+    {
+      "test": "invalid-JSON-slot-and-timeout-rejected-before-native-spawn",
+      "passed": true,
+      "cases": 55,
+      "childNeverStarted": true
+    },
+    {
+      "test": "CPU-critical-interval-exclusion-pc-ai-then-pc-3d",
+      "passed": true,
+      "challengerExit": 75,
+      "noChallengerLoad": true,
+      "actualGPU": false
+    },
+    {
+      "test": "CPU-critical-interval-exclusion-pc-3d-then-pc-ai",
+      "passed": true,
+      "challengerExit": 75,
+      "noChallengerLoad": true,
+      "actualGPU": false
+    },
+    {
+      "test": "native-venv-redirector-kill-and-drain",
+      "passed": true,
+      "allOwnedExited": true,
+      "actualInterpreterSurvivedRedirectorKill": false
+    },
+    {
+      "test": "native-root-death-positive-surviving-interpreter-and-grandchild-gate",
+      "passed": true,
+      "launcherKind": "labelled CPU surrogate, base Python",
+      "lockHeldUntilBothExited": true
+    },
+    {
+      "test": "native-timeout-drains-owned-venv-interpreter-grandchild",
+      "passed": true,
+      "exitCode": 124
+    },
+    {
+      "test": "native-kill-on-close-guard-crash-and-named-job-recovery",
+      "passed": true,
+      "allOwnedExited": true
+    },
+    {
+      "test": "nested-same-lock-refused-without-deadlock-or-child",
+      "passed": true,
+      "exitCode": 75
+    },
+    {
+      "test": "injected-query-and-diagnostic-write-refusal-hold-lock-until-verified-drain",
+      "passed": true,
+      "injected": true,
+      "actualOSQueryFailure": false,
+      "diagnosticWriteFailureInjected": true
+    },
+    {
+      "test": "external-sentinel-survives-all-owned-teardown",
+      "passed": true,
+      "foreignProcessKilled": false
+    }
+  ],
+  "scope": "isolated native Windows CPU fixtures; not integrated transport/GPU proof",
+  "actualGPU": false,
+  "sharedLockTouched": false,
+  "transportEdited": false
+}

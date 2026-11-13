@@ -1,0 +1,23 @@
+test_absence_observed_after_launch_refused (__main__.Contract) ... ok
+test_both_real_worker_and_adapter_roles_required (__main__.Contract) ... ok
+test_checkpoint_not_on_success_control_path_refused (__main__.Contract) ... ok
+test_complete_synthetic_chain_is_metadata_only (__main__.Contract) ... ok
+test_coordinator_unknown_live_wrong_identity_or_incomplete_refused (__main__.Contract) ... ok
+test_duplicate_identity_not_two_independent_processes (__main__.Contract) ... ok
+test_handle_must_be_retained_and_signalled (__main__.Contract) ... ok
+test_lock_binding_inventory_or_resources_unproven_refused (__main__.Contract) ... ok
+test_old_checkpoint_or_server_sample_refused (__main__.Contract) ... ok
+test_old_coordinator_check_refused (__main__.Contract) ... ok
+test_old_directory_or_missing_absence_proof_refused (__main__.Contract) ... ok
+test_other_job_retry_or_boolean_attempt_refused (__main__.Contract) ... ok
+test_output_ready_also_requires_actual_server_success (__main__.Contract) ... ok
+test_unexported_numeric_counter_or_callback_claim_refused (__main__.Contract) ... ok
+test_worker_exit_alone_without_server_not_sufficient (__main__.Contract) ... ok
+test_worker_failure_quarantine_live_or_unknown_refused (__main__.Contract) ... ok
+test_wrong_basis_or_independent_counter_label_refused (__main__.Contract) ... ok
+test_wrong_go_slot_job_or_worker_refused (__main__.Contract) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.002s
+
+OK

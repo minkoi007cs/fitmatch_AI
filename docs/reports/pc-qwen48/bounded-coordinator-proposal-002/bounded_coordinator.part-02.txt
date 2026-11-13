@@ -1,0 +1,108 @@
+            and type(peer.get('activeProcessesAtDrain')) is int and peer['activeProcessesAtDrain'] == 0
+            and type(peer.get('ownedLiveCount')) is int and peer['ownedLiveCount'] == 0
+            and peer.get('quarantined') is False, 'owned_tree_not_drained')
+    require(peer.get('modelUnloaded') is True and peer.get('allRetainedHandlesExited') is True,
+            'need_actual_model_and_native_exit_evidence')
+    handles = peer.get('nativeProcessHandles')
+    require(isinstance(handles, list) and len(handles) >= 2, 'missing_real_native_handles')
+    require(all(type(x.get('pid')) is int and x['pid'] > 0
+                and type(x.get('creationFILETIME')) is int and x['creationFILETIME'] > 0
+                and x.get('signalledExited') is True for x in handles), 'invalid_native_handle_evidence')
+    require(epoch(peer['drainVerifiedAtUtc']) >= epoch(issued['issuedAtUtc']), 'old_drain_receipt')
+    return handles
+
+
+def withdraw(issued, peer, out):
+    require(issued.get('kind') == 'fitmatch.qwen48.bounded-issued.v1' and issued.get('jobId') == JOB,
+            'wrong_issued_receipt')
+    go_id = issued.get('goId')
+    require(isinstance(go_id, str) and 0 < len(go_id) <= 80
+            and all(c.isalnum() or c in '-_' for c in go_id), 'bad_issued_go_id')
+    require(read(ROOT/'coordination'/('qint-g-' + go_id + '-issued.json')) == issued,
+            'issued_receipt_not_the_coordinator_record')
+    handles = validate_drain(peer, issued)
+    w, g, b, paths = libraries()
+    for item in handles:
+        current = g.live_stamp(item['pid'])
+        require(current is None or current != item['creationFILETIME'], 'owned_native_object_still_live')
+    slot_path = ROOT/'coordination/gpu0-slot.json'
+    require(sha(slot_path) == issued['slotSHA256'], 'slot_changed_do_not_touch')
+    old = read(slot_path)
+    require(old['owner'] == 'pc-ai' and old['issuedAtUtc'] == issued['issuedAtUtc'], 'wrong_current_slot')
+    lock = b.make_lock()
+    try:
+        require(lock.acquire(0), 'byte0_still_held_do_not_withdraw')
+        require(w.file_identity(os.fstat(lock.handle.fileno())) == IDENTITY, 'held_identity_changed')
+        require(sha(slot_path) == issued['slotSHA256'], 'slot_changed_while_checking')
+        revised = dict(old)
+        revised['admitUntilUnix'] = min(old['admitUntilUnix'], time.time())
+        save(out/'withdrawal-attempt.json', {'atUtc': utc(), 'onlyChanged': ['admitUntilUnix']})
+        g.write(slot_path, revised)
+    finally:
+        lock.release()
+    require(read(slot_path) == revised, 'withdraw_readback_mismatch_no_retry')
+    try:
+        g.validate_slot(revised, time.time())
+    except ValueError:
+        pass
+    else:
+        raise Hold('withdrawn_admission_still_valid')
+    import psutil
+    gpu = subprocess.run(['nvidia-smi', '--query-gpu=memory.free,memory.used', '--format=csv,noheader,nounits'],
+                         capture_output=True, text=True, timeout=10)
+    receipt = {'kind': 'fitmatch.qwen48.bounded-withdrawn.v1', 'goId': issued['goId'],
+               'atUtc': utc(), 'deadlineUtc': datetime.fromtimestamp(revised['admitUntilUnix'], timezone.utc).isoformat(),
+               'slotSHA256': sha(slot_path), 'nativeHandlesFreshlyChecked': len(handles),
+               'nativeOwnedLive': 0, 'actualPeerJobActiveCount': 0, 'canonicalByte0FreeAndReleased': True,
+               'RAMAvailableBytes': psutil.virtual_memory().available, 'VRAMFreeUsedMiB': gpu.stdout.strip(),
+               'onlyDeadlineShortened': True, 'newOwnerOrRenewal': False, 'nextJobAuthorized': False}
+    save(out/'withdrawn.json', receipt)
+    save(ROOT/'coordination'/('qint-g-' + issued['goId'] + '-withdrawn.json'), receipt)
+    print(json.dumps(receipt), flush=True)
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('action', choices=['check-go', 'issue', 'withdraw'])
+    p.add_argument('--go', type=Path)
+    p.add_argument('--issued', type=Path)
+    p.add_argument('--peer-drain', type=Path)
+    p.add_argument('--out', type=Path)
+    p.add_argument('--execute', action='store_true')
+    a = p.parse_args()
+    created = False
+    try:
+        if a.action == 'check-go':
+            validate_go(read(inside(a.go)), time.time())
+            print(json.dumps({'state': 'GO_SHAPE_VALID_ONLY_NO_ADMISSION'}))
+            return 0
+        require(a.execute, 'execute_flag_required_no_mutation')
+        require(a.out is not None and a.out.is_absolute() and a.out.parent.resolve().is_relative_to((ROOT/'reports').resolve()),
+                'new_evidence_dir_must_be_inside_reports')
+        require(not a.out.exists(), 'evidence_dir_exists_no_overwrite_or_retry')
+        if a.action == 'issue':
+            go = read(inside(a.go))
+            validate_go(go, time.time())
+            a.out.mkdir()
+            created = True
+            issue(go, a.out)
+        else:
+            issued, peer = read(inside(a.issued)), read(inside(a.peer_drain))
+            validate_drain(peer, issued)
+            a.out.mkdir()
+            created = True
+            withdraw(issued, peer, a.out)
+        return 0
+    except (Hold, OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
+        # Never terminate, delete, renew, retry or release someone else's lock on error.
+        result = {'state': 'HOLD_NO_AUTOMATIC_RETRY', 'reasonType': type(error).__name__,
+                  'reason': str(error) if isinstance(error, Hold) else 'query_or_metadata_error',
+                  'winerror': getattr(error, 'winerror', None)}
+        print(json.dumps(result), flush=True)
+        if created and not (a.out/'hold.json').exists():
+            save(a.out/'hold.json', result)
+        return 75
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

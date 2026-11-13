@@ -1,0 +1,70 @@
+{
+  "session": "PC-20261113-QWEN48-CONTRACT-FIX-002",
+  "rawPrivateScriptSHA256": "af1c22b0ec092e61810b794a561c57a1d1f3c51639d55e2d0e1a008dd14b14a0",
+  "sanitizedScriptSHA256": "47fc6b7eaf9813f1e8f7dd3d279ab544c310e4edc6ab1d3fc848cff4dd96675e",
+  "previousPublishedCommit": "19dbb890e4c49c53d87061c66258ae0d9f4fd81e",
+  "redactions": [
+    {
+      "id": "R1-approved-job",
+      "replacement": "<root-reviewed-private-job-id>",
+      "occurrences": 1
+    },
+    {
+      "id": "R2-private-native-receipt",
+      "replacement": "reports/<private-native-readiness-receipt>/readiness-private.json",
+      "occurrences": 1
+    }
+  ],
+  "privateRestorationByteIdentical": true,
+  "partsConcatenateExactly": true,
+  "maxPartCharacters": 14000,
+  "testsImportChangeOnly": "bounded_coordinator.py -> bounded_coordinator.sanitized.py",
+  "files": [
+    {
+      "file": "bounded_coordinator.part-01.txt",
+      "bytes": 13947,
+      "characters": 13947,
+      "sha256": "2d77661615a22f20e77d2f9fb22f50a999df6913873e22feadcb81936311ff18",
+      "firstLine": 1,
+      "lastLine": 276
+    },
+    {
+      "file": "bounded_coordinator.part-02.txt",
+      "bytes": 5758,
+      "characters": 5758,
+      "sha256": "2c2848d62f9b609765c29256bee81f11af0014b374fd84960943d4dcd84280da",
+      "firstLine": 277,
+      "lastLine": 384
+    },
+    {
+      "file": "bounded_coordinator.sanitized.py",
+      "bytes": 19705,
+      "characters": 19705,
+      "sha256": "47fc6b7eaf9813f1e8f7dd3d279ab544c310e4edc6ab1d3fc848cff4dd96675e"
+    },
+    {
+      "file": "control-receipt.json",
+      "bytes": 1114,
+      "characters": 1114,
+      "sha256": "f3a38eda83c4e21850cdb0754cc1f2ff3fc55b148faf8f84b840c79bfff56045"
+    },
+    {
+      "file": "focused-tests.log",
+      "bytes": 1577,
+      "characters": 1577,
+      "sha256": "ff24fe37d58360f5ce6d7961a3cd701737e56e3ec70467b03fe1a45adbcc4834"
+    },
+    {
+      "file": "README.md",
+      "bytes": 9544,
+      "characters": 9532,
+      "sha256": "8af9c3dfe59b8c89d1ebf01c994a793ce6a3713238faaaaa385c34fc8c12271a"
+    },
+    {
+      "file": "test_control.py",
+      "bytes": 9126,
+      "characters": 9126,
+      "sha256": "820a5a32cd6237ce9e1ce75c6ff4f8b26dd137c2f69076cf1ef18135c1c5d0c5"
+    }
+  ]
+}

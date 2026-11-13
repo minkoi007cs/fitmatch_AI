@@ -1,0 +1,125 @@
+{
+  "scope": "Native CPU binding/identity/Job Object fixtures only; no real server or CUDA",
+  "workerGitLFSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "workerRawSHA256": "ec9df0b049feac6a14580da525657d25fb29f2663166a4b4c96a52a6baa33ddd",
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "sharedPolicyLockSlotGuardStateUnchanged": true,
+  "actualGPU": false,
+  "pcAiSlotGranted": false,
+  "backendOrHTTPSReady": false,
+  "transportEdited": false,
+  "records": [
+    {
+      "case": "real-stat-fstat-policy-identity",
+      "identity": [
+        3699583840,
+        2251799814103012
+      ],
+      "held": true
+    },
+    {
+      "case": "byte-identical-copied-real-policy-refused-while-canonical-held",
+      "refusedBeforeClaim": true,
+      "reason": "GPU lock is not the coordinator's canonical lock file (file identity differs from the policy; copied or replaced coordination directory)",
+      "CUDA": false
+    },
+    {
+      "case": "junction-workspace-alias-same-file-exclusion",
+      "acceptedAsSameFile": true,
+      "challengerAcquired": false
+    },
+    {
+      "case": "actual-expired-slot-blocks-pc-ai",
+      "refusedBeforeClaim": true,
+      "reason": "Invalid or expired GPU admission window",
+      "CUDA": false
+    },
+    {
+      "case": "legacy-config-gpuLock",
+      "refusedBeforeClaim": true,
+      "reason": "Remove gpuLock: the shared GPU lock, slot and guard come only from the pinned PC3D coordinator policy (gpuCoordinator)",
+      "CUDA": false
+    },
+    {
+      "case": "legacy-config-gpuSlot",
+      "refusedBeforeClaim": true,
+      "reason": "Remove gpuSlot: the shared GPU lock, slot and guard come only from the pinned PC3D coordinator policy (gpuCoordinator)",
+      "CUDA": false
+    },
+    {
+      "case": "legacy-config-gpuGuard",
+      "refusedBeforeClaim": true,
+      "reason": "Remove gpuGuard: the shared GPU lock, slot and guard come only from the pinned PC3D coordinator policy (gpuCoordinator)",
+      "CUDA": false
+    },
+    {
+      "case": "copied-policy-actual-main-refusal",
+      "exitCode": 5
+    },
+    {
+      "case": "isolated-valid-policy-slot-held-handle",
+      "admittedCPUOnly": true
+    },
+    {
+      "case": "isolated-other-owner-slot",
+      "refusedBeforeClaim": true,
+      "reason": "GPU slot is assigned to another owner",
+      "CUDA": false
+    },
+    {
+      "case": "isolated-swapped-lock-open",
+      "refusedBeforeClaim": true,
+      "reason": "Opened GPU lock is not the coordinator's canonical lock file (identity changed)",
+      "CUDA": false
+    },
+    {
+      "case": "isolated-swapped-lock-loop",
+      "exitCode": 5,
+      "claims": 0
+    },
+    {
+      "case": "protected-junction-gpu0-slot.json",
+      "refusedBeforeClaim": true,
+      "reason": "GPU slot must not be a link",
+      "CUDA": false
+    },
+    {
+      "case": "protected-junction-gpu0.lock",
+      "refusedBeforeClaim": true,
+      "reason": "Canonical GPU lock must not be a link",
+      "CUDA": false
+    },
+    {
+      "case": "protected-junction-gpu-coordinator.json",
+      "refusedBeforeClaim": true,
+      "reason": "Coordinator policy must not be a link",
+      "CUDA": false
+    },
+    {
+      "case": "native-drain-surviving-root",
+      "acquiredAtUtc": "2026-11-10T02:14:39.797285+00:00",
+      "releasedByUtc": "2026-11-10T02:14:39.799451+00:00",
+      "observedHandlesSignalledBeforeUnlock": true,
+      "queueHeartbeatAreCPUStubs": true
+    },
+    {
+      "case": "native-drain-venv-launcher-failure",
+      "acquiredAtUtc": "2026-11-10T02:14:39.872402+00:00",
+      "releasedByUtc": "2026-11-10T02:14:39.877079+00:00",
+      "observedHandlesSignalledBeforeUnlock": true,
+      "queueHeartbeatAreCPUStubs": true
+    },
+    {
+      "case": "native-drain-quarantine-recovery",
+      "acquiredAtUtc": "2026-11-10T02:14:39.973480+00:00",
+      "releasedByUtc": "2026-11-10T02:14:39.982161+00:00",
+      "observedHandlesSignalledBeforeUnlock": true,
+      "queueHeartbeatAreCPUStubs": true
+    }
+  ],
+  "appRevision": "f80749a65b47441958e7c6fc485034d7efe446df",
+  "PCImplementationCommit": "a2af700a26884181ff2f26de428779fbffe3b4d6",
+  "original56AllPass": false,
+  "finalCodexAcceptance": "PENDING"
+}

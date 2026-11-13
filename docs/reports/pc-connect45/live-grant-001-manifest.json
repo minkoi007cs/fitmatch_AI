@@ -1,0 +1,25 @@
+{
+  "task": "CONNECT45-RESUME2310-GRANT1",
+  "files": [
+    {
+      "file": "live-grant-001.md",
+      "sha256": "d78fe20cf4eb33f2378d94cd2eedc82bdf9788cd14fb6bcf779683d792f52476",
+      "bytes": 7919
+    },
+    {
+      "file": "live-grant-001-issued.json",
+      "sha256": "80a2964cb536114e2128294341b9dbc29b4d4a2572562abed1d45d6a4cfd7609",
+      "bytes": 1326
+    },
+    {
+      "file": "live-grant-001-withdrawn.json",
+      "sha256": "ec5fbf6dcf63296d74cec5294253e75f00d0dd4729b96819739befdd7b2c1cc9",
+      "bytes": 1978
+    },
+    {
+      "file": "live-grant-001-benchmark.json",
+      "sha256": "49b9511414d6afc17d43ba3aea93e9289a14ec6226dc76ebd8eddda988361109",
+      "bytes": 1781
+    }
+  ]
+}

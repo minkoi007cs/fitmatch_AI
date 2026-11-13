@@ -1,0 +1,48 @@
+{
+  "session": "PC-20261112-QWEN48-FOLLOWUP-002",
+  "task": "QWEN-48",
+  "recordedAtUtc": "2026-11-12T16:59:01.873600+00:00",
+  "sourceBaseline": "e4f2b86b26bacdccc728b7440bda757dd40938a4",
+  "acceptedReadinessDocsCommit": "927742428042587782a3d1bcb92f665fe06e58c6",
+  "priorReadinessSampleUtc": "2026-11-12T14:40:10.778564+00:00",
+  "priorSampleNotCurrentAdmission": true,
+  "macCandidate": "70a36fa971b7c56dfeedc2bbeecac525be128cbb",
+  "macSyntheticOnlyReported": {
+    "CPU": 10,
+    "Zod": 8
+  },
+  "pcaiObserved": "resumed existing turn, candidate source review active; final Windows CPU tests/hashes not observed",
+  "state": "WAIT_ACTUAL_PCAI_CPU_CONFIG_REVIEW_MAC_GO_NO_SLOT",
+  "newResourceSample": false,
+  "nativeSuiteRerun": false,
+  "newSlotIssued": false,
+  "slotRefreshed": false,
+  "GPUStarted": false,
+  "adapterOrTransportEdited": false,
+  "windows": [
+    {
+      "id": "A",
+      "scope": "existing private hoodie offline regression",
+      "DBWritesAllowed": false,
+      "authorizedNow": false,
+      "seconds": 600,
+      "engineSeconds": 240,
+      "drainSeconds": 30,
+      "autoRefresh": false
+    },
+    {
+      "id": "B",
+      "scope": "at most one existing queued app job --once",
+      "requiresAOwnedDrainUnloadWithdrawal": true,
+      "requiresSeparateNewGOAndFreshGates": true,
+      "authorizedNow": false,
+      "seconds": 600,
+      "engineSeconds": 240,
+      "drainSeconds": 30,
+      "autoRefresh": false
+    }
+  ],
+  "MSVC_UAC": "paused",
+  "threeDGPU": "paused",
+  "nextTrigger": "Actual PCAI Windows CPU tests/source/config published and reviewed; explicit Window A GO"
+}

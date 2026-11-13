@@ -1,0 +1,15 @@
+{
+  "task": "CONNECT-PC-GPU-45-R2",
+  "files": [
+    {
+      "file": "refresh-002.md",
+      "bytes": 4708,
+      "sha256": "78b685c7c60cc2053c5a82d383782c8f38cd21b70fbf8c837e003b7df2900a1c"
+    },
+    {
+      "file": "refresh-002.json",
+      "bytes": 1998,
+      "sha256": "9cde9d4d8140609605c43d589bc87492d9724ee12663240403ee399169f75902"
+    }
+  ]
+}

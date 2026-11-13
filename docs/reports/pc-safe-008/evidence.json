@@ -1,0 +1,85 @@
+{
+  "schema": "fitmatch.pc-safe008-evidence.v1",
+  "sessionId": "PC-20261107-QINTG008",
+  "taskIds": [
+    "PC-SAFE-008",
+    "QINT-G"
+  ],
+  "status": "Ready for review",
+  "operationsRead": "c5e2429875f633cf536402b451c0ddaa64344477",
+  "requestedPublishedOperations": "15fd71b",
+  "processRevision": "PROC0018",
+  "pcBase": "cedbfd686c1cbea016083ccec8f73f88a8c2dfe1",
+  "pcImplementation": "12087d433f6093c124e5ccbeeaa24a01e233b69f",
+  "pcBranch": "codex/pc-safe-008",
+  "guard": {
+    "oldSHA256": "4ddf206d2cb16794f1e05eded7278d82c027dab1d277ac737b003322f8006680",
+    "newRawSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+    "promotedAfterBothACKAndIdle": true,
+    "nativeCPUgroupsPassed": 11,
+    "independentQwenTestsPassed": 9,
+    "sharedCPUOnlySmokeExit": 0,
+    "publicPatchSHA256": "ea9964fe597fe9bedfa1a1dab1af238ed2e027516f95ecc55ff2c0c4d943d5ed"
+  },
+  "workerOld": {
+    "revision": "d17ca355cccb039c496c805667d43a7ddcf63ab2",
+    "upstreamUnitPass": 18,
+    "native4Pass": 4,
+    "productionGapReproducedVenvAndSurrogate": true
+  },
+  "workerNew": {
+    "revision": "931109906089e20738090613086b73c3677d3a40",
+    "unitPass": 22,
+    "unitSkip": 5,
+    "skipReason": "POSIX-only process-group cases on Windows",
+    "rawSHA256": "e251350f5de48ebd951554a9e99a38213015442cb7fed231a7dda68fb3a6d908",
+    "nativeKernelMethodEvidence": "actual OwnedProcessTree+Worker.loop with local queue/heartbeat stubs",
+    "strictPIDWaitBeforeReleaseAccepted": false,
+    "nativeWaitObservation": "job active0 before process wait signalled; recorded0-.016s observations, no realGPUoverlap asserted"
+  },
+  "sourceReviewTexts": [
+    {
+      "file": "test_guard_safety_native.py",
+      "publishedReviewText": "test_guard_safety_native.py.txt",
+      "rawSHA256": "70bc4b4e0bb3897d7ef9abbff42cc21bf6e65688dbcc0e8682a9df295d75faaf"
+    },
+    {
+      "file": "probe_adapter_quiescence.py",
+      "publishedReviewText": "probe_adapter_quiescence.py.txt",
+      "rawSHA256": "bf177b0c4edf5a4b0012bf26e4ab4cc867ce94b97e301d7d4c085429fa79e953"
+    },
+    {
+      "file": "probe_owned_tree_native.py",
+      "publishedReviewText": "probe_owned_tree_native.py.txt",
+      "rawSHA256": "42c1dff1457a05a9eec2d026154a180f4b5e7c456c3dbff6c8877258d8a96091"
+    }
+  ],
+  "sourceFilesPublishedAsProposalNotAppInstallation": true,
+  "guardPatchContextLines": 1,
+  "failedRunsRetained": [
+    "native-candidate001 invalidCLI expected70 but argparse2",
+    "native-candidate002/003 assumed venv redirector survival inside nestedJob; cascade observed",
+    "candidate1 peer review caught exact3600s submicrosecond defect; fixed",
+    "native-candidate005 query/quarantine diagnostic PermissionError; added IO retry+keep-lock-on-diagnostic-failure and barrier test",
+    "owned-tree931-001/002 strict PID wait at-return assertions failed; preserved as timing evidence, not PASS",
+    "shared CPU smoke initial nonexistent interpreter path rejected before spawn; corrected existingenv path passed"
+  ],
+  "notRun": [
+    "actual integratedGPU",
+    "actual SiTH/Warp/BlenderGPU workload",
+    "browser/API/durableQwenjob E2E",
+    "test-server enrollment/capabilities",
+    "production migrate/deploy",
+    "MSVC/UAC",
+    "personal image processing",
+    "new full simulation/GLB export"
+  ],
+  "personalImageIntake": "delegated source remains Mac-only, not received/viewed on PC; private pending-transfer record only",
+  "preservedCheckpoint004SHA256": "52d0f666ed0284aad1c2eb809e7d534349d4b52729de4244d486093855648a2b",
+  "preserved006PackSHA256": "a9211bbee97d5b25fc8091a1550a664a0be94b0b508bbe589bc253aea108951d",
+  "engines": {},
+  "liveReadiness": false,
+  "GPUmodelsLoadedThisTask": false,
+  "sourceDeleted": false,
+  "CPUresources": "no RAM/VRAM peak measured for these tests; no inference latency claimed"
+}

@@ -1,0 +1,62 @@
+{
+  "task": "PC-NATIVE-33",
+  "appRevision": "499ead01e7f9274ddf310ab346fda4c2464588bd",
+  "testSHA256": "f178f7f0ff2723b8e0b5f3235c2da71a1565d9138bd04529362f4223d8a86429",
+  "patchSHA256": "50ddd9cb14d893c4f6bdbf7c099e5e4e6c16dc54a333294c8837c2674bde5fd3",
+  "workerSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "command": "python -m unittest -v test_worker_unit",
+  "cwd": "scripts/worker",
+  "nativeWindows": true,
+  "run": 56,
+  "passed": 47,
+  "skipped": 9,
+  "skipDetails": [
+    {
+      "test": "test_worker_unit.QuiescenceTests.test_drain_waits_for_and_stops_owned_grandchild_only",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_worker_unit.QuiescenceTests.test_exited_grandchild_left_as_zombie_counts_as_drained",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_worker_unit.QuiescenceTests.test_gpu_lock_is_held_until_the_owned_tree_is_drained",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_worker_unit.QuiescenceTests.test_old_launcher_poll_reports_done_while_grandchild_runs",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_worker_unit.QuiescenceTests.test_sigterm_ignoring_grandchild_is_killed_after_grace",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_worker_unit.SharedGpuAdmissionTests.test_aliased_workspace_resolves_to_the_same_exclusive_lock",
+      "reason": "symlinks not permitted here: OSError"
+    },
+    {
+      "test": "test_worker_unit.SharedGpuAdmissionTests.test_forged_or_linked_slot_cannot_admit_other_owner",
+      "reason": "symlinks not permitted here: OSError"
+    },
+    {
+      "test": "test_worker_unit.SharedGpuAdmissionTests.test_guard_link_escaping_workspace_refused",
+      "reason": "symlinks not permitted here: OSError"
+    },
+    {
+      "test": "test_worker_unit.SharedGpuAdmissionTests.test_linked_lock_or_policy_refused",
+      "reason": "symlinks not permitted here: OSError"
+    }
+  ],
+  "errors": 0,
+  "failures": 0,
+  "exitCode": 0,
+  "unittestSeconds": 1.594,
+  "launcherWallSeconds": 1.741397799924016,
+  "stderrRawSHA256": "f8dc14819e36960d37647a1e5f64a641aee8b39adcd4bd933296b1c9260dc034",
+  "stderrRawBytes": 6334,
+  "stdoutRawSHA256": "771792c2864e4824ea97dac5ff07d412ff5c15c45fc90d1c2f78c520e8ff149a",
+  "stdoutRawBytes": 950,
+  "GPUUsed": false,
+  "status": "PASS_with_9_explicit_skips; scoped_native_review_pending"
+}

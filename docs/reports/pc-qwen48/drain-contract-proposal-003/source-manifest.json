@@ -1,0 +1,37 @@
+{
+  "session": "PC-20261113-QWEN48-DRAIN-CONTRACT-003",
+  "files": [
+    {
+      "file": "control-receipt.json",
+      "sha256": "a6e37f278fb6ba7a5f7ce7cb9c79ec796160c02ced609a1750eac8f134bd1c51",
+      "bytes": 750,
+      "characters": 750
+    },
+    {
+      "file": "drain_contract_proposal.py",
+      "sha256": "1343b7f328ca74059fbade5c6242fd4fc3dec9cb9c4d6dca51e8ba265054f95e",
+      "bytes": 6267,
+      "characters": 6267
+    },
+    {
+      "file": "focused-tests.log",
+      "sha256": "a5041df0a5bcd909035e746537b9fd66cb785803f3a93e652cef481a2958f7c7",
+      "bytes": 1493,
+      "characters": 1493
+    },
+    {
+      "file": "README.md",
+      "sha256": "5d191cff03ef3a715f697826bd428fc3ad2bc690285bd7faaa80584d4c5470ec",
+      "bytes": 7314,
+      "characters": 7312
+    },
+    {
+      "file": "test_drain_contract.py",
+      "sha256": "b3f214ed04a35925e9401184e57c505adada47c8fd444ae9921de1483e36fe81",
+      "bytes": 7264,
+      "characters": 7264
+    }
+  ],
+  "publicCodeByteIdenticalToPrivateProposal": true,
+  "notIntegratedOrRun": true
+}

@@ -1,0 +1,19 @@
+// Run with the locally installed official Khronos gltf-validator module.
+const fs = require('node:fs');
+const path = require('node:path');
+const [file, output, validatorDirectory] = process.argv.slice(2);
+if (!file || !output || !validatorDirectory) {
+  console.error('Usage: node validate-glb.cjs asset.glb report.json path/to/node_modules/gltf-validator');
+  process.exit(2);
+}
+const validator = require(path.resolve(validatorDirectory));
+validator.validateBytes(new Uint8Array(fs.readFileSync(file)), {
+  uri: path.basename(file),
+  maxIssues: 1000,
+  externalResourceFunction: () => Promise.reject(new Error('External resources forbidden')),
+}).then(report => {
+  fs.writeFileSync(output, JSON.stringify(report, null, 2));
+  console.log(JSON.stringify({validator: validator.version(), errors: report.issues.numErrors,
+    warnings: report.issues.numWarnings, infos: report.issues.numInfos}));
+  process.exitCode = report.issues.numErrors ? 1 : 0;
+}).catch(error => { console.error(error); process.exitCode = 1; });

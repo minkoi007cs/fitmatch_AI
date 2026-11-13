@@ -1,0 +1,78 @@
+{
+  "task": "CONNECT-PC-GPU-45",
+  "session": "PC-20261110-CONNECT45",
+  "docsRead": "546ca6474d65bf6d0462dd97ab2fa25e837695ed",
+  "nativePublication": "76437519ea6ba0345322ec1ed16c5c09064fb5b8",
+  "nativeResultReusedNotRerun": {
+    "run": 56,
+    "pass": 47,
+    "skip": 9,
+    "error": 0,
+    "fail": 0
+  },
+  "expectedOrigin": "https://fitmatch.minkoi.org",
+  "servingSourceProvidedByCodex": "7397b6a954dbe877e425abd09abd125398c271c4",
+  "servingWorkerGitSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "lockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "statHandlePolicyIdentityMatches": true,
+  "protectedUnchanged": true,
+  "slotExpiredAndRefusedByWorkerAndGuard": true,
+  "snapshotAtUtc": "2026-11-10T14:03:19.4049718+00:00",
+  "checkedAtUtc": "2026-11-10T14:06:29.055576+00:00",
+  "ownedProcessIdentityQueries": 8,
+  "sameOwnedObjectLive": 0,
+  "unknownOwnedIdentityQueries": 0,
+  "savedNamedJobCurrentQuery": {
+    "query": "absent",
+    "winerror": 2
+  },
+  "processNameCount": 336,
+  "knownEngineNames": 0,
+  "unavailableCommandLines": 117,
+  "driverProcessEntries": 22,
+  "unknownDriverImageQueries": 1,
+  "ownedTreeQuiescence": "PASS_AT_SNAPSHOT",
+  "globalGPUIdleProven": false,
+  "processVRAMUnavailable": true,
+  "hardwareReadOnly": {
+    "gpu": "NVIDIA GeForce RTX3060",
+    "driver": "610.88",
+    "totalMiB": 12288,
+    "usedMiB": 734,
+    "freeMiB": 11377,
+    "gpuUtilizationPercent": 3,
+    "freePhysicalRAMBytes": 4179521536,
+    "totalVisibleRAMBytes": 17013657600,
+    "modelLoadAdmissionPASS": false
+  },
+  "threeDWorkPaused": true,
+  "canonicalOSLockAcquired": false,
+  "finiteSlotIssued": false,
+  "proposedNotExecutedBounds": {
+    "owner": "pc-ai",
+    "slotSeconds": 600,
+    "jobs": 1,
+    "kind": "garment.analyze",
+    "engineTimeoutSeconds": 240,
+    "drainSeconds": 30,
+    "autoRefresh": false
+  },
+  "backendReadyExplicitlyReceived": false,
+  "backendStatusFromDispatchOnly": {
+    "fullCLIBackupReported": true,
+    "storageObjectsReported": 14,
+    "checksReported": 92,
+    "actualPG17RestoreProof": "in progress",
+    "canonicalMigrated": false,
+    "QwenEnabled": false
+  },
+  "liveQwenRun": false,
+  "newFitRenderInferenceOrDownload": false,
+  "slotRequiresFreshEvidenceAndExplicitCodexRelease": true,
+  "status": "Ready for CPU review; live slot blocked on external gates; no grant"
+}

@@ -1,0 +1,278 @@
+"""Native CPU evidence for pinned f80749a coordinator binding and owned-tree drain.
+
+Only the already-issued policy is read on the real workspace. Copies/junctions/
+swaps and finite slots are isolated fixtures. No server, engine or CUDA runs.
+"""
+import argparse
+import ctypes
+from ctypes import wintypes
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+from gpu_guard import live_stamp
+
+WORKER_LF = 'ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6'
+GUARD_SHA = '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c'
+
+
+def load(path, name):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--app', type=Path, required=True)
+    p.add_argument('--policy', type=Path, required=True)
+    p.add_argument('--policy-sha', required=True)
+    p.add_argument('--adapter-python', type=Path, required=True)
+    p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--child', action='store_true')
+    a = p.parse_args()
+    app, out = a.app.resolve(), a.output.resolve()
+    source = app / 'scripts/worker/worker.py'
+    assert hashlib.sha256(source.read_bytes().replace(b'\r\n', b'\n')).hexdigest() == WORKER_LF
+    assert hashlib.sha256(a.policy.read_bytes()).hexdigest() == a.policy_sha
+    if not a.child:
+        out.mkdir(parents=True, exist_ok=False)
+        sentinel = subprocess.Popen([sys._base_executable, '-I', '-c', 'import time;time.sleep(90)'])
+        try:
+            command = [sys._base_executable, __file__, '--app', str(app), '--policy', str(a.policy),
+                       '--policy-sha', a.policy_sha, '--adapter-python', str(a.adapter_python),
+                       '--output', str(out), '--child']
+            start = time.perf_counter()
+            r = subprocess.run(command, capture_output=True, timeout=60)
+            (out / 'stdout.log').write_bytes(r.stdout)
+            (out / 'stderr.log').write_bytes(r.stderr)
+            assert sentinel.poll() is None
+            (out / 'execution.json').write_text(json.dumps({'exitCode': r.returncode,
+                'wallSeconds': time.perf_counter() - start, 'externalSentinelSurvived': True,
+                'GPUUsed': False, 'sharedSlotChanged': False}, indent=2) + '\n', encoding='utf-8')
+            return r.returncode
+        finally:
+            if sentinel.poll() is None:
+                sentinel.terminate()
+                sentinel.wait(timeout=5)
+    w = load(source, 'bind25_worker')
+    assert w.ensure_process_containment({}) == 'windows-job-object'
+    cfg = {'gpuCoordinator': {'path': str(a.policy), 'sha256': a.policy_sha}, 'gpuSlotOwner': 'pc-ai'}
+    canonical = w.SharedGpuAdmission(cfg)
+    assert canonical.guard_sha == GUARD_SHA
+    assert hashlib.sha256(canonical.guard_path.read_bytes()).hexdigest() == GUARD_SHA
+    shared_paths = [canonical.lock_path, canonical.slot_path, canonical.guard_path, a.policy,
+                    canonical.coordination_dir / 'gpu0-state.json']
+    before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in shared_paths}
+    records = []
+    def record(case, **details):
+        records.append({'case': case, **details})
+        (out / 'partial-results.json').write_text(json.dumps(records, indent=2) + '\n', encoding='utf-8')
+    def refusal(case, call, contains=None):
+        try:
+            call()
+        except w.AdmissionError as e:
+            if contains:
+                assert contains in str(e), str(e)
+            record(case, refusedBeforeClaim=True, reason=str(e), CUDA=False)
+            return
+        raise AssertionError(case + ' admitted')
+    def junction(path, target):
+        assert path.parent.resolve().is_relative_to(out) and not os.path.lexists(path)
+        quote = lambda text: "'" + str(text).replace("'", "''") + "'"
+        command = 'New-Item -ItemType Junction -Path ' + quote(path) + ' -Target ' + quote(target) + ' -ErrorAction Stop | Out-Null'
+        r = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', command],
+                           capture_output=True, text=True, timeout=10, creationflags=0x08000000)
+        assert r.returncode == 0, r.stderr
+        assert w._is_link(path)
+    def fixture(name, copy_real_policy=False):
+        ws = out / name
+        coord = ws / 'coordination'
+        coord.mkdir(parents=True)
+        (coord / 'gpu0.lock').write_bytes(b'0')
+        guard = ws / 'fitmatch_AI/workers/windows/gpu_guard.py'
+        guard.parent.mkdir(parents=True)
+        guard.write_bytes(canonical.guard_path.read_bytes())
+        policy = coord / 'gpu-coordinator.json'
+        if copy_real_policy:
+            policy.write_bytes(a.policy.read_bytes())
+            pin = a.policy_sha
+        else:
+            r = subprocess.run([sys._base_executable, str(app / 'scripts/worker/gpu_coordinator_policy.py'),
+                'write', '--workspace', str(ws), '--expected-guard-sha256', GUARD_SHA],
+                capture_output=True, text=True, timeout=10)
+            assert r.returncode == 0, r.stderr
+            pin = json.loads(r.stdout)['sha256']
+        return ws, {'gpuCoordinator': {'path': str(policy), 'sha256': pin}, 'gpuSlotOwner': 'pc-3d'}
+    def write_slot(ws, owner='pc-3d', expired=False):
+        issued = time.time() - (120 if expired else 0)
+        doc = {'version': 1, 'owner': owner, 'issuedAtUnix': issued,
+               'issuedAtUtc': datetime.fromtimestamp(issued, timezone.utc).isoformat(),
+               'admitUntilUnix': issued + 60, 'policy': 'isolated CPU fixture only, NOT shared grant'}
+        (ws / 'coordination/gpu0-slot.json').write_text(json.dumps(doc), encoding='utf-8')
+    def stub(admission, lock):
+        obj = w.Worker.__new__(w.Worker)
+        obj.gpu, obj.admission, obj.admission_refusal = lock, admission, None
+        obj.gpu_busy_logged, obj.gpu_busy, obj.quarantine, obj.claims = False, False, None, 0
+        obj.worker_heartbeat = lambda: None
+        obj.resume_pending = lambda: None
+        obj.claim = lambda: setattr(obj, 'claims', obj.claims + 1)
+        return obj
+
+    # Snapshot/copy BEFORE holding the byte-range lock: Windows denies reading that byte while held.
+    copied_ws, copied_cfg = fixture('copied-real-policy', copy_real_policy=True)
+    assert (copied_ws / 'coordination/gpu-coordinator.json').read_bytes() == a.policy.read_bytes()
+    alias = out / 'alias-real-workspace'
+    junction(alias, canonical.workspace)
+    alias_admission = w.SharedGpuAdmission({**cfg, 'gpuCoordinator': {
+        'path': str(alias / 'coordination/gpu-coordinator.json'), 'sha256': a.policy_sha}})
+    real_lock = canonical.make_lock()
+    assert real_lock.acquire(0), 'Shared lock busy; no takeover'
+    try:
+        identity = w.file_identity(os.fstat(real_lock.handle.fileno()))
+        assert identity == canonical.lock_identity == w.file_identity(os.stat(canonical.lock_path))
+        record('real-stat-fstat-policy-identity', identity=list(identity), held=True)
+        refusal('byte-identical-copied-real-policy-refused-while-canonical-held',
+                lambda: w.SharedGpuAdmission(copied_cfg), 'identity')
+        assert not alias_admission.make_lock().acquire(0)
+        record('junction-workspace-alias-same-file-exclusion', acceptedAsSameFile=True, challengerAcquired=False)
+        refusal('actual-expired-slot-blocks-pc-ai', lambda: canonical.check(lock=real_lock), 'expired')
+        for key, value in [('gpuLock', str(copied_ws / 'coordination/gpu0.lock')),
+                           ('gpuSlot', str(copied_ws / 'coordination/gpu0-slot.json')),
+                           ('gpuGuard', {'path': str(canonical.guard_path), 'sha256': GUARD_SHA})]:
+            refusal('legacy-config-' + key, lambda key=key, value=value: w.SharedGpuAdmission({**cfg, key: value}), 'only from')
+    finally:
+        real_lock.release()
+    negative_cfg = {**copied_cfg, 'appUrl': 'https://native-cpu.invalid', 'workDir': str(out / 'negative-worker'),
+        'engines': {'garment.analyze': {'model': 'CPU_ONLY', 'revision': 'NO_MODEL', 'command': ['NEVER_RUN']}},
+        'expectedBackend': {'projectRef': 'gohczmqykjkrgdblgbog', 'appOrigin': 'https://native-cpu.invalid'}}
+    config_path = out / 'copied-negative-main.json'
+    config_path.write_text(json.dumps(negative_cfg), encoding='utf-8')
+    r = subprocess.run([sys._base_executable, str(source), '--config', str(config_path), '--once'],
+        env={**os.environ, 'FITMATCH_WORKER_TOKEN': 'fmw_CPU_fixture_not_credential'},
+        capture_output=True, text=True, timeout=10)
+    assert r.returncode == 5 and 'identity' in r.stdout
+    record('copied-policy-actual-main-refusal', exitCode=r.returncode, stdout=r.stdout, stderr=r.stderr)
+
+    ws, valid_cfg = fixture('valid-cpu-fixture')
+    write_slot(ws)
+    admission = w.SharedGpuAdmission(valid_cfg)
+    lock = admission.make_lock()
+    assert lock.acquire(0)
+    try:
+        admission.check(lock=lock)
+        record('isolated-valid-policy-slot-held-handle', admittedCPUOnly=True)
+        wrong = w.SharedGpuAdmission({**valid_cfg, 'gpuSlotOwner': 'pc-ai'})
+        refusal('isolated-other-owner-slot', lambda: wrong.check(lock=lock), 'another owner')
+    finally:
+        lock.release()
+    fresh = ws / 'coordination/fresh.lock'
+    fresh.write_bytes(b'new isolated file')
+    os.replace(fresh, ws / 'coordination/gpu0.lock')
+    refusal('isolated-swapped-lock-open', lambda: admission.make_lock().acquire(0), 'identity')
+    obj = stub(admission, admission.make_lock())
+    assert obj.loop(True, 0) == 5 and obj.claims == 0
+    record('isolated-swapped-lock-loop', exitCode=5, claims=0)
+
+    for protected in ('gpu0-slot.json', 'gpu0.lock', 'gpu-coordinator.json'):
+        ws, fixture_cfg = fixture('junction-' + protected.replace('.', '-'))
+        coord = ws / 'coordination'
+        path = coord / protected
+        if path.exists():
+            assert path.is_file() and not w._is_link(path)
+            path.unlink()  # exact isolated regular fixture only; never real lock/slot/policy
+        target = ws / 'junction-target'
+        target.mkdir()
+        junction(path, target)
+        refusal('protected-junction-' + protected, lambda fixture_cfg=fixture_cfg: w.SharedGpuAdmission(fixture_cfg), 'link')
+
+    # Actual owned venv interpreter/grandchild handles, not mock kernel counters.
+    ws, drain_cfg = fixture('drain-cpu-fixture')
+    write_slot(ws)
+    drain_admission = w.SharedGpuAdmission(drain_cfg)
+    lock = drain_admission.make_lock()
+    k = ctypes.WinDLL('kernel32', use_last_error=True)
+    k.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    k.OpenProcess.restype = wintypes.HANDLE
+    k.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+    k.WaitForSingleObject.restype = wintypes.DWORD
+    k.CloseHandle.argtypes = (wintypes.HANDLE,)
+    trees = []
+    try:
+        for label in ('surviving-root', 'venv-launcher-failure', 'quarantine-recovery'):
+            ready = out / (label + '-ready.json')
+            code = ('import os,subprocess,sys,time,json;from pathlib import Path;'
+                'g=subprocess.Popen([sys._base_executable,"-I","-c","import time;time.sleep(60)"]);'
+                f'Path({str(ready)!r}).write_text(json.dumps({{"actual":os.getpid(),"grand":g.pid}}));time.sleep(60)')
+            command = [str(a.adapter_python), '-I', '-c', code]
+            if label != 'venv-launcher-failure':
+                command = [sys._base_executable, '-I', '-c', 'import subprocess;subprocess.Popen(' + repr(command) + ')']
+            tree = w.OwnedProcessTree(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            trees.append(tree)
+            end = time.monotonic() + 5
+            while not ready.exists() and time.monotonic() < end:
+                tree.track()
+                time.sleep(.01)
+            data = json.loads(ready.read_text(encoding='utf-8'))
+            stamps = {key: live_stamp(pid) for key, pid in data.items()}
+            assert all(stamps.values())
+            tree.track()
+            assert set(data.values()) <= set(tree.job.tracked)
+            handles = [k.OpenProcess(0x00100000, False, pid) for pid in data.values()]
+            assert all(handles) and lock.acquire(0)
+            acquired = datetime.now(timezone.utc).isoformat()
+            if label == 'venv-launcher-failure':
+                tree.process.kill()
+            tree.process.wait(timeout=5)
+            assert tree.alive()
+            if label == 'quarantine-recovery':
+                original_active = tree.job.active
+                def unknown():
+                    raise OSError('Injected owned Job query refusal')
+                tree.job.active = unknown
+                obj = stub(drain_admission, lock)
+                obj.quarantine = tree
+                assert obj.loop(True, 0) == 4 and obj.claims == 0 and lock.held
+                tree.job.active = original_active
+                original_release = lock.release
+                def observed_release():
+                    if lock.held:
+                        assert all(k.WaitForSingleObject(h, 0) == 0 for h in handles)
+                    original_release()
+                lock.release = observed_release
+                assert obj.loop(True, 0) == 0 and not lock.held
+                lock.release = original_release
+            else:
+                assert tree.drain(5) and lock.held
+                assert all(k.WaitForSingleObject(h, 0) == 0 for h in handles)
+                lock.release()
+            assert all(live_stamp(pid) != stamps[key] for key, pid in data.items())
+            record('native-drain-' + label, PIDs=data, creationIdentities=stamps,
+                acquiredAtUtc=acquired, releasedByUtc=datetime.now(timezone.utc).isoformat(),
+                observedHandlesSignalledBeforeUnlock=True, queueHeartbeatAreCPUStubs=True)
+            for h in handles:
+                k.CloseHandle(h)
+    finally:
+        safe = all(tree.drain(.5) for tree in trees if tree.job.handle)
+        if safe:
+            lock.release()
+    after = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in shared_paths}
+    assert before == after
+    result = {'scope': 'Native CPU binding/identity/Job Object fixtures only; no real server or CUDA',
+        'workerGitLFSHA256': WORKER_LF, 'workerRawSHA256': hashlib.sha256(source.read_bytes()).hexdigest(),
+        'policySHA256': a.policy_sha, 'guardSHA256': GUARD_SHA, 'records': records,
+        'sharedPolicyLockSlotGuardStateUnchanged': True, 'actualGPU': False,
+        'pcAiSlotGranted': False, 'backendOrHTTPSReady': False, 'transportEdited': False}
+    (out / 'result.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+    print(json.dumps({'cases': len(records), 'nativeEvidence': 'completed', 'GPU': False}))
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

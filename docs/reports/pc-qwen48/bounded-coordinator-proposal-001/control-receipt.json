@@ -1,0 +1,18 @@
+{
+  "kind": "fitmatch.qwen48.bounded-proposal-control-receipt.v1",
+  "rawPrivateScriptSHA256": "821c16757f84bd061968ac711fc206767685be0d55e86ecc04b50613acfc5d8a",
+  "sanitizedScriptSHA256": "2cd2e4a6dac13e9bd6b55269fb3fdab7cae4c4db06c71e7c8c5319dd7cd8720a",
+  "recordedAtUtc": "2026-11-13T15:20:15.713064+00:00",
+  "privateOriginalControlTestsPassed": 11,
+  "sanitizedCopyControlTestsPassed": 11,
+  "sanitizedCopyTestExitCode": 0,
+  "testScope": "synthetic metadata/control only, no native/model/GPU/real job",
+  "originalExpiredControlExitCode": 75,
+  "expiredControlReason": "go_expired_or_not_yet_valid",
+  "rawScriptUnchanged": true,
+  "newSlotIssued": false,
+  "liveIssueOrWithdrawExecuted": false,
+  "pendingExecutionApproval": false,
+  "rootCodeAndDrainSchemaReview": "pending",
+  "oldGO": "expired; no authorization from these artifacts"
+}

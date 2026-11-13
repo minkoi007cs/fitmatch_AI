@@ -1,0 +1,306 @@
+"""Isolated Windows CPU tests for a candidate guard, never the shared GPU lock.
+
+No CUDA/model/API/credentials. Test-owned children and one external sentinel.
+Raw fixture paths/PID creation identities stay in the private report directory.
+"""
+import argparse
+from datetime import datetime, timezone
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import sys
+import time
+from unittest.mock import patch
+
+
+def load(path, root):
+    spec = importlib.util.spec_from_file_location('candidate_guard', path)
+    g = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(g)
+    g.DIRECTORY = root
+    g.LOCK, g.STATE, g.SLOT = [root / name for name in ('gpu0.lock', 'gpu0-state.json', 'gpu0-slot.json')]
+    return g
+
+
+def slot(owner='pc-3d', now=None):
+    now = time.time() if now is None else now
+    return dict(version=1, owner=owner, issuedAtUtc=datetime.fromtimestamp(now, timezone.utc).isoformat(),
+                issuedAtUnix=now, admitUntilUnix=now + 60)
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--guard-source', type=Path, required=True)
+    p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--adapter-python', type=Path)
+    p.add_argument('--fixture-wrapper', action='store_true')
+    p.add_argument('--fixture-sha')
+    p.add_argument('--inject-query-refusal', action='store_true')
+    p.add_argument('guard_args', nargs=argparse.REMAINDER)
+    a = p.parse_args()
+    source = a.guard_source.resolve()
+    sha = hashlib.sha256(source.read_bytes()).hexdigest()
+    root = a.output.resolve()
+    if a.fixture_wrapper:
+        if sha != a.fixture_sha:
+            raise ValueError('Candidate changed during a native fixture')
+        g = load(source, root)
+        if a.inject_query_refusal:
+            original_query = g.query_job
+            original_resume = g.resume
+            original_write = g.write
+            fault_active = [False]
+            writes = [0]
+            def refuse_resume(handle):
+                fault_active[0] = True
+                g.C.set_last_error(5)
+                return 0xFFFFFFFF
+            def temporary_refusal(*args):
+                if fault_active[0] and not (root/'allow-drain-query').exists():
+                    g.C.set_last_error(5)
+                    return 0
+                return original_query(*args)
+            def diagnostic_failure(path, value):
+                if value.get('status')=='quarantined':
+                    writes[0]+=1
+                    if writes[0]==2:
+                        (root/'diagnostic-write-failed').touch()
+                        raise PermissionError('Injected own fixture diagnostic-write failure')
+                return original_write(path,value)
+            g.query_job, g.resume = temporary_refusal, refuse_resume
+            g.write = diagnostic_failure
+        sys.argv = [str(source), *a.guard_args[1:]]
+        try:
+            return g.main()
+        except (OSError, ValueError, RuntimeError) as e:
+            print(json.dumps({'status': 'guard-refused', 'errorType': type(e).__name__}), file=sys.stderr)
+            return 70
+    if not a.adapter_python:
+        p.error('--adapter-python required for native tests')
+    root.mkdir(parents=True, exist_ok=False)
+    g = load(source, root / 'import-only')
+    records, identities = [], []
+    def record(name, **details):
+        records.append(dict(test=name, passed=True, **details))
+    now = time.time()
+    valid = slot(now=now)
+    assert g.validate_slot(valid, now) == 'pc-3d'
+    legacy = {k:v for k,v in valid.items() if k not in ('version', 'issuedAtUnix')}
+    assert g.validate_slot(legacy, now) == 'pc-3d'
+    precise_issue=1794057600.1234562
+    maximum=slot(now=precise_issue)
+    maximum['admitUntilUnix']=precise_issue+3600
+    assert g.validate_slot(maximum,precise_issue)=='pc-3d'
+    try:g.validate_slot(dict(maximum,admitUntilUnix=precise_issue+3600.000001),precise_issue)
+    except ValueError:pass
+    else:raise AssertionError('Maximum slot window was loosened')
+    invalid = [None, [], 'slot', True, 3, {}, {'owner':'other'}, dict(valid, owner=None),
+               dict(valid, owner=[]), dict(valid, version=True), dict(valid, version='1'),
+               dict(valid, version=2), dict(valid, unexpected=True), dict(valid, policy=None),
+               dict(valid, issuedAtUtc='2026-11-07T00:00:00'), dict(valid, issuedAtUtc='invalid')]
+    for field in ('issuedAtUnix', 'admitUntilUnix'):
+        for value in (True, False, None, '123', float('nan'), float('inf'), -float('inf'), 0, -1, 10**400):
+            invalid.append(dict(valid, **{field:value}))
+    invalid += [dict(valid, admitUntilUnix=now-1), dict(valid, admitUntilUnix=now),
+                dict(valid, admitUntilUnix=now+3601), dict(valid, issuedAtUnix=now+1),
+                slot(now=now+60), dict(valid, issuedAtUtc='9999-12-31T23:59:59+00:00')]
+    for value in invalid:
+        try:g.validate_slot(value, now)
+        except ValueError:pass
+        else:raise AssertionError('Invalid slot admitted')
+    for value in (True, None, '123', float('nan'), float('inf'), -float('inf'), 0, -1, 10**400):
+        try:g.validate_slot(valid, value)
+        except ValueError:pass
+        else:raise AssertionError('Invalid clock admitted')
+    with patch.object(g.time, 'time', return_value=float('nan')):
+        try:g.slot_owner()
+        except ValueError:pass
+        else:raise AssertionError('Invalid real clock bypassed bootstrap')
+    record('pure-slot-shape-type-finite-clock-window', invalidSlotCases=len(invalid), validV1AndLegacy=True)
+
+    active = []
+    def namespace(name, owner='pc-3d'):
+        area = root / name; area.mkdir()
+        (area/'gpu0-slot.json').write_text(json.dumps(slot(owner)), encoding='utf-8')
+        return area
+    def command(area, label, code='pass', owner='pc-3d', timeout='5', fault=False, executable=None):
+        args = [sys._base_executable, str(Path(__file__).resolve()), '--guard-source', str(source),
+                '--output', str(area), '--fixture-wrapper', '--fixture-sha', sha]
+        if fault:args.append('--inject-query-refusal')
+        args += ['--', '--owner', owner, '--label', label, '--timeout', timeout,
+                 '--log', str(area/(label+'.log')), '--', str(executable or a.adapter_python.resolve()), '-I', '-c', code]
+        return args
+    def execute(cmd):
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        with (root/'commands-private.jsonl').open('a',encoding='utf-8') as stream:
+            stream.write(json.dumps(dict(command=cmd,exitCode=result.returncode,stdout=result.stdout,stderr=result.stderr))+'\n')
+        return result
+    def spawn(cmd):
+        stream = (root/('controller-'+str(len(active))+'.log')).open('w',encoding='utf-8')
+        process = subprocess.Popen(cmd, stdout=stream, stderr=stream)
+        active.append((process, stream))
+        return process
+    def until(fn, seconds=5):
+        end=time.monotonic()+seconds
+        while time.monotonic()<end:
+            try:
+                value=fn()
+                if value:return value
+            except (OSError,ValueError):pass
+            time.sleep(.025)
+        raise AssertionError('Own fixture readiness/drain timed out')
+    def state(area):return json.loads((area/'gpu0-state.json').read_text(encoding='utf-8'))
+    def ready(area):return json.loads((area/'ready.json').read_text(encoding='utf-8'))
+    def tree_code(area):
+        grand=('import time;from pathlib import Path;'
+               f'p=Path({str(area/"release-grand")!r});end=time.monotonic()+60;'
+               '\nwhile not p.exists() and time.monotonic()<end:time.sleep(.025)')
+        return ('import os,sys,subprocess,json,time;from pathlib import Path;'
+                f'p=subprocess.Popen([sys._base_executable,"-I","-c",{grand!r}]);'
+                f'Path({str(area/"ready.json")!r}).write_text(json.dumps({{"actual":os.getpid(),"grand":p.pid}}));'
+                f'flag=Path({str(area/"release-actual")!r});end=time.monotonic()+60;'
+                '\nwhile not flag.exists() and time.monotonic()<end:time.sleep(.025)')
+    sentinel=subprocess.Popen([sys._base_executable,'-I','-c','import time;time.sleep(90)'])
+    sentinel_stamp=g.live_stamp(sentinel.pid)
+    try:
+        area=namespace('invalid')
+        marker=area/'never-start.txt'
+        code=f'from pathlib import Path;Path({str(marker)!r}).write_text("FAIL")'
+        raw_cases=[json.dumps(v) for v in invalid]
+        raw_cases += ['{bad', '{"owner":"pc-ai","owner":"pc-3d"}', '1e999',
+                      json.dumps(dict(valid, admitUntilUnix=float('nan'))),
+                      json.dumps(dict(valid, admitUntilUnix=float('inf'))),
+                      '{"owner":"pc-3d","admitUntilUnix":1e999}', ' '*65537]
+        for raw in raw_cases:
+            (area/'gpu0-slot.json').write_text(raw,encoding='utf-8')
+            result=execute(command(area,'invalid',code))
+            assert result.returncode==70 and not marker.exists(), result.stderr
+        (area/'gpu0-slot.json').write_text(json.dumps(slot()),encoding='utf-8')
+        for timeout in ('nan','inf','-inf','0','-1','86401'):
+            # argparse rejects the -inf token before semantic float validation.
+            assert execute(command(area,'invalid-timeout',code,timeout=timeout)).returncode in (2,70)
+            assert not marker.exists()
+        record('invalid-JSON-slot-and-timeout-rejected-before-native-spawn', cases=len(raw_cases)+6, childNeverStarted=True)
+
+        for first,second in [('pc-ai','pc-3d'),('pc-3d','pc-ai')]:
+            area=namespace('exclusive-'+first,first)
+            holder=spawn(command(area,'holder','import time;time.sleep(.8)',owner=first))
+            until(lambda:state(area).get('status')=='running')
+            marker=area/'challenger-start.txt'
+            challenger=execute(command(area,'challenger',f'from pathlib import Path;Path({str(marker)!r}).touch()',owner=second))
+            assert challenger.returncode==75 and not marker.exists()
+            assert holder.wait(timeout=5)==0
+            assert state(area)['allJobProcessesExited'] and state(area)['activeProcessesAtDrain']==0
+            assert execute(command(area,'after',owner=first)).returncode==0
+            record('CPU-critical-interval-exclusion-'+first+'-then-'+second, challengerExit=75, noChallengerLoad=True, actualGPU=False)
+
+        area=namespace('launcher-death')
+        holder=spawn(command(area,'launcher-death',tree_code(area),timeout='15'))
+        info=until(lambda:ready(area)); receipt=state(area)
+        actual_stamp=g.live_stamp(info['actual']);grand_stamp=g.live_stamp(info['grand'])
+        assert actual_stamp and grand_stamp and receipt['childPid']!=info['actual']
+        assert g.live_stamp(receipt['childPid'])==receipt['childCreationTime']
+        handle=g.open_process(1,False,receipt['childPid'])
+        assert handle
+        try:assert g.terminate_process(handle,70)
+        finally:g.close(handle)
+        until(lambda:g.live_stamp(receipt['childPid'])!=receipt['childCreationTime'])
+        survived=g.live_stamp(info['actual'])==actual_stamp
+        if survived:
+            assert execute(command(area,'before-drain')).returncode==75
+            (area/'release-actual').touch()
+            until(lambda:g.live_stamp(info['actual'])!=actual_stamp)
+        if g.live_stamp(info['grand'])==grand_stamp:
+            assert execute(command(area,'grandchild-before-drain')).returncode==75
+        (area/'release-grand').touch()
+        assert holder.wait(timeout=7)!=0
+        assert g.live_stamp(info['actual'])!=actual_stamp and g.live_stamp(info['grand'])!=grand_stamp
+        assert state(area)['allJobProcessesExited'] and state(area)['activeProcessesAtDrain']==0
+        assert execute(command(area,'after-drain')).returncode==0
+        identities.append(dict(case='launcher-death',**info,actualCreation=actual_stamp,grandCreation=grand_stamp,launcher=receipt['childPid'],launcherCreation=receipt['childCreationTime']))
+        record('native-venv-redirector-kill-and-drain', allOwnedExited=True, actualInterpreterSurvivedRedirectorKill=survived)
+
+        # A venv redirector may itself cascade teardown inside a nested Windows
+        # Job. Use a labelled CPU surrogate root for the positive child-survival
+        # case: the same guard must wait for independently surviving descendants.
+        area=namespace('surviving-descendants')
+        root_code=('import subprocess,sys,time;'
+                   f'p=subprocess.Popen([sys._base_executable,"-I","-c",{tree_code(area)!r}]);time.sleep(60)')
+        holder=spawn(command(area,'surviving-descendants',root_code,timeout='15',executable=sys._base_executable))
+        info=until(lambda:ready(area));receipt=state(area)
+        actual_stamp=g.live_stamp(info['actual']);grand_stamp=g.live_stamp(info['grand'])
+        assert actual_stamp and grand_stamp
+        assert g.live_stamp(receipt['childPid'])==receipt['childCreationTime']
+        handle=g.open_process(1,False,receipt['childPid']);assert handle
+        try:assert g.terminate_process(handle,70)
+        finally:g.close(handle)
+        until(lambda:g.live_stamp(receipt['childPid'])!=receipt['childCreationTime'])
+        assert g.live_stamp(info['actual'])==actual_stamp
+        assert execute(command(area,'interpreter-still-active')).returncode==75
+        (area/'release-actual').touch()
+        until(lambda:g.live_stamp(info['actual'])!=actual_stamp)
+        assert g.live_stamp(info['grand'])==grand_stamp
+        assert execute(command(area,'grandchild-still-active')).returncode==75
+        (area/'release-grand').touch()
+        assert holder.wait(timeout=5)!=0
+        assert state(area)['activeProcessesAtDrain']==0
+        assert g.live_stamp(info['grand'])!=grand_stamp
+        assert execute(command(area,'after-whole-tree')).returncode==0
+        identities.append(dict(case='CPU-surrogate-launcher',**info,actualCreation=actual_stamp,grandCreation=grand_stamp,launcher=receipt['childPid'],launcherCreation=receipt['childCreationTime']))
+        record('native-root-death-positive-surviving-interpreter-and-grandchild-gate', launcherKind='labelled CPU surrogate, base Python', lockHeldUntilBothExited=True)
+
+        area=namespace('timeout')
+        holder=spawn(command(area,'timeout',tree_code(area),timeout='2'))
+        info=until(lambda:ready(area)); stamps={key:g.live_stamp(pid) for key,pid in info.items()}
+        assert execute(command(area,'before-timeout-drain')).returncode==75
+        assert holder.wait(timeout=5)==124
+        assert all(g.live_stamp(pid)!=stamps[key] for key,pid in info.items())
+        assert state(area)['allJobProcessesExited']
+        assert execute(command(area,'after-timeout')).returncode==0
+        identities.append(dict(case='timeout',pids=info,creation=stamps))
+        record('native-timeout-drains-owned-venv-interpreter-grandchild', exitCode=124)
+
+        area=namespace('guard-crash')
+        holder=spawn(command(area,'guard-crash',tree_code(area),timeout='10'))
+        info=until(lambda:ready(area));stamps={key:g.live_stamp(pid) for key,pid in info.items()}
+        holder.kill();holder.wait(timeout=5)
+        until(lambda:all(g.live_stamp(pid)!=stamps[key] for key,pid in info.items()))
+        assert execute(command(area,'after-guard-crash')).returncode==0
+        identities.append(dict(case='guard-crash',pids=info,creation=stamps))
+        record('native-kill-on-close-guard-crash-and-named-job-recovery', allOwnedExited=True)
+
+        area=namespace('nested')
+        inner=command(area,'nested-inner',code='raise RuntimeError("nested child must not launch")')
+        nested_code='import subprocess,sys;sys.exit(subprocess.run('+repr(inner)+').returncode)'
+        assert execute(command(area,'nested-outer',nested_code)).returncode==75
+        record('nested-same-lock-refused-without-deadlock-or-child', exitCode=75)
+
+        area=namespace('query-refusal')
+        holder=spawn(command(area,'query-refusal',fault=True))
+        until(lambda:state(area).get('status')=='quarantined')
+        until(lambda:(area/'diagnostic-write-failed').exists())
+        assert execute(command(area,'quarantine-contender')).returncode==75
+        (area/'allow-drain-query').touch()
+        assert holder.wait(timeout=5)==70
+        assert state(area)['allJobProcessesExited']
+        assert execute(command(area,'after-verified-drain')).returncode==0
+        record('injected-query-and-diagnostic-write-refusal-hold-lock-until-verified-drain', injected=True, actualOSQueryFailure=False, diagnosticWriteFailureInjected=True)
+        assert sentinel.poll() is None and g.live_stamp(sentinel.pid)==sentinel_stamp
+        record('external-sentinel-survives-all-owned-teardown', foreignProcessKilled=False)
+    finally:
+        for process,stream in active:
+            if process.poll() is None:process.kill();process.wait(timeout=5)
+            stream.close()
+        if sentinel.poll() is None:sentinel.terminate();sentinel.wait(timeout=5)
+    (root/'pid-identities-private.json').write_text(json.dumps(identities,indent=2),encoding='utf-8')
+    result=dict(schema='fitmatch.guard-native-cpu.v1',guardSHA256=sha,status='passed',tests=records,
+                scope='isolated native Windows CPU fixtures; not integrated transport/GPU proof',
+                actualGPU=False,sharedLockTouched=False,transportEdited=False)
+    (root/'result-public.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+    print(json.dumps(result,indent=2))
+    return 0
+
+
+if __name__=='__main__':raise SystemExit(main())

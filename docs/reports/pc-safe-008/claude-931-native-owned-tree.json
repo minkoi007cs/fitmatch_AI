@@ -1,0 +1,61 @@
+{
+  "schema": "fitmatch.worker-native-drain.v1",
+  "workerRevision": "931109906089e20738090613086b73c3677d3a40",
+  "workerSourceSHA256": "e251350f5de48ebd951554a9e99a38213015442cb7fed231a7dda68fb3a6d908",
+  "tests": [
+    {
+      "test": "actual-OwnedProcessTree-root-exited-descendants-live-drain",
+      "passed": true,
+      "actualVenvInterpreter": true,
+      "CPUFixtureSurrogateRoot": true,
+      "allOwnedExited": true
+    },
+    {
+      "test": "actual-OwnedProcessTree-venv-launcher-failure",
+      "passed": true,
+      "allOwnedExited": true,
+      "launcherCreationRecorded": true
+    },
+    {
+      "test": "actual-Worker-loop-quarantine-with-native-owned-tree",
+      "kernelMethodChecksPassed": true,
+      "injectedJobQueryFailure": true,
+      "queueHeartbeatAreCPUStubs": true,
+      "noClaimWhileUnknown": true,
+      "lockHeldUntilKernelDrain": true,
+      "PIDWaitSignalledBeforeImmediateObservation": false
+    }
+  ],
+  "externalSentinelSurvived": true,
+  "scope": "native Windows kernel methods and actual Worker.loop; local queue/heartbeat stubs, no server E2E",
+  "realGPU": false,
+  "sharedLockTouched": false,
+  "transportEdited": false,
+  "liveReadiness": false,
+  "status": "native-method-evidence-requires-contract-review",
+  "strictPIDWaitBeforeReleaseAccepted": false,
+  "limitation": "Job activeProcesses==0 and descendant process-handle exit signal may have different timings; local observer waits are not an upstream production guarantee",
+  "drainObservations": [
+    {
+      "drainReturned": true,
+      "allPIDsGoneAtReturn": false,
+      "jobHandleClosed": true,
+      "allPIDsGoneAfterObservation": true,
+      "observationSeconds": 0.015000000013969839
+    },
+    {
+      "drainReturned": true,
+      "allPIDsGoneAtReturn": false,
+      "jobHandleClosed": true,
+      "allPIDsGoneAfterObservation": true,
+      "observationSeconds": 0.0
+    },
+    {
+      "stage": "actual-Worker-loop-after-release",
+      "gpuLockHeld": false,
+      "allPIDWaitSignalledAtImmediateObservation": false,
+      "allPIDsGoneAfterObservation": true,
+      "postLoopObservationSeconds": 0.0
+    }
+  ]
+}

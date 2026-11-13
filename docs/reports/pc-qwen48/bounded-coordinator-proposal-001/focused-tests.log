@@ -1,0 +1,16 @@
+test_boolean_zero_counter_refused (__main__.Control) ... ok
+test_complete_synthetic_metadata_is_not_native_execution (__main__.Control) ... ok
+test_expired_go155_refuses (__main__.Control) ... ok
+test_float_duration_refused (__main__.Control) ... ok
+test_heartbeat_cannot_omit_no_claim_evidence (__main__.Control) ... ok
+test_missing_actual_job_counter_blocks_withdrawal (__main__.Control) ... ok
+test_old_source_pin_refused (__main__.Control) ... ok
+test_other_job_refused (__main__.Control) ... ok
+test_two_second_write_margin (__main__.Control) ... ok
+test_valid_metadata_is_not_admission (__main__.Control) ... ok
+test_wrong_run_drain_refused (__main__.Control) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.001s
+
+OK

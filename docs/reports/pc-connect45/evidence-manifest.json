@@ -1,0 +1,15 @@
+{
+  "task": "CONNECT-PC-GPU-45",
+  "files": [
+    {
+      "file": "readiness-summary.json",
+      "bytes": 2620,
+      "sha256": "550d3470c34059c42f778f6558a6ebe39de0e5027d499cb6a8eef0ce1a8e7560"
+    },
+    {
+      "file": "report.md",
+      "bytes": 8809,
+      "sha256": "3fbd76adc8bd50ea604c0e8a47bf583ac4820e42bc14ad371572554e047d002c"
+    }
+  ]
+}

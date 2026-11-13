@@ -1,0 +1,42 @@
+{
+  "task": "PC-CPU-FACE-31",
+  "sourceCommit": "84d59045f5c0a5b082daca1e84d3c09993f4d669",
+  "files": [
+    {
+      "source": "workers/windows/bake_visible_face_cpu.py",
+      "snapshot": "bake_visible_face_cpu.py.txt",
+      "sha256": "acd23d735e1cc0c0c5f25ce4c4c9d56816097c456820b84434386d74fe931d77",
+      "bytes": 15121
+    },
+    {
+      "source": "workers/windows/render_visible_face_cpu.py",
+      "snapshot": "render_visible_face_cpu.py.txt",
+      "sha256": "6046b0e05f120852ddd5db823c2d9c34572263bb8f4a4a05991ac36c7ceba29b",
+      "bytes": 5825
+    },
+    {
+      "source": "workers/windows/validate_visible_face_cpu.py",
+      "snapshot": "validate_visible_face_cpu.py.txt",
+      "sha256": "49230fb71e412993fa4b8dbe913e7cb65da80737c2eabe03b07c4f1aeec9e9c1",
+      "bytes": 5229
+    },
+    {
+      "source": "workers/windows/test_visible_face_cpu.py",
+      "snapshot": "test_visible_face_cpu.py.txt",
+      "sha256": "850ca3970a243356ed565e466846f4f8231881f5fbaebbae47ca6321aa7ad0f2",
+      "bytes": 1377
+    },
+    {
+      "source": "workers/windows/glb_assets.py",
+      "snapshot": "glb_assets.py.txt",
+      "sha256": "4ed433ced943fe933536161c9058b44aaa4d93815697761de7971552ce08b7b3",
+      "bytes": 12239
+    },
+    {
+      "source": "workers/windows/validate-glb.cjs",
+      "snapshot": "validate-glb.cjs.txt",
+      "sha256": "da638ecd674773803ecc4e66c3c161d857265e7c2b4ee883d2a6afbe425cf72d",
+      "bytes": 1020
+    }
+  ]
+}

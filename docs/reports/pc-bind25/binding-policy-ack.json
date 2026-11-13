@@ -1,0 +1,58 @@
+{
+  "kind": "fitmatch.pc-bind25-scoped-ack.v1",
+  "scope": "observed CPU/native binding evidence only, not GPU grant or all56PASS",
+  "appRevision": "f80749a65b47441958e7c6fc485034d7efe446df",
+  "workerGitLFSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "workerRawWindowsSHA256": "ec9df0b049feac6a14580da525657d25fb29f2663166a4b4c96a52a6baa33ddd",
+  "testGitLFSHA256": "dea997fc9a22674de8e0e07087ac7233f4d75aeea98a4f989f7200e0f4bec1ef",
+  "testRawWindowsSHA256": "fcfd29eb156518456fbf9e8f2d0c2c6e5948f76102161b405bb113289569f8f6",
+  "helperRawSHA256": "251617428bb215cf416ae243244164881eaee6bfa255a51977f027137a9d045f",
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "policyKind": "fitmatch.gpu-coordinator.v1",
+  "lockIdentity": {
+    "volume": 3699583840,
+    "fileId": 2251799814103012
+  },
+  "statFstatNativeWin32Match": true,
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "placement": "worker sole byte0 owner, direct adapter, no nested guard or env-only proof",
+  "QwenIndependentPolicyACK": "PASS focused identity/hash/shape; original suite is NOT all-PASS",
+  "adapterHashesFromPeerACK_NotPC3DTests": {
+    "worker_cli.py": "1f3c26b10f67dd92461dbbba385d3499d10f1e726172454e320d7f2c8b3eebb8",
+    "worker_admission.py": "b5f92a1365a87cbd9d75ccba153b3967d6f57f3d79eedaba0b56f83626eca78a",
+    "wire.py": "66a329c51d518aa193fb3d289d42252da374cd35af11732158f7f69c4b35823a",
+    "runner.py": "4dfd7364e1f41c1c0ba5fe4187acb2a4c53e719424b9c819e10876e63f5d9d40",
+    "boundary.py": "34c3dae15a7c1087c0f7a93b2698660d291be65f01a869a4e7e55eb68e4a3657"
+  },
+  "originalUnitResult": {
+    "run": 56,
+    "pass": 46,
+    "skip": 9,
+    "errors": 1,
+    "failures": 0,
+    "skipReasons": {
+      "POSIXOnly": 5,
+      "symlinkPrivilege": 4
+    }
+  },
+  "nativeMatrixCases": 18,
+  "copyFixtureProposal": {
+    "scope": "test-only proposal in disposable copy, not edited app source or production fix",
+    "patchSHA256": "8a9fde241e6468116d45461ccba262f51ed2963f7b4d839cd09759fd82595be0",
+    "appWorkingTreeUntouched": true,
+    "original56Remains": "46PASS/9skip/1ERROR",
+    "proposalTargetedTests": 1,
+    "proposalExitCode": 0,
+    "gitApplyCheck": true,
+    "noFullSuiteRerun": true
+  },
+  "scopeState": {
+    "CodexReviewPending": true,
+    "GPUUsed": false,
+    "pcAiSlotGranted": false,
+    "backendPreflightComplete": false,
+    "servingHTTPSVerified": false,
+    "scopedEnrollmentVerified": false,
+    "MSVCUACPaused": true
+  }
+}

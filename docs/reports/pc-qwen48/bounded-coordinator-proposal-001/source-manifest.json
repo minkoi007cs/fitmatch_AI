@@ -1,0 +1,71 @@
+{
+  "session": "PC-20261113-QWEN48-PROPOSAL-PUBLISH-001",
+  "sourceBaseline": "7ecf721cb77d448f7dd8d964b7b95045610633fe",
+  "rawPrivateScriptSHA256": "821c16757f84bd061968ac711fc206767685be0d55e86ecc04b50613acfc5d8a",
+  "sanitizedScriptSHA256": "2cd2e4a6dac13e9bd6b55269fb3fdab7cae4c4db06c71e7c8c5319dd7cd8720a",
+  "redactions": [
+    {
+      "id": "R1-approved-job",
+      "replacement": "<root-reviewed-private-job-id>",
+      "occurrences": 1
+    },
+    {
+      "id": "R2-private-native-receipt",
+      "replacement": "reports/<private-native-readiness-receipt>/readiness-private.json",
+      "occurrences": 1
+    }
+  ],
+  "testsImportChangeOnly": "bounded_coordinator.py -> bounded_coordinator.sanitized.py",
+  "partsConcatenateExactly": true,
+  "maxPartCharacters": 14000,
+  "files": [
+    {
+      "file": "bounded_coordinator.part-01.txt",
+      "bytes": 13936,
+      "characters": 13936,
+      "sha256": "60d239635d016392527914218dc22b042ecbbe2ad2f3b2006afad6f170f2d832",
+      "firstLine": 1,
+      "lastLine": 273
+    },
+    {
+      "file": "bounded_coordinator.part-02.txt",
+      "bytes": 5049,
+      "characters": 5049,
+      "sha256": "fbd11593388a34b712741cbcbd9b4b0a3b8830306f1355c57cf9ec11ba79269b",
+      "firstLine": 274,
+      "lastLine": 372
+    },
+    {
+      "file": "bounded_coordinator.sanitized.py",
+      "bytes": 18985,
+      "characters": 18985,
+      "sha256": "2cd2e4a6dac13e9bd6b55269fb3fdab7cae4c4db06c71e7c8c5319dd7cd8720a"
+    },
+    {
+      "file": "control-receipt.json",
+      "bytes": 866,
+      "characters": 848,
+      "sha256": "6d9d1248955b04915b76f565bbd11727e6c4dda53e77166cb2606464ee779915"
+    },
+    {
+      "file": "focused-tests.log",
+      "bytes": 772,
+      "characters": 772,
+      "sha256": "a81be2405e49313b30cf15b0d2fea92462d3bb9cbd9a9ccdaafa7fc3abd02b7c"
+    },
+    {
+      "file": "README.md",
+      "bytes": 7559,
+      "characters": 7549,
+      "sha256": "f2fa2e014940fc0446a202960f19c48a2966ee2a1f06abd461bc023617e379fa"
+    },
+    {
+      "file": "test_control.py",
+      "bytes": 4673,
+      "characters": 4673,
+      "sha256": "f4e7116225b79d42b27cf3bda9da0ca7173d512857c33261015730c869f4e2e3"
+    }
+  ],
+  "noPrivateInputOrTokenOrProcessValues": true,
+  "liveExecution": "NOT_RUN"
+}

@@ -1,0 +1,34 @@
+{
+  "scope": "CPU decode/GLB metadata/prior UV map QA only; no new fitting/inference/render/unwrap",
+  "existingGLB": {
+    "version": 2,
+    "bytes": 419772,
+    "meshes": 1,
+    "images": 0,
+    "textures": 0,
+    "externalBufferURIs": false
+  },
+  "savedUVMap": {
+    "vertices": 14291,
+    "triangles": 20908,
+    "finiteUVs": true
+  },
+  "existingLabelledPreviewsDecoded": [
+    "front",
+    "side",
+    "back",
+    "face-closeup"
+  ],
+  "identityAccepted": false,
+  "newUnwrapFitInferenceOrRender": false,
+  "CPUUVWireframeOnly": true,
+  "compilerReadOnlyGate": {
+    "exit": 1,
+    "stderr": "MSVC is not installed. Complete install-msvc-admin.ps1 with physical UAC approval first.\n",
+    "MSVCVcvarsPresent": false,
+    "WindowsSDKIncludePresent": false,
+    "NVCCPresent": true
+  },
+  "UACInstallAttempted": false,
+  "CUDAUsed": false
+}

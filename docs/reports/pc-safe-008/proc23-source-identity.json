@@ -1,0 +1,17 @@
+{
+  "session": "PC-20261108-PROC023",
+  "appSource": "579ece2f4d7eb1b5336fec1469d5965ab9d8f919",
+  "checkedOutAppStill": "7631cb00114ddf559c234f1c0f13285dbb7305ab",
+  "workerGitLFSHA256": "4035abe547fc42621e9dad237c8f429ddb521253c3e0c2b5aab0a590eed09ceb",
+  "workerGitBytes": 63874,
+  "workerSourceUnchanged": true,
+  "CodexReview": "f262ee1a296d69efd9a6f4b7526bf917020349b8",
+  "cleanupGate": "Focused PASS per Codex65unit/DB10, not new PC tests or whole privacy acceptance",
+  "bindingGate": "NEEDS_CHANGES QREV-BIND-02",
+  "newFullNativeOrModelTests": false,
+  "GPUExecuted": false,
+  "slotGranted": false,
+  "reusedPublicReproDocsCommit": "89c0a30bcb76633db291bd0740899ae5014fff62",
+  "observedAtUtc": "2026-11-09T02:25:53.365839+00:00",
+  "PCSourceCommit": "67b8e277ee685b67170340146222161a55f72c42"
+}
