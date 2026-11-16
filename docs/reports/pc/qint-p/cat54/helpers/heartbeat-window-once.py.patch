@@ -1,0 +1,92 @@
+--- reviewed-qwen48/heartbeat-window-once.py
++++ candidate-qwen54/heartbeat-window-once.py
+@@ -14,19 +14,19 @@
+ G = Path(r'<GPU_ROOT>')
+ Q = G / 'coordination'
+ P = G / 'worker-data/qwen-pilot/private'
+-JOB = '7a7362b8-c134-4501-9e91-deef68dd0da2'
+-APP = 'f58024703bf4ec8be365bee2f8b3e1bd2248fdec'
++JOB = '1dadcac7-dbac-477c-a305-2f0c45644ab8'
++APP = 'e6541f4f129b2fec16eedf1d275db8f612387eeb'
+ WORKER = '8f1cc6bb-6446-4a7f-9d67-6144deba29be'
+ REF = 'gohczmqykjkrgdblgbog'
+ ORIGIN = 'https://fitmatch.minkoi.org'
+-OFF_SHA = '4a8f39f3d6a3cbe3fd822943614bded7f2b3e2c0284bcd86c93f334e0ae2968b'
++OFF_SHA = '72e26da104cd2dbcaf98ab951c68f1de95c7b763bf662abfa0d0f8be3703b921'
+ PINS = {'admission': 'bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37',
+-        'manifest': 'd79a0738e31f08e04de2fc41b8b825ef04e1f78732bcdaeae5ede3e58f383f0e',
+-        'config': '643b8b47b6eac98e27083ff4ea86e971a8e9fc4a733ef293917cd610abfcef31',
++        'manifest': '74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162',
++        'config': '584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d',
+         'guard': '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c',
+         'coordinator': '789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039',
+         'transport': 'ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6',
+-        'workerHelper': '4f31ff51ceb1922019b6fa308b77e5df250e362982b38e79cf25d8a6579d1b49'}
++        'workerHelper': '7868dcfac0f200465076220604a0e6264c9ce03e49a28e3856dc10fa9a0427a5'}
+ HTTP_SECONDS = 15
+ NATIVE_SECONDS = 30
+ EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+@@ -83,7 +83,7 @@
+ 
+ 
+ def approvals_off():
+-    ap = Q / 'qint-worker-qwen48-approval.json'
++    ap = Q / 'qint-worker-qwen54-approval.json'
+     return (sha(ap) == OFF_SHA and read(ap)['enabled'] is False
+             and read(P / 'qwen48-offline-approval.json')['enabled'] is False
+             and read(Q / 'qint-test-approval.json')['enabled'] is False)
+@@ -116,16 +116,16 @@
+     ready, parsed, ready_sha = window_gate(args)
+     started = time.monotonic()
+     import psutil
+-    sys.path.insert(0, str(G / 'ai-service/qint_p_qwen48'))
++    sys.path.insert(0, str(G / 'ai-service/qint_p_qwen54'))
+     import worker_admission as admission
+-    cp, mp = P / 'qwen48-worker.active.json', P / 'qwen48-runtime-manifest.json'
+-    ap = Q / 'qint-worker-qwen48-approval.json'
++    cp, mp = P / 'qwen54-worker.prepared.json', P / 'qwen54-runtime-manifest.json'
++    ap = Q / 'qint-worker-qwen54-approval.json'
+     config, manifest, policy = read(cp), read(mp), read(ap)
+     actual = {'admission': sha(admission.__file__), 'config': sha(cp), 'manifest': sha(mp),
+               'guard': sha(admission.GUARD), 'coordinator': sha(Q / 'gpu-coordinator.json'),
+               'transport': sha(policy['transport_path']),
+-              'workerHelper': sha(Path(__file__).with_name('execute-once-20261113.py'))}
+-    if actual != PINS or len(manifest['files']) != 98 or not all(
++              'workerHelper': sha(Path(__file__).with_name('execute-once-20261116.py'))}
++    if actual != PINS or len(manifest['files']) != 111 or not all(
+             sha(G / row['path']) == row['sha256'] for row in manifest['files']):
+         raise ValueError('Reviewed pins mismatch')
+     if not (approvals_off() and policy['approved_job_id'] == JOB
+@@ -198,7 +198,7 @@
+     facts = {'nativeClearAtUTC': utc(), 'sameOwnedLive': 0, 'unknownNativeQueries': 0,
+              'nativeSavedIdentityQueries': records, 'priorNamedJobQuery': job_state,
+              'nativeOwnCPULaunchers': inventory, 'RAMAvailableBytes': ram, 'VRAMFreeMiB': free,
+-             'canonicalLockIdentity': list(identity), 'sourcePinsVerified': 98,
++             'canonicalLockIdentity': list(identity), 'sourcePinsVerified': 111,
+              'nativeChecksDurationSeconds': round(time.monotonic() - started, 3),
+              'actualPins': actual, 'readyTimestamp': parsed2, 'readyReceiptSHA256': ready_sha,
+              'reportedGpuBusy': False, 'globalGPUIdleIndependentlyProven': False, 'byte0Probed': False}
+@@ -226,9 +226,9 @@
+ def paths_for(window):
+     if not re.fullmatch(r'W\d{3}', window):
+         raise ValueError('Explicit fresh window ID required')
+-    return (P / f'qwen48-heartbeat-only-{window}-attempt.json',
+-            Q / f'qint-p-qwen48-heartbeat-only-{window}.json',
+-            Q / f'qwen48-window-{window[1:]}-heartbeat.json')
++    return (P / f'qwen54-heartbeat-only-{window}-attempt.json',
++            Q / f'qint-p-qwen54-heartbeat-only-{window}.json',
++            Q / f'qwen54-window-{window[1:]}-heartbeat.json')
+ 
+ 
+ def send_once(args, config, facts):
+@@ -275,8 +275,8 @@
+                       errorType=type(error).__name__, requestMayHaveReachedApp=True)
+     finally:
+         token = None
+-    result.update(completedUTC=utc(), workerApprovalSHA256=sha(Q / 'qint-worker-qwen48-approval.json'),
+-                  approvalUnchanged=sha(Q / 'qint-worker-qwen48-approval.json') == OFF_SHA,
++    result.update(completedUTC=utc(), workerApprovalSHA256=sha(Q / 'qint-worker-qwen54-approval.json'),
++                  approvalUnchanged=sha(Q / 'qint-worker-qwen54-approval.json') == OFF_SHA,
+                   allApprovalsRemainDisabled=approvals_off())
+     result['gatePass'] = result['gatePass'] and result['approvalUnchanged'] and result['allApprovalsRemainDisabled']
+     exclusive_write(original, (json.dumps(result, indent=2) + '\n').encode('utf-8'))

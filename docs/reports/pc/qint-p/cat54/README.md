@@ -1,5 +1,7 @@
 # CAT54 CPU candidate — ready for root review
 
+Latest CPU follow-up: [NEW exact-job helper preparation, current serving/config pins and full diffs](./helpers/README.md). The initial preparation hashes below remain historical; use the helper receipt for current disabled pins.
+
 The private W007 image was actually viewed: the dominant garment is a dark horizontally quilted jacket with an open front zipper and standing collar. There is insufficient visible hood evidence to call it a hoodie. No material composition is inferred. The old assessment accepts attributes only for tshirt/jeans and explicitly requires other garment types to return null attributes. Its historical result was abstained/unsupported_category, null attributes, one attempt, 19 output tokens, 86,812 ms. This is consistent with the old scope restriction; it does not establish which exact garmentType the model emitted. Raw model text was not persisted in the available attempt files and cannot be recovered from its digest.
 
 Root reports the historical W007 backend job/analysis deleted and the later job69 canceled at attempt zero. Neither target is restored or requeued. Their status is root-reported, not a fresh PC database query. Historical local W007 result, once marker and receipts are preserved. The old78 confirmed item is untouched. A future real run must use a NEW qint.2 job bound to a CURRENT owned image after deployment and all execution gates.
