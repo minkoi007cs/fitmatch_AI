@@ -22,13 +22,13 @@
     "changed": false
   },
   "config": {
-    "readByHelper": "worker-data/qwen-pilot/private/qwen54-worker.prepared.json",
+    "readByHelper": "worker-data/qwen-pilot/private/qwen54-worker.active.json",
     "sha256": "584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d",
     "bytes": 1661,
     "beforeSha256": "a41a9b157434886abfbd0d48de8b09bc912acc44c3af53ad023de79658455a3e",
     "onlyChangedValue": "adapterRuntimeManifest.sha256",
-    "activeFileCreated": false,
-    "activationPlan": "Use the exact prepared config path directly as --config; no rename/copy and no config byte/hash change. Activation is only the reviewed approval transition in the existing helper.",
+    "activeFileCreated": true,
+    "activationPlan": "Final active config exclusively copied from exact prepared bytes; both hashes remain 584ec8e7. Helpers and approval now reference active path; no further config copy/rename is planned.",
     "hypotheticalByteExactCopySha256": "584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d",
     "noUnreviewedPathSwitch": true
   }

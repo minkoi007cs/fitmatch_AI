@@ -1,5 +1,5 @@
 --- reviewed-qwen48/execute-once-20261113.py
-+++ candidate-qwen54/execute-once-20261116.py
++++ FINAL-qwen54/execute-once-20261116.py
 @@ -18,13 +18,13 @@
  G = Path(r'<GPU_ROOT>')
  Q = G / 'coordination'
@@ -16,7 +16,7 @@
 -APPROVAL_SHA = '4a8f39f3d6a3cbe3fd822943614bded7f2b3e2c0284bcd86c93f334e0ae2968b'
 +MANIFEST_SHA = '74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162'
 +CONFIG_SHA = '584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d'
-+APPROVAL_SHA = '72e26da104cd2dbcaf98ab951c68f1de95c7b763bf662abfa0d0f8be3703b921'
++APPROVAL_SHA = 'c9db71996dafbdb77c82738ae54223e114f56f18b73707f75d0db9e0e9acb926'
  TRANSPORT_SHA = 'ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6'
  GUARD_SHA = '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c'
  MODEL = 'ebb281ec70b05090aa6165b016eac8ec08e71b17'
@@ -33,7 +33,7 @@
 -    cp = P / 'qwen48-worker.active.json'
 -    mp = P / 'qwen48-runtime-manifest.json'
 +    ap = Q / 'qint-worker-qwen54-approval.json'
-+    cp = P / 'qwen54-worker.prepared.json'
++    cp = P / 'qwen54-worker.active.json'
 +    mp = P / 'qwen54-runtime-manifest.json'
      if (sha(ap), sha(cp), sha(mp)) != (APPROVAL_SHA, CONFIG_SHA, MANIFEST_SHA):
          raise ValueError('Approval/config/manifest pin mismatch')

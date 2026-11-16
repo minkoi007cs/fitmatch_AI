@@ -1,5 +1,5 @@
 --- preserved-qwen48/config
-+++ prepared-qwen54/config
++++ FINAL-qwen54/config
 @@ -1,6 +1,6 @@
  {
    "appUrl": "https://fitmatch.minkoi.org",
@@ -35,24 +35,10 @@
    }
  }
 --- preserved-qwen48/disabled-approval
-+++ prepared-qwen54/disabled-approval
-@@ -3,26 +3,26 @@
-   "enabled": false,
-   "scope": "authorized_wardrobe_pilot",
-   "reviews": {
--    "contract": "PASS",
--    "production_drain": "PASS",
--    "worker_placement": "PASS",
--    "slot_bridge": "PASS",
-+    "contract": "PENDING",
-+    "production_drain": "PENDING",
-+    "worker_placement": "PENDING",
-+    "slot_bridge": "PENDING",
-     "backend_preflight": "PENDING",
--    "native_binding": "PASS",
--    "serving_revision": "PASS"
-+    "native_binding": "PENDING",
-+    "serving_revision": "PENDING"
++++ FINAL-qwen54/disabled-approval
+@@ -11,18 +11,18 @@
+     "native_binding": "PASS",
+     "serving_revision": "PASS"
    },
 -  "app_revision": "f58024703bf4ec8be365bee2f8b3e1bd2248fdec",
 -  "contract_revision": "f80749a65b47441958e7c6fc485034d7efe446df",
@@ -65,7 +51,7 @@
 -  "config_path": "<GPU_ROOT>\\worker-data\\qwen-pilot\\private\\qwen48-worker.active.json",
 -  "config_sha256": "643b8b47b6eac98e27083ff4ea86e971a8e9fc4a733ef293917cd610abfcef31",
 -  "work_dir": "<GPU_ROOT>\\worker-data\\qwen-pilot\\runtime",
-+  "config_path": "<GPU_ROOT>\\worker-data\\qwen-pilot\\private\\qwen54-worker.prepared.json",
++  "config_path": "<GPU_ROOT>\\worker-data\\qwen-pilot\\private\\qwen54-worker.active.json",
 +  "config_sha256": "584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d",
 +  "work_dir": "<GPU_ROOT>\\worker-data\\qwen-cat54\\runtime",
    "guard_sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",

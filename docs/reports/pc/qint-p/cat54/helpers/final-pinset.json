@@ -1,0 +1,96 @@
+{
+  "kind": "fitmatch.qwen54.final-off-pinset.v1",
+  "checkedAtUtc": "2026-11-16T15:52:24.202851+00:00",
+  "state": "FINAL_CPU_PINSET_OFF_AWAIT_ROOT_REVIEW_AND_BOUNDED_GO",
+  "jobId": "1dadcac7-dbac-477c-a305-2f0c45644ab8",
+  "analysisId": "36ec393f-3401-44e6-94e7-9b937aff4463",
+  "goId": "PC3D-QWEN54-W008-20261116",
+  "appRevision": "e6541f4f129b2fec16eedf1d275db8f612387eeb",
+  "contractRevision": "1cef14d6fc866b21ade675fb425b383be3dcd6ed",
+  "config": {
+    "path": "worker-data/qwen-pilot/private/qwen54-worker.active.json",
+    "sha256": "584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d",
+    "bytes": 1661,
+    "exclusiveCopyFromPrepared": true,
+    "byteIdenticalPrepared": true
+  },
+  "manifest": {
+    "path": "worker-data/qwen-pilot/private/qwen54-runtime-manifest.json",
+    "sha256": "74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162",
+    "bytes": 19548,
+    "entries": 111,
+    "entriesChangedDuringFinalization": 0,
+    "all111Match": true
+  },
+  "approval": {
+    "path": "coordination/qint-worker-qwen54-approval.json",
+    "sha256": "c9db71996dafbdb77c82738ae54223e114f56f18b73707f75d0db9e0e9acb926",
+    "enabled": false,
+    "reviews": {
+      "contract": "PASS",
+      "production_drain": "PASS",
+      "worker_placement": "PASS",
+      "slot_bridge": "PASS",
+      "backend_preflight": "PENDING",
+      "native_binding": "PASS",
+      "serving_revision": "PASS"
+    },
+    "reviewMeaning": "Root-authorized scoped source/schema/CPU and unchanged previously reviewed placement/drain/binding reviews; not a fresh heartbeat, native execution ACK or future GPU success."
+  },
+  "admission": {
+    "path": "ai-service/qint_p_qwen54/worker_admission.py",
+    "sha256": "bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37",
+    "bytes": 10356,
+    "changed": false
+  },
+  "helpers": [
+    {
+      "file": "execute-once-20261116.py",
+      "relativePath": "reports/ai/qint_p/cat54/helper-preparation/execute-once-20261116.py",
+      "actualPrivateSha256": "20cafae342c112e44973a8e1c3c6232ca4a3846924354a1090b1c2e67ed4b6c1",
+      "actualLfSha256": "0e4c3f8ff4560b89afbad3b6c3a5999469c341315d04963712592202615b1168",
+      "publishedSanitizedLfSha256": "c69d1eb2ff87554f97890c4f27c79a97a9d1fc5399707370eaf50aea7d79613c",
+      "literalReplacementOnly": true,
+      "baselineSha256": "4f31ff51ceb1922019b6fa308b77e5df250e362982b38e79cf25d8a6579d1b49"
+    },
+    {
+      "file": "heartbeat-window-once.py",
+      "relativePath": "reports/ai/qint_p/cat54/helper-preparation/heartbeat-window-once.py",
+      "actualPrivateSha256": "56417b4990d045d57730e12599427f5e034bfe4e34ca764b442ee85ffc516cbc",
+      "actualLfSha256": "640cc99f8f76fb2327ebf9684177a97dd78fd86e4ffaab12e19792635114294d",
+      "publishedSanitizedLfSha256": "ed55a9bef8a5d36c526da98ebdb5ec2c1fe4cc50a28f88409a927a8e2b5c417b",
+      "literalReplacementOnly": true,
+      "baselineSha256": "58e3bc86e5a15e30865634552e83922254db1de0426302f6ca96d22f61ca93dc"
+    }
+  ],
+  "engineTimeoutSeconds": 240,
+  "engineDrainSeconds": 30,
+  "observerSeconds": 330,
+  "minimumSlotRemainingSeconds": 360,
+  "slotSeconds": 600,
+  "transportSha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "guardSha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "coordinatorPolicySha256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "currentClosedSlotSha256": "07ca3504edd124b300336a42c65888a7a16b159f44b81a163223d45cfb4d1e4e",
+  "privateRuntimeDirectory": {
+    "path": "worker-data/qwen-cat54/runtime",
+    "exists": true,
+    "empty": true,
+    "exactProtectedPrivateAclCopied": true
+  },
+  "priorHelperFixtures": {
+    "passed": 29,
+    "failed": 0,
+    "skipped": 0,
+    "rerunAfterOnlyFinalPinPathChanges": false,
+    "reason": "Root asked no repeated tests on unchanged behavior; literal replacement equality and final byte/data checks performed."
+  },
+  "old98Unchanged": true,
+  "oldHelpersUnchanged": true,
+  "heartbeatSent": false,
+  "workerStarted": false,
+  "claimMade": false,
+  "slotWritten": false,
+  "gpuStarted": false,
+  "executionAuthorizationExists": false
+}

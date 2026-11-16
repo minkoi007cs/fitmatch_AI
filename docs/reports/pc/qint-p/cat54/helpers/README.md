@@ -1,46 +1,56 @@
-# QWEN54 helper copies — CPU preparation, execution OFF
+# QWEN54 FINAL OFF pinset — W008 CPU handoff
 
-Root accepted the CAT54 assessment/schema scope and authorized literal copies of the two reviewed helpers. The actual NEW authenticated-app target is job `1dadcac7-dbac-477c-a305-2f0c45644ab8`, analysis `36ec393f-3401-44e6-94e7-9b937aff4463`, policy qint.2. Root reports the serving revision `e6541f4f129b2fec16eedf1d275db8f612387eeb` READY. The exact contract snapshot remains `1cef14d6fc866b21ade675fb425b383be3dcd6ed`.
+This final pinset supersedes the a5275aa prepared-path pins. Root explicitly authorized one exclusive byte-exact active config copy and the reviewed CPU/source fields. There is no execution GO, no heartbeat, no slot issuance and no worker activation.
 
-The earlier request for an unbound-job placeholder was superseded by root supplying this actual NEW job. No placeholder can launch: the copies are now exact-job bound, but their new execution authorization and actual READY do not exist. All review fields are PENDING, and the worker approval is false. This is not a worker GO, heartbeat authorization or slot grant.
+Target NEW authenticated-app job: `1dadcac7-dbac-477c-a305-2f0c45644ab8`; analysis `36ec393f-3401-44e6-94e7-9b937aff4463`; policy qint.2. Root-proposed GoID: `PC3D-QWEN54-W008-20261116`. Serving revision is `e6541f4f129b2fec16eedf1d275db8f612387eeb`; exact contract snapshot remains `1cef14d6fc866b21ade675fb425b383be3dcd6ed`.
 
-## Current actual private pins
+## Final actual private paths and hashes
 
-| Artifact, relative to GPU root | Actual Windows SHA256 |
+Paths are relative to the existing GPU root.
+
+| Artifact | Actual Windows SHA256 |
 |---|---|
-| worker-data/qwen-pilot/private/qwen54-runtime-manifest.json, 111 entries | `74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162` |
-| worker-data/qwen-pilot/private/qwen54-worker.prepared.json | `584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d` |
-| coordination/qint-worker-qwen54-approval.json, OFF/all reviews PENDING/exact NEW job | `72e26da104cd2dbcaf98ab951c68f1de95c7b763bf662abfa0d0f8be3703b921` |
-| ai-service/qint_p_qwen54/worker_admission.py, unchanged | `bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37` |
-| reports/ai/qint_p/cat54/helper-preparation/execute-once-20261116.py | `7868dcfac0f200465076220604a0e6264c9ce03e49a28e3856dc10fa9a0427a5` |
-| reports/ai/qint_p/cat54/helper-preparation/heartbeat-window-once.py | `2315c8d91f79ff35ab86e399049bdbcbe9d3745dda00b30151aea3a853b7ce18` |
+| worker-data/qwen-pilot/private/qwen54-worker.active.json | `584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d` |
+| worker-data/qwen-pilot/private/qwen54-runtime-manifest.json | `74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162` |
+| coordination/qint-worker-qwen54-approval.json | `c9db71996dafbdb77c82738ae54223e114f56f18b73707f75d0db9e0e9acb926` |
+| ai-service/qint_p_qwen54/worker_admission.py | `bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37` |
+| reports/ai/qint_p/cat54/helper-preparation/execute-once-20261116.py | `20cafae342c112e44973a8e1c3c6232ca4a3846924354a1090b1c2e67ed4b6c1` |
+| reports/ai/qint_p/cat54/helper-preparation/heartbeat-window-once.py | `56417b4990d045d57730e12599427f5e034bfe4e34ca764b442ee85ffc516cbc` |
 
-These supersede the initial preparation-only manifest/config/approval hashes in the parent report. Runtime source file bytes have not changed: only manifest appRevision metadata and its config hash reference were updated for the actual serving revision; the new disabled approval adds the NEW exact-job pin and corresponding metadata. All 111 source hashes still match, as do all original 98 active qwen48 entries.
+The active config was absent and created with exclusive xb from the exact prepared bytes. Its 1,661 bytes and SHA256 are identical to the prepared config. No further copy or rename is planned. Both final helper copies and approval now reference this active path.
 
-[Exact manifest/config delta and admission byte count](./manifest-config-delta.json): manifest 2b5587 to 74cb0422 changes only appRevision; zero entries added, removed or changed. Reconstructing the prior appRevision reproduces its exact old hash. No .active config file is created: the helper uses the exact prepared path directly as --config, retaining hash 584ec8e7. No rename/copy is needed to activate the reviewed approval. A hypothetical byte-exact copy would retain the same config hash but switching paths would require a separately reviewed approval/helper repin.
+Approval remains enabled=false and pins only the NEW job. Contract, production_drain, worker_placement, slot_bridge, native_binding and serving_revision review fields are PASS under root's scoped source/schema/CPU review and the unchanged previously reviewed implementation. These are review acknowledgments, not a claim of fresh native execution or future GPU success. **backend_preflight remains PENDING** until the actual fresh heartbeat and authorized helper flow. The existing helper will restore these exact final OFF approval bytes after its eventual single run.
 
-## Full source and diff
+Manifest is 19,548 bytes with exactly 111 entries, totaling 486,879 pinned source bytes. All hashes match. The earlier 2b5587 to 74cb0422 transition changed only appRevision; zero file entries were added, removed or modified. Reconstructing the old appRevision reproduces the exact old hash. Finalization leaves manifest74cb0422 unchanged. Admission is unchanged at 10,356 bytes. See [exact manifest/config delta](./manifest-config-delta.json).
 
-- [Execute copy](./execute-once-20261116.py), [complete diff](./execute-once-20261116.py.patch).
-- [Atomic heartbeat copy](./heartbeat-window-once.py), [complete diff](./heartbeat-window-once.py.patch).
-- [Complete redacted config/approval structural diff](./private-config-structure.patch).
-- [Machine-readable hashes and evidence](./preparation-receipt.json), including actual raw, actual LF and published sanitized LF hashes.
-- [17 reused execute fixtures](./test_execute_once_helper.py), [12 reused timestamp/import fixtures](./test_heartbeat_window_format.py), [actual 29-test log](./helper-cpu-tests.log).
+## Full source, full diffs, machine receipt
 
-The public source replaces only the machine-specific GPU root with `<GPU_ROOT>`; substitute the actual existing root to reproduce it. It contains no token value or token digest. All other source is complete, not an excerpt. The private copies were proven byte-for-byte equal to their reviewed baselines after the explicit literal replacement map: paths, job/app/pin values and source count 98 to 111. No new helper function, architecture or transport behavior was introduced.
+- [FINAL pinset and complete raw/LF/sanitized hash matrix](./final-pinset.json).
+- [Complete execute source](./execute-once-20261116.py), [full diff from reviewed4f31 baseline](./execute-once-20261116.py.patch).
+- [Complete atomic heartbeat source](./heartbeat-window-once.py), [full diff from reviewed58e3 baseline](./heartbeat-window-once.py.patch).
+- [Final helper delta versus a5275aa](./finalization-vs-a527.patch), [final OFF approval delta versus a5275aa](./final-approval-vs-a527.patch).
+- [Full redacted config/approval diff from preserved qwen48](./private-config-structure.patch).
+- [Earlier preparation receipt](./preparation-receipt.json) is historical and superseded by final-pinset.json.
 
-The native observer, exact worker/adapter argv roles and ancestry, checkpoint/admission joins, completed-output binding, control-flow producer and native wait-state code are AST-identical. The existing receipt kind identifiers are deliberately preserved for coordinator compatibility. Atomic PS7 timestamp parsing, READY freshness, HTTP timeout, no redirects/retry and exclusive original/byte-exact-copy receipt behavior are unchanged. The existing read-only references to the disabled qwen48 offline approval and historical native readiness remain intentional; those historical files are not modified.
+Public source replaces only the machine-specific root with `<GPU_ROOT>`; substitute the actual existing root to reproduce it. Actual raw Windows, actual LF and published sanitized LF hashes are explicit in the receipt. No token value or token digest is published. The helper copies were rebuilt byte-for-byte from the original reviewed helpers using only literal paths, job/app/hash constants and the 98-to-111 count replacements. No function, architecture, transport or model behavior was introduced.
 
-Observer limit remains 330 seconds, at least 360 seconds remaining in a fresh 600-second pc-ai slot. The observer never owns/releases byte zero, kills, retries or withdraws. Failure/live/unknown still quarantines and finally attempts restoration of the exact disabled approval bytes. The worker retains the lock through the entire owned tree. No inference may overlap rendering.
+Native observer/wait logic, exact argv roles/ancestry, checkpoint/admission joins, completed-output binding, control-flow producer, PS7 timestamp parsing and atomic original/byte-exact-copy behavior remain unchanged. Receipt kind identifiers stay unchanged for coordinator compatibility. Read-only references to the disabled qwen48 offline approval and historical native readiness are intentional. Old W007 helpers, receipts and markers are preserved.
 
-New files use qwen54 receipt/marker names and 20261116 suffixes. The heartbeat copy pins the actual new execute-copy hash and writes `qint-p-qwen54-heartbeat-only-W008.json` plus a byte-exact `qwen54-window-008-heartbeat.json` when eventually authorized. A coordinator wrapper must bind these exact new names; this agent has not created a wrapper, policy, lock or slot. Proposed GoID from root is `PC3D-QWEN54-W008-20261116`.
+Engine timeout/drain remain 240/30 seconds, observer330, at least360 seconds remaining in a fresh600-second pc-ai slot. The observer never owns/releases byte0, kills, retries or withdraws; live/unknown/error still quarantines. The worker owns byte0 through its entire owned tree. Inference must not overlap rendering.
 
-## Actual verification and pending gates
+## CPU evidence and execution boundary
 
-The two existing helper fixture files were reused: **29/29 PASS, zero failure/error/skip, exit 0**, with mocked fixture callbacks and temporary files. No new architecture tests were added. The actual execute CLI with the proposed GoID returned exit 75 / CPU_REFUSED / FileNotFoundError because its new authorization is absent. The actual heartbeat CLI WITHOUT --send returned exit 75 with READY absent and HTTPAttemptMarkerExists=false. No heartbeat, claim, approval activation, model load, GPU run, slot issuance or marker consumption occurred.
+The existing [17 execute fixtures](./test_execute_once_helper.py) and [12 format/import fixtures](./test_heartbeat_window_format.py) previously passed 29/29, zero failure/error/skip, exit0: [actual log](./helper-cpu-tests.log). Root instructed no further test repetition on unchanged behavior. Only final path/hash/review metadata changed afterward; literal replacement equality and actual byte/data checks were performed without invoking a helper. No additional architecture tests were added. Earlier safe CLI refusals remain in the historical receipt and were not repeated.
 
-The immutable transport remains `ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6`; guard `47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c`; coordinator policy `789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039`. The actual current slot still hashes to CLOSED W007 `07ca3504edd124b300336a42c65888a7a16b159f44b81a163223d45cfb4d1e4e`. The old helpers still hash exactly to execute `4f31ff51...` and heartbeat `58e3bc86...`, with W007 files and consumed markers preserved.
+The separate runtime `worker-data/qwen-cat54/runtime` now exists empty, with the exact protected reviewed private-directory ACL copied and verified. This is reversible CPU preparation, not a worker start. All original98 hashes match. Guard, transport, coordinator and current CLOSED slot are unchanged:
 
-Root now reports the other legacy qint.1 jeans job eligible again, superseding the earlier canceled-status snapshot. Root owns its bounded temporary eligibility deferral/restoration during the one hoodie test; PC has not canceled, deleted, restored or requeued it. Exact-job adapter refusal does not change transport claim selection, so root backend preflight must establish the intended eligible queue before execution.
+| Component | SHA256 |
+|---|---|
+| Transport | `ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6` |
+| Guard | `47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c` |
+| Coordinator policy | `789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039` |
+| Current CLOSED W007 slot | `07ca3504edd124b300336a42c65888a7a16b159f44b81a163223d45cfb4d1e4e` |
 
-Next: root reviews these full diffs and hashes, provides any allowed review-field/pin changes, and supplies actual backend/native/finite-slot GO through the existing 3D coordinator. No new job or execution is authorized by this report. The new isolated work directory must also exist with reviewed private permissions before the unchanged execute preflight can pass. Existing helpers are never repointed to this job.
+There is no new execution authorization file or consumed W008 marker. No --send, heartbeat, claim, slot write, worker start, GPU load or inference occurred. Root must review these final diffs/pins, independently establish queue/backend/worker state, and obtain the actual finite W008 grant through the existing 3D coordinator before any execution.
+
+New heartbeat receipt names are `qint-p-qwen54-heartbeat-only-W008.json` and byte-exact `qwen54-window-008-heartbeat.json`; coordinator publication must bind those names. No wrapper/policy/lock/slot was created by this agent. Root owns temporary eligibility deferral/restoration of the other legacy qint.1 jeans job; PC has not canceled, deleted or requeued it. Exact-job adapter refusal does not change transport claim selection. This handoff itself grants no execution.

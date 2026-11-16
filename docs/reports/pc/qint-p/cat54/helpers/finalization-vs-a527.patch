@@ -1,0 +1,48 @@
+--- a5275aa-prepared/execute-once-20261116.py
++++ FINAL-active-config/execute-once-20261116.py
+@@ -24,7 +24,7 @@
+ ADMISSION_SHA = 'bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37'
+ MANIFEST_SHA = '74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162'
+ CONFIG_SHA = '584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d'
+-APPROVAL_SHA = '72e26da104cd2dbcaf98ab951c68f1de95c7b763bf662abfa0d0f8be3703b921'
++APPROVAL_SHA = 'c9db71996dafbdb77c82738ae54223e114f56f18b73707f75d0db9e0e9acb926'
+ TRANSPORT_SHA = 'ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6'
+ GUARD_SHA = '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c'
+ MODEL = 'ebb281ec70b05090aa6165b016eac8ec08e71b17'
+@@ -80,7 +80,7 @@
+     slot = json.loads(initial_slot_bytes.decode('utf-8-sig'))
+     validate_window(auth, slot, go, time.time())
+     ap = Q / 'qint-worker-qwen54-approval.json'
+-    cp = P / 'qwen54-worker.prepared.json'
++    cp = P / 'qwen54-worker.active.json'
+     mp = P / 'qwen54-runtime-manifest.json'
+     if (sha(ap), sha(cp), sha(mp)) != (APPROVAL_SHA, CONFIG_SHA, MANIFEST_SHA):
+         raise ValueError('Approval/config/manifest pin mismatch')
+--- a5275aa-prepared/heartbeat-window-once.py
++++ FINAL-active-config/heartbeat-window-once.py
+@@ -19,14 +19,14 @@
+ WORKER = '8f1cc6bb-6446-4a7f-9d67-6144deba29be'
+ REF = 'gohczmqykjkrgdblgbog'
+ ORIGIN = 'https://fitmatch.minkoi.org'
+-OFF_SHA = '72e26da104cd2dbcaf98ab951c68f1de95c7b763bf662abfa0d0f8be3703b921'
++OFF_SHA = 'c9db71996dafbdb77c82738ae54223e114f56f18b73707f75d0db9e0e9acb926'
+ PINS = {'admission': 'bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37',
+         'manifest': '74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162',
+         'config': '584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d',
+         'guard': '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c',
+         'coordinator': '789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039',
+         'transport': 'ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6',
+-        'workerHelper': '7868dcfac0f200465076220604a0e6264c9ce03e49a28e3856dc10fa9a0427a5'}
++        'workerHelper': '20cafae342c112e44973a8e1c3c6232ca4a3846924354a1090b1c2e67ed4b6c1'}
+ HTTP_SECONDS = 15
+ NATIVE_SECONDS = 30
+ EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+@@ -118,7 +118,7 @@
+     import psutil
+     sys.path.insert(0, str(G / 'ai-service/qint_p_qwen54'))
+     import worker_admission as admission
+-    cp, mp = P / 'qwen54-worker.prepared.json', P / 'qwen54-runtime-manifest.json'
++    cp, mp = P / 'qwen54-worker.active.json', P / 'qwen54-runtime-manifest.json'
+     ap = Q / 'qint-worker-qwen54-approval.json'
+     config, manifest, policy = read(cp), read(mp), read(ap)
+     actual = {'admission': sha(admission.__file__), 'config': sha(cp), 'manifest': sha(mp),
