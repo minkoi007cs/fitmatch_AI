@@ -28,7 +28,7 @@ const WARDROBE_BUCKET = "fitmatch-wardrobe";
 export type { AnalysisView } from "./analysis-read";
 
 /** Supabase adapter for the pure, skew-safe read model in analysis-read.ts. */
-const COLUMNS = "id,item_id,status,result,result_sha256,confirmed_fields,created_at";
+const COLUMNS = "id,item_id,status,result,result_sha256,confirmed_fields,created_at,policy_revision";
 function reader(): AnalysisReader {
   const db = createAdminClient();
   return {

@@ -20,6 +20,7 @@ export type AnalysisView = {
   errorCode: string | null;
   attempts: number;
   createdAt: string;
+  policyRevision: string | null;
   resultSha256: string | null;
   result: z.infer<typeof analysisResult> | null;
   confirmedFields: Record<string, unknown> | null;
@@ -33,6 +34,7 @@ export type AnalysisRow = {
   result_sha256: string | null;
   confirmed_fields: Record<string, unknown> | null;
   created_at: string;
+  policy_revision?: string;
 };
 
 export type AnalysisJob = {
@@ -58,6 +60,7 @@ export function view(a: AnalysisRow, j: AnalysisJob | null): AnalysisView {
     errorCode: a.status === "pending" ? (j?.error_code ?? null) : null,
     attempts: j?.attempt ?? 0,
     createdAt: a.created_at,
+    policyRevision: a.policy_revision ?? null,
     resultSha256: a.status === "review" || a.status === "confirmed" || a.status === "rejected" ? a.result_sha256 : null,
     result: a.status === "review" || a.status === "confirmed" || a.status === "rejected" ? a.result : null,
     confirmedFields: a.confirmed_fields,

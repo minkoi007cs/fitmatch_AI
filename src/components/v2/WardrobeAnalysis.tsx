@@ -22,6 +22,7 @@ export type AnalysisView = {
   state: "queued" | "waiting_gpu" | "running" | "review" | "confirmed" | "rejected" | "stale" | "failed" | "canceled";
   errorCode: string | null;
   attempts: number;
+  policyRevision?: string | null;
   resultSha256: string | null;
   result: {
     policyRevision?: string;
@@ -191,7 +192,11 @@ export function AnalysisPanel({
           {analysis.state === "canceled" ? "Analysis canceled." : "Analysis failed."}{" "}
           {analysis.errorCode && !(analysis.state === "canceled" && analysis.errorCode === "CANCELED") ? `${failureNames[analysis.errorCode] ?? ""} ` : ""}You can still edit item details manually.
         </p>
-        {analysis.attempts < 3 ? (
+        {analysis.policyRevision === "qint.1" ? (
+          <button type="button" disabled={busy || !hasImage} className={button} onClick={() => void start()}>
+            Analyze with updated AI
+          </button>
+        ) : analysis.attempts < 3 ? (
           <button type="button" disabled={busy} className={button} onClick={() => void act("retry")}>
             Retry
           </button>
