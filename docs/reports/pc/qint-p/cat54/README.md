@@ -32,6 +32,8 @@ All **22 new CAT54 assessment/wire/CLI tests passed**, including exact public sc
 
 Reproduce with the existing pinned qwen-vl Python environment, from the isolated candidate directory. The supplied source is an overlay on the reviewed qwen48 baseline; apply candidate-source.patch to that isolated copy, add the new modules, and use the exact contract snapshot at the full app commit above. Do not apply it over the active runtime or old 98-source pins.
 
+The unified patch uses LF. For a Windows CRLF baseline, normalize only the three files in the disposable copy (wire.py, worker_cli.py, test_wire.py) and the patch to LF before applying, or use the supplied full mapper/CLI source. An actual git apply --check on that LF-normalized disposable baseline returned exit 0. The LF patch SHA256 is `631fab4fb1cfc2d72a8e562fbf5e4c5bdae8504245b4d31be6e4d76788072f96`. The generated patch's blank context lines carry the required unified-diff space; ordinary source whitespace checks exclude that artifact.
+
 ## Config and manifest adaptation prepared, disabled
 
 Private preparation created three NEW files, without activating them:
