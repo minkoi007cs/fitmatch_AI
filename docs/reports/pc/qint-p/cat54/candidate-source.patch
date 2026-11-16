@@ -1,0 +1,60 @@
+--- qint_p_qwen48/wire.py
++++ qint_p_qwen54/wire.py
+@@ -1,4 +1,4 @@
+-"""Claude v1-r2 contract mapper; schemas/fixtures unchanged at f80749a. GPU still gated by local approval."""
++"""CAT54 isolated mapper; exact qint.2 schema snapshot, GPU gated by local approval."""
+ import hashlib
+ import json
+ from pathlib import Path
+@@ -30,8 +30,11 @@
+         raise Refused('MODEL_UNAVAILABLE')
+     return value
+ 
+-def project(raw):
+-    from assessment48 import parse
++def project(raw, policy_revision='qint.1'):
++    if policy_revision == 'qint.2':
++        from assessment54 import parse
++    else:
++        from assessment48 import parse
+     return {**parse(raw), 'hash':hashlib.sha256(raw.encode()).hexdigest()}
+ 
+ def execute(value, image, *, backend, lease, clock=time.monotonic):
+@@ -40,7 +43,8 @@
+     policy = value['policy']
+     budget = {'attempts':policy['maxSchemaAttempts'],'seconds':policy['timeoutSeconds'],
+               'output_tokens':policy['maxOutputTokens'],'response_bytes':policy['maxResultBytes']}
+-    local = execute_budget(budget,image,backend=backend,lease=lease,project=project,clock=clock)
++    local = execute_budget(budget,image,backend=backend,lease=lease,
++        project=lambda raw: project(raw, policy['policyRevision']),clock=clock)
+     if local['status'] != 'requires_human_review':
+         errors = {'gpu_busy':'GPU_BUSY','host_memory_admission':'MEMORY_PRESSURE','gpu_memory_admission':'MEMORY_PRESSURE',
+                   'model_unavailable':'MODEL_UNAVAILABLE',
+--- qint_p_qwen48/worker_cli.py
++++ qint_p_qwen54/worker_cli.py
+@@ -33,8 +33,12 @@
+                 stream.write(json.dumps({'monotonic':time.monotonic(),**record})+'\n')
+         event({'phase':'worker_admission',**proof})
+         if backend_factory is None:
+-            from runner import AnalysisBackend48
+-            backend=AnalysisBackend48(checker,event)
++            if value['policy']['policyRevision'] == 'qint.2':
++                from backend54 import AnalysisBackend54
++                backend=AnalysisBackend54(checker,event)
++            else:
++                from runner import AnalysisBackend48
++                backend=AnalysisBackend48(checker,event)
+         else:
+             backend=backend_factory(checker,event)
+         result=wire.execute(value,image,backend=backend,lease=WorkerChild(checker))
+--- qint_p_qwen48/test_wire.py
++++ qint_p_qwen54/test_wire.py
+@@ -18,7 +18,7 @@
+         validator = wire.validator('analysis-result')
+         good = list((wire.SNAPSHOT/'fixtures/qwen-v1/valid').glob('*.json'))
+         bad = list((wire.SNAPSHOT/'fixtures/qwen-v1/invalid').glob('*.json'))
+-        self.assertEqual(len(good),4);self.assertEqual(len(bad),16)
++        self.assertEqual(len(good),6);self.assertEqual(len(bad),18)
+         for path in good:
+             with self.subTest(file=path.name):validator.validate(json.loads(path.read_text()))
+         for path in bad:

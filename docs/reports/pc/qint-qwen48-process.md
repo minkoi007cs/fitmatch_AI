@@ -103,3 +103,24 @@ Same98 entries repinned, manifestd79a0738/config643b8b47/workerapproval4a8f39f3;
 and fullappf580247 checked as pure data. Allapprovalsdisabled/backendPENDING. NoHB/claim/GPU/
 slotwrite or queued-job mutation. Report qint-p/qwen48/job-scope-installed.md. Ready for final
 pin review; execution paused for coordinatoravailability/explicitoperationalhandoff, no takeover.
+
+CAT54 START — PC-QWEN-CAT54-20261116 / CPU-only isolated proposal.
+Baseline docs/pc-qint-p-20261107 at c8b33d743ec6458093e06362a8cf14e6ae3ad03c, clean before claim.
+Onboarding reread AGENTS/agent/roadmap/process; root assigns adapter/runtime only.
+Scope docs/reports/pc/qint-p/cat54/ and this own process delta; no active98 changes.
+Actual private W007 image viewed: dominant quilted jacket, no sufficient hood evidence.
+qint.1 tshirt/jeans allowlist forces non-supported types to abstain; raw text not persisted.
+Root owns qint.2 schemas/app from f7222f6; wait exact schemas for wire conformance.
+Old W007 deleted and new69 canceled per root fresh canonical: never restore/requeue either.
+Keep DB/worker approvals off, no heartbeat/slot/claim/GPU; keep current result/once/proofs/old78.
+
+CAT54 CPU HANDOFF — isolated qint_p_qwen54 prepared at exact app contract
+1cef14d6fc866b21ade675fb425b383be3dcd6ed; all34 snapshot Git blobs match.
+New assessment/semantic/backend plus minimal wire/CLI routing and test fixture counts only.
+Actual CPU177:176PASS/0fail/0error/1Notrun(native symlink Win1314); strict harness EXIT1
+for no-skips rule. All22 CAT54 testsPASS; separate qwen-v1 contract checkerEXIT0/PASS.
+No heavy imports/GPU. New111-entry manifest2b558726/configa41a9b15/disabledapprovalf7c22ddf
+are separate OFF/PENDING, await NEW exact job pin/root review/helper adaptation.
+Original98 allhashes unchanged; W007 local checkpoint/once and old78 preserved.
+Report/source/diff/log/hash inventory: docs/reports/pc/qint-p/cat54/README.md.
+No HB/claim/slot/requeue/deploy/inference; image/model accuracy NOT VERIFIED.
