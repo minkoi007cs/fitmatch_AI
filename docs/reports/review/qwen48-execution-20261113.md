@@ -1,6 +1,6 @@
 # QWEN-48 controlled app execution — 13 November 2026
 
-The remaining owner photo has **not run** at this checkpoint: its job is queued, attempt 0, analysis pending, without a result. No reupload is needed. The existing worker remains disabled while a concrete bounded execution command is prepared. Earlier GO windows are closed and cannot be reused.
+The PC **received the remaining owner photo**, but its pre-load resource admission stopped with MEMORY_PRESSURE. The server returned it to queued/attempt 0 with one deferral; no analysis result was produced. The existing worker is disabled again and the finite GPU window has expired. No reupload is needed. Earlier GO windows are closed and cannot be reused.
 
 ## Verified readiness
 
@@ -20,8 +20,32 @@ A real heartbeat at 13:51:59 UTC returned HTTP 200, the canonical backend and on
 
 ## Execution handoff
 
-The prior readonly Allow decisions did not authorize a new command that writes a GPU slot. A single explicitly reviewable PowerShell command has been prepared and read in full to wait for a fresh operator signal, issue once, leave Python absent while Qwen starts, then withdraw once only after the same-run AI evidence, independent Mac server verification and explicit closeout signal. Its PowerShell 7.6.5 parser reported no syntax errors; it waits at most 300 seconds for a new operator signal and 600 seconds for closeout evidence, with fixed code hashes and one issue/withdraw call. Actual PC execution approval is being requested for the full reviewed command. It retains bounded waits and stops on errors; it does not disable approval settings, change administrator permissions or bypass a rejected action.
-
-After that command is approved and reports readiness, Codex must refresh the queue/domain and enable the existing narrowly scoped worker for one fresh heartbeat. Only then may a new operator GO create one 600-second slot and the PC run the one already authorized photo with --once. Human confirmation stays with the owner; old confirmed values are preserved. After actual result and native closeout, disable the worker again and record the independent withdrawal.
+The owner approved the bounded PowerShell workflow under the normal PC execution policy. The actual W006 execution and its failed resource admission are recorded below. W006 has expired and cannot be reused. A separate W007 wrapper and metadata publisher were reviewed, but no new slot or inference is authorized until fresh memory readiness and preservation of the failed local working state are verified. Any new platform execution approval remains subject to the PC's normal policy.
 
 The earlier real offline hoodie regression remains a scoped success: unsupported_category abstention, null attributes, one attempt, 19 tokens and 85.250 seconds. It is not evidence that the remaining app photo completed or that personal 3D generation is ready. The product assessment remains 55/100; full avatar/real garment/editing acceptance is still open.
+
+## First approved wrapper attempt
+
+The owner approved the full command and it actually reported APPROVAL_READY at 2026-11-14 03:19:28 UTC (13 November, 22:19 EST). The new heartbeat preflight then refused before HTTP because Python 3.10 could not parse the seven fractional-second digits in the PowerShell readiness timestamp. The wrapper reached its 300-second limit and wrote HOLD at 03:24:28 UTC. Coordinator evidence confirms no issue/withdraw invocation, no new slot and unchanged prior slot bytes. The narrowly scoped database worker was disabled again. No model inference or additional image submission occurred.
+
+The timing-format mismatch was missed during the initial cross-runtime review. A focused timestamp correction and a single-invocation fresh-native-check-to-heartbeat helper were subsequently reviewed before the explicit pre-admission resume recorded below. No GPU guard, runtime source, resource floor, approval setting or model is weakened. Failed readiness and GO evidence are retained; any further execution must still use the normal PC permission policy.
+
+## Actual W006 execution and safe stop
+
+After the format correction passed 12 Python 3.10 CPU cases and its full source was reviewed, the approved wrapper was explicitly resumed before admission. A new real heartbeat passed at 2026-11-14 03:41:21 UTC; independent database last_seen was 03:41:22.443 UTC. The coordinator issued one 600-second slot, 03:41:24.414073–03:51:24.414073 UTC, and its actual process exited 0 before the worker started.
+
+The worker started at 03:43:11.650455 UTC and claimed the photo. The local attempt reached inferring, then the adapter returned 74/MEMORY_PRESSURE. The observer's minimum available RAM was 4,277,817,344 bytes, approximately 16.4 MiB below the unchanged 4 GiB admission floor. Existing traces establish a pre-load resource refusal but do not identify which pre-load recheck failed; this is not an observed model OOM or a successful semantic result.
+
+The worker process returned 0 while the local checkpoint was failed and no result existed. The observer correctly refused to mark its full success evidence complete. Independent server inspection showed queued/attempt 0/waiting_gpu/MEMORY_PRESSURE, one deferral, analysis pending. No confirmation or wardrobe-value rewrite occurred. The scoped worker and local execution approvals were disabled.
+
+The observer retained the actual worker and two adapter native process objects; all were signalled exited. An independent coordinator check at 03:49:01 UTC found all three saved creation identities absent, no unknowns, no known engine process, and the canonical byte-zero lock free/acquired/released. Free VRAM was 11,404 MiB. The slot expired naturally at 03:51:24 UTC and the guard actually refused further admission. The PowerShell wrapper ended HOLD because a successful Mac server receipt was absent; no successful-result receipt, independent withdrawal or unload callback was fabricated.
+
+Post-run RAM samples were about 4.57 GiB, leaving insufficient margin against startup fluctuations. Read-only app aggregates showed Claude at approximately 1.4 GiB working set and Chrome absent. The existing owner authorization to save work and gracefully close Chrome/Claude is being followed for Claude only, subject to clear saved state and normal UI permissions. Edge, ChatGPT, Codex, Remote Control and services are preserved. Another GPU window is not authorized until memory recovery and fresh evidence are complete.
+
+## Continuation — 16 November 2026
+
+Independent database inspection at 08:46 UTC still shows the remaining photo queued, attempt 0, waiting_gpu, MEMORY_PRESSURE, one deferral, analysis pending and no result. The worker is disabled; its last server heartbeat remains 14 November 03:43:56.892 UTC. This continuation has not yet established a fresh PC heartbeat or a new inference result.
+
+The PC AI chat's prior turn ended with a Codex usage-limit error after invoking Claude's normal File > Exit. Closure and recovered RAM were not verified before that interruption. Both existing PC chats have been resumed for fresh read-only resource/native-state checks; failed-run preservation and any new one-photo window remain pending. No account upgrade, model change or paid resource was initiated.
+
+The product assessment remains 55/100, a qualitative readiness score rather than a test pass percentage. The website can be reviewed, but the remaining online photo, general clothing classification quality and the personal avatar/separate-garment/editing journey still lack acceptance evidence.
