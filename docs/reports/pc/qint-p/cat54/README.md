@@ -4,6 +4,8 @@ The private W007 image was actually viewed: the dominant garment is a dark horiz
 
 Root reports the historical W007 backend job/analysis deleted and the later job69 canceled at attempt zero. Neither target is restored or requeued. Their status is root-reported, not a fresh PC database query. Historical local W007 result, once marker and receipts are preserved. The old78 confirmed item is untouched. A future real run must use a NEW qint.2 job bound to a CURRENT owned image after deployment and all execution gates.
 
+Root's latest signed-in app inspection identifies the current beige hoodie as the intended retest source. This is root-reported visual context, not a new PC image inspection. The deleted jacket and canceled jeans job are excluded. Root will provide the NEW authenticated-UI job ID/input before config gates. No garment label, color, job ID or image digest is hardcoded into the candidate to enforce that expected answer.
+
 ## Actual source and isolation
 
 Local docs branch `docs/pc-qint-p-20261107`, baseline HEAD `c8b33d743ec6458093e06362a8cf14e6ae3ad03c`, clean before the CAT54 claim. Local HEAD is not claimed synchronized with earlier connector publications. Scope is this CAT54 report/source directory and the PC-owned process delta.
@@ -14,6 +16,7 @@ The new source candidate is `ai-service/qint_p_qwen54`, separate from the active
 - [Changed candidate file inventory with actual SHA256](./candidate-changes.json).
 - [CPU diagnosis and unchanged baseline source hashes](./cpu-diagnosis.json).
 - [Verification and prepared private pins](./cpu-verification.json), [complete synthetic CPU log](./cpu-suite.log).
+- [Windows source bytes versus published LF hashes](./source-representations.json); all eight runnable source files are already LF and have identical hashes in both representations.
 
 The assessment supports tshirt, shirt, hoodie, jacket, sweater and jeans independently, without relabeling. A visible attached hood is needed for hoodie; long sleeves alone are insufficient. Uncertain, ambiguous, non-garment, unreadable and out-of-domain targets still abstain. Unknown is accepted by the app vocabulary but deliberately remains an abstention in this assessment. A hoodless sweatshirt is not forced into tshirt or sweater. Common attribute consistency and forced-unknown material/hidden pockets remain enforced. This is analysis taxonomy only, with no new 3D capability.
 
