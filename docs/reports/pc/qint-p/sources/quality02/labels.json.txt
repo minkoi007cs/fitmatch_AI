@@ -1,0 +1,21 @@
+{
+  "version":"quality02-labels-v1",
+  "annotation_method":"Human inspection by PC-AI-01 of exact public reference images; no model output used as ground truth",
+  "scope":"Two public references only; no personal wardrobe or generalization claim",
+  "images":[
+    {"id":"tshirt","file":"tshirt.png","image_kind":"small illustration, not a garment photograph","sha256":"6a08e7b819e897ed2725e286df8af886560b1db59d60c2758d4d550f068a3f08",
+     "expected":{"category":"tshirt","dominant_colors":["blue","white"],"pattern":"striped","logo_presence":"visible","neckline":"crew","sleeves":"short","material_composition":"unknown","back_pocket_count":"unknown","pockets_total":"unknown"},
+     "legible_logo_texts":["FON BET","DELO","RUSCON"],
+     "notes":"Round neckline and short sleeves visible; primary stripes blue/white. Small red logo accent excluded from dominant color labels. Crest text is excluded because unreadable. No hidden-back or composition evidence."},
+    {"id":"jeans","file":"jeans.jpg","image_kind":"public-domain photograph, front view","sha256":"b316902ad85e8ff46b164ceb7f2c38d3c1424c9d789703e0267e3dfce68fbe1c",
+     "expected":{"category":"jeans","dominant_colors":["blue"],"pattern":"solid","logo_presence":"not_visible","neckline":"not_applicable","sleeves":"not_applicable","material_composition":"unknown","back_pocket_count":"unknown","pockets_total":"unknown"},
+     "legible_logo_texts":[],
+     "notes":"Fabric looks denim-like, but material composition and total/back pockets are not observable. Do not convert a typical jeans prior into five-pocket evidence."}
+  ],
+  "manual_baseline_issues":[
+    {"image":"tshirt","field":"neckline/sleeves","claim":"No visible collar or sleeve details.","judgment":"false negative: round neck and short sleeves are visibly present"},
+    {"image":"tshirt","field":"logo_texts","claim":"FON BET only","judgment":"one of three labeled legible sponsor texts returned; partial recall, no added false text"},
+    {"image":"jeans","field":"pockets_total","claim":"Standard five-pocket design","judgment":"unsupported: total/back pockets cannot be verified from this front image"},
+    {"image":"jeans","field":"material_composition","claim":"Denim fabric with visible stitching","judgment":"appearance is denim-like; composition itself remains unverified"}
+  ]
+}

@@ -1,0 +1,77 @@
+import copy
+import hashlib
+import json
+from pathlib import Path
+import tempfile
+import unittest
+import uuid
+from types import SimpleNamespace
+from unittest.mock import patch
+from retention import cleanup_plan
+
+ROOT=Path(__file__).resolve().parent
+BASE=ROOT/'test-retention';BASE.mkdir(exist_ok=True)
+def uid(n):return str(uuid.UUID(int=n))
+
+class RetentionTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory(prefix='q03-',dir=BASE);self.root=Path(self.tmp.name).resolve()
+        self.assertEqual(self.root.parent,BASE.resolve());self.addCleanup(self.tmp.cleanup)
+        self.data=b'synthetic source bytes, not a user photograph';self.hash=hashlib.sha256(self.data).hexdigest()
+        self.binding={'owner_id':uid(1),'job_id':uid(2),'source_revision':uid(3),'image_sha256':self.hash}
+        self.tombstone={**self.binding,'deleted':True,'job_attempt':2}
+        self.prefix=f'{uuid.UUID(uid(2)).hex}/{uuid.UUID(uid(3)).hex}'
+        self.relative=f'{self.prefix}/source/{self.hash}.jpg'
+        self.path=self.root/self.relative;self.path.parent.mkdir(parents=True);self.path.write_bytes(self.data)
+        (self.root/self.prefix/'binding.json').write_text(json.dumps({'version':'pc-ai.job-source-binding.v1','binding':self.binding}))
+        self.entries=[{'relative_path':self.relative,'sha256':self.hash}]
+    def plan(self,**kwargs):
+        opts=dict(binding=self.binding,tombstone=self.tombstone,entries=self.entries,active_processes=0,job_attempt=2);opts.update(kwargs)
+        return cleanup_plan(self.root,**opts)
+    def test_dry_run_keeps_source(self):
+        result=self.plan();self.assertFalse(result['executed']);self.assertEqual(result['status'],'physical_delete_pending')
+        self.assertEqual(self.path.read_bytes(),self.data)
+    def test_retry_still_lists_logically_deleted_source(self):
+        self.assertEqual(self.plan()['candidates'],self.plan()['candidates']);self.assertTrue(self.path.exists())
+    def test_active_job_blocks_plan(self):
+        with self.assertRaises(ValueError):self.plan(active_processes=1)
+    def test_tombstone_owner_revision_and_fence(self):
+        for key,value in [('owner_id',uid(9)),('job_id',uid(9)),('source_revision',uid(9)),('image_sha256','a'*64),('deleted',False),('job_attempt',1)]:
+            tomb=copy.deepcopy(self.tombstone);tomb[key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):self.plan(tombstone=tomb)
+    def test_traversal_foreign_models_and_derived_refused(self):
+        for path in ['../escape.jpg','/absolute.jpg','C:\\private.jpg',self.relative.replace(uuid.UUID(uid(2)).hex,uuid.UUID(uid(9)).hex,1),
+                     self.relative.replace('/source/','/derived/'),'models/qwen3-vl-4b/model.safetensors']:
+            with self.subTest(path=path),self.assertRaises(ValueError):self.plan(entries=[{'relative_path':path,'sha256':self.hash}])
+    def test_changed_bytes_refused(self):
+        self.path.write_bytes(b'changed source')
+        with self.assertRaises(ValueError):self.plan()
+    def test_filename_hash_mismatch_refused(self):
+        with self.assertRaises(ValueError):self.plan(entries=[{'relative_path':self.relative,'sha256':'a'*64}])
+    def test_raw_ocr_evidence_can_share_source_binding(self):
+        data=b'{"raw_ocr":"unverified"}';digest=hashlib.sha256(data).hexdigest()
+        relative=f'{self.prefix}/source-evidence/{digest}.json'
+        path=self.root/relative;path.parent.mkdir();path.write_bytes(data)
+        result=self.plan(entries=[{'relative_path':relative,'sha256':digest}]);self.assertTrue(path.exists());self.assertFalse(result['executed'])
+    def test_symlink_source_refused_without_deleting_target(self):
+        target=self.root/'outside-source.txt';target.write_bytes(self.data)
+        self.path.unlink()
+        try:self.path.symlink_to(target)
+        except OSError as error:
+            if getattr(error,'winerror',None)==1314:self.skipTest('Native file-link case Not run: Windows1314; no elevation requested')
+            raise
+        with self.assertRaises(ValueError):self.plan()
+        self.assertEqual(target.read_bytes(),self.data)
+    def test_forged_owner_in_both_request_and_tombstone_fails_stored_binding(self):
+        binding=copy.deepcopy(self.binding);binding['owner_id']=uid(9)
+        tombstone=copy.deepcopy(self.tombstone);tombstone['owner_id']=uid(9)
+        with self.assertRaises(ValueError):self.plan(binding=binding,tombstone=tombstone)
+    def test_reparse_flag_fault_injection_refused(self):
+        original=Path.lstat
+        def injected(path):
+            value=original(path)
+            if path==self.path:return SimpleNamespace(st_mode=value.st_mode,st_file_attributes=0x400)
+            return value
+        with patch.object(Path,'lstat',injected),self.assertRaises(ValueError):self.plan()
+
+if __name__=='__main__':unittest.main(verbosity=2)

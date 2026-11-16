@@ -1,0 +1,22 @@
+{
+  "session": "PC-QINT-P-20261110-12",
+  "privateTokenFormatAnd32RandomByteEncoding": "PASS",
+  "tokenHashMatchesReservation": true,
+  "tokenHashOrValueIncludedHere": false,
+  "idempotentReuseWithoutTokenRewrite": "PASS after existing ACL verification",
+  "ownerOnlyACLVerifiedByPowerShell": true,
+  "initialACLReapplyPrivilegeError": "recovered by verifying already-correct protected user-only DACL; no elevation",
+  "exactOriginCanonicalBinding": "PASS pure existing backend_binding",
+  "existingCoordinatorBinding": "PASS read-only, no lock taken",
+  "disabledWrapper": true,
+  "activeConfigCreated": false,
+  "operatorApprovalInstalled": false,
+  "finiteSlotGranted": false,
+  "preparedBackgroundCommand": "hidden worker --config future reviewed active config --once; bounded observation; no forced kill or false drain",
+  "fullQuiescenceProven": false,
+  "processCandidates": 1,
+  "unknownCommandLineCount": 0,
+  "authHeartbeatClaimOrRuntimeStart": false,
+  "GPUOrTorchImported": false,
+  "modelWeightsReadOrRehashed": false
+}

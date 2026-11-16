@@ -1,0 +1,113 @@
+"""PROC0020 CPU handoff: exact contract/transport pin + adapter refusal cases, no worker loop/CUDA."""
+import argparse
+import contextlib
+from datetime import datetime,timezone
+import hashlib
+import io
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+import tempfile
+from unittest.mock import patch
+
+import worker_admission as admission
+import worker_cli
+import wire
+from boundary import MODEL_REVISION
+
+ROOT=Path(__file__).resolve().parent
+DOCS=ROOT.parents[2]/'fitmatch-pc-ai-01-docs'
+DEFAULT_REV='95d59ad5846d78f47209041a76198ad56c378f58'
+
+def git_bytes(revision,path):
+    return subprocess.check_output(['git','show',revision+':'+path],cwd=DOCS)
+
+def sha(data):return hashlib.sha256(data).hexdigest()
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--revision',default=DEFAULT_REV)
+    args=parser.parse_args()
+    if not re.fullmatch('[0-9a-f]{40}',args.revision):raise ValueError('Exact40hex revision required')
+    report=ROOT.parents[1]/'reports/ai/qint_p'/('proc20-'+args.revision[:12])
+    report.mkdir(exist_ok=True)
+    pin=json.loads((wire.SNAPSHOT/'pin.json').read_text())
+    contract_files=[]
+    for item in pin['files']:
+        if not item['path'].startswith(('schemas/qwen-v1/','fixtures/qwen-v1/')):continue
+        data=git_bytes(args.revision,item['path'])
+        if sha(data)!=item['sha256']:
+            raise RuntimeError('Contract changed; update explicit snapshot and conformance before ACK: '+item['path'])
+        contract_files.append({'path':item['path'],'sha256':sha(data)})
+    transport=git_bytes(args.revision,'scripts/worker/worker.py')
+    private_source=report/'worker-source-private.py'
+    if private_source.exists() and private_source.read_bytes()!=transport:raise RuntimeError('Preserve previous source')
+    private_source.write_bytes(transport)
+    guard_hash=sha(admission.GUARD.read_bytes())
+    if guard_hash!=admission.GUARD_HASH:raise RuntimeError('Installed guard changed; independent ACK required')
+    results=[]
+    with tempfile.TemporaryDirectory(prefix='cpu-',dir=report) as temporary:
+        root=Path(temporary).absolute()
+        value=json.loads((wire.SNAPSHOT/'fixtures/qwen-v1/adapter-input.json').read_text())
+        value['modelRevision']['revision']=MODEL_REVISION
+        area=root/'jobs'/value['jobId']/'a1-abcd1234';area.mkdir(parents=True)
+        manifest=area/'input.json';output=area/'result.json';value['outputPath']=str(output)
+        manifest.write_text(json.dumps(value))
+        config_path=root/'config.json';policy_path=root/'synthetic-cpu-policy.json'
+        base={'gpuLock':str(admission.LOCK),'processContainment':'required','workDir':str(root),
+            'gpuSlot':str(admission.COORD/'gpu0-slot.json'),'gpuSlotOwner':'pc-ai',
+            'gpuGuard':{'path':str(admission.GUARD),'sha256':admission.GUARD_HASH}}
+        # Synthetic PASS markers live only in this disposable test folder. They
+        # are never installed at the real policy path and never authorize a GPU.
+        policy={'version':'qint-p.worker-admission.v1','enabled':True,'scope':'disposable_test_only',
+            'reviews':{gate:'PASS' for gate in admission.GATES},'app_revision':args.revision,
+            'contract_revision':args.revision,'transport_revision':args.revision,
+            'transport_path':str(private_source.absolute()),'transport_sha256':sha(transport),
+            'transport_python_exe':str(Path(sys.executable).absolute()),'config_path':str(config_path),
+            'config_sha256':'0'*64,'work_dir':str(root),'guard_sha256':guard_hash,'lock_path':str(admission.LOCK)}
+        cases=[('default_lock',{'gpuLock':'default'},{}),('missing_lock',{'gpuLock':None},{}),
+            ('other_absolute_lock',{'gpuLock':str(root/'ProgramData/fitmatch/gpu-0.lock')},{}),
+            ('relative_lock',{'gpuLock':'gpu0.lock'},{}),
+            ('unsafe_containment',{'processContainment':'unsafe-disabled'},{}),
+            ('wrong_workdir',{'workDir':str(root/'foreign')},{}),
+            ('stale_guard_pin',{}, {'guard_sha256':'4ddf206d2cb16794f1e05eded7278d82c027dab1d277ac737b003322f8006680'}),
+            ('unreviewed_slot_bridge',{}, {'reviews':{**policy['reviews'],'slot_bridge':'PENDING'}}),
+            ('changed_worker_source_pin',{}, {'transport_sha256':'0'*64})]
+        for name,config_changes,policy_changes in cases:
+            config={**base,**config_changes}
+            if name=='missing_lock':config.pop('gpuLock')
+            config_path.write_text(json.dumps(config))
+            test_policy={**policy,'config_sha256':sha(config_path.read_bytes()),**policy_changes}
+            policy_path.write_text(json.dumps(test_policy))
+            out,err=io.StringIO(),io.StringIO()
+            with patch.dict('os.environ',{'FITMATCH_GPU_LOCK_HELD_BY':'worker','FITMATCH_GPU_LOCK_PATH':str(admission.LOCK)}), \
+                 patch.object(admission,'lock_is_held',side_effect=AssertionError('Shared lock probe must not be reached')) as lock_probe, \
+                 patch.object(admission,'in_windows_job',side_effect=AssertionError('Kernel Job probe must not be reached')) as job_probe, \
+                 contextlib.redirect_stdout(out),contextlib.redirect_stderr(err):
+                def no_backend(*_):raise AssertionError('Backend construction forbidden')
+                code=worker_cli.main(['--input',str(manifest),'--output',str(output),'--policy',str(policy_path)],
+                    backend_factory=no_backend)
+            expected={'success':False,'code':'GPU_BUSY'}
+            assert code==75 and json.loads(err.getvalue())==expected,(name,code,err.getvalue())
+            assert not output.exists() and not lock_probe.called and not job_probe.called
+            assert 'torch' not in sys.modules
+            results.append({'case':name,'adapter_exit':75,'stderr':expected,'backend_reached':False,
+                            'shared_lock_probe_reached':False,'kernel_job_probe_reached':False})
+    example=json.loads(git_bytes(args.revision,'scripts/worker/config.qwen-test.example.json'))
+    data={'session':'PC-QINT-P-20261108-03','app_revision':args.revision,
+        'transport_sha256':sha(transport),'contract_files_checked':contract_files,
+        'installed_guard_sha256':guard_hash,'lock_alias':'existing coordinator absolute coordination/gpu0.lock; byte0',
+        'one_lock_owner':'worker; direct adapter, no nested guard','CPU_cases':results,
+        'source_sample_gpuLock':example.get('gpuLock'),
+        'startup_P1_status':'Owned by Claude; adapter rejection does not fix or approve upstream worker startup',
+        'final_Claude_ACK':'pending QREV fixes and explicit final revision',
+        'real_policy_installed':admission.POLICY.exists(),'CUDA_imported':'torch' in sys.modules,
+        'real_GPU':False,'personal_image_read':False,'network_or_worker_loop':False,
+        'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
+    (report/'cpu-handoff-smoke.json').write_text(json.dumps(data,indent=2)+'\n')
+    print(json.dumps({key:data[key] for key in ['app_revision','transport_sha256','source_sample_gpuLock',
+        'final_Claude_ACK','CUDA_imported','real_GPU']} | {'CPU_cases_passed':len(results),'contract_files_checked':len(contract_files)}))
+
+if __name__=='__main__':main()

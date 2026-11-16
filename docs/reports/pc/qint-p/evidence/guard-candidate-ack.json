@@ -1,0 +1,35 @@
+{
+  "version": "qint-p.guard-ack.v1",
+  "session": "PC-QINT-P-20261107-01",
+  "guardSha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "guardPath": "<GPU_ROOT>/fitmatch_AI/workers/windows/gpu_guard.py",
+  "lockPath": "<GPU_ROOT>/coordination/gpu0.lock",
+  "lockMechanism": "msvcrt exclusive byte0",
+  "placement": "external_guard_owns_byte0",
+  "independent_cpu_retest": true,
+  "candidate_status": "ACK for exact candidate; 3D owner must promote only after idle proof",
+  "slot_policy": "v1 writer; legacy UTC reader; <=3600seconds; present expired/malformed refuses both; idle pc-3d renews",
+  "no_nested_lock": true,
+  "integratedGPUAuthorized": false,
+  "gates_pending": [
+    "shared promotion receipt",
+    "production transport drain review",
+    "exact Claude contract ACK/Codex review",
+    "test endpoint/scoped credentials"
+  ],
+  "retest_summary": {
+    "session": "PC-QINT-P-20261107-01",
+    "candidate_sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+    "tests_run": 9,
+    "passed": 9,
+    "errors": 0,
+    "failures": 0,
+    "invalid_slot_cases": 35,
+    "native_pre_spawn_cases": 38,
+    "seconds": 8.39,
+    "shared_guard_modified": false,
+    "shared_lock_taken": false,
+    "model_loaded": false
+  },
+  "recordedAtUtc": "2026-11-07T13:25:45.255430+00:00"
+}

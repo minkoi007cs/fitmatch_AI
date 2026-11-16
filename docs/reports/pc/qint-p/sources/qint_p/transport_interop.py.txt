@@ -1,0 +1,88 @@
+"""CPU only: readonly pinned actual transport classification vs direct-argv errors. No client/worker loop."""
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import contextlib
+import io
+from PIL import Image
+import worker_cli
+from test_adapter import Backend
+
+from boundary import MODEL_REVISION
+from worker_admission import GUARD_HASH
+import wire
+
+ROOT=Path(__file__).resolve().parent
+DOCS=ROOT.parents[2]/'fitmatch-pc-ai-01-docs'
+BIND25='--bind25' in sys.argv
+REV='f80749a65b47441958e7c6fc485034d7efe446df' if BIND25 else '1f4d01f0705453b4f479fe2583a7b752b55ffa04'
+REPORT=ROOT.parents[1]/('reports/ai/qint_p/bind25' if BIND25 else 'reports/ai/qint_p/worker_bridge')
+REPORT.mkdir(exist_ok=True)
+source=subprocess.check_output(['git','show',REV+':scripts/worker/worker.py'],cwd=DOCS)
+target=REPORT/'worker-source-private.py'
+if target.exists() and target.read_bytes()!=source:raise RuntimeError('Keep existing source evidence')
+target.write_bytes(source)
+spec=importlib.util.spec_from_file_location('qintp_readonly_transport',target)
+worker=importlib.util.module_from_spec(spec);spec.loader.exec_module(worker)
+
+records=[]
+with tempfile.TemporaryDirectory(prefix='cli-',dir=REPORT) as temporary:
+    root=Path(temporary).absolute()
+    case=json.loads((wire.SNAPSHOT/'fixtures/qwen-v1/adapter-input.json').read_text())
+    case['modelRevision']['revision']=MODEL_REVISION
+    case['outputPath']=str(root/'result.json')
+    manifest=root/'input.json'
+    command=[sys.executable,str(ROOT/'worker_cli.py'),'--input',str(manifest),'--output',str(root/'result.json')]
+    for name,raw,env,exit_code,expected in [
+        ('missing_operator_approval',json.dumps(case),dict(os.environ),75,'GPU_BUSY'),
+        ('environment_hints_alone',json.dumps(case),{**os.environ,'FITMATCH_GPU_LOCK_HELD_BY':'worker',
+            'FITMATCH_GPU_LOCK_PATH':str(ROOT.parents[1]/'coordination/gpu0.lock')},75,'GPU_BUSY'),
+        ('placeholder_model_revision',json.dumps({**case,'modelRevision':{'model':'Qwen/Qwen3-VL-4B-Instruct','revision':'0'*40}}),dict(os.environ),78,'MODEL_UNAVAILABLE'),
+        ('malformed_input','{bad',dict(os.environ),2,'INVALID_INPUT')]:
+        manifest.write_text(raw)
+        process=subprocess.run(command,env=env,capture_output=True,text=True,timeout=15,creationflags=0x08000000)
+        assert process.returncode==exit_code,(name,process.returncode)
+        err=root/'adapter.err';err.write_text(process.stderr)
+        observed=worker.classify_exit(process.returncode,{},err,'garment.analyze')
+        assert observed==expected,(name,observed)
+        assert not (root/'result.json').exists()
+        records.append({'test':name,'exit':process.returncode,'stderr':json.loads(process.stderr),
+                        'actual_transport_classification':observed,'result_created':False})
+    for code in wire.EXIT:
+        err=root/'adapter.err';err.write_text(json.dumps({'success':False,'code':code}))
+        default=worker.classify_exit(wire.EXIT[code],{},err,'garment.analyze')
+        configured=worker.classify_exit(wire.EXIT[code],{'exitCodes':{'124':'TIMEOUT'}},err,'garment.analyze')
+        records.append({'test':'error_table','code':code,'exit':wire.EXIT[code],
+                        'default_transport':default,'with_timeout_mapping':configured})
+        assert configured==code,(code,configured)
+    image=root/'input-0.jpg';Image.new('RGB',(64,64),'blue').save(image)
+    image_bytes=image.read_bytes();image_sha=hashlib.sha256(image_bytes).hexdigest()
+    case['assets'][0].update(localPath=str(image),bytes=len(image_bytes),sha256=image_sha)
+    case['binding']['imageSha256']=image_sha;manifest.write_text(json.dumps(case))
+    with contextlib.redirect_stdout(io.StringIO()),contextlib.redirect_stderr(io.StringIO()):
+        result=worker_cli.main(['--input',str(manifest),'--output',str(root/'result.json')],
+            verifier=lambda *args:{'scope':'injected CPU parent proof, no real worker'},
+            backend_factory=lambda *args:Backend())
+    assert result==0
+    output_bytes=(root/'result.json').read_bytes()
+    fixture_output=REPORT/'cpu-fixture-result.json';fixture_output.write_bytes(output_bytes)
+    assert worker.json_result_ok(fixture_output,case['binding'])
+    checked=subprocess.run([sys.executable,str(wire.SNAPSHOT/'scripts/check-qwen-contract.py'),str(fixture_output)],
+        capture_output=True,text=True,timeout=15)
+    assert checked.returncode==0,checked.stdout
+    records.append({'test':'CPU_positive_fixture','parent_proof':'injected','backend':'synthetic Backend',
+        'actual_transport_json_result_ok':True,'exported_contract_checker_exit':0,
+        'result_sha256':hashlib.sha256(output_bytes).hexdigest(),'GPU_loaded':False})
+output={'session':'PC-QINT-P-20261109-09' if BIND25 else 'PC-QINT-P-20261107-02','transport_revision':REV,
+    'transport_source_sha256':hashlib.sha256(source).hexdigest(),'source_changed':False,
+    'scope':'actual direct CLI negative subprocesses + actual classify_exit; no HTTP/queue/worker loop',
+    'records':records,'model_loaded':False,'shared_lock_taken':False,'personal_image_read':False,
+    'timeout_note':'Default transport classifies adapter exit124 as INFERENCE_FAILED; explicit operator exitCodes124=TIMEOUT required for typed logical timeout.'}
+(REPORT/'transport-interop.json').write_text(json.dumps(output,indent=2)+'\n')
+print(json.dumps({'transport_revision':REV,'CLI_cases_passed':4,'error_mappings_checked':len(wire.EXIT),
+    'model_loaded':False,'transport_source_sha256':output['transport_source_sha256']}))

@@ -1,0 +1,188 @@
+{
+  "$id": "https://fitmatch.local/schemas/qwen-v1/analysis-adapter-input.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "protocolVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "protocolRevision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "contract": {
+      "type": "string",
+      "const": "fitmatch.qwen-garment-analysis.v1"
+    },
+    "jobId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "kind": {
+      "type": "string",
+      "const": "garment.analyze"
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "analysisId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "itemId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "imageAssetId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "imageSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "jobId",
+        "analysisId",
+        "itemId",
+        "imageAssetId",
+        "imageSha256"
+      ],
+      "additionalProperties": false
+    },
+    "modelRevision": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "model",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "policyRevision": {
+          "type": "string",
+          "const": "qint.1"
+        },
+        "maxOutputTokens": {
+          "type": "number",
+          "const": 192
+        },
+        "maxSchemaAttempts": {
+          "type": "number",
+          "const": 2
+        },
+        "maxResultBytes": {
+          "type": "number",
+          "const": 8192
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        },
+        "imageIsUntrustedData": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "policyRevision",
+        "maxOutputTokens",
+        "maxSchemaAttempts",
+        "maxResultBytes",
+        "timeoutSeconds",
+        "imageIsUntrustedData"
+      ],
+      "additionalProperties": false
+    },
+    "assets": {
+      "minItems": 1,
+      "maxItems": 1,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "const": "garment_image"
+          },
+          "assetId": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "localPath": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10485760
+          },
+          "mediaType": {
+            "type": "string",
+            "const": "image/jpeg"
+          }
+        },
+        "required": [
+          "role",
+          "assetId",
+          "localPath",
+          "sha256",
+          "bytes",
+          "mediaType"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "resultSchema": {
+      "type": "string",
+      "const": "fitmatch.garment-analysis.result.v1"
+    },
+    "outputPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    }
+  },
+  "required": [
+    "protocolVersion",
+    "protocolRevision",
+    "contract",
+    "jobId",
+    "kind",
+    "binding",
+    "modelRevision",
+    "policy",
+    "assets",
+    "resultSchema",
+    "outputPath"
+  ],
+  "additionalProperties": false
+}

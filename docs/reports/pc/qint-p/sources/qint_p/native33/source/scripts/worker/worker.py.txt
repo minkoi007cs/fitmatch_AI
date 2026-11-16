@@ -1,0 +1,1454 @@
+#!/usr/bin/env python3
+"""Outbound Fitmatch worker protocol v1, revision v1-r2. Python 3.10+, stdlib only; inference adapters are separate.
+Never advertises a model unless a local command is explicitly configured. No mock generation.
+
+R1 recovery rules (see docs/worker-api-contract-v1.md):
+- Every side effect around an output is recorded in a durable per-job checkpoint, written atomically.
+- Once an adapter produced a verified output, the worker never sends `fail` for it and never runs the model
+  again for the same job/inputs/engine revision: it retries, reconciles with the server, or keeps the
+  checkpoint so a later lease (same process, restart, or reclaimed attempt) publishes the same bytes.
+- Network-level failures are retried with bounded exponential backoff + jitter; 409 means the lease is no
+  longer ours (server is authoritative); 401/403 means the credential is no longer valid.
+"""
+import argparse
+import hashlib
+import http.client
+import json
+from datetime import datetime, timezone
+import math
+import os
+from pathlib import Path
+import random
+import re
+import signal
+import stat
+import struct
+import subprocess
+import sys
+import threading
+import tempfile
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
+
+PROTOCOL_REVISION = 'v1-r2'
+KINDS = {'avatar.reconstruct', 'garment.reconstruct', 'garment.drape', 'bottom.reconstruct', 'bottom.drape', 'garment.analyze'}
+# QINT-C: garment.analyze returns one bounded JSON proposal (contract fitmatch.qwen-garment-analysis.v1,
+# docs/qwen-contract-v1.md), never a GLB. Same queue, lease, fencing, lock and drain as 3D jobs.
+ANALYSIS_CONTRACT = 'fitmatch.qwen-garment-analysis.v1'
+ANALYSIS_RESULT = 'fitmatch.garment-analysis.result.v1'
+MAX_RESULT_BYTES = 8192
+MAX_BYTES = 40 * 1024 * 1024
+MAX_VIDEO_BYTES = 150 * 1024 * 1024
+MEDIA_EXT = {'image/jpeg': '.jpg', 'model/gltf-binary': '.glb', 'video/mp4': '.mp4', 'video/webm': '.webm', 'video/quicktime': '.mov'}
+
+
+def input_name(index, asset):
+    """Local file name for an input; v1-r2 servers send mediaType, older ones are inferred from the role."""
+    ext = MEDIA_EXT.get(asset.get('mediaType')) or (
+        '.jpg' if asset['role'] in ('front', 'side', 'back', 'detail', 'face') else '.bin' if asset['role'] == 'video' else '.glb')
+    return 'input-' + str(index) + ext
+
+CHECKPOINT_VERSION = 1
+FAIL_CODES = {'OOM', 'INVALID_INPUT', 'MODEL_UNAVAILABLE', 'INFERENCE_FAILED', 'EXPORT_FAILED', 'TIMEOUT',
+              'GPU_BUSY', 'MEMORY_PRESSURE', 'INVALID_OUTPUT'}
+# Adapter exit contract (provisional, from PC-CONF-01 / draft PR1, adapter revision 37213bc): a failure is
+# classified only when the exit code is in this table AND stderr ends with one bounded JSON object
+# {"success": false, "code": <same code>}. Anything else (argparse usage text, unknown exit, malformed or
+# mismatched record) is INFERENCE_FAILED. Operators may extend it per engine with "exitCodes" once agreed.
+DEFAULT_EXIT_CODES = {78: 'MODEL_UNAVAILABLE', 2: 'INVALID_INPUT'}
+# Analysis adapters (qwen-v1); still require the matching structured stderr record.
+ANALYSIS_EXIT_CODES = {75: 'GPU_BUSY', 74: 'MEMORY_PRESSURE', 70: 'INVALID_OUTPUT', 71: 'OOM'}
+SECRET_NAME = re.compile(r'(TOKEN|SECRET|PASSW|CREDENTIAL|API_?KEY|PRIVATE_?KEY|SERVICE_?ROLE|AUTHORIZATION|COOKIE|SESSION)', re.I)
+UUID = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+RESUMABLE = ('output_ready', 'uploading', 'finalized')
+
+
+class LeaseLost(Exception):
+    """409: the server says this lease/assignment is no longer ours."""
+
+
+class CredentialLost(LeaseLost):
+    """401/403: worker credential revoked or invalid."""
+
+
+class Retryable(Exception):
+    """Network failure, timeout, 429 or 5xx: outcome unknown, safe to retry the same idempotent call."""
+
+
+class Rejected(Exception):
+    """Definitive 4xx answer for this request (other than 401/403/409)."""
+
+    def __init__(self, status, code):
+        super().__init__(f'HTTP {status} {code}')
+        self.status, self.code = status, code
+
+
+class JobFailure(Exception):
+    """Definitive failure before any output exists; reported with a contract failure code."""
+
+    def __init__(self, code):
+        super().__init__(code)
+        self.code = code if code in FAIL_CODES else 'INFERENCE_FAILED'
+
+
+def _error_code(error):
+    try:
+        return json.loads(error.read() or b'{}').get('error') or 'UNKNOWN'
+    except Exception:
+        return 'UNKNOWN'
+
+
+NETWORK_ERRORS = (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException, OSError)
+
+
+class Client:
+    def __init__(self, base, token, timeout=30):
+        parsed = urllib.parse.urlparse(base)
+        if parsed.scheme != 'https' and not (parsed.scheme == 'http' and parsed.hostname in ('localhost', '127.0.0.1')):
+            raise ValueError('App URL must use HTTPS (or local loopback for development)')
+        self.base, self.token, self.timeout = base.rstrip('/'), token, timeout
+
+    def api(self, path, body):
+        request = urllib.request.Request(self.base + '/api/v2/worker/' + path,
+            json.dumps(body).encode(), {'Authorization': 'Bearer ' + self.token, 'Content-Type': 'application/json'}, method='POST')
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                return None if response.status == 204 else json.load(response)
+        except urllib.error.HTTPError as error:
+            code = _error_code(error)
+            if error.code in (401, 403):
+                raise CredentialLost(code) from None
+            if error.code == 409:
+                raise LeaseLost(code) from None
+            if error.code == 429 or error.code >= 500:
+                raise Retryable('HTTP ' + str(error.code)) from None
+            raise Rejected(error.code, code) from None
+        except NETWORK_ERRORS as error:
+            raise Retryable(type(error).__name__) from None
+
+    @staticmethod
+    def _check_url(raw):
+        url = urllib.parse.urlparse(raw)
+        if url.scheme != 'https' and not (url.scheme == 'http' and url.hostname in ('localhost', '127.0.0.1')):
+            raise ValueError('Storage URL must use HTTPS')
+
+    def download(self, asset, destination):
+        self._check_url(asset['url'])
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            with urllib.request.urlopen(asset['url'], timeout=60) as response, destination.open('wb') as target:
+                while True:
+                    part = response.read(1024 * 1024)
+                    if not part:
+                        break
+                    size += len(part)
+                    if size > (MAX_VIDEO_BYTES if asset.get('role') == 'video' else MAX_BYTES):
+                        raise JobFailure('INVALID_INPUT')
+                    digest.update(part)
+                    target.write(part)
+        except urllib.error.HTTPError as error:
+            raise Rejected(error.code, 'DOWNLOAD_REFUSED') from None
+        except NETWORK_ERRORS as error:
+            raise Retryable(type(error).__name__) from None
+        if size != asset['bytes'] or digest.hexdigest() != asset['sha256']:
+            raise JobFailure('INVALID_INPUT')
+
+    def put(self, url, path):
+        """Returns 'stored' or 'exists'. Raises Rejected (e.g. expired URL) or Retryable (unknown outcome)."""
+        self._check_url(url)
+        request = urllib.request.Request(url, path.read_bytes(),
+            {'Content-Type': 'model/gltf-binary', 'x-upsert': 'false'}, method='PUT')
+        try:
+            with urllib.request.urlopen(request, timeout=120) as response:
+                response.read()
+                return 'stored'
+        except urllib.error.HTTPError as error:
+            text = (error.read() or b'')[:2000].decode('utf8', 'replace')
+            if error.code == 409 or re.search(r'exists|duplicate', text, re.I):
+                return 'exists'  # an earlier attempt with unknown outcome landed; finalize verifies the bytes
+            if error.code == 429 or error.code >= 500:
+                raise Retryable('HTTP ' + str(error.code)) from None
+            raise Rejected(error.code, 'UPLOAD_REFUSED') from None
+        except NETWORK_ERRORS as error:
+            raise Retryable(type(error).__name__) from None
+
+
+class Retry:
+    def __init__(self, attempts=6, base=2.0, cap=30.0):
+        self.attempts, self.base, self.cap = attempts, base, cap
+
+    def run(self, call):
+        for index in range(self.attempts):
+            try:
+                return call()
+            except Retryable:
+                if index == self.attempts - 1:
+                    raise
+                delay = min(self.cap, self.base * (2 ** index))
+                time.sleep(delay * random.uniform(0.5, 1.0))
+
+
+def sha256_file(path):
+    digest = hashlib.sha256()
+    with path.open('rb') as stream:
+        for part in iter(lambda: stream.read(1024 * 1024), b''):
+            digest.update(part)
+    return digest.hexdigest()
+
+
+def glb_ok(path):
+    try:
+        size = path.stat().st_size
+        if size < 20 or size > MAX_BYTES:
+            return False
+        with path.open('rb') as stream:
+            return struct.unpack('<III', stream.read(12)) == (0x46546C67, 2, size)
+    except (OSError, struct.error):
+        return False
+
+
+def json_result_ok(path, binding=None):
+    """Bounded, parseable result object whose binding matches the job. The server validates fully."""
+    try:
+        if path.stat().st_size > MAX_RESULT_BYTES:
+            return False
+        value = json.loads(path.read_bytes().decode('utf8'))
+    except (OSError, ValueError, UnicodeDecodeError):
+        return False
+    return (isinstance(value, dict) and value.get('contractVersion') == ANALYSIS_RESULT
+            and value.get('approvedForAutoApply') is False and (binding is None or value.get('binding') == binding))
+
+
+def output_ok(path, fmt, binding=None):
+    return json_result_ok(path, binding) if fmt == 'json-v1' else glb_ok(path)
+
+
+def input_digest(job):
+    """Identity of what the model would compute: job, model version, engine revision and verified inputs."""
+    parts = {'jobId': job['jobId'], 'modelId': job['modelId'], 'kind': job['kind'], 'modelRevision': job['modelRevision'],
+             'params': job['input']['params'],
+             'assets': sorted((a['role'], a['assetId'], a['sha256'], a['bytes']) for a in job['input']['assets'])}
+    if job['input'].get('binding') is not None:
+        parts['binding'] = job['input']['binding']  # analysis jobs only; 3D digests stay unchanged
+    return hashlib.sha256(json.dumps(parts, sort_keys=True).encode()).hexdigest()
+
+
+def adapter_environment(token):
+    """Never pass credentials to the adapter: drop anything that looks secret or carries the worker token."""
+    return {k: v for k, v in os.environ.items()
+            if not SECRET_NAME.search(k) and not k.startswith('FITMATCH_WORKER') and (not token or token not in v)}
+
+
+def structured_error(err_path, limit=16384):
+    """Last non-empty stderr line as a bounded JSON error record, or None. Raw stderr is never forwarded."""
+    try:
+        with err_path.open('rb') as stream:
+            stream.seek(max(0, err_path.stat().st_size - limit))
+            lines = [line for line in stream.read().decode('utf8', 'replace').splitlines() if line.strip()]
+        record = json.loads(lines[-1]) if lines else None
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, dict) or record.get('success') is not False or record.get('code') not in FAIL_CODES:
+        return None
+    return record['code']
+
+
+def classify_exit(returncode, engine, err_path, kind=None):
+    mapping = dict(DEFAULT_EXIT_CODES)
+    if kind == 'garment.analyze':
+        mapping.update(ANALYSIS_EXIT_CODES)
+    for key, value in (engine.get('exitCodes') or {}).items():
+        if str(key).lstrip('-').isdigit() and value in FAIL_CODES:
+            mapping[int(key)] = value
+    expected = mapping.get(returncode)
+    if expected and structured_error(err_path) == expected:
+        return expected
+    return 'INFERENCE_FAILED'
+
+
+class Checkpoint:
+    """Durable per-job state in <workDir>/jobs/<jobId>/checkpoint.json, replaced atomically."""
+
+    def __init__(self, root, job_id):
+        if not UUID.match(job_id or ''):
+            raise ValueError('Invalid job id')
+        self.dir = root / 'jobs' / job_id
+        self.file = self.dir / 'checkpoint.json'
+        self.data = None
+
+    def load(self):
+        if not self.file.exists():
+            return None
+        try:
+            data = json.loads(self.file.read_text(encoding='utf8'))
+            if not isinstance(data, dict) or data.get('version') != CHECKPOINT_VERSION:
+                raise ValueError('unrecognized checkpoint')
+            self.data = data
+            return data
+        except (ValueError, OSError):
+            self.reject('unreadable or unrecognized checkpoint')
+            return None
+
+    def save(self, **changes):
+        self.dir.mkdir(parents=True, mode=0o700, exist_ok=True)
+        self.data = {**(self.data or {'version': CHECKPOINT_VERSION}), **changes, 'updatedAt': time.time()}
+        temp = self.dir / ('checkpoint.' + uuid.uuid4().hex + '.tmp')
+        with temp.open('w', encoding='utf8') as stream:
+            json.dump(self.data, stream, indent=2)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temp, self.file)
+
+    def reject(self, reason):
+        """Keep evidence, never delete: move the checkpoint aside so it is not trusted again."""
+        if self.file.exists():
+            target = self.dir / f'checkpoint.rejected.{int(time.time() * 1000)}.json'
+            os.replace(self.file, target)
+            print('Checkpoint set aside:', reason, flush=True)
+        self.data = None
+
+    def recoverable_output(self, job, digest):
+        """A previously produced output is reused only if everything about it still matches."""
+        cp = self.data
+        if not cp or cp.get('stage') not in RESUMABLE + ('completed',):
+            return None
+        same = (cp.get('jobId') == job['jobId'] and cp.get('modelId') == job['modelId'] and cp.get('kind') == job['kind']
+                and cp.get('modelRevision') == job['modelRevision'] and cp.get('inputDigest') == digest)
+        output = cp.get('output') or {}
+        path = (self.dir / output.get('file', '')).resolve() if output.get('file') else None
+        if not same or not path or self.dir.resolve() not in path.parents or not path.exists():
+            return None
+        fmt = output.get('format', 'glb-v2')
+        if path.stat().st_size != output.get('bytes') or not output_ok(path, fmt, job['input'].get('binding')) or sha256_file(path) != output.get('sha256'):
+            return None
+        return {'path': path, 'bytes': output['bytes'], 'sha256': output['sha256'], 'format': fmt}
+
+
+class FileLock:
+    """Exclusive OS lock on a file (flock on POSIX, msvcrt byte lock on Windows). Released by the OS when
+    the process dies. On POSIX the descriptor is inherited by the adapter (pass_fds), so an adapter
+    orphaned by a worker crash keeps holding it until it exits."""
+
+    def __init__(self, path, create=True, identity=None):
+        self.path = Path(path)
+        self.handle = None
+        self.held = False
+        self.create = create  # shared PC lock files are never created or replaced by the worker
+        # QREV-BIND-02: when set, the OPENED handle must be this exact file (volume + file id). Checked on
+        # the handle itself, so an alias, junction, copy or a file swapped in after startup is refused.
+        self.identity = identity
+
+    def acquire(self, wait_seconds):
+        if self.held:
+            return True
+        if self.handle is None:
+            self.handle = self.path.open('a+' if self.create else 'r+')
+            if self.identity is not None and file_identity(os.fstat(self.handle.fileno())) != self.identity:
+                self.handle.close()
+                self.handle = None
+                raise AdmissionError('Opened GPU lock is not the coordinator\'s canonical lock file (identity changed)')
+        deadline = time.monotonic() + wait_seconds
+        while True:
+            try:
+                if os.name == 'nt':
+                    import msvcrt
+                    self.handle.seek(0)
+                    msvcrt.locking(self.handle.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self.held = True
+                return True
+            except OSError:
+                if time.monotonic() >= deadline:
+                    self.handle.close()
+                    self.handle = None
+                    return False
+                time.sleep(1)
+
+    def release(self):
+        if not self.handle or not self.held:
+            return
+        if os.name == 'nt':
+            import msvcrt
+            self.handle.seek(0)
+            msvcrt.locking(self.handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(self.handle.fileno(), fcntl.LOCK_UN)
+        self.held = False
+        self.handle.close()
+        self.handle = None
+
+    def fds(self):
+        return (self.handle.fileno(),) if self.handle and self.held and os.name != 'nt' else ()
+
+
+class DirLock(FileLock):
+    """One worker process per workDir (see FileLock for orphaned-adapter behaviour). On Windows the
+    adapter is placed in a kill-on-close job object instead."""
+
+    def __init__(self, root):
+        super().__init__(root / '.worker.lock')
+
+
+def default_gpu_lock():
+    """Host-wide lock shared by every worker process (any owner, any workDir) and by other GPU tools
+    on this machine that follow the same file-lock protocol: one heavy GPU job at a time."""
+    base = os.environ.get('PROGRAMDATA') if os.name == 'nt' else None
+    return Path(base or tempfile.gettempdir()) / 'fitmatch' / 'gpu-0.lock'
+
+
+class AdmissionError(RuntimeError):
+    """The shared PC GPU coordination does not admit this worker (QREV-LOCK). Fail closed."""
+
+
+MAX_SLOT_SECONDS = 3600
+SLOT_CLOCK_SKEW_SECONDS = 5
+MAX_TIMESTAMP = 253402300799
+SLOT_OWNERS = ('pc-3d', 'pc-ai')
+
+
+def _finite(value, label, maximum=MAX_TIMESTAMP):
+    if type(value) not in (int, float):
+        raise AdmissionError('Invalid numeric GPU ' + label)
+    try:
+        valid = math.isfinite(value) and 0 < value <= maximum
+    except OverflowError:
+        valid = False
+    if not valid:
+        raise AdmissionError('Invalid finite GPU ' + label)
+    return value
+
+
+def read_strict_json(path):
+    """Same strictness as the PC guard: bounded size, no duplicate keys, no NaN/Infinity."""
+    if path.stat().st_size > 65536:
+        raise AdmissionError('Oversized GPU metadata')
+
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise AdmissionError('Duplicate GPU metadata key')
+            result[key] = value
+        return result
+
+    def constant(_):
+        raise AdmissionError('Nonfinite GPU metadata')
+    try:
+        return json.loads(path.read_text(encoding='utf-8-sig'), object_pairs_hook=pairs, parse_constant=constant)
+    except ValueError as error:
+        raise AdmissionError('Malformed GPU metadata') from error
+
+
+def validate_slot(slot, now):
+    """Port of the PC guard's validate_slot (guard 47331c56..., PC-SAFE-008). Returns the admitted owner."""
+    now = _finite(now, 'clock')
+    allowed = {'version', 'owner', 'issuedAtUtc', 'issuedAtUnix', 'admitUntilUnix', 'policy'}
+    if type(slot) is not dict or set(slot) - allowed or slot.get('owner') not in SLOT_OWNERS:
+        raise AdmissionError('Invalid GPU admission object/owner')
+    version = slot.get('version', 0)
+    if type(version) is not int or version not in (0, 1):
+        raise AdmissionError('Invalid GPU admission revision')
+    issued_text = slot.get('issuedAtUtc')
+    if type(issued_text) is not str or len(issued_text) > 40:
+        raise AdmissionError('Invalid GPU issue time')
+    try:
+        date = datetime.fromisoformat(issued_text.replace('Z', '+00:00'))
+        if date.utcoffset() != timezone.utc.utcoffset(date):
+            raise AdmissionError('GPU issue time must be UTC')
+        issued = _finite(date.timestamp(), 'issue time')
+    except (OverflowError, OSError, ValueError, TypeError) as error:
+        raise AdmissionError('Invalid GPU issue time') from error
+    if version == 1 or 'issuedAtUnix' in slot:
+        numeric_issue = _finite(slot.get('issuedAtUnix'), 'issue time')
+        if abs(numeric_issue - issued) > .001:
+            raise AdmissionError('GPU issue times disagree')
+        issued = numeric_issue
+    expiry = _finite(slot.get('admitUntilUnix'), 'expiry')
+    duration = expiry - issued
+    if not 0 < duration <= MAX_SLOT_SECONDS or issued > now + SLOT_CLOCK_SKEW_SECONDS or expiry <= now:
+        raise AdmissionError('Invalid or expired GPU admission window')
+    if 'policy' in slot and (type(slot['policy']) is not str or len(slot['policy']) > 160):
+        raise AdmissionError('Invalid GPU admission policy')
+    return slot['owner']
+
+
+COORDINATOR_KIND = 'fitmatch.gpu-coordinator.v1'
+COORDINATOR_FILE = 'gpu-coordinator.json'
+COORDINATION_DIR = 'coordination'
+CANONICAL_LOCK_NAME = 'gpu0.lock'
+CANONICAL_SLOT_NAME = 'gpu0-slot.json'
+LEGACY_SHARED_KEYS = ('gpuLock', 'gpuSlot', 'gpuGuard')
+
+
+def file_identity(stat_result):
+    """(volume, file id): st_dev/st_ino on POSIX; volume serial + NTFS/ReFS file index on Windows."""
+    return (int(stat_result.st_dev), int(stat_result.st_ino))
+
+
+_LINK_REPARSE_TAGS = (0xA000000C, 0xA0000003)  # IO_REPARSE_TAG_SYMLINK, IO_REPARSE_TAG_MOUNT_POINT (junction)
+
+
+def _is_link(path):
+    """Symlink or Windows junction. Other reparse points (e.g. OneDrive placeholders) are not links."""
+    st = os.lstat(path)
+    return stat.S_ISLNK(st.st_mode) or getattr(st, 'st_reparse_tag', 0) in _LINK_REPARSE_TAGS
+
+
+def _nonneg_int(value, label):
+    if type(value) is not int or value < 0:
+        raise AdmissionError('Invalid coordinator ' + label)
+    return value
+
+
+class SharedGpuAdmission:
+    """QREV-LOCK + QREV-BIND-02: the worker is the single lock owner for integrated jobs and is BOUND to the
+    PC3D coordinator's canonical lock, slot and guard. Config cannot name them.
+
+    The only input is the coordinator policy file (``<workspace>/coordination/gpu-coordinator.json``,
+    written by the PC3D coordinator) pinned by the sha256 both PC chats ACKed. From it:
+      * lock  = the policy's own directory / gpu0.lock, and the file actually opened must have the
+                volume + file id recorded in the policy (an alias, junction, copied directory or a
+                replaced file has another identity and is refused);
+      * slot  = the same directory / gpu0-slot.json, never a link;
+      * guard = <workspace>/<relative path from the policy>, inside the workspace, matching the policy hash.
+    Startup refuses on any mismatch; before every claim, while holding the lock, the policy, guard, lock
+    handle identity and the finite slot are re-checked. A missing slot file is the PC3D-only bootstrap.
+    Environment variables are never proof; the worker never nests the guard's lock.
+    """
+
+    def __init__(self, config):
+        present = [key for key in LEGACY_SHARED_KEYS if key in config]
+        if present:
+            raise AdmissionError('Remove ' + '/'.join(present) + ': the shared GPU lock, slot and guard come only from '
+                                 'the pinned PC3D coordinator policy (gpuCoordinator)')
+        pin = config.get('gpuCoordinator')
+        if not isinstance(pin, dict) or set(pin) != {'path', 'sha256'} or not isinstance(pin.get('path'), str) \
+                or not Path(pin['path']).is_absolute() or not isinstance(pin.get('sha256'), str) \
+                or not re.fullmatch(r'[0-9a-fA-F]{64}', pin['sha256']):
+            raise AdmissionError('gpuCoordinator {path (absolute), sha256} must pin the ACKed PC3D coordinator policy')
+        self.policy_path, self.policy_sha = Path(pin['path']), pin['sha256'].lower()
+        self.owner = config.get('gpuSlotOwner', 'pc-ai')
+        if self.owner not in SLOT_OWNERS:
+            raise AdmissionError('gpuSlotOwner must be pc-ai or pc-3d')
+        fold = (lambda text: text.lower()) if os.name == 'nt' else (lambda text: text)
+        if fold(self.policy_path.name) != COORDINATOR_FILE or fold(self.policy_path.parent.name) != COORDINATION_DIR:
+            raise AdmissionError('Coordinator policy must be <workspace>/coordination/gpu-coordinator.json')
+        try:
+            if _is_link(self.policy_path):
+                raise AdmissionError('Coordinator policy must not be a link')
+        except OSError as error:
+            raise AdmissionError('Coordinator policy not found') from error
+        policy = self._read_policy()
+        self.coordination_dir = Path(os.path.realpath(self.policy_path.parent))
+        self.workspace = self.coordination_dir.parent
+        self.lock_path = self.coordination_dir / CANONICAL_LOCK_NAME
+        self.slot_path = self.coordination_dir / CANONICAL_SLOT_NAME
+        lock = policy['lock']
+        self.lock_identity = (_nonneg_int(lock.get('volume'), 'lock volume'), _nonneg_int(lock.get('fileId'), 'lock file id'))
+        guard = policy['guard']
+        rel = guard.get('relativeToWorkspace')
+        if not isinstance(rel, str) or not rel or Path(rel).is_absolute() or '\\' in rel \
+                or any(part in ('', '.', '..') for part in rel.split('/')) or ':' in rel:
+            raise AdmissionError('Invalid coordinator guard path')
+        self.guard_path = self.workspace.joinpath(*rel.split('/'))
+        real_guard = Path(os.path.realpath(self.guard_path))
+        if os.path.commonpath([str(real_guard), str(self.workspace)]) != str(self.workspace):
+            raise AdmissionError('Coordinator guard resolves outside the workspace')
+        self.guard_sha = guard['sha256'].lower()
+        try:
+            if _is_link(self.lock_path):
+                raise AdmissionError('Canonical GPU lock must not be a link')
+            if file_identity(os.stat(self.lock_path)) != self.lock_identity:
+                raise AdmissionError('GPU lock is not the coordinator\'s canonical lock file (file identity differs '
+                                     'from the policy; copied or replaced coordination directory)')
+        except OSError as error:
+            raise AdmissionError('Canonical GPU lock file does not exist; the worker never creates it') from error
+        self.check_guard()
+        self.check_slot_file()
+
+    def _read_policy(self):
+        try:
+            if sha256_file(self.policy_path) != self.policy_sha:
+                raise AdmissionError('Coordinator policy differs from the ACKed revision')
+            policy = read_strict_json(self.policy_path)
+        except OSError as error:
+            raise AdmissionError('Coordinator policy not readable') from error
+        if type(policy) is not dict or set(policy) - {'kind', 'coordinator', 'lock', 'slot', 'guard', 'owners', 'issuedAtUtc', 'note'} \
+                or policy.get('kind') != COORDINATOR_KIND or policy.get('coordinator') != 'pc-3d' \
+                or sorted(policy.get('owners') or []) != sorted(SLOT_OWNERS) \
+                or type(policy.get('lock')) is not dict or set(policy['lock']) != {'name', 'volume', 'fileId'} \
+                or policy['lock'].get('name') != CANONICAL_LOCK_NAME \
+                or policy.get('slot') != {'name': CANONICAL_SLOT_NAME} \
+                or type(policy.get('guard')) is not dict or set(policy['guard']) != {'relativeToWorkspace', 'sha256'} \
+                or not isinstance(policy['guard'].get('sha256'), str) \
+                or not re.fullmatch(r'[0-9a-fA-F]{64}', policy['guard']['sha256']):
+            raise AdmissionError('Invalid coordinator policy')
+        return policy
+
+    def check_guard(self):
+        try:
+            actual = sha256_file(self.guard_path)
+        except OSError as error:
+            raise AdmissionError('Shared GPU guard not readable') from error
+        if actual != self.guard_sha:
+            raise AdmissionError('Shared GPU guard hash differs from the ACKed revision')
+
+    def check_slot_file(self):
+        try:
+            if os.path.lexists(self.slot_path) and _is_link(self.slot_path):
+                raise AdmissionError('GPU slot must not be a link')
+        except OSError as error:
+            raise AdmissionError('GPU slot not readable') from error
+
+    def make_lock(self):
+        """The one FileLock for integrated jobs: never created, bound to the canonical file identity."""
+        return FileLock(self.lock_path, create=False, identity=self.lock_identity)
+
+    def check(self, now=None, lock=None):
+        """Raise AdmissionError unless this worker may start GPU work now. Call while holding the lock."""
+        self._read_policy()
+        self.check_guard()
+        if lock is not None and (not lock.held or lock.handle is None
+                                 or file_identity(os.fstat(lock.handle.fileno())) != self.lock_identity):
+            raise AdmissionError('Held GPU lock is not the coordinator\'s canonical lock')
+        self.check_slot_file()
+        if not self.slot_path.exists():
+            if self.owner == 'pc-3d':
+                return
+            raise AdmissionError('No GPU slot file: PC3D-only bootstrap, pc-ai not admitted')
+        try:
+            slot = read_strict_json(self.slot_path)
+        except OSError as error:
+            raise AdmissionError('GPU slot not readable') from error
+        if validate_slot(slot, time.time() if now is None else now) != self.owner:
+            raise AdmissionError('GPU slot is assigned to another owner')
+
+
+RETIRED_PROJECT_REFS = ('wqbwwusrhertqktwsxsl',)  # smoke-supabase: never a FitMatch backend (BACKEND-024)
+ISOLATED_TEST_REF = 'isolated-test'
+LOOPBACK_HOSTS = ('127.0.0.1', 'localhost', '::1')
+
+
+class BackendMismatch(RuntimeError):
+    """ENV-CANON-01: app origin or backend project differs from what this worker was enrolled for."""
+
+
+def backend_binding(config, required):
+    """Validate ``expectedBackend {projectRef, appOrigin}`` against appUrl. Returns the expected project ref
+    (checked against every heartbeat reply before any claim) or None when absent and not required."""
+    expected = config.get('expectedBackend')
+    if expected is None:
+        if required:
+            raise BackendMismatch('expectedBackend {projectRef, appOrigin} is required for integrated GPU work')
+        return None
+    if not isinstance(expected, dict) or set(expected) != {'projectRef', 'appOrigin'} \
+            or not isinstance(expected.get('projectRef'), str) or not isinstance(expected.get('appOrigin'), str):
+        raise BackendMismatch('expectedBackend must be {projectRef, appOrigin}')
+    ref = expected['projectRef']
+    if ref in RETIRED_PROJECT_REFS:
+        raise BackendMismatch('Retired project (smoke-supabase) is not a FitMatch backend')
+    if ref != ISOLATED_TEST_REF and not re.fullmatch(r'[a-z0-9]{20}', ref):
+        raise BackendMismatch('expectedBackend.projectRef is not a project ref')
+    app = urllib.parse.urlsplit(str(config.get('appUrl', '')))
+    origin = urllib.parse.urlsplit(expected['appOrigin'])
+    def norm(u):
+        return (u.scheme.lower(), (u.hostname or '').lower(), u.port)
+    if not app.scheme or norm(app) != norm(origin) or origin.path not in ('', '/') or origin.query or origin.username:
+        raise BackendMismatch('appUrl origin differs from expectedBackend.appOrigin')
+    loopback = (app.hostname or '').lower() in LOOPBACK_HOSTS
+    if ref == ISOLATED_TEST_REF and not loopback:
+        raise BackendMismatch('isolated-test backend is only valid for a loopback app')
+    if not loopback and app.scheme.lower() != 'https':
+        raise BackendMismatch('appUrl must be HTTPS')
+    return ref
+
+
+def requires_shared_gpu(config):
+    """Integrated Qwen analysis always shares the PC3D GPU coordination; it can opt in for other kinds."""
+    return bool(config.get('requireSharedGpuLock')) or 'garment.analyze' in (config.get('engines') or {})
+
+
+class ContainmentError(RuntimeError):
+    pass
+
+
+CONTAINMENT_DISABLED = 'unsafe-disabled'
+
+
+def bind_windows_job_object():
+    """Put this worker in a Job Object with KILL_ON_JOB_CLOSE so adapters die with the worker.
+
+    Returns the open job handle (must stay open for the life of the process) or raises OSError.
+    The job does not set BREAKAWAY_OK, so adapter children cannot leave it.
+    """
+    import ctypes
+    from ctypes import wintypes
+
+    class Basic(ctypes.Structure):
+        _fields_ = [('PerProcessUserTimeLimit', ctypes.c_int64), ('PerJobUserTimeLimit', ctypes.c_int64),
+                    ('LimitFlags', wintypes.DWORD), ('MinimumWorkingSetSize', ctypes.c_size_t),
+                    ('MaximumWorkingSetSize', ctypes.c_size_t), ('ActiveProcessLimit', wintypes.DWORD),
+                    ('Affinity', ctypes.c_size_t), ('PriorityClass', wintypes.DWORD), ('SchedulingClass', wintypes.DWORD)]
+
+    class Io(ctypes.Structure):
+        _fields_ = [(n, ctypes.c_uint64) for n in ('Read', 'Write', 'Other', 'ReadBytes', 'WriteBytes', 'OtherBytes')]
+
+    class Extended(ctypes.Structure):
+        _fields_ = [('Basic', Basic), ('Io', Io), ('ProcessMemoryLimit', ctypes.c_size_t), ('JobMemoryLimit', ctypes.c_size_t),
+                    ('PeakProcessMemoryUsed', ctypes.c_size_t), ('PeakJobMemoryUsed', ctypes.c_size_t)]
+
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.CreateJobObjectW.argtypes = (wintypes.LPVOID, wintypes.LPCWSTR)
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel32.SetInformationJobObject.argtypes = (wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD)
+    kernel32.AssignProcessToJobObject.argtypes = (wintypes.HANDLE, wintypes.HANDLE)
+    kernel32.IsProcessInJob.argtypes = (wintypes.HANDLE, wintypes.HANDLE, ctypes.POINTER(wintypes.BOOL))
+    job = kernel32.CreateJobObjectW(None, None)
+    if not job:
+        raise OSError(ctypes.get_last_error(), 'CreateJobObjectW failed')
+    info = Extended()
+    info.Basic.LimitFlags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+    if not kernel32.SetInformationJobObject(job, 9, ctypes.byref(info), ctypes.sizeof(info)):
+        raise OSError(ctypes.get_last_error(), 'SetInformationJobObject failed')
+    if not kernel32.AssignProcessToJobObject(job, kernel32.GetCurrentProcess()):
+        raise OSError(ctypes.get_last_error(), 'AssignProcessToJobObject failed (worker may already be in a job without breakaway)')
+    inside = wintypes.BOOL(False)
+    if not kernel32.IsProcessInJob(kernel32.GetCurrentProcess(), job, ctypes.byref(inside)) or not inside.value:
+        raise OSError(ctypes.get_last_error(), 'IsProcessInJob did not confirm the job binding')
+    return job
+
+
+def ensure_process_containment(config, platform=None, binder=bind_windows_job_object):
+    """Fail closed: refuse to start inference unless adapters cannot outlive the worker.
+
+    POSIX: adapters run in their own session, the parent kills the group on timeout/lease loss,
+    and an adapter orphaned by a parent crash keeps the inherited workDir flock, so a restarted
+    worker refuses to start (DirLock). Windows: a KILL_ON_JOB_CLOSE job object is required.
+    The only way to run Windows without it is the explicit operator opt-in
+    `"processContainment": "unsafe-disabled"`, which is logged on every start.
+    """
+    platform = platform or os.name
+    mode = config.get('processContainment', 'required')
+    if mode not in ('required', CONTAINMENT_DISABLED):
+        raise ContainmentError(f'processContainment must be "required" or "{CONTAINMENT_DISABLED}"')
+    if platform != 'nt':
+        return 'posix-session+dirlock'
+    try:
+        ensure_process_containment.job = binder()  # keep the handle open for the life of the process
+        return 'windows-job-object'
+    except Exception as error:
+        if mode == CONTAINMENT_DISABLED:
+            print('WARNING: processContainment=unsafe-disabled. A worker crash can leave an adapter running on the GPU; '
+                  'restart only after checking Task Manager. Reason: ' + type(error).__name__, flush=True)
+            return 'disabled-by-operator'
+        raise ContainmentError('Could not bind adapters to a kill-on-close job object (' + type(error).__name__ +
+                               '). Refusing to run GPU jobs. Start the worker outside other job objects, or set '
+                               f'"processContainment": "{CONTAINMENT_DISABLED}" only if you accept orphaned adapters.')
+
+
+def stop_process(process):
+    if process.poll() is not None:
+        return
+    if os.name == 'nt':
+        subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'], capture_output=True, check=False)
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+            process.wait(timeout=5)
+        except (ProcessLookupError, subprocess.TimeoutExpired):
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+    process.wait(timeout=10)
+
+
+class QuarantineError(RuntimeError):
+    """Owned adapter processes could not be proven gone: keep the GPU lock and stop claiming."""
+
+
+def _posix_group_has_live_members(pgid):
+    """True while any non-zombie process is still in process group `pgid`.
+
+    The adapter is a session/group leader (start_new_session), so the group holds exactly the processes
+    it owns: the launcher, the real interpreter behind it and every descendant that did not call
+    setsid(). While the group has members its id cannot be reused, so probing it never targets a
+    foreign process. Zombies (exited, waiting to be reaped by init) no longer run and are ignored.
+    """
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    proc = Path('/proc')
+    if not proc.is_dir():
+        return True
+    for entry in proc.iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            stat = (entry / 'stat').read_text()
+        except OSError:
+            continue
+        fields = stat[stat.rfind(')') + 2:].split()
+        if len(fields) > 2 and fields[2] == str(pgid) and fields[0] != 'Z':
+            return True
+    return False
+
+
+class _WindowsJob:
+    """Per-adapter Job Object (nested in the worker's own job): every process the adapter starts,
+    including a venv launcher's real interpreter, is accounted for by the kernel, not by PID."""
+
+    def __init__(self):
+        import ctypes
+        from ctypes import wintypes
+        self.ctypes, self.wintypes = ctypes, wintypes
+        k = ctypes.WinDLL('kernel32', use_last_error=True)
+        k.CreateJobObjectW.restype = wintypes.HANDLE
+        k.CreateJobObjectW.argtypes = (wintypes.LPVOID, wintypes.LPCWSTR)
+        k.SetInformationJobObject.argtypes = (wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD)
+        k.AssignProcessToJobObject.argtypes = (wintypes.HANDLE, wintypes.HANDLE)
+        k.QueryInformationJobObject.argtypes = (wintypes.HANDLE, ctypes.c_int, wintypes.LPVOID, wintypes.DWORD, wintypes.LPVOID)
+        k.TerminateJobObject.argtypes = (wintypes.HANDLE, wintypes.UINT)
+        k.CloseHandle.argtypes = (wintypes.HANDLE,)
+        self.k = k
+        self.handle = k.CreateJobObjectW(None, None)
+        if not self.handle:
+            raise OSError(ctypes.get_last_error(), 'CreateJobObjectW failed')
+
+        class Limit(ctypes.Structure):
+            _fields_ = [('a', ctypes.c_int64), ('b', ctypes.c_int64), ('LimitFlags', wintypes.DWORD),
+                        ('c', ctypes.c_size_t), ('d', ctypes.c_size_t), ('e', wintypes.DWORD),
+                        ('f', ctypes.c_size_t), ('g', wintypes.DWORD), ('h', wintypes.DWORD)]
+
+        class Extended(ctypes.Structure):
+            _fields_ = [('Basic', Limit), ('Io', ctypes.c_uint64 * 6), ('i', ctypes.c_size_t), ('j', ctypes.c_size_t),
+                        ('k', ctypes.c_size_t), ('l', ctypes.c_size_t)]
+        info = Extended()
+        info.Basic.LimitFlags = 0x2000  # KILL_ON_JOB_CLOSE, no BREAKAWAY_OK
+        if not k.SetInformationJobObject(self.handle, 9, ctypes.byref(info), ctypes.sizeof(info)):
+            raise OSError(ctypes.get_last_error(), 'SetInformationJobObject failed')
+
+    def assign_and_resume(self, process):
+        handle = self.wintypes.HANDLE(int(process._handle))
+        if not self.k.AssignProcessToJobObject(self.handle, handle):
+            raise OSError(self.ctypes.get_last_error(), 'AssignProcessToJobObject failed for the adapter')
+        ntdll = self.ctypes.WinDLL('ntdll')
+        ntdll.NtResumeProcess.argtypes = (self.wintypes.HANDLE,)
+        if ntdll.NtResumeProcess(handle) != 0:
+            raise OSError(0, 'NtResumeProcess failed')
+
+    def active(self):
+        class Accounting(self.ctypes.Structure):
+            _fields_ = [('t', self.ctypes.c_int64 * 4), ('TotalPageFaultCount', self.wintypes.DWORD),
+                        ('TotalProcesses', self.wintypes.DWORD), ('ActiveProcesses', self.wintypes.DWORD),
+                        ('TotalTerminatedProcesses', self.wintypes.DWORD)]
+        info = Accounting()
+        if not self.k.QueryInformationJobObject(self.handle, 1, self.ctypes.byref(info), self.ctypes.sizeof(info), None):
+            raise OSError(self.ctypes.get_last_error(), 'QueryInformationJobObject failed')
+        return int(info.ActiveProcesses)
+
+    def terminate(self):
+        self.k.TerminateJobObject(self.handle, 1)
+
+    def track(self):
+        """Open a SYNCHRONIZE handle to every process currently in the job (verified with IsProcessInJob, so a
+        recycled PID is never adopted). Kernel ActiveProcesses can reach 0 slightly before a process object is
+        signaled (PC-SAFE-008 native finding); release waits for these handles too."""
+        ctypes, wintypes = self.ctypes, self.wintypes
+        if not hasattr(self, 'tracked'):
+            self.tracked = {}
+            self.k.OpenProcess.restype = wintypes.HANDLE
+            self.k.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+            self.k.IsProcessInJob.argtypes = (wintypes.HANDLE, wintypes.HANDLE, ctypes.POINTER(wintypes.BOOL))
+            self.k.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+            self.k.WaitForSingleObject.restype = wintypes.DWORD
+
+        class PidList(ctypes.Structure):
+            _fields_ = [('assigned', wintypes.DWORD), ('listed', wintypes.DWORD), ('ids', ctypes.c_size_t * 256)]
+        info = PidList()
+        if not self.k.QueryInformationJobObject(self.handle, 3, ctypes.byref(info), ctypes.sizeof(info), None):
+            error = ctypes.get_last_error()
+            if error != 234:  # ERROR_MORE_DATA: list truncated; what was returned is still valid
+                raise OSError(error, 'QueryInformationJobObject(process list) failed')
+        for pid in list(info.ids[:min(info.listed, 256)]):
+            if pid in self.tracked:
+                continue
+            handle = self.k.OpenProcess(0x00100000 | 0x1000, False, pid)  # SYNCHRONIZE | QUERY_LIMITED_INFORMATION
+            if not handle:
+                continue  # already gone
+            inside = wintypes.BOOL()
+            if self.k.IsProcessInJob(handle, self.handle, ctypes.byref(inside)) and inside.value:
+                self.tracked[pid] = handle
+            else:
+                self.k.CloseHandle(handle)
+
+    def wait_tracked(self, seconds):
+        deadline = time.monotonic() + max(0.0, seconds)
+        for handle in list(getattr(self, 'tracked', {}).values()):
+            remaining = int(max(0.0, deadline - time.monotonic()) * 1000)
+            if self.k.WaitForSingleObject(handle, remaining) != 0:  # WAIT_OBJECT_0
+                return False
+        return True
+
+    def close(self):
+        for handle in getattr(self, 'tracked', {}).values():
+            self.k.CloseHandle(handle)
+        if hasattr(self, 'tracked'):
+            self.tracked = {}
+        if self.handle:
+            self.k.CloseHandle(self.handle)
+            self.handle = None
+
+
+class OwnedProcessTree:
+    """One adapter launch plus every process it owns (PC-QUIESCENCE-01).
+
+    A launcher exiting proves nothing: on Windows a venv python.exe is a launcher whose child is the real
+    interpreter, and any adapter can leave grandchildren. The GPU lock may only be released after
+    `drain()` returned True, i.e. the kernel reports no owned process left (Windows job accounting /
+    POSIX process group). Termination only ever targets this job or this process group, never a PID
+    looked up elsewhere, so foreign processes are never killed.
+    """
+
+    def __init__(self, command, platform=None, popen=subprocess.Popen, job_factory=None, **kwargs):
+        self.platform = platform or os.name
+        self.job = None
+        if self.platform == 'nt':
+            self.job = (job_factory or _WindowsJob)()
+            # Suspended until it is inside the job, so nothing it starts can escape accounting.
+            kwargs['creationflags'] = kwargs.get('creationflags', 0) | 0x00000004 | 0x00000200  # CREATE_SUSPENDED | NEW_PROCESS_GROUP
+            self.process = popen(command, **kwargs)
+            try:
+                self.job.assign_and_resume(self.process)
+            except Exception:
+                self.job.terminate()
+                self.process.kill()
+                self.process.wait(timeout=10)
+                self.job.close()
+                raise ContainmentError('Adapter could not be placed in a per-job Job Object; not running it.')
+        else:
+            kwargs['start_new_session'] = True
+            self.process = popen(command, **kwargs)
+        self.pid = self.process.pid
+
+    def poll(self):
+        return self.process.poll()
+
+    @property
+    def returncode(self):
+        return self.process.returncode
+
+    def track(self):
+        """Called while the adapter runs: remember every owned process (Windows) so drain can wait for them."""
+        if self.job is not None:
+            try:
+                self.job.track()
+            except Exception:
+                pass  # tracking is best effort; drain still requires the kernel count to reach zero
+
+    def _quiet(self, deadline):
+        """Windows: kernel count is zero AND every tracked process object is signaled."""
+        if self.job is None:
+            return True
+        return self.job.wait_tracked(deadline - time.monotonic())
+
+    def alive(self):
+        if self.job is not None:
+            return self.job.active() > 0
+        if self.process.poll() is None:
+            return True
+        return _posix_group_has_live_members(self.pid)
+
+    def _signal_group(self, sig):
+        try:
+            if self.process.poll() is None or _posix_group_has_live_members(self.pid):
+                os.killpg(self.pid, sig)
+        except ProcessLookupError:
+            pass
+
+    def terminate(self):
+        if self.job is not None:
+            self.job.terminate()
+        else:
+            self._signal_group(signal.SIGTERM)
+
+    def drain(self, timeout=30.0, grace=5.0):
+        """Stop every owned process and wait for quiescence. Returns False if it cannot be proven."""
+        deadline = time.monotonic() + timeout
+        try:
+            self.track()
+            if not self.alive():
+                self.process.wait(timeout=1)
+                return self._quiet(deadline)
+            self.terminate()
+            killed = False
+            while time.monotonic() < deadline:
+                self.track()
+                try:
+                    self.process.wait(timeout=0.2)
+                except subprocess.TimeoutExpired:
+                    pass
+                if not self.alive():
+                    return self._quiet(deadline)
+                if not killed and self.job is None and time.monotonic() > deadline - timeout + grace:
+                    self._signal_group(signal.SIGKILL)
+                    killed = True
+            return False
+        except Exception:
+            return False  # cannot prove anything: fail closed
+        finally:
+            if self.job is not None and self.job.handle and not self._job_alive_safe():
+                self.job.close()
+
+    def _job_alive_safe(self):
+        try:
+            return self.job.active() > 0
+        except Exception:
+            return True
+
+
+class Worker:
+    def __init__(self, config, token, root, lock, gpu=None, admission=None):
+        self.config, self.token, self.root, self.lock = config, token, root, lock
+        self.gpu = gpu
+        self.admission = admission
+        self.admission_refusal = None
+        self.gpu_busy_logged = False
+        # QREV-STATUS: whether the last claim attempt found the shared GPU taken (lock held elsewhere or the
+        # slot assigned to the other PC owner). Reported in heartbeats; never says whose work it is.
+        self.gpu_busy = False
+        self.quarantine = None  # OwnedProcessTree whose drain could not be proven (PC-QUIESCENCE-01)
+        self.engines = config.get('engines', {})
+        self.capabilities = {}
+        for kind, engine in self.engines.items():
+            if kind not in KINDS or not isinstance(engine.get('command'), list) or not engine['command'] or not all(isinstance(v, str) for v in engine['command']):
+                raise ValueError('Each engine needs a supported kind and local argv list')
+            self.capabilities[kind] = {'model': engine['model'], 'revision': engine['revision']}
+        retry = config.get('retry', {})
+        self.retry = Retry(int(retry.get('attempts', 6)), float(retry.get('baseSeconds', 2)), float(retry.get('maxSeconds', 30)))
+        self.heartbeat_seconds = float(config.get('heartbeatSeconds', 20))
+        self.client = Client(config['appUrl'], token, float(config.get('requestTimeoutSeconds', 30)))
+        self.instance = str(uuid.uuid4())  # new on every process start; claim redelivery is per instance
+        self.warned = set()
+
+    def admitted(self):
+        """Shared PC coordination check while holding the lock; refusals are logged once per reason."""
+        if self.admission is None:
+            return True
+        try:
+            self.admission.check(lock=self.gpu)
+        except AdmissionError as error:
+            if self.admission_refusal != str(error):
+                print('GPU admission refused, not claiming: ' + str(error), flush=True)
+                self.admission_refusal = str(error)
+            return False
+        self.admission_refusal = None
+        return True
+
+    def set_gpu_busy(self, busy):
+        # Report the transition right away so the owner's UI does not wait a whole poll interval.
+        if busy and not getattr(self, 'gpu_busy', False):
+            self.gpu_busy = True
+            self.worker_heartbeat()
+        self.gpu_busy = busy
+
+    def worker_heartbeat(self):
+        reply = self.client.api('heartbeat', {'capabilities': self.capabilities,
+                                              'gpuBusy': bool(getattr(self, 'gpu_busy', False))}) or {}
+        expected = getattr(self, 'expected_backend', None)
+        if expected is not None:
+            backend = reply.get('backend')
+            got = backend.get('projectRef') if isinstance(backend, dict) else None
+            if got != expected:
+                raise BackendMismatch('App reports a different backend than this worker is bound to '
+                                      '(expected ' + expected + '); not claiming')
+        granted = set(reply.get('grantedCapabilities', self.capabilities.keys()))
+        for kind in self.capabilities.keys() - granted - self.warned:
+            print('Capability declared but not granted by the operator:', kind, flush=True)
+            self.warned.add(kind)
+
+    def claim(self):
+        request_id = str(uuid.uuid4())
+        # Same instance + request identity on every retry: a lost reply returns the same assignment.
+        return self.retry.run(lambda: self.client.api('claim', {'instanceId': self.instance, 'requestId': request_id}))
+
+    def report_failure(self, job_id, lease, code):
+        try:
+            self.retry.run(lambda: self.client.api('jobs/' + job_id + '/fail', {**lease, 'code': code}))
+            print('Reported failure', code, 'for', job_id, flush=True)
+        except LeaseLost:
+            print('Failure not recorded: lease no longer held for', job_id, flush=True)
+        except Exception as error:
+            print('Failure report not delivered:', type(error).__name__, flush=True)
+
+    def publish(self, job_id, lease, cp, output):
+        """output-intent -> PUT -> finalize -> complete, each step idempotent and retried; no fail after output."""
+        prefix = 'jobs/' + job_id + '/'
+        for _ in range(3):
+            intent = self.retry.run(lambda: self.client.api(prefix + 'output-intent',
+                {**lease, 'bytes': output['bytes'], 'sha256': output['sha256']}))
+            cp.save(stage='uploading', assetId=intent['assetId'])
+            if intent.get('state') != 'ready':
+                try:
+                    self.retry.run(lambda: self.client.put(intent['uploadUrl'], output['path']))
+                except Rejected:
+                    continue  # expired/refused URL: ask again, same logical asset, fresh URL
+                try:
+                    self.retry.run(lambda: self.client.api(prefix + 'finalize', {**lease, 'assetId': intent['assetId']}))
+                except Rejected as error:
+                    if error.code == 'INVALID_GLB':
+                        raise JobFailure('EXPORT_FAILED') from None
+                    continue  # ASSET_NOT_UPLOADED / *_MISMATCH / ASSET_REJECTED: new intent
+            cp.save(stage='finalized', assetId=intent['assetId'])
+            self.retry.run(lambda: self.client.api(prefix + 'complete', {**lease, 'assetId': intent['assetId']}))
+            cp.save(stage='completed', completedAt=time.time())
+            print('Completed job', job_id, flush=True)
+            return
+        raise Retryable('Upload could not be verified')
+
+    def publish_any(self, job_id, lease, cp, output):
+        if output.get('format') == 'json-v1':
+            return self.publish_result(job_id, lease, cp, output)
+        return self.publish(job_id, lease, cp, output)
+
+    def publish_result(self, job_id, lease, cp, output):
+        """JSON result: one idempotent POST of the exact adapter bytes (replay after a lost reply is accepted)."""
+        text = Path(output['path']).read_bytes().decode('utf8')
+        try:
+            self.retry.run(lambda: self.client.api('jobs/' + job_id + '/result',
+                {**lease, 'sha256': output['sha256'], 'resultJson': text}))
+        except Rejected as error:
+            if error.code in ('INVALID_RESULT', 'RESULT_BINDING_MISMATCH', 'RESULT_TOO_LARGE', 'RESULT_HASH_MISMATCH'):
+                raise JobFailure('INVALID_OUTPUT') from None
+            raise
+        cp.save(stage='completed', completedAt=time.time())
+        print('Completed analysis job', job_id, flush=True)
+
+    def run_with_lease(self, job_id, lease, stage, body):
+        """Runs body() while a background thread keeps the lease alive; returns when body finishes."""
+        lost, done = threading.Event(), threading.Event()
+        stage_ref = [stage]
+        last_success = [time.monotonic()]
+
+        def heartbeat():
+            while not done.wait(self.heartbeat_seconds):
+                try:
+                    self.worker_heartbeat()
+                    self.client.api('jobs/' + job_id + '/heartbeat', {**lease, 'stage': stage_ref[0]})
+                    last_success[0] = time.monotonic()
+                except LeaseLost:
+                    lost.set()
+                    return
+                except Exception:
+                    if time.monotonic() - last_success[0] > 90:
+                        lost.set()
+                        return
+
+        pulse = threading.Thread(target=heartbeat, daemon=True)
+        pulse.start()
+        try:
+            return body(lost, stage_ref)
+        finally:
+            done.set()
+            pulse.join(timeout=2)
+
+    def execute(self, job):
+        job_id = job['jobId']
+        lease = {'leaseToken': job['lease']['token']}
+        cp = Checkpoint(self.root, job_id)
+        output_ready = [False]
+        try:
+            if job.get('protocolVersion') != 1 or job['kind'] not in self.capabilities or job['modelRevision'] != self.capabilities[job['kind']]:
+                raise JobFailure('MODEL_UNAVAILABLE')
+            digest = input_digest(job)
+            existing = cp.load()
+            output =cp.recoverable_output(job, digest) if existing else None
+            if existing and not output:
+                cp.reject('does not match this assignment or output is missing/altered')
+            if output:
+                output_ready[0] = True
+                print('Reusing verified output for', job_id, '(no new inference)', flush=True)
+                cp.save(attempt=job['lease']['attempt'], leaseToken=lease['leaseToken'], stage='output_ready')
+            else:
+                output = self.run_lease_bound(job, lease, cp, digest)
+                output_ready[0] = True
+            self.run_with_lease(job_id, lease, 'uploading', lambda lost, stage: self.publish_any(job_id, lease, cp, output))
+        except JobFailure as failure:
+            if output_ready[0] and failure.code not in ('EXPORT_FAILED', 'INVALID_OUTPUT'):
+                print('Output kept; not failing', job_id, flush=True)
+            else:
+                if cp.data:
+                    cp.save(stage='failed', failure=failure.code)
+                self.report_failure(job_id, lease, failure.code)
+        except CredentialLost:
+            print('Stopped: credential no longer valid for', job_id, '(checkpoint kept)', flush=True)
+        except LeaseLost:
+            print('Stopped: lease lost for', job_id, '(checkpoint kept for a later lease)', flush=True)
+        except Exception as error:
+            if output_ready[0]:
+                # Unknown outcome after an output exists: keep checkpoint; resume/reclaim publishes it later.
+                print('Publish incomplete for', job_id, type(error).__name__, '(checkpoint kept, will reconcile)', flush=True)
+            else:
+                print('Job failed:', job_id, type(error).__name__, '(details in local adapter log)', flush=True)
+                self.report_failure(job_id, lease, 'INFERENCE_FAILED')
+
+    def run_lease_bound(self, job, lease, cp, digest):
+        job_id = job['jobId']
+        prefix = 'jobs/' + job_id + '/'
+        attempt_dir = cp.dir / ('a' + str(job['lease']['attempt']) + '-' + self.instance[:8])
+        attempt_dir.mkdir(parents=True, mode=0o700, exist_ok=False)  # unique per attempt + process instance
+        engine = self.engines[job['kind']]
+        analysis = (job.get('outputContract') or {}).get('format') == 'json-v1'
+        if analysis and (job['kind'] != 'garment.analyze' or len(job['input'].get('assets', [])) != 1 or not isinstance(job['input'].get('binding'), dict)):
+            raise JobFailure('INVALID_INPUT')
+
+        def body(lost, stage):
+            stage[0] = 'preprocessing'
+            assets = []
+            for index, asset in enumerate(job['input']['assets']):
+                if lost.is_set():
+                    raise LeaseLost('lease lost')
+                local = attempt_dir / input_name(index, asset)
+
+                def fetch(asset=asset, local=local):
+                    try:
+                        self.client.download(asset, local)
+                    except (Rejected, Retryable):
+                        renewed = self.client.api(prefix + 'input-url', {**lease, 'assetId': asset['assetId']})
+                        self.client.download({**asset, **renewed}, local)
+                self.retry.run(fetch)
+                assets.append({'role': asset['role'], 'assetId': asset['assetId'], 'localPath': str(local),
+                               **({'mediaType': asset['mediaType']} if asset.get('mediaType') else {})})
+            manifest = attempt_dir / 'input.json'
+            if analysis:
+                # qwen-v1 adapter input: exactly one verified local image; the image is data, not instructions.
+                output = attempt_dir / 'result.json'
+                manifest.write_text(json.dumps({'protocolVersion': 1, 'protocolRevision': PROTOCOL_REVISION,
+                    'contract': ANALYSIS_CONTRACT, 'jobId': job_id, 'kind': job['kind'], 'binding': job['input']['binding'],
+                    'modelRevision': job['modelRevision'], 'policy': job['input']['policy'],
+                    'assets': [{'role': a['role'], 'assetId': a['assetId'], 'localPath': a['localPath'], 'sha256': src['sha256'],
+                                'bytes': src['bytes'], 'mediaType': 'image/jpeg'} for a, src in zip(assets, job['input']['assets'])],
+                    'resultSchema': ANALYSIS_RESULT, 'outputPath': str(output)}, indent=2), encoding='utf8')
+            else:
+                output = attempt_dir / 'output.glb'
+                manifest.write_text(json.dumps({'protocolVersion': 1, 'protocolRevision': PROTOCOL_REVISION, 'jobId': job_id, 'kind': job['kind'],
+                    'params': job['input']['params'], 'assets': assets, 'modelRevision': job['modelRevision'],
+                    'avatarVersionId': job['input']['avatarVersionId'], 'garmentVersionId': job['input']['garmentVersionId'],
+                    'outputContract': job['outputContract'], 'outputPath': str(output)}, indent=2), encoding='utf8')
+            # Only operator-authored argv is executed, never an app/user-supplied command or shell string.
+            command = [value.replace('{input}', str(manifest)).replace('{output}', str(output)) for value in engine['command']]
+            stage[0] = 'draping' if job['kind'].endswith('.drape') else 'reconstructing'
+            log_path = attempt_dir / 'adapter.log'
+            err_path = attempt_dir / 'adapter.err'  # private; parsed for one structured error record only
+            with log_path.open('wb') as log, err_path.open('wb') as err:
+                env = adapter_environment(self.token)
+                if self.gpu:
+                    # One lock owner per GPU execution: the worker already holds the host GPU lock for this job.
+                    # A guarded runner must not take the same lock again (nested acquisition would deadlock).
+                    env['FITMATCH_GPU_LOCK_HELD_BY'] = 'worker'
+                    env['FITMATCH_GPU_LOCK_PATH'] = str(self.gpu.path)
+                process = OwnedProcessTree(command, cwd=attempt_dir, env=env, stdout=log,
+                    stderr=err, pass_fds=self.lock.fds() + (self.gpu.fds() if self.gpu else ()))
+                cp.save(version=CHECKPOINT_VERSION, jobId=job_id, modelId=job['modelId'], kind=job['kind'],
+                        modelRevision=job['modelRevision'], inputDigest=digest, attempt=job['lease']['attempt'],
+                        leaseToken=lease['leaseToken'], instance=self.instance, stage='inferring', adapterPid=process.pid,
+                        attemptDir=attempt_dir.name, output=None)
+                try:
+                    started = time.monotonic()
+                    while process.poll() is None:
+                        process.track()
+                        if lost.wait(1):
+                            raise LeaseLost('lease lost during inference')
+                        if time.monotonic() - started > engine.get('timeoutSeconds', 1800):
+                            raise JobFailure('TIMEOUT')
+                finally:
+                    # Success, timeout, cancel and lease loss all end here: every owned process must be gone
+                    # before the GPU lock can be released (by loop()).
+                    if not process.drain(float(engine.get('drainSeconds', 30))):
+                        self.quarantine = process
+                        print('Adapter processes for', job_id, 'did not exit; worker quarantined, GPU lock kept.', flush=True)
+                        if sys.exc_info()[0] is None:  # keep TIMEOUT/lease-loss classification if one is in flight
+                            raise QuarantineError('owned adapter processes still running')
+            if process.returncode != 0:
+                raise JobFailure(classify_exit(process.returncode, engine, err_path, job['kind']))
+            stage[0] = 'exporting'
+            if analysis:
+                if not output.exists() or not json_result_ok(output, job['input']['binding']):
+                    raise JobFailure('INVALID_OUTPUT')
+                fmt = 'json-v1'
+            else:
+                if not glb_ok(output):
+                    raise JobFailure('EXPORT_FAILED')
+                fmt = 'glb-v2'
+            result = {'file': attempt_dir.name + '/' + output.name, 'bytes': output.stat().st_size, 'sha256': sha256_file(output), 'format': fmt}
+            cp.save(stage='output_ready', output=result, adapterPid=None)
+            return {'path': output, 'bytes': result['bytes'], 'sha256': result['sha256'], 'format': fmt}
+
+        return self.run_with_lease(job_id, lease, 'preprocessing', body)
+
+    def resume_pending(self):
+        """After a restart or an exhausted retry: reconcile outputs whose publish outcome is unknown."""
+        jobs = self.root / 'jobs'
+        if not jobs.exists():
+            return
+        for path in sorted(jobs.glob('*/checkpoint.json')):
+            cp = Checkpoint(self.root, path.parent.name)
+            data = cp.load()
+            if not data:
+                continue
+            if data.get('stage') == 'inferring':
+                # Interrupted inference has no trusted output. Never reuse a half-written file.
+                cp.save(stage='interrupted')
+                continue
+            if data.get('stage') not in RESUMABLE or not data.get('leaseToken') or not data.get('output'):
+                continue
+            job_id, lease = data['jobId'], {'leaseToken': data['leaseToken']}
+            output_file = (cp.dir / data['output']['file']).resolve()
+            if cp.dir.resolve() not in output_file.parents or not output_file.exists() or sha256_file(output_file) != data['output'].get('sha256'):
+                cp.reject('output missing or altered')
+                continue
+            output = {'path': output_file, 'bytes': data['output']['bytes'], 'sha256': data['output']['sha256'],
+                      'format': data['output'].get('format', 'glb-v2')}
+            try:
+                if output['format'] == 'json-v1':
+                    # Result POST is idempotent: replay with the original lease, or the server refuses it.
+                    self.publish_result(job_id, lease, cp, output)
+                    continue
+                if data.get('stage') == 'finalized' and data.get('assetId'):
+                    try:  # complete may have committed while its reply was lost: replay is idempotent
+                        self.client.api('jobs/' + job_id + '/complete', {**lease, 'assetId': data['assetId']})
+                        cp.save(stage='completed', completedAt=time.time())
+                        print('Completed job', job_id, '(reconciled)', flush=True)
+                        continue
+                    except LeaseLost:
+                        pass
+                self.client.api('jobs/' + job_id + '/heartbeat', {**lease, 'stage': 'uploading'})
+                print('Resuming publish for', job_id, 'with the original lease', flush=True)
+                self.run_with_lease(job_id, lease, 'uploading', lambda lost, stage: self.publish_any(job_id, lease, cp, output))
+            except CredentialLost:
+                print('Credential rejected while resuming', job_id, flush=True)
+            except LeaseLost:
+                pass  # lease is gone; the job is requeued by the server and reclaim will reuse this output
+            except Exception as error:
+                print('Resume deferred for', job_id, type(error).__name__, flush=True)
+
+    def loop(self, once, poll_seconds):
+        while True:
+            try:
+                self.worker_heartbeat()
+                self.resume_pending()
+                if self.quarantine is not None:
+                    # Fail closed: never release the GPU lock or claim while an owned process may still run.
+                    if self.quarantine.drain(5.0):
+                        print('Quarantined adapter processes have exited; resuming.', flush=True)
+                        self.quarantine = None
+                        if self.gpu:
+                            self.gpu.release()
+                    else:
+                        print('Still quarantined: owned adapter processes running; not claiming.', flush=True)
+                        if once:
+                            return 4
+                        time.sleep(poll_seconds)
+                        continue
+                # Claim only while holding the host GPU lock, so no lease runs out while waiting for the GPU.
+                try:
+                    acquired = not self.gpu or self.gpu.acquire(0)
+                except AdmissionError as error:
+                    # The canonical lock file was replaced/aliased after startup: fail closed, claim nothing.
+                    print('Refusing to continue: ' + str(error), flush=True)
+                    return 5
+                if not acquired:
+                    if not self.gpu_busy_logged:
+                        print('GPU is busy with another job on this machine; waiting before claiming.', flush=True)
+                        self.gpu_busy_logged = True
+                    self.set_gpu_busy(True)
+                    job = None
+                elif not self.admitted():
+                    self.gpu.release()
+                    self.set_gpu_busy(True)
+                    job = None
+                else:
+                    self.gpu_busy_logged = False
+                    self.gpu_busy = False
+                    try:
+                        job = self.claim()
+                        if job:
+                            if job.get('redelivered'):
+                                print('Claim reply was lost; received the same assignment again', flush=True)
+                            self.execute(job)
+                    finally:
+                        if self.gpu and self.quarantine is None:
+                            self.gpu.release()
+                if once:
+                    return 4 if self.quarantine is not None else 0
+            except KeyboardInterrupt:
+                return 0
+            except BackendMismatch as error:
+                # ENV-CANON-01: the app is not bound to the backend this worker was enrolled for.
+                print('Refusing to continue: ' + str(error), flush=True)
+                return 5
+            except Exception as error:
+                print('Worker connection unavailable:', type(error).__name__, flush=True)
+                if once:
+                    return 1
+            time.sleep(poll_seconds)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', required=True)
+    parser.add_argument('--once', action='store_true', help='Reconcile pending outputs, claim at most one job, then exit')
+    args = parser.parse_args()
+    config = json.loads(Path(args.config).read_text(encoding='utf8'))
+    root = Path(config.get('workDir', './worker-data')).resolve()
+    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    lock = DirLock(root)
+    if not lock.acquire(float(config.get('lockWaitSeconds', 0))):
+        print('Another worker or an orphaned adapter still holds this workDir; not starting a second inference.', flush=True)
+        return 2
+    try:
+        containment = ensure_process_containment(config)
+    except ContainmentError as error:
+        print(str(error), flush=True)
+        return 3
+    print(f'Process containment: {containment}', flush=True)
+    gpu = None
+    admission = None
+    if requires_shared_gpu(config):
+        try:
+            admission = SharedGpuAdmission(config)
+        except AdmissionError as error:
+            print('Refusing to start: ' + str(error), flush=True)
+            return 5
+        gpu = admission.make_lock()
+        print(f'Shared host GPU lock bound to the PC3D coordinator (single owner, never nested): {admission.lock_path}', flush=True)
+    elif config.get('gpuLock', 'default') is not None:
+        gpu_path = default_gpu_lock() if config.get('gpuLock', 'default') == 'default' else Path(config['gpuLock'])
+        gpu_path.parent.mkdir(parents=True, exist_ok=True)
+        gpu = FileLock(gpu_path)
+        print(f'Host GPU lock: {gpu_path}', flush=True)
+    else:
+        print('WARNING: gpuLock disabled; another GPU job on this machine may run at the same time.', flush=True)
+    try:
+        expected_backend = backend_binding(config, required=requires_shared_gpu(config))
+    except BackendMismatch as error:
+        print('Refusing to start: ' + str(error), flush=True)
+        return 5
+    worker = Worker(config, os.environ['FITMATCH_WORKER_TOKEN'], root, lock, gpu, admission)
+    worker.expected_backend = expected_backend
+    return worker.loop(args.once, float(config.get('pollSeconds', 8)))
+
+
+if __name__ == '__main__':
+    sys.exit(main())

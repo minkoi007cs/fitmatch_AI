@@ -1,0 +1,184 @@
+"""CPU fault/conformance tests for local proposal only; no CUDA imports or real locks."""
+import copy
+import hashlib
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import patch
+import uuid
+from datetime import datetime, timezone
+
+from boundary import request, strict_json, slot, read_image, Refused, VERSION, MODEL_REVISION, POLICY_REVISION
+from runner import run, GuardedChild
+from admission import approval, LOCK, GUARD
+
+def fixture():
+    return {'local_version': VERSION, 'binding': {**{key: str(uuid.UUID(int=i)) for i, key in enumerate(
+        ['owner_id', 'job_id', 'item_id', 'source_revision'], 1)}, 'image_sha256': 'a'*64},
+        'result_id': str(uuid.UUID(int=5)), 'model_revision': MODEL_REVISION, 'policy_revision': POLICY_REVISION,
+        'budget': {'attempts': 2, 'seconds': 60, 'output_tokens': 192, 'response_bytes': 8192},
+        'target': 'single_garment'}
+
+VALID = json.dumps({'schema_version': 'pc-ai.grounded-attributes.v2', 'category': 'tshirt',
+    'dominant_colors': ['blue'], 'pattern': 'solid', 'logo_presence': 'visible', 'logo_texts': ['CANDIDATE'],
+    'neckline': 'crew', 'sleeves': 'short', 'material_composition': 'unknown',
+    'back_pocket_count': 'unknown', 'pockets_total': 'unknown'})
+
+class Backend:
+    def __init__(self, values=None, fail_load=False, fail_unload=False):
+        self.values = iter(values or [VALID]); self.events = []; self.fail_load = fail_load; self.fail_unload = fail_unload
+    def load(self):
+        self.events.append('load')
+        if self.fail_load: raise RuntimeError('private-path-or-token')
+    def generate(self, image, **kw):
+        self.events.append(('generate', kw))
+        value = next(self.values)
+        if isinstance(value, Exception): raise value
+        return value
+    def unload(self):
+        self.events.append('unload')
+        if self.fail_unload: raise RuntimeError('private cleanup details')
+
+class BoundaryTests(unittest.TestCase):
+    def test_valid_binding(self): self.assertEqual(request(fixture())['target'], 'single_garment')
+    def test_no_arbitrary_url_or_command(self):
+        for key in ['url', 'path', 'command', 'approved_for_auto_apply']:
+            value = fixture(); value[key] = 'attacker'
+            with self.subTest(key=key), self.assertRaises(Refused): request(value)
+    def test_no_unrecognized_version(self):
+        value = fixture(); value['local_version'] = 'server-wire.v99'
+        with self.assertRaises(Refused): request(value)
+    def test_pinned_revisions(self):
+        for key in ['model_revision', 'policy_revision']:
+            value = fixture(); value[key] = 'wrong'
+            with self.subTest(key=key), self.assertRaises(Refused): request(value)
+    def test_budget_types_and_bounds(self):
+        for key, bad in [('attempts', True), ('attempts', 3), ('seconds', float('nan')), ('seconds', 10**999),
+                         ('seconds', 0), ('seconds', '60'), ('output_tokens', 193), ('response_bytes', 8193)]:
+            value = fixture(); value['budget'][key] = bad
+            with self.subTest(key=key, bad=str(bad)[:20]), self.assertRaises(Refused): request(value)
+    def test_ambiguous_rejected_before_callbacks(self):
+        value = fixture(); value['target'] = 'needs_selection'; backend = Backend()
+        with self.assertRaises(Refused): run(value, None, backend=backend, lease=GuardedChild(lambda: None))
+        self.assertEqual(backend.events, [])
+    def test_identity_extra_and_noncanonical(self):
+        value = fixture(); value['binding']['owner_id'] = 'not-uuid'
+        with self.assertRaises(Refused): request(value)
+        value = fixture(); value['binding']['url'] = 'https://bad.invalid'
+        with self.assertRaises(Refused): request(value)
+    def test_duplicate_and_nonfinite_json(self):
+        for raw in ['{"a":1,"a":2}', '{"a":NaN}', '{"a":Infinity}', '{', '['*1200]:
+            with self.subTest(raw=raw[:20]), self.assertRaises(Refused): strict_json(raw)
+    def test_json_byte_bounds(self):
+        with self.assertRaises(Refused): strict_json('é'*3000)
+    def test_slot_matrix(self):
+        for value in [None, [], {}, {'owner':'pc-3d','admitUntilUnix':101},
+                      *[{'owner':'pc-ai','admitUntilUnix':x} for x in [None, True, '200', float('nan'),
+                            float('inf'), -float('inf'), 10**999, 100, 1001]]]:
+            with self.subTest(value=str(value)[:80]), self.assertRaises(Refused): slot(value, 100)
+    def test_valid_slot_and_invalid_clock(self):
+        self.assertEqual(slot({'owner':'pc-ai','issuedAtUtc':datetime.fromtimestamp(100,timezone.utc).isoformat(),
+                               'admitUntilUnix':1000}, 100), 1000)
+        with self.assertRaises(Refused): slot({'owner':'pc-ai','admitUntilUnix':101}, float('nan'))
+    def test_hash_mismatch_and_escape(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root)/'input.png'; path.write_bytes(b'not image')
+            with self.assertRaisesRegex(Refused, 'digest'): read_image(path, root, 'a'*64)
+            with self.assertRaisesRegex(Refused, 'unsafe'): read_image(path, Path(root)/'sub', 'a'*64)
+    def test_decode_rejects_corrupt_bytes(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root)/'input.png'; path.write_bytes(b'not image')
+            with self.assertRaisesRegex(Refused, 'decode'): read_image(path, root, hashlib.sha256(path.read_bytes()).hexdigest())
+    def test_valid_image_and_dimension_cap(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root)/'input.png'; Image.new('RGB', (400,200)).save(path)
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            self.assertEqual(read_image(path, root, digest).size, (320,160))
+            with patch('boundary.MAX_IMAGE_PIXELS', 100):
+                with self.assertRaisesRegex(Refused, 'dimensions'): read_image(path, root, digest)
+    def test_oversize_image_read(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root)/'input.png'; path.write_bytes(b'x'*33)
+            with self.assertRaisesRegex(Refused, 'size'): read_image(path, root, 'a'*64, byte_limit=32)
+
+class ControllerTests(unittest.TestCase):
+    def execute(self, backend, **kw):
+        return run(fixture(), None, backend=backend, lease=GuardedChild(lambda: None), **kw)
+    def test_raw_ocr_not_promoted_and_no_os_release(self):
+        backend = Backend(); out = self.execute(backend)
+        self.assertEqual(out['status'], 'requires_human_review')
+        self.assertEqual(out['proposal']['attributes']['logo_texts'], [])
+        self.assertEqual(out['proposal']['candidate_logo_texts'], ['CANDIDATE'])
+        self.assertFalse(out['approved_for_auto_apply'])
+        self.assertEqual(out['lock_state'], 'awaiting_external_guard_tree_drain')
+        self.assertEqual(backend.events[-1], 'unload')
+    def test_retry_once(self):
+        backend = Backend(['{}', VALID]); out = self.execute(backend)
+        self.assertEqual(out['attempts'], 2); self.assertEqual(out['status'], 'requires_human_review')
+    def test_retry_exhaustion(self):
+        backend = Backend(['{}','{}',VALID]); out = self.execute(backend)
+        self.assertEqual(out['error_code'], 'invalid_output'); self.assertEqual(out['attempts'], 2)
+    def test_runtime_errors_are_terminal_and_redacted(self):
+        backend = Backend([RuntimeError('secret=https://signed.invalid'), VALID]); out = self.execute(backend)
+        self.assertEqual(out['attempts'], 1); self.assertNotIn('signed.invalid', json.dumps(out))
+        self.assertEqual(out['error_code'], 'runtime_failed')
+    def test_oom_classification(self):
+        self.assertEqual(self.execute(Backend([MemoryError()]))['error_code'], 'out_of_memory')
+    def test_partial_load_unloads(self):
+        backend = Backend(fail_load=True); out = self.execute(backend)
+        self.assertEqual(backend.events, ['load','unload']); self.assertEqual(out['error_code'], 'runtime_failed')
+    def test_unload_failure_cannot_publish_result(self):
+        out = self.execute(Backend(fail_unload=True))
+        self.assertEqual(out['status'], 'cleanup_pending'); self.assertNotIn('proposal', out)
+        self.assertEqual(out['lock_state'], 'awaiting_external_guard_tree_drain')
+    def test_denied_admission_never_loads(self):
+        backend = Backend()
+        def deny(): raise Refused('gpu_busy')
+        out = run(fixture(), None, backend=backend, lease=GuardedChild(deny))
+        self.assertEqual(out['error_code'], 'gpu_busy'); self.assertEqual(backend.events, [])
+    def test_deadline_after_load(self):
+        values = iter([0, 0, 61]); backend = Backend()
+        out = self.execute(backend, clock=lambda: next(values))
+        self.assertEqual(out['error_code'], 'timeout'); self.assertEqual(backend.events, ['load','unload'])
+    def test_deadline_after_generate(self):
+        values = iter([0,0,0,0,61]); out = self.execute(Backend(), clock=lambda: next(values))
+        self.assertEqual(out['error_code'], 'timeout'); self.assertNotIn('proposal', out)
+    def test_clock_invalid_or_reversed(self):
+        for values in [[0,float('nan')], [0,-1], [float('inf'),0]]:
+            ticks = iter(values); backend = Backend()
+            out = self.execute(backend, clock=lambda: next(ticks))
+            self.assertEqual(out['error_code'], 'invalid_clock'); self.assertEqual(backend.events, [])
+    def test_size_and_type_no_retry(self):
+        for raw in ['x'*8193, None, b'not text']:
+            out = self.execute(Backend([raw, VALID]))
+            self.assertEqual(out['error_code'], 'invalid_output_size'); self.assertEqual(out['attempts'], 1)
+    def test_output_cannot_approve_itself(self):
+        value = json.loads(VALID); value['approved_for_auto_apply'] = True
+        out = self.execute(Backend([json.dumps(value)]*2))
+        self.assertEqual(out['error_code'], 'invalid_output')
+    def test_each_attempt_receives_bounded_tokens(self):
+        backend = Backend(['{}', VALID]); self.execute(backend)
+        self.assertEqual([x[1]['max_new_tokens'] for x in backend.events if isinstance(x, tuple)], [192,192])
+
+class ApprovalTests(unittest.TestCase):
+    def setUp(self):
+        self.hash = 'b'*64
+        self.ack = {'version':'qint-p.guard-ack.v1','guardSha256':self.hash,'lockPath':str(LOCK),
+                    'guardPath':str(GUARD),'placement':'external_guard_owns_byte0','independent_cpu_retest':True}
+        self.review = {'status':'approved_for_disposable_test','guardSha256':self.hash,
+                       'contract_review':'PASS','production_drain_review':'PASS',
+                       'app_revision':'a'*40,'contract_revision':'b'*40,'transport_revision':'c'*40}
+    def test_expected_future_review_record(self): approval(self.ack, self.review, self.hash)
+    def test_stale_hash_or_nested_placement_refused(self):
+        for key, value in [('guardSha256','d'*64), ('placement','nested_worker_lock'), ('independent_cpu_retest',False),
+                           ('lockPath','relative/gpu0.lock')]:
+            ack = copy.deepcopy(self.ack); ack[key] = value
+            with self.subTest(key=key), self.assertRaises(Refused): approval(ack, self.review, self.hash)
+    def test_unreviewed_contract_or_drain_refused(self):
+        for key in ['contract_review', 'production_drain_review', 'transport_revision']:
+            review = copy.deepcopy(self.review); review[key] = 'pending'
+            with self.subTest(key=key), self.assertRaises(Refused): approval(self.ack, review, self.hash)
+
+if __name__ == '__main__': unittest.main(verbosity=2)

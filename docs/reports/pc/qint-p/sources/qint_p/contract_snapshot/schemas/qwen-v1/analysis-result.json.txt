@@ -1,0 +1,367 @@
+{
+  "$id": "https://fitmatch.local/schemas/qwen-v1/analysis-result.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "contractVersion": {
+      "type": "string",
+      "const": "fitmatch.garment-analysis.result.v1"
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "jobId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "analysisId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "itemId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "imageAssetId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "imageSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "jobId",
+        "analysisId",
+        "itemId",
+        "imageAssetId",
+        "imageSha256"
+      ],
+      "additionalProperties": false
+    },
+    "modelRevision": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "model",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "policyRevision": {
+      "type": "string",
+      "const": "qint.1"
+    },
+    "rawOutputSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "proposal",
+        "abstained"
+      ]
+    },
+    "abstainReason": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "ambiguous_target",
+            "unreadable_image",
+            "not_garment",
+            "unsupported_category"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "attributes": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "enum": [
+                "tshirt",
+                "jeans",
+                "unknown"
+              ]
+            },
+            "dominantColors": {
+              "minItems": 1,
+              "maxItems": 3,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "blue",
+                  "white",
+                  "black",
+                  "gray",
+                  "red",
+                  "green",
+                  "yellow",
+                  "brown",
+                  "other",
+                  "unknown"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "pattern": {
+              "type": "string",
+              "enum": [
+                "striped",
+                "solid",
+                "printed",
+                "checked",
+                "other",
+                "unknown"
+              ]
+            },
+            "logoPresence": {
+              "type": "string",
+              "enum": [
+                "visible",
+                "not_visible",
+                "unknown"
+              ]
+            },
+            "neckline": {
+              "type": "string",
+              "enum": [
+                "crew",
+                "v_neck",
+                "other",
+                "not_applicable",
+                "unknown"
+              ]
+            },
+            "sleeves": {
+              "type": "string",
+              "enum": [
+                "short",
+                "long",
+                "sleeveless",
+                "not_applicable",
+                "unknown"
+              ]
+            }
+          },
+          "required": [
+            "category",
+            "dominantColors",
+            "pattern",
+            "logoPresence",
+            "neckline",
+            "sleeves"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "candidateLogoTexts": {
+      "maxItems": 4,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 32
+      },
+      "uniqueItems": true
+    },
+    "ocrStatus": {
+      "type": "string",
+      "enum": [
+        "unverified",
+        "not_extracted"
+      ]
+    },
+    "approvedForAutoApply": {
+      "type": "boolean",
+      "const": false
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 2
+        },
+        "outputTokens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 192
+        },
+        "durationMs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 600000
+        },
+        "gpuMiB": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "baseline": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1048576
+                },
+                "peak": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1048576
+                },
+                "after": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 1048576
+                }
+              },
+              "required": [
+                "baseline",
+                "peak",
+                "after"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "attempts",
+        "outputTokens",
+        "durationMs",
+        "gpuMiB"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "contractVersion",
+    "binding",
+    "modelRevision",
+    "policyRevision",
+    "rawOutputSha256",
+    "outcome",
+    "abstainReason",
+    "attributes",
+    "candidateLogoTexts",
+    "ocrStatus",
+    "approvedForAutoApply",
+    "evidence"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "proposal"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "type": "object"
+          },
+          "abstainReason": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "outcome": {
+            "const": "abstained"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "type": "null"
+          },
+          "abstainReason": {
+            "type": "string"
+          },
+          "candidateLogoTexts": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "candidateLogoTexts": {
+            "minItems": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "type": "object",
+            "properties": {
+              "logoPresence": {
+                "const": "visible"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ocrStatus": {
+            "const": "unverified"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "candidateLogoTexts": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "candidateLogoTexts": {
+            "maxItems": 0
+          }
+        }
+      }
+    }
+  ]
+}

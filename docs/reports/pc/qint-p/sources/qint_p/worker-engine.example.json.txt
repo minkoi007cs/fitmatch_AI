@@ -1,0 +1,29 @@
+{
+  "appUrl": "https://reviewed-app-origin.invalid",
+  "workDir": "ABSOLUTE_PRIVATE_TEST_WORKDIR_REQUIRED",
+  "processContainment": "required",
+  "gpuSlotOwner": "pc-ai",
+  "gpuCoordinator": {
+    "path": "EXACT_PC3D_COORDINATOR_POLICY_PATH_REQUIRED",
+    "sha256": "PC3D_ISSUED_POLICY_SHA256_REQUIRED"
+  },
+  "expectedBackend": {
+    "projectRef": "gohczmqykjkrgdblgbog",
+    "appOrigin": "https://reviewed-app-origin.invalid"
+  },
+  "engines": {
+    "garment.analyze": {
+      "model": "Qwen/Qwen3-VL-4B-Instruct",
+      "revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+      "command": [
+        "ABSOLUTE_QWEN_ENV_PYTHON_REQUIRED",
+        "ABSOLUTE_WORKER_CLI_PY_REQUIRED",
+        "--input", "{input}", "--output", "{output}",
+        "--policy", "ABSOLUTE_PRIVATE_REVIEWED_APPROVAL_REQUIRED"
+      ],
+      "timeoutSeconds": 240,
+      "drainSeconds": 30,
+      "exitCodes": {"124": "TIMEOUT"}
+    }
+  }
+}

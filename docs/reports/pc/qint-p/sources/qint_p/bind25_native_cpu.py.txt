@@ -1,0 +1,134 @@
+"""Supplemental Windows binding/drain proof against immutable f80749a; disposable CPU trees only."""
+import contextlib
+import hashlib
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import time
+import unittest
+
+import psutil
+
+ROOT=Path(__file__).resolve().parent
+GPU=ROOT.parents[1]
+SOURCE=ROOT/'native_bind25/source/scripts/worker/worker.py'
+REVISION='f80749a65b47441958e7c6fc485034d7efe446df'
+WORKER_SHA='ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6'
+spec=importlib.util.spec_from_file_location('bind25_reviewed_worker',SOURCE)
+worker=importlib.util.module_from_spec(spec);spec.loader.exec_module(worker)
+EVENTS=[]
+ACTUAL=psutil.Process().exe()
+
+def still_alive(row):
+    try:
+        process=psutil.Process(row['pid'])
+        return process.is_running() and process.create_time()==row['created']
+    except psutil.NoSuchProcess:return False
+
+def peer_acquires(path):
+    code=('import msvcrt,sys;f=open(sys.argv[1],"r+");f.seek(0)\n'
+          'try:msvcrt.locking(f.fileno(),msvcrt.LK_NBLCK,1)\n'
+          'except OSError:sys.exit(3)\n'
+          'f.seek(0);msvcrt.locking(f.fileno(),msvcrt.LK_UNLCK,1)')
+    return subprocess.run([ACTUAL,'-c',code,str(path)],creationflags=0x08000000,timeout=5).returncode==0
+
+class NativeBindingTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory(prefix='qint-bind25-cpu-');self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name);self.ws=self.root/'Synthetic-GPU';self.coord=self.ws/'coordination'
+        self.coord.mkdir(parents=True);self.lock=self.coord/'gpu0.lock';self.lock.write_bytes(b'0')
+        self.guard=self.ws/'fitmatch_AI/workers/windows/gpu_guard.py';self.guard.parent.mkdir(parents=True)
+        self.guard.write_text('# synthetic CPU guard fixture')
+        identity=os.stat(self.lock)
+        doc={'kind':'fitmatch.gpu-coordinator.v1','coordinator':'pc-3d','owners':['pc-3d','pc-ai'],
+            'lock':{'name':'gpu0.lock','volume':identity.st_dev,'fileId':identity.st_ino},
+            'slot':{'name':'gpu0-slot.json'},'guard':{'relativeToWorkspace':'fitmatch_AI/workers/windows/gpu_guard.py',
+            'sha256':hashlib.sha256(self.guard.read_bytes()).hexdigest()},'issuedAtUtc':'2026-11-09T06:00:00Z'}
+        self.policy=self.coord/'gpu-coordinator.json';self.policy.write_text(json.dumps(doc))
+        self.pin=hashlib.sha256(self.policy.read_bytes()).hexdigest()
+        self.config={'engines':{'garment.analyze':{}},'gpuSlotOwner':'pc-ai',
+            'gpuCoordinator':{'path':str(self.policy),'sha256':self.pin}}
+    def event(self,**extra):EVENTS.append({'test':self._testMethodName,'passed':True,**extra})
+    def test_copy_created_before_hold_refused_while_original_held(self):
+        import shutil
+        other=self.root/'Copied-GPU'
+        shutil.copytree(self.ws,other)  # Windows refuses reading a locked byte: copy before lock.
+        holder=worker.FileLock(self.lock,create=False);self.assertTrue(holder.acquire(0))
+        try:
+            copied={**self.config,'gpuCoordinator':{'path':str(other/'coordination/gpu-coordinator.json'),'sha256':self.pin}}
+            with self.assertRaisesRegex(worker.AdmissionError,'identity'):worker.SharedGpuAdmission(copied)
+            self.assertFalse(peer_acquires(self.lock));self.assertTrue(peer_acquires(other/'coordination/gpu0.lock'))
+            self.event(copiedPolicyByteIdentical=True,canonicalStillHeld=True,foreignLockIndependentlyFree=True,
+                       refusal='identity mismatch before worker acquires copied lock')
+        finally:holder.release()
+    def test_opened_handle_identity_and_external_exclusion(self):
+        admission=worker.SharedGpuAdmission(self.config);holder=admission.make_lock()
+        self.assertTrue(holder.acquire(0))
+        try:
+            stat_id=worker.file_identity(os.stat(self.lock));handle_id=worker.file_identity(os.fstat(holder.handle.fileno()))
+            self.assertEqual(stat_id,handle_id);self.assertEqual(stat_id,admission.lock_identity)
+            self.assertFalse(peer_acquires(self.lock));self.event(statEqualsFstat=True,externalProcessExcluded=True)
+        finally:holder.release()
+        self.assertTrue(peer_acquires(self.lock))
+    def test_existing_real_lock_identity_read_only(self):
+        real=GPU/'coordination/gpu0.lock';before=os.stat(real)
+        with real.open('rb') as handle:opened=os.fstat(handle.fileno())
+        after=os.stat(real)
+        self.assertEqual(worker.file_identity(before),worker.file_identity(opened))
+        self.assertEqual(worker.file_identity(before),worker.file_identity(after))
+        self.event(volume=before.st_dev,fileId=before.st_ino,statEqualsFstat=True,lockAcquired=False,
+                   actualLockBytesReadOrWritten=False)
+    def test_native_owned_grandchild_drain_holds_synthetic_lock(self):
+        marker=self.root/'grandchild.json'
+        child=('import json,os,time;from pathlib import Path;import psutil;'
+               f'Path({str(marker)!r}).write_text(json.dumps({{"pid":os.getpid(),"created":psutil.Process().create_time()}}));'
+               'time.sleep(30)')
+        parent=('import subprocess,sys;'
+                f'subprocess.Popen([sys.executable,"-c",{child!r}],creationflags=0x08000000)')
+        foreign=subprocess.Popen([ACTUAL,'-c','import time;time.sleep(30)'],creationflags=0x08000000)
+        tree=None;holder=worker.FileLock(self.lock,create=False);self.assertTrue(holder.acquire(0))
+        try:
+            env=dict(os.environ)
+            env['PYTHONPATH']=str(Path(sys.prefix)/'Lib/site-packages')
+            tree=worker.OwnedProcessTree([sys.executable,'-c',parent],env=env,creationflags=0x08000000,
+                                        stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            deadline=time.monotonic()+8
+            while time.monotonic()<deadline:
+                tree.track()
+                if marker.exists() and tree.poll() is not None:break
+                time.sleep(.03)
+            self.assertTrue(marker.exists(),'owned grandchild failed to start')
+            row=json.loads(marker.read_text());self.assertIsNotNone(tree.poll())
+            self.assertTrue(still_alive(row));self.assertTrue(tree.alive())
+            self.assertFalse(peer_acquires(self.lock))
+            self.assertTrue(tree.drain(timeout=8,grace=.2),'owned tree did not drain')
+            self.assertFalse(still_alive(row));self.assertIsNone(foreign.poll())
+            self.assertFalse(peer_acquires(self.lock),'lock released before explicit drain handback')
+            holder.release();self.assertTrue(peer_acquires(self.lock))
+            self.event(nativeJobObject=True,venvLauncherExitedBeforeGrandchild=True,ownedGrandchildDrained=True,
+                       foreignProcessUnaffected=True,lockHeldUntilDrain=True,nestedGpuGuard=False)
+        finally:
+            if tree is not None:tree.drain(timeout=8,grace=.2)
+            holder.release()
+            if foreign.poll() is None:foreign.kill()
+            foreign.wait(timeout=5)
+
+if __name__=='__main__':
+    if hashlib.sha256(SOURCE.read_bytes()).hexdigest()!=WORKER_SHA:raise RuntimeError('Worker source changed')
+    stream=io.StringIO();started=time.monotonic()
+    result=unittest.TextTestRunner(stream=stream,verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(NativeBindingTests))
+    report=GPU/'reports/ai/qint_p/bind25';report.mkdir(exist_ok=True)
+    raw=stream.getvalue();(report/'native-private.log').write_text(raw)
+    safe=raw.replace(str(GPU),'<GPU_ROOT>')
+    (report/'native.log').write_text(safe)
+    value={'session':'PC-QINT-P-20261109-09','revision':REVISION,'workerLFsha256':WORKER_SHA,
+        'python':sys.version.split()[0],'os':os.name,'testsRun':result.testsRun,'errors':len(result.errors),
+        'failures':len(result.failures),'skips':len(result.skipped),'events':EVENTS,'seconds':round(time.monotonic()-started,3),
+        'CUDAImported':'torch' in sys.modules,'realPolicyLockSlotWritten':False}
+    (report/'native.json').write_text(json.dumps(value,indent=2)+'\n')
+    print(safe);print(json.dumps(value));raise SystemExit(0 if result.wasSuccessful() else 1)

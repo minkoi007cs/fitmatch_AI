@@ -1,0 +1,75 @@
+"""Read-only CONNECT45 coordinator/process/config readiness. No credentials, API, claims, locks or model loads."""
+from datetime import datetime,timezone
+import ctypes
+import hashlib
+import importlib.util
+import json
+import os
+from pathlib import Path
+import time
+
+import psutil
+import worker_admission as admission
+
+ROOT=Path(__file__).resolve().parent
+GPU=ROOT.parents[1]
+REPORT=GPU/'reports/ai/qint_p/connect45'
+
+def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def main():
+    REPORT.mkdir(parents=True,exist_ok=True)
+    guard_path=admission.GUARD
+    if sha(guard_path)!=admission.GUARD_HASH:raise RuntimeError('Guard revision changed; readiness withheld')
+    spec=importlib.util.spec_from_file_location('connect45_guard',guard_path)
+    guard=importlib.util.module_from_spec(spec);spec.loader.exec_module(guard)
+    try:guard.no_surviving_child();prior_tree='no surviving prior tree detected by existing guard'
+    except (OSError,ValueError,RuntimeError):prior_tree='NOT PROVEN; existing guard refused'
+    identity=admission.coordinator_binding({'coordinator_sha256':'789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039'})
+    slot=json.loads((admission.COORD/'gpu0-slot.json').read_text())
+    try:slot_owner=guard.slot_owner();slot_valid=True
+    except (OSError,ValueError,RuntimeError):slot_owner=None;slot_valid=False
+    # A live Python/Blender process is not assumed CPU-only from its name. Never kill/adopt it.
+    candidates=[]
+    for process in psutil.process_iter(['pid','name']):
+        if process.pid==os.getpid():continue
+        name=(process.info['name'] or '').lower()
+        if name not in {'python.exe','pythonw.exe','blender.exe','blender-launcher.exe'}:continue
+        available=False
+        try:available=bool(process.cmdline())
+        except (psutil.AccessDenied,psutil.NoSuchProcess):pass
+        candidates.append({'pid':process.pid,'name':name,'commandLineAvailable':available,
+                           'classification':'unreviewed GPU-capable process; no CPU/GPU activity inferred'})
+    private=GPU/'worker-data/qwen-pilot/private'
+    config=json.loads((private/'connect45-worker.disabled.json').read_text())
+    inner=config['workerConfig']
+    assert config['enabled'] is False and config['backendReady'] is False
+    assert inner['appUrl']=='https://fitmatch.minkoi.org'
+    assert inner['expectedBackend']=={'projectRef':admission.BACKEND_REF,'appOrigin':inner['appUrl']}
+    assert not any(key in inner for key in ['gpuLock','gpuSlot','gpuGuard'])
+    assert set(inner['engines'])=={'garment.analyze'}
+    assert sha(Path(config['workerScript']))==config['workerSHA256']
+    blockers=['Codex actual PG17 restore proof/cutover/backend-ready handoff pending',
+              'scoped enrollment and live operator approval not granted',
+              'new finite pc-ai slot from PC3D absent; current slot is not a grant',
+              'app-owned authorized input/snapshot/job and final serving-binding gate pending']
+    if candidates:blockers.append('unreviewed GPU-capable processes prevent full quiescence assertion')
+    if prior_tree.startswith('NOT'):blockers.append('prior owned-tree quiescence unproven')
+    value={'session':'PC-QINT-P-20261110-12','task':'CONNECT-PC-AI-45','appOrigin':inner['appUrl'],
+        'expectedBackendProjectRef':admission.BACKEND_REF,'servingRevisionReportedByCodex':config['servingRevision'],
+        'workerSHA256':config['workerSHA256'],'privateConfigPrepared':True,'configEnabled':False,
+        'tokenReservedLocally':True,'tokenValueOrHashPublishedHere':False,'capabilities':['garment.analyze'],
+        'guardSHA256':admission.GUARD_HASH,'coordinatorSHA256':inner['gpuCoordinator']['sha256'],
+        'lockIdentity':list(identity),'existingGuardPriorTreeCheck':prior_tree,
+        'slotValidNow':slot_valid,'slotOwnerAdmittedNow':slot_owner,'recordedSlotOwner':slot.get('owner'),
+        'recordedSlotExpired':slot.get('admitUntilUnix',0)<=time.time(),'processInventory':candidates,
+        'fullQuiescenceProven':not candidates and not prior_tree.startswith('NOT'),
+        'realLockAcquiredOrWritten':False,'realPolicySlotStateGuardWritten':False,
+        'GPUOrInferenceStarted':False,'authHeartbeatOrClaimSent':False,'backendReady':False,
+        'operatorApprovalInstalled':admission.POLICY.exists(),'blockers':blockers,
+        'modelOrNativeSuiteRerun':False,'recordedAtUtc':datetime.now(timezone.utc).isoformat()}
+    (REPORT/'readiness.json').write_text(json.dumps(value,indent=2)+'\n')
+    print(json.dumps({key:value[key] for key in ['privateConfigPrepared','configEnabled','existingGuardPriorTreeCheck',
+        'slotValidNow','fullQuiescenceProven','GPUOrInferenceStarted','authHeartbeatOrClaimSent','blockers']}))
+
+if __name__=='__main__':main()

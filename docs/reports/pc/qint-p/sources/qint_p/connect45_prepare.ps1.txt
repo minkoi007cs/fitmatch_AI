@@ -1,0 +1,126 @@
+$ErrorActionPreference = 'Stop'
+$connectGpu = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
+$connectWork = Join-Path $connectGpu 'worker-data\qwen-pilot'
+$connectPrivate = Join-Path $connectWork 'private'
+$connectTokenFile = Join-Path $connectPrivate 'connect45-worker.env'
+$connectMetadata = Join-Path $connectPrivate 'connect45-reservation.json'
+$connectConfig = Join-Path $connectPrivate 'connect45-worker.disabled.json'
+$connectSid = [Security.Principal.WindowsIdentity]::GetCurrent().User
+
+function Protect-ConnectPath([string]$Path, [bool]$Directory) {
+    $connectPresentAcl = Get-Acl -LiteralPath $Path
+    $connectPresentRules = @($connectPresentAcl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier]))
+    if ($connectPresentAcl.AreAccessRulesProtected -and $connectPresentRules.Count -eq 1 -and
+        $connectPresentRules[0].IdentityReference.Value -eq $connectSid.Value -and
+        $connectPresentRules[0].AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and
+        $connectPresentRules[0].FileSystemRights -eq [Security.AccessControl.FileSystemRights]::FullControl -and
+        $connectPresentAcl.GetOwner([Security.Principal.SecurityIdentifier]).Value -eq $connectSid.Value) { return }
+    if ($Directory) {
+        $connectAcl = [Security.AccessControl.DirectorySecurity]::new()
+        $connectRule = [Security.AccessControl.FileSystemAccessRule]::new($connectSid,
+            [Security.AccessControl.FileSystemRights]::FullControl,
+            ([Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [Security.AccessControl.InheritanceFlags]::ObjectInherit),
+            [Security.AccessControl.PropagationFlags]::None, [Security.AccessControl.AccessControlType]::Allow)
+    } else {
+        $connectAcl = [Security.AccessControl.FileSecurity]::new()
+        $connectRule = [Security.AccessControl.FileSystemAccessRule]::new($connectSid,
+            [Security.AccessControl.FileSystemRights]::FullControl,[Security.AccessControl.AccessControlType]::Allow)
+    }
+    $connectAcl.SetOwner($connectSid)
+    $connectAcl.SetAccessRuleProtection($true,$false)
+    $connectAcl.AddAccessRule($connectRule)
+    Set-Acl -LiteralPath $Path -AclObject $connectAcl
+    $connectVerified = Get-Acl -LiteralPath $Path
+    $connectRules = @($connectVerified.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier]))
+    if (-not $connectVerified.AreAccessRulesProtected -or $connectRules.Count -ne 1 -or
+        $connectRules[0].IdentityReference.Value -ne $connectSid.Value -or
+        $connectRules[0].AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow -or
+        $connectVerified.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $connectSid.Value) {
+        throw 'Owner-only ACL verification failed; token must not be used'
+    }
+}
+function Connect-Sha([byte[]]$Bytes) {
+    $connectHasher = [Security.Cryptography.SHA256]::Create()
+    try { return ([BitConverter]::ToString($connectHasher.ComputeHash($Bytes))).Replace('-','').ToLowerInvariant() }
+    finally { $connectHasher.Dispose() }
+}
+
+# Do not replace an unclassified existing credential or silently rotate a reservation.
+foreach ($connectScope in @('Process','User','Machine')) {
+    if (-not [string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable('FITMATCH_WORKER_TOKEN',$connectScope))) {
+        throw 'Existing environment token requires enrollment reconciliation; no rotation performed'
+    }
+}
+$connectReuse = Test-Path -LiteralPath $connectTokenFile
+foreach ($connectExisting in @($connectTokenFile,$connectMetadata,$connectConfig)) {
+    if ((Test-Path -LiteralPath $connectExisting) -and
+        ((Get-Item -LiteralPath $connectExisting).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw 'Reserved private files must not be reparse points'
+    }
+}
+if (Test-Path -LiteralPath $connectConfig) {
+    $connectExistingConfig = Get-Content -LiteralPath $connectConfig -Raw | ConvertFrom-Json
+    if ($connectExistingConfig.enabled -or $connectExistingConfig.backendReady) {
+        throw 'Reservation already active or backend-ready; preserve it and reconcile instead of rewriting'
+    }
+}
+if ($connectReuse -and -not (Test-Path -LiteralPath $connectMetadata)) {
+    throw 'Unclassified token file exists; no overwrite or rotation'
+}
+foreach ($connectDir in @($connectWork,$connectPrivate)) {
+    if (-not (Test-Path -LiteralPath $connectDir)) { [void][IO.Directory]::CreateDirectory($connectDir) }
+    if ((Get-Item -LiteralPath $connectDir).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+        throw 'Private directory must not be a reparse point'
+    }
+    Protect-ConnectPath $connectDir $true
+}
+if ($connectReuse) {
+    Protect-ConnectPath $connectTokenFile $false
+    $connectPrior = Get-Content -LiteralPath $connectMetadata -Raw | ConvertFrom-Json
+    if ($connectPrior.appOrigin -ne 'https://fitmatch.minkoi.org' -or
+        $connectPrior.projectRef -ne 'gohczmqykjkrgdblgbog' -or
+        $connectPrior.proposedWorker -ne 'pc-ai-qwen-connect45') { throw 'Reservation target mismatch' }
+    $connectRaw = [IO.File]::ReadAllText($connectTokenFile).Trim()
+    if ($connectRaw -notmatch '^FITMATCH_WORKER_TOKEN=(fmw_[A-Za-z0-9_-]{43})$') { throw 'Invalid reserved token encoding' }
+    $connectToken = $Matches[1]
+} else {
+    $connectRandom = [byte[]]::new(32)
+    $connectRng = [Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $connectRng.GetBytes($connectRandom) } finally { $connectRng.Dispose() }
+    $connectToken = 'fmw_' + [Convert]::ToBase64String($connectRandom).TrimEnd('=').Replace('+','-').Replace('/','_')
+    # Parent ACL is already restricted before secret bytes exist. CreateNew avoids replacement.
+    $connectStream = [IO.FileStream]::new($connectTokenFile,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
+    try {
+        $connectBytes = [Text.UTF8Encoding]::new($false).GetBytes('FITMATCH_WORKER_TOKEN='+$connectToken+"`n")
+        $connectStream.Write($connectBytes,0,$connectBytes.Length)
+        $connectStream.Flush($true)
+    } finally { $connectStream.Dispose() }
+    Protect-ConnectPath $connectTokenFile $false
+}
+$connectHash = Connect-Sha ([Text.Encoding]::UTF8.GetBytes($connectToken))
+if ($connectReuse -and $connectPrior.tokenSHA256 -ne $connectHash) { throw 'Reserved token hash differs; do not rotate' }
+$connectPin = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'checkpoint-pin.json') -Raw | ConvertFrom-Json
+$connectEngine = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'worker-engine.example.json') -Raw | ConvertFrom-Json
+$connectEngine.appUrl = 'https://fitmatch.minkoi.org'
+$connectEngine.workDir = Join-Path $connectWork 'runtime'
+$connectEngine.gpuCoordinator.path = Join-Path $connectGpu 'coordination\gpu-coordinator.json'
+$connectEngine.gpuCoordinator.sha256 = '789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039'
+$connectEngine.expectedBackend.appOrigin = $connectEngine.appUrl
+$connectEngine.engines.'garment.analyze'.command = @(
+    (Join-Path $connectGpu 'envs\qwen-vl\Scripts\python.exe'), (Join-Path $PSScriptRoot 'worker_cli.py'),
+    '--input','{input}','--output','{output}','--policy', (Join-Path $connectGpu 'coordination\qint-worker-test-approval.json'))
+$connectWrapper = [ordered]@{kind='qint-p.disabled-worker-plan.v1'; enabled=$false; task='CONNECT-PC-AI-45';
+    servingRevision='7397b6a954dbe877e425abd09abd125398c271c4'; workerSHA256='ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6';
+    workerScript=(Join-Path $PSScriptRoot 'connect45\source\scripts\worker\worker.py'); workerConfig=$connectEngine;
+    tokenFile=$connectTokenFile; tokenSHA256=$connectHash; backendReady=$false; operatorApprovalInstalled=$false; slotGranted=$false}
+[IO.File]::WriteAllText($connectConfig,($connectWrapper | ConvertTo-Json -Depth 12)+"`n",[Text.UTF8Encoding]::new($false))
+Protect-ConnectPath $connectConfig $false
+$connectReceipt = [ordered]@{task='CONNECT-PC-AI-45'; proposedWorker='pc-ai-qwen-connect45';
+    appOrigin='https://fitmatch.minkoi.org'; projectRef='gohczmqykjkrgdblgbog'; capabilities=@('garment.analyze');
+    modelRevision=$connectPin.model_revision; tokenSHA256=$connectHash; tokenFile=$connectTokenFile;
+    configPath=$connectConfig; ownerOnlyACL=$true; tokenReused=$connectReuse; configEnabled=$false;
+    backendReady=$false; enrollmentPerformed=$false; authOrClaimPerformed=$false; GPUStarted=$false}
+[IO.File]::WriteAllText($connectMetadata,($connectReceipt | ConvertTo-Json -Depth 8)+"`n",[Text.UTF8Encoding]::new($false))
+Protect-ConnectPath $connectMetadata $false
+$connectReceipt | ConvertTo-Json -Depth 8
+$connectToken=$null; $connectRaw=$null; $connectBytes=$null; $connectRandom=$null

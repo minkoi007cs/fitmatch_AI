@@ -1,0 +1,78 @@
+{
+  "version": "pc-ai.corpus-freeze.v1",
+  "frozen_at_utc": "2026-11-07T13:17:18.525326+00:00",
+  "plan_sha256": "14f6675e53142cc089c2d0e1f0450b59df8c01a2a4709c403c14705ed05d3a13",
+  "fixtures": [
+    {
+      "id": "legacy-striped-illustration",
+      "image_sha256": "6a08e7b819e897ed2725e286df8af886560b1db59d60c2758d4d550f068a3f08",
+      "label_sha256": "285f173d32daa4fe5af9c5ee994c5f6f6bf5e538a6b9b6f24bc1d1b814b5202a",
+      "target_crop": "none; original full frame",
+      "requires_target": false,
+      "eligible_for_one_pass_after_safety_gate": true,
+      "second_review": "pending independent reviewer; no claim of second annotator",
+      "inference_this_task": "Not run"
+    },
+    {
+      "id": "legacy-blue-jeans",
+      "image_sha256": "b316902ad85e8ff46b164ceb7f2c38d3c1424c9d789703e0267e3dfce68fbe1c",
+      "label_sha256": "9aa2a1c8f68cc890f74b15112c36fa64e0dd77bf12600ca4bc2cebdb1486cfac",
+      "target_crop": "none; original full frame",
+      "requires_target": false,
+      "eligible_for_one_pass_after_safety_gate": true,
+      "second_review": "pending independent reviewer; no claim of second annotator",
+      "inference_this_task": "Not run"
+    },
+    {
+      "id": "plain-white",
+      "image_sha256": "ae2d83046841cec10ff5260f989f59b6cee7c2851b0ce6ab38579cd6d7c4c20e",
+      "label_sha256": "674403825b59d269dc0dff55b4e6df327bcef67e37df28fabda0393558958540",
+      "target_crop": "none; original full frame",
+      "requires_target": false,
+      "eligible_for_one_pass_after_safety_gate": true,
+      "second_review": "pending independent reviewer; no claim of second annotator",
+      "inference_this_task": "Not run"
+    },
+    {
+      "id": "multi-hanger",
+      "image_sha256": "dd4ce14bf9deeff7225cbe8698784fd70858c7659ee5d9aaeaf2042e07f4bd57",
+      "label_sha256": "ce047ab652bcb43823ae57b96e448d899dc32d9eaa9178a692df2ca92aa6ef4c",
+      "target_crop": "none; original full frame",
+      "requires_target": true,
+      "eligible_for_one_pass_after_safety_gate": false,
+      "second_review": "pending independent reviewer; no claim of second annotator",
+      "inference_this_task": "Not run"
+    },
+    {
+      "id": "black-jeans",
+      "image_sha256": "caefbb533799d84af1b10e7ece5f2065ea26188b8714026c633f52dc35de6142",
+      "label_sha256": "7368dd78dc2c88b68e590055d8f0002a2b2edc6aa9fc952a0891ded4a4b9230f",
+      "target_crop": "none; original full frame",
+      "requires_target": false,
+      "eligible_for_one_pass_after_safety_gate": true,
+      "second_review": "pending independent reviewer; no claim of second annotator",
+      "inference_this_task": "Not run"
+    },
+    {
+      "id": "striped-wiki",
+      "image_sha256": "962fcb1a9f31f5e52825451f7bdabf157cea445991ec225babac4e489138584b",
+      "label_sha256": "95e7c98619a96f3efb0b7fe475bdc447bb8e8ebffb3d717428235a79537e560a",
+      "target_crop": "none; original full frame",
+      "requires_target": false,
+      "eligible_for_one_pass_after_safety_gate": true,
+      "second_review": "pending independent reviewer; no claim of second annotator",
+      "inference_this_task": "Not run"
+    },
+    {
+      "id": "long-sleeve",
+      "image_sha256": "e0e9c9bd13fd1cf598e14c56061711fababd452db4de586c7e96f6bc2d61a4fa",
+      "label_sha256": "ecf6c99d0e0d87bda3bb233f7b547f1b7760b9b2363ceb5f56489b71272ca1f1",
+      "target_crop": "none; original full frame",
+      "requires_target": false,
+      "eligible_for_one_pass_after_safety_gate": true,
+      "second_review": "pending independent reviewer; no claim of second annotator",
+      "inference_this_task": "Not run"
+    }
+  ],
+  "priority": "H-QWEN-018 vertical slice before broad corpus; never chase prior OCR"
+}

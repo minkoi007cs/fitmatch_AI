@@ -1,0 +1,22 @@
+test_invalid_clock (__main__.Matrix) ... ok
+test_shape_finite_window_and_reader_agreement (__main__.Matrix) ... ok
+test_valid_legacy_and_v1_window (__main__.Matrix) ... ok
+test_cpu_child_crash_exit7 (__main__.NativeCandidate) ... ok
+test_exclusion_then_normal_unload (__main__.NativeCandidate) ... ok
+test_injected_low_ram_exit86_without_real_pressure (__main__.NativeCandidate) ... ok
+test_owned_guard_crash_kill_on_close (__main__.NativeCandidate) ... ok
+test_slot_refused_before_child_launch (__main__.NativeCandidate) ... FAIL
+test_timeout_drains_child_and_grandchild (__main__.NativeCandidate) ... ok
+
+======================================================================
+FAIL: test_slot_refused_before_child_launch (__main__.NativeCandidate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<GPU_ROOT>\ai-service\qint_p\retest_candidate.py", line 68, in test_slot_refused_before_child_launch
+    self.assertEqual(result.returncode,expected,result.stderr)
+AssertionError: 0 != 70 :
+
+----------------------------------------------------------------------
+Ran 9 tests in 8.605s
+
+FAILED (failures=1)

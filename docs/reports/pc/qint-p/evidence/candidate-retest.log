@@ -1,0 +1,14 @@
+test_invalid_clock (__main__.Matrix) ... ok
+test_shape_finite_window_and_reader_agreement (__main__.Matrix) ... ok
+test_valid_legacy_and_v1_window (__main__.Matrix) ... ok
+test_cpu_child_crash_exit7 (__main__.NativeCandidate) ... ok
+test_exclusion_then_normal_unload (__main__.NativeCandidate) ... ok
+test_injected_low_ram_exit86_without_real_pressure (__main__.NativeCandidate) ... ok
+test_owned_guard_crash_kill_on_close (__main__.NativeCandidate) ... ok
+test_slot_refused_before_child_launch (__main__.NativeCandidate) ... ok
+test_timeout_drains_child_and_grandchild (__main__.NativeCandidate) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 8.384s
+
+OK

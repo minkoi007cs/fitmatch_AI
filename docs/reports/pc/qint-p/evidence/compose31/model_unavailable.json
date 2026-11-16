@@ -1,0 +1,111 @@
+{
+  "case": "model_unavailable",
+  "passed": true,
+  "adapter": "real unmodified qint_p CLI",
+  "workerExit": 0,
+  "CLIError": {
+    "success": false,
+    "code": "MODEL_UNAVAILABLE"
+  },
+  "HTTPEvents": [
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "claim",
+      "stateAfter": {
+        "state": "running",
+        "attempt": 1,
+        "deferrals": 0,
+        "errorCode": null,
+        "resultStored": false
+      }
+    },
+    {
+      "HTTP": "GET",
+      "route": "synthetic-image",
+      "bytes": 693
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "fail",
+      "code": "MODEL_UNAVAILABLE",
+      "stateAfter": {
+        "state": "failed",
+        "attempt": 1,
+        "deferrals": 0,
+        "errorCode": "MODEL_UNAVAILABLE",
+        "resultStored": false
+      },
+      "nativeProof": {
+        "adapterInterpreterCount": 1,
+        "nativeAdapterHandlesAllSignaledAtHTTPReport": true,
+        "adapterCredentialsRemoved": true,
+        "torchImportAttempted": false,
+        "syntheticLockHeldAtHTTPReport": true
+      }
+    }
+  ],
+  "syntheticFinalJobState": {
+    "state": "failed",
+    "attempt": 1,
+    "deferrals": 0,
+    "errorCode": "MODEL_UNAVAILABLE",
+    "resultStored": false
+  },
+  "syntheticStateModelOnly": true,
+  "actualWorkerCheckpointStage": "failed",
+  "resultFileCreated": false,
+  "syntheticLockReleasableAfterOwnedTreeDrain": true,
+  "outerWindowsJobDrained": true,
+  "torchImportedOrAttempted": false,
+  "seconds": 1.265
+}

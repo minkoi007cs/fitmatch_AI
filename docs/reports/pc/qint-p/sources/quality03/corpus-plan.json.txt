@@ -1,0 +1,434 @@
+{
+  "plan_version": "pc-ai.fixture-plan.v1",
+  "labels_version": "quality03.visual-labels.v1",
+  "acquired_images": 7,
+  "new_photos": 5,
+  "annotation_status": "single-annotator provisional, second review required",
+  "inference_runs_this_task": 0,
+  "partition": {
+    "regression": [
+      "legacy-striped-illustration",
+      "legacy-blue-jeans"
+    ],
+    "new_cpu_labeled_holdout": [
+      "plain-white",
+      "multi-hanger",
+      "black-jeans",
+      "striped-wiki",
+      "long-sleeve"
+    ]
+  },
+  "labels": [
+    {
+      "id": "legacy-striped-illustration",
+      "image_kind": "illustration",
+      "scoreable": {
+        "category": [
+          "tshirt"
+        ],
+        "dominant_colors": [
+          [
+            "blue",
+            "white"
+          ]
+        ],
+        "pattern": [
+          "striped"
+        ],
+        "logo_presence": [
+          "visible"
+        ],
+        "neckline": [
+          "crew"
+        ],
+        "sleeves": [
+          "short"
+        ]
+      },
+      "unknown_required": [
+        "material_composition",
+        "pockets_total",
+        "back_pocket_count"
+      ],
+      "ocr": {
+        "confirmed_texts": [
+          "FON BET",
+          "DELO",
+          "RUSCON"
+        ],
+        "complete": false
+      },
+      "requires_target": false,
+      "notes": "Prior regression only; no new inference to chase DELO. Crest text not adjudicated.",
+      "annotation": "Visual inspection by PC-AI-01, not model generated; single annotator, pending second review",
+      "model_run": "Not run in AI-QUALITY-03"
+    },
+    {
+      "id": "legacy-blue-jeans",
+      "image_kind": "photograph",
+      "scoreable": {
+        "category": [
+          "jeans"
+        ],
+        "dominant_colors": [
+          [
+            "blue"
+          ]
+        ],
+        "pattern": [
+          "solid"
+        ],
+        "logo_presence": [
+          "not_visible"
+        ]
+      },
+      "unknown_required": [
+        "material_composition",
+        "pockets_total",
+        "back_pocket_count"
+      ],
+      "ocr": {
+        "confirmed_texts": [],
+        "complete": true
+      },
+      "requires_target": false,
+      "notes": "Original front photograph; no hidden-back pocket/material truth.",
+      "annotation": "Visual inspection by PC-AI-01, not model generated; single annotator, pending second review",
+      "model_run": "Not run in AI-QUALITY-03"
+    },
+    {
+      "id": "plain-white",
+      "image_kind": "photograph",
+      "scoreable": {
+        "category": [
+          "tshirt"
+        ],
+        "dominant_colors": [
+          [
+            "white"
+          ]
+        ],
+        "pattern": [
+          "printed"
+        ],
+        "logo_presence": [
+          "visible"
+        ],
+        "neckline": [
+          "crew"
+        ],
+        "sleeves": [
+          "short"
+        ]
+      },
+      "unknown_required": [
+        "material_composition",
+        "pockets_total",
+        "back_pocket_count"
+      ],
+      "ocr": {
+        "confirmed_texts": [
+          "ESPRIT"
+        ],
+        "complete": false
+      },
+      "requires_target": false,
+      "notes": "Despite acquisition alias plain-white, actual image has green chest print. ESPRIT is visible on neck tag and small chest text. Stylized central text remains unadjudicated. Filename/title are not labels.",
+      "annotation": "Visual inspection by PC-AI-01, not model generated; single annotator, pending second review",
+      "model_run": "Not run in AI-QUALITY-03"
+    },
+    {
+      "id": "multi-hanger",
+      "image_kind": "photograph",
+      "scoreable": {},
+      "unknown_required": [
+        "material_composition",
+        "pockets_total",
+        "back_pocket_count"
+      ],
+      "ocr": {
+        "confirmed_texts": [],
+        "complete": false
+      },
+      "requires_target": true,
+      "notes": "Several garments and heavy mutual occlusion; no single item target. Need crop/target selection before model load; no garment-wide no-logo claim.",
+      "annotation": "Visual inspection by PC-AI-01, not model generated; single annotator, pending second review",
+      "model_run": "Not run in AI-QUALITY-03"
+    },
+    {
+      "id": "black-jeans",
+      "image_kind": "photograph",
+      "scoreable": {
+        "category": [
+          "jeans"
+        ],
+        "dominant_colors": [
+          [
+            "black"
+          ]
+        ],
+        "pattern": [
+          "solid"
+        ],
+        "logo_presence": [
+          "visible"
+        ]
+      },
+      "unknown_required": [
+        "material_composition",
+        "pockets_total"
+      ],
+      "ocr": {
+        "confirmed_texts": [],
+        "complete": false
+      },
+      "requires_target": false,
+      "notes": "Folded/back view, tan waistband patch and red tag visible, two visible rear pockets can be annotated separately. Brand text is unadjudicated at inspected display scale. Filename brand is not OCR truth.",
+      "annotation": "Visual inspection by PC-AI-01, not model generated; single annotator, pending second review",
+      "model_run": "Not run in AI-QUALITY-03"
+    },
+    {
+      "id": "striped-wiki",
+      "image_kind": "photograph",
+      "scoreable": {
+        "dominant_colors": [
+          [
+            "white",
+            "brown"
+          ],
+          [
+            "white",
+            "yellow"
+          ]
+        ],
+        "pattern": [
+          "striped"
+        ],
+        "logo_presence": [
+          "visible"
+        ],
+        "sleeves": [
+          "short"
+        ]
+      },
+      "unknown_required": [
+        "material_composition",
+        "pockets_total",
+        "back_pocket_count",
+        "category",
+        "neckline"
+      ],
+      "ocr": {
+        "confirmed_texts": [
+          "Wikipedia"
+        ],
+        "complete": false
+      },
+      "requires_target": false,
+      "notes": "Central rider shirt only, back/partial view. Sack occludes lower graphic. Collared striped top is out of the first-release tee class; category/neckline unknown/review. Printed word Wikipedia visible; lower graphic/text unadjudicated. Nearby riders are distractors.",
+      "annotation": "Visual inspection by PC-AI-01, not model generated; single annotator, pending second review",
+      "model_run": "Not run in AI-QUALITY-03"
+    },
+    {
+      "id": "long-sleeve",
+      "image_kind": "photograph",
+      "scoreable": {
+        "category": [
+          "tshirt"
+        ],
+        "dominant_colors": [
+          [
+            "blue"
+          ]
+        ],
+        "pattern": [
+          "solid"
+        ],
+        "logo_presence": [
+          "not_visible"
+        ],
+        "neckline": [
+          "crew"
+        ],
+        "sleeves": [
+          "long"
+        ]
+      },
+      "unknown_required": [
+        "material_composition",
+        "pockets_total",
+        "back_pocket_count"
+      ],
+      "ocr": {
+        "confirmed_texts": [],
+        "complete": true
+      },
+      "requires_target": false,
+      "notes": "Navy coarse color=blue, plain front long-sleeve top worn by a publicly licensed model. Garment labels only, no identity/face analysis.",
+      "annotation": "Visual inspection by PC-AI-01, not model generated; single annotator, pending second review",
+      "model_run": "Not run in AI-QUALITY-03"
+    }
+  ],
+  "provenance": [
+    {
+      "id": "plain-white",
+      "file": "plain-white.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:T-shirt.jpg",
+      "pageid": 103604,
+      "source_url": "https://upload.wikimedia.org/wikipedia/commons/0/09/T-shirt.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "author": "Lateiner",
+      "license": "CC BY-SA 3.0",
+      "license_url": "http://creativecommons.org/licenses/by-sa/3.0/",
+      "width": 1362,
+      "height": 1248,
+      "expected_bytes": 365468,
+      "local_bytes": 365468,
+      "source_sha1": "fd388a30bc96e0bf19df59f660ac2a56a1ef5b37",
+      "sha256": "ae2d83046841cec10ff5260f989f59b6cee7c2851b0ce6ab38579cd6d7c4c20e",
+      "download_status": "DownloadedAndHashVerified",
+      "modifications": "No image edits; originals stay outside Git",
+      "label_status": "Visually annotated",
+      "gpu_inference": "Not run"
+    },
+    {
+      "id": "multi-hanger",
+      "file": "multi-hanger.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Tshirt.jpg",
+      "pageid": 87456548,
+      "source_url": "https://upload.wikimedia.org/wikipedia/commons/5/58/Tshirt.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "author": "Kai Pilger",
+      "license": "CC0",
+      "license_url": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "width": 3375,
+      "height": 2250,
+      "expected_bytes": 767671,
+      "local_bytes": 767671,
+      "source_sha1": "51917bc0752c4022aa251dfa7097e167f8222ae3",
+      "sha256": "dd4ce14bf9deeff7225cbe8698784fd70858c7659ee5d9aaeaf2042e07f4bd57",
+      "download_status": "DownloadedAndHashVerified",
+      "modifications": "No image edits; originals stay outside Git",
+      "label_status": "Visually annotated",
+      "gpu_inference": "Not run"
+    },
+    {
+      "id": "black-jeans",
+      "file": "black-jeans.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Levi%27s_501_black.jpg",
+      "pageid": 65364331,
+      "source_url": "https://upload.wikimedia.org/wikipedia/commons/0/09/Levi%27s_501_black.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "author": "Jeangagnon",
+      "license": "CC BY-SA 4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0",
+      "width": 3138,
+      "height": 3690,
+      "expected_bytes": 1170351,
+      "local_bytes": 1170351,
+      "source_sha1": "b6c8ef3e9707380a4022b36228410615be6f6411",
+      "sha256": "caefbb533799d84af1b10e7ece5f2065ea26188b8714026c633f52dc35de6142",
+      "download_status": "DownloadedAndHashVerified",
+      "modifications": "No image edits; originals stay outside Git",
+      "label_status": "Visually annotated",
+      "gpu_inference": "Not run"
+    },
+    {
+      "id": "striped-wiki",
+      "file": "striped-wiki.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Shirt-Wikipedia.JPG",
+      "pageid": 7635182,
+      "source_url": "https://upload.wikimedia.org/wikipedia/commons/7/7e/Shirt-Wikipedia.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "author": "B-noa",
+      "license": "CC BY-SA 3.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/3.0",
+      "width": 3888,
+      "height": 2592,
+      "expected_bytes": 5669689,
+      "local_bytes": 5669689,
+      "source_sha1": "04a9099ea6304ea7466727d86b2c30c56500f373",
+      "sha256": "962fcb1a9f31f5e52825451f7bdabf157cea445991ec225babac4e489138584b",
+      "download_status": "DownloadedAndHashVerified",
+      "modifications": "No image edits; originals stay outside Git",
+      "label_status": "Visually annotated",
+      "gpu_inference": "Not run"
+    },
+    {
+      "id": "long-sleeve",
+      "file": "long-sleeve.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Men%27s_long-sleeve_T-shirt.jpg",
+      "pageid": 58523269,
+      "source_url": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Men%27s_long-sleeve_T-shirt.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "author": "Spreadshirt",
+      "license": "CC BY 2.0",
+      "license_url": "https://creativecommons.org/licenses/by/2.0",
+      "width": 600,
+      "height": 912,
+      "expected_bytes": 268307,
+      "local_bytes": 268307,
+      "source_sha1": "038351a81f4503e154efa2d2d28443ef9c50ccea",
+      "sha256": "e0e9c9bd13fd1cf598e14c56061711fababd452db4de586c7e96f6bc2d61a4fa",
+      "download_status": "DownloadedAndHashVerified",
+      "modifications": "No image edits; originals stay outside Git",
+      "label_status": "Visually annotated",
+      "gpu_inference": "Not run"
+    },
+    {
+      "file": "tshirt.png",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/1/1d/White_tshirt.png",
+      "source_page": "https://commons.wikimedia.org/wiki/File:White_tshirt.png",
+      "author": "Сергей Шахвердов",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "changes": "Original bytes unchanged; inference converts to RGB on white background and may resize.",
+      "provenance": "Public reference fixture, not project owner garment; low resolution 171x155.",
+      "bytes": 7038,
+      "sha256": "6a08e7b819e897ed2725e286df8af886560b1db59d60c2758d4d550f068a3f08",
+      "id": "legacy-striped-illustration",
+      "download_status": "Reused prior verified local source",
+      "label_status": "Prior visual labels reused"
+    },
+    {
+      "file": "jeans.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Jeans.jpg",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Jeans.jpg",
+      "author": "Oktaeder; uploaded by Juanmak",
+      "license": "Public domain (author dedication)",
+      "license_url": "https://commons.wikimedia.org/wiki/File:Jeans.jpg#Licensing",
+      "changes": "Original bytes unchanged; inference converts to RGB and may resize.",
+      "provenance": "Public reference fixture, not project owner garment; 435x650.",
+      "bytes": 100403,
+      "sha256": "b316902ad85e8ff46b164ceb7f2c38d3c1424c9d789703e0267e3dfce68fbe1c",
+      "id": "legacy-blue-jeans",
+      "download_status": "Reused prior verified local source",
+      "label_status": "Prior visual labels reused"
+    }
+  ],
+  "additional_collection_plan": [
+    {
+      "condition": "Short-sleeve plain tee, dark and light, front/back",
+      "target_new_photos": 4,
+      "status": "Planned; rights+visual annotation before use"
+    },
+    {
+      "condition": "Patterned tee photographs beyond illustration, naturally occluded and readable logos",
+      "target_new_photos": 4,
+      "status": "Planned; no invented brand label"
+    },
+    {
+      "condition": "Jeans front/back in light/dark wash, partial tags and no tag",
+      "target_new_photos": 4,
+      "status": "Planned; separate view-specific visible facts"
+    },
+    {
+      "condition": "Hard negatives: non-tee tops/non-jeans, multiple items, poor lighting",
+      "target_new_photos": 4,
+      "status": "Planned; target selection/unknown expected"
+    }
+  ],
+  "acceptance_protocol": [
+    "Freeze hash/provenance/labels and partition before any new GPU run.",
+    "Report category/color/pattern errors and abstention/coverage separately.",
+    "Only fully adjudicated OCR regions support precision; partial-region extras require review.",
+    "No personal-photo accuracy or generalization claims from seven curated sources.",
+    "No fixture truths or accepted logo strings supplied to the model prompt.",
+    "GPU only for new cases that add evidence, with current3Dslot/sharedOSlock and RAM admission."
+  ]
+}

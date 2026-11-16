@@ -1,0 +1,27 @@
+{
+  "tests": 177,
+  "failures": 0,
+  "errors": 0,
+  "skips": 1,
+  "heavyModulesImported": [],
+  "gpuExecuted": false,
+  "contractSource": "1cef14d6fc866b21ade675fb425b383be3dcd6ed",
+  "passed": 176,
+  "harnessExitCode": 1,
+  "harnessExitReason": "Strict no-skip gate: one pre-existing native Windows symlink case Not run (WinError1314). No test failures/errors.",
+  "notRun": [
+    "test_retention.RetentionTests.test_symlink_source_refused_without_deleting_target: Windows1314; no elevation requested"
+  ],
+  "qint2Conformance": "PASS",
+  "cat54NewTests": 22,
+  "snapshotExactGitBlobMatches": 34,
+  "active98SourceManifestUnchanged": true,
+  "candidatePins": {
+    "manifestSha256": "2b558726a222980b376711eb790a7fda010e0ca4a22d9cfb2af10c4b4dd471bd",
+    "preparedConfigSha256": "a41a9b157434886abfbd0d48de8b09bc912acc44c3af53ad023de79658455a3e",
+    "disabledApprovalSha256": "f7c22ddfe5323760a1e7d71cdc5e98ca0ea0c86e914f37d0a005ad6220ac1d72",
+    "enabled": false,
+    "reviews": "PENDING",
+    "approvedJobId": "NOT_SET_AWAIT_ROOT_NEW_JOB"
+  }
+}

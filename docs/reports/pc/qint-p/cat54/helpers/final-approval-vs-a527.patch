@@ -1,0 +1,31 @@
+--- a5275aa-prepared/disabled-approval
++++ FINAL-active-config/disabled-approval
+@@ -3,13 +3,13 @@
+   "enabled": false,
+   "scope": "authorized_wardrobe_pilot",
+   "reviews": {
+-    "contract": "PENDING",
+-    "production_drain": "PENDING",
+-    "worker_placement": "PENDING",
+-    "slot_bridge": "PENDING",
++    "contract": "PASS",
++    "production_drain": "PASS",
++    "worker_placement": "PASS",
++    "slot_bridge": "PASS",
+     "backend_preflight": "PENDING",
+-    "native_binding": "PENDING",
+-    "serving_revision": "PENDING"
++    "native_binding": "PASS",
++    "serving_revision": "PASS"
+   },
+   "app_revision": "e6541f4f129b2fec16eedf1d275db8f612387eeb",
+   "contract_revision": "1cef14d6fc866b21ade675fb425b383be3dcd6ed",
+@@ -17,7 +17,7 @@
+   "transport_path": "<GPU_ROOT>\\ai-service\\qint_p\\connect45\\source\\scripts\\worker\\worker.py",
+   "transport_sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+   "transport_python_exe": "<GPU_ROOT>\\python\\cpython-3.10.22-windows-x86_64-none\\python.exe",
+-  "config_path": "<GPU_ROOT>\\worker-data\\qwen-pilot\\private\\qwen54-worker.prepared.json",
++  "config_path": "<GPU_ROOT>\\worker-data\\qwen-pilot\\private\\qwen54-worker.active.json",
+   "config_sha256": "584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d",
+   "work_dir": "<GPU_ROOT>\\worker-data\\qwen-cat54\\runtime",
+   "guard_sha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",

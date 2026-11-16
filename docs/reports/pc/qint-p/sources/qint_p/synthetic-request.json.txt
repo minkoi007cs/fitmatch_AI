@@ -1,0 +1,20 @@
+{
+  "local_version": "pc-ai.local-adapter.v1",
+  "binding": {
+    "owner_id": "00000000-0000-0000-0000-000000000001",
+    "job_id": "00000000-0000-0000-0000-000000000002",
+    "item_id": "00000000-0000-0000-0000-000000000003",
+    "source_revision": "00000000-0000-0000-0000-000000000004",
+    "image_sha256": "b316902ad85e8ff46b164ceb7f2c38d3c1424c9d789703e0267e3dfce68fbe1c"
+  },
+  "result_id": "00000000-0000-0000-0000-000000000005",
+  "model_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "policy_revision": "quality03.1",
+  "budget": {
+    "attempts": 2,
+    "seconds": 60,
+    "output_tokens": 192,
+    "response_bytes": 8192
+  },
+  "target": "single_garment"
+}

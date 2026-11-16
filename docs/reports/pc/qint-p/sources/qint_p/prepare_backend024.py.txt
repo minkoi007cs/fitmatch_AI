@@ -1,0 +1,61 @@
+"""Read canonical environment registry from an exact operations commit; metadata only, never cloud/env writes."""
+from datetime import datetime,timezone
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+from urllib.parse import urlsplit
+
+ROOT=Path(__file__).resolve().parent
+DOCS=ROOT.parents[2]/'fitmatch-pc-ai-01-docs'
+GPU=ROOT.parents[1]
+COORD=GPU/'coordination'
+SOURCE_PATH='docs/infrastructure/backend-environments.json'
+
+def main():
+    revision=subprocess.check_output(['git','rev-parse','origin/codex/project-operations'],cwd=DOCS,text=True).strip()
+    raw=subprocess.check_output(['git','show',revision+':'+SOURCE_PATH],cwd=DOCS)
+    registry=json.loads(raw)
+    canonical=registry['canonical']
+    assert registry['version']==1 and registry['decision']=='BACKEND-024'
+    assert canonical['projectName']=='fitmatch-ai' and canonical['projectRef']=='gohczmqykjkrgdblgbog'
+    parsed=urlsplit(canonical['apiUrl'])
+    assert parsed.scheme=='https' and parsed.hostname==canonical['projectRef']+'.supabase.co'
+    assert parsed.username is None and parsed.password is None and not parsed.query
+    deprecated={item['projectRef'] for item in registry['deprecatedForFitMatch']}
+    assert canonical['projectRef'] not in deprecated and 'wqbwwusrhertqktwsxsl' in deprecated
+    snapshot=ROOT/'backend-environments.snapshot.json'
+    snapshot.write_bytes(raw)
+    pin={'source_revision':revision,'source_path':SOURCE_PATH,'sha256':hashlib.sha256(raw).hexdigest(),
+         'authority':'Operations environment manifest; this file is a pinned metadata copy, not a second authority'}
+    (ROOT/'backend-environments.pin.json').write_text(json.dumps(pin,indent=2)+'\n')
+    now=datetime.now(timezone.utc).isoformat()
+    receipt={'version':'qint-p.backend024-target.v1','kind':'read-only metadata/config plan; not installed app or worker configuration',
+        'session':'PC-QINT-P-20261109-08','recordedAtUtc':now,'decision':'BACKEND-024','source':pin,
+        'canonical':canonical,'deprecatedForFitMatch':registry['deprecatedForFitMatch'],
+        'application':{'FitMatchHttpsAppUrl':None,'expectedBackendProjectRef':canonical['projectRef'],
+                       'backendApiIsNotWorkerAppUrl':True,'appCodeOwner':'Claude ENV-CANON-01; not edited by PC Qwen'},
+        'credentialPolicy':{'reuseSmokeKeysOrWorkerTokens':False,'URLOnlySwapAllowed':False,
+                            'canonicalKeysOrWorkerTokenRead':False,'credentialValuesStored':False,
+                            'canonicalIdentityAndCredentialBindingVerified':False},
+        'access':{'status':'Codex reports connector permission denied on canonical project',
+                  'correctAccountConnectionFlowRequired':True,'PCQwenRetriedOrAlteredRoles':False},
+        'mainDataGates':{'inventory':'required, not performed by PC Qwen','recoverySnapshot':'required before additive changes; not performed',
+                         'schemaMigrationReconciliation':'required before any main migration; not performed',
+                         'destructiveTests':'disposable local synthetic environment only','automaticCleanupOnMain':False},
+        'GPU':{'binding':'NEEDS CHANGES QREV-BIND-02; worker579ece2 unchanged','finalACK':'WITHHELD',
+               'slotGranted':False,'CUDAStarted':False,'singleWorkerOSLockAndDrainRequired':True},
+        'environmentInstalled':False,'cloudSQLOrMigrationOrProjectDelete':False,'userDataOrWeightsTouched':False}
+    (COORD/'qint-p-backend024-canonical-target.json').write_text(json.dumps(receipt,indent=2)+'\n')
+    previous=COORD/'qint-p-authorized-test-target.json'
+    if previous.exists():
+        old=json.loads(previous.read_text(encoding='utf-8-sig'))
+        old.update(status='DEPRECATED_FOR_FITMATCH_BY_BACKEND024',ownerAuthorizedForFitMatchTest=False,
+                   authorizationSupersededBy='BACKEND-024, 2026-11-09',currentCanonicalReceipt='qint-p-backend024-canonical-target.json',
+                   credentialReuseAllowed=False,cloudProjectDeleted=False)
+        previous.write_text(json.dumps(old,indent=2)+'\n')
+    print(json.dumps({'decision':'BACKEND-024','canonicalLabel':canonical['projectName'],
+        'purpose':canonical['purpose'],'formerSmokeForFitMatch':'deprecated, not deleted',
+        'credentialValuesStored':False,'environmentInstalled':False,'cloudMutation':False,'CUDAStarted':False}))
+
+if __name__=='__main__':main()

@@ -1,0 +1,122 @@
+{
+  "sourceRevision": "1cef14d6fc866b21ade675fb425b383be3dcd6ed",
+  "adapterRevision": "pc-ai.qwen-cat54.v1",
+  "files": [
+    {
+      "path": "assessment54.py",
+      "change": "added",
+      "sha256": "1814b75d2890d08ef15474d719955763c76bb28c7df5e672134c6e9554faf7f6",
+      "bytes": 3613
+    },
+    {
+      "path": "backend54.py",
+      "change": "added",
+      "sha256": "4aecdba4dddc29bbdf253c7b521df1228e301972a2e1c4a6333171c77bcc9fe6",
+      "bytes": 268
+    },
+    {
+      "path": "contract_snapshot/docs/qwen-contract-v1.md",
+      "change": "modified",
+      "sha256": "9dac6342ec0958398963219854764e5f5463ea74bbddeb60ad8993ba898cb581",
+      "bytes": 10118
+    },
+    {
+      "path": "contract_snapshot/fixtures/qwen-v1/invalid/legacy-policy-new-category.json",
+      "change": "added",
+      "sha256": "ed1d6493ce8bc38bf806c754b9a2c33fb70a7416abfa10a8ca1137f244589cc6",
+      "bytes": 1328
+    },
+    {
+      "path": "contract_snapshot/fixtures/qwen-v1/invalid/unsupported-category-qint2.json",
+      "change": "added",
+      "sha256": "c6aaa7de1cc3b7dd1fac74bbe798e8418e96d44040244e9eba255f4dcb627595",
+      "bytes": 1333
+    },
+    {
+      "path": "contract_snapshot/fixtures/qwen-v1/valid/result-proposal-hoodie-qint2.json",
+      "change": "added",
+      "sha256": "92abb61fba3019b44a05cb0fdfb3297d6ee3048f8d402789d7194a6cd47eadde",
+      "bytes": 1153
+    },
+    {
+      "path": "contract_snapshot/fixtures/qwen-v1/valid/result-proposal-jacket-qint2.json",
+      "change": "added",
+      "sha256": "41e786701ef167024b07a0fb9b9c08ce449eba44700d6fbfcf7d5b286b5f6402",
+      "bytes": 1156
+    },
+    {
+      "path": "contract_snapshot/pin.json",
+      "change": "modified",
+      "sha256": "1bbbd33f3a3e989108a74c790ffae22592b07adc9b901626134ac99b0b97c9e8",
+      "bytes": 8624
+    },
+    {
+      "path": "contract_snapshot/schemas/qwen-v1/analysis-adapter-input.json",
+      "change": "modified",
+      "sha256": "058b9fc2ce1c03cba6fbaf2fd0786886fcd04d981a9b3e7856faf90cc6de68e4",
+      "bytes": 4538
+    },
+    {
+      "path": "contract_snapshot/schemas/qwen-v1/analysis-confirm-request.json",
+      "change": "modified",
+      "sha256": "17e090ad37d15cb91e4220120e36e05da025d77ce04744cf26efc7a65a0a63b0",
+      "bytes": 2187
+    },
+    {
+      "path": "contract_snapshot/schemas/qwen-v1/analysis-result.json",
+      "change": "modified",
+      "sha256": "64260780523743aaa87dd137c4b3258431c05c5359e1b02539783d1d30d20a51",
+      "bytes": 8860
+    },
+    {
+      "path": "contract_snapshot/source-git-blobs.json",
+      "change": "added",
+      "sha256": "bcb01e2849bfd06fab85ba4957ae3fee55868410fcfd8e1e2570087e428bc124",
+      "bytes": 4849
+    },
+    {
+      "path": "run_cat54_cpu.py",
+      "change": "added",
+      "sha256": "40b2a966f37120e8c8360a60e3756fbf5a60777873b66e017b5dbb1e04558602",
+      "bytes": 1804
+    },
+    {
+      "path": "semantic54.py",
+      "change": "added",
+      "sha256": "0a8465f6057170fa55f4571d30b151788773dd05364fea870feec01d44a14a80",
+      "bytes": 1778
+    },
+    {
+      "path": "test_cat54.py",
+      "change": "added",
+      "sha256": "066d14b77accb97c1b5ecd1add523a30fed0205c2e930ef6d02678d2d6354793",
+      "bytes": 8321
+    },
+    {
+      "path": "test_cat54_wire.py",
+      "change": "added",
+      "sha256": "c617bfc483dd9c56e6d627daf6644e21ec5f32839847a77a1bd949188053509b",
+      "bytes": 4938
+    },
+    {
+      "path": "test_wire.py",
+      "change": "modified",
+      "sha256": "ff299d0878b98c677dfacea8519ef0d3a51660e465d658b3bcd6f017f2ab80c6",
+      "bytes": 3718
+    },
+    {
+      "path": "wire.py",
+      "change": "modified",
+      "sha256": "cc22bdbc0f6b7a1c083b9f67c868252f26bfd749e1c526ab46d4c9618ea9cdf2",
+      "bytes": 4879
+    },
+    {
+      "path": "worker_cli.py",
+      "change": "modified",
+      "sha256": "a72437d6b22e2969da1d95cb5104cccbd495427e7c242fe7e2f5996635c0a56b",
+      "bytes": 2737
+    }
+  ],
+  "newManifestEntries": 111,
+  "unchangedActiveManifestEntries": 98
+}

@@ -1,0 +1,35 @@
+"""Disposable CPU process target; no model imports, GPU calls or arbitrary commands."""
+import argparse
+import json
+from pathlib import Path
+import subprocess
+import sys
+import time
+import psutil
+from control import PressureGate,GIB
+
+ROOT=Path(__file__).resolve().parent
+parser=argparse.ArgumentParser();parser.add_argument('--root',type=Path,required=True)
+parser.add_argument('--mode',choices=['normal','hold','tree','crash','pressure'],required=True)
+parser.add_argument('--marker',default='child.json');args=parser.parse_args()
+root=args.root.resolve(strict=True)
+if root.parent!=(ROOT/'test-runs').resolve() or not (root/'TEST-CPU-ONLY').is_file():raise RuntimeError('Not a disposable CPU test root')
+marker=(root/args.marker).resolve()
+if marker.parent!=root:raise RuntimeError('Marker outside own test root')
+process=psutil.Process()
+record={'pid':process.pid,'parent_pid':process.ppid(),'creation_time':process.create_time(),'mode':args.mode,'synthetic_cpu_load':True,'gpu_model_loaded':False}
+if args.mode=='tree':
+    grandchild=subprocess.Popen([sys.executable,str(Path(__file__).resolve()),'--root',str(root),'--mode','hold','--marker','grandchild.json'],
+                                creationflags=0x08000000)
+    record['grandchild_launcher_pid']=grandchild.pid
+marker.write_text(json.dumps(record),encoding='utf-8')
+if args.mode in {'hold','tree'}:
+    end=time.monotonic()+60
+    while time.monotonic()<end and not (root/'RELEASE').exists():time.sleep(.05)
+elif args.mode=='crash':raise SystemExit(7)
+elif args.mode=='pressure':
+    gate=PressureGate();injected=[2*GIB,512*1024**2,512*1024**2,512*1024**2]
+    for value in injected:
+        if gate.observe(value):
+            record.update(exit_reason='injected pressure threshold',injected_values=injected,physical_pressure_created=False)
+            marker.write_text(json.dumps(record),encoding='utf-8');raise SystemExit(86)

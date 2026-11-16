@@ -1,0 +1,75 @@
+import copy
+import json
+from pathlib import Path
+import unittest
+import uuid
+from envelope import build,confirm,validate,digest,ENVELOPE_SCHEMA,CONFIRM_SCHEMA
+
+ROOT=Path(__file__).resolve().parent
+def uid(n):return str(uuid.UUID(int=n))
+
+class EnvelopeTests(unittest.TestCase):
+    def setUp(self):
+        self.binding={'owner_id':uid(1),'job_id':uid(2),'item_id':uid(3),'source_revision':uid(4),'image_sha256':'a'*64}
+        label=json.loads((ROOT.parent/'quality02'/'labels.json').read_text())['images'][0]
+        self.raw=json.dumps({'schema_version':'pc-ai.grounded-attributes.v2',**label['expected'],'logo_texts':['DEL']})
+        self.record=build(self.raw,trusted_binding=self.binding,result_id=uid(5),model_revision='ebb281ec70b05090aa6165b016eac8ec08e71b17')
+        self.request={'contract_version':'pc-ai.human-confirmation.v1','confirmation_id':uid(6),'result_id':uid(5),
+            'expected_envelope_digest':self.record['envelope_digest'],'binding':copy.deepcopy(self.binding),
+            'decision':'approve_fields','approved_fields':{'logo_texts':['DELO']}}
+    def apply(self,**kwargs):
+        opts={'authenticated_owner_id':uid(1),'current_binding':self.binding};opts.update(kwargs)
+        return confirm(self.record,self.request,**opts)
+    def test_raw_ocr_stays_unverified(self):
+        self.assertEqual(self.record['candidate_logo_texts'],['DEL']);self.assertEqual(self.record['attributes']['logo_texts'],[])
+        self.assertEqual(self.record['ocr_status'],'unverified');self.assertFalse(self.record['approved_for_auto_apply'])
+    def test_explicit_human_correction_bound_to_source(self):
+        result=self.apply();self.assertEqual(result['approved_fields'],{'logo_texts':['DELO']})
+        self.assertFalse(result['approved_for_auto_apply']);self.assertEqual(self.record['candidate_logo_texts'],['DEL'])
+    def test_replay_digest_is_stable_not_durable_idempotency(self):
+        self.assertEqual(self.apply()['confirmation_digest'],self.apply()['confirmation_digest'])
+    def test_wrong_authenticated_owner_rejected(self):
+        with self.assertRaises(ValueError):self.apply(authenticated_owner_id=uid(9))
+    def test_each_stale_binding_component_rejected(self):
+        for key in self.binding:
+            current=copy.deepcopy(self.binding);current[key]='b'*64 if key=='image_sha256' else uid(9)
+            with self.subTest(key=key),self.assertRaises(ValueError):self.apply(current_binding=current)
+    def test_tombstone_and_cancel_block_confirmation(self):
+        for kwargs in [{'source_tombstoned':True},{'job_canceled':True}]:
+            with self.subTest(kwargs=kwargs),self.assertRaises(ValueError):self.apply(**kwargs)
+    def test_stale_result_and_digest(self):
+        for key,value in [('result_id',uid(9)),('expected_envelope_digest','b'*64)]:
+            self.setUp();self.request[key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):self.apply()
+    def test_model_cannot_provide_approval_fields(self):
+        raw=json.loads(self.raw);raw['approved_for_auto_apply']=True
+        with self.assertRaises(Exception):build(json.dumps(raw),trusted_binding=self.binding,result_id=uid(5),model_revision='a'*40)
+    def test_outer_autoapply_tampering_rejected_even_with_new_digest(self):
+        self.record['approved_for_auto_apply']=True
+        self.record['envelope_digest']=digest({k:v for k,v in self.record.items() if k!='envelope_digest'})
+        with self.assertRaises(Exception):validate(self.record)
+    def test_promoted_ocr_rejected_even_with_new_digest(self):
+        self.record['attributes']['logo_texts']=['DEL']
+        self.record['envelope_digest']=digest({k:v for k,v in self.record.items() if k!='envelope_digest'})
+        with self.assertRaises(ValueError):validate(self.record)
+    def test_changed_candidates_invalidate_digest(self):
+        self.record['candidate_logo_texts']=['other']
+        with self.assertRaises(ValueError):validate(self.record)
+    def test_unknown_version_rejected(self):
+        self.request['contract_version']='pc-ai.human-confirmation.v99'
+        with self.assertRaises(Exception):self.apply()
+    def test_reject_and_needs_input_cannot_include_approval(self):
+        for decision in ['reject','needs_input']:
+            self.request['decision']=decision
+            with self.assertRaises(ValueError):self.apply()
+            self.request['approved_fields']={};self.assertEqual(self.apply()['status'],decision)
+            self.request['approved_fields']={'logo_texts':['DELO']}
+    def test_no_empty_or_unallowlisted_approval(self):
+        for fields in [{},{'execute':'avatar.reconstruct'},{'material_composition':'cotton'},{'pockets_total':5}]:
+            self.request['approved_fields']=fields
+            with self.subTest(fields=fields),self.assertRaises(Exception):self.apply()
+    def test_foreign_body_binding_rejected(self):
+        self.request['binding']['owner_id']=uid(9)
+        with self.assertRaises(ValueError):self.apply()
+
+if __name__=='__main__':unittest.main(verbosity=2)

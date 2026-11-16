@@ -1,0 +1,100 @@
+--- reviewed-qwen48/execute-once-20261113.py
++++ FINAL-qwen54/execute-once-20261116.py
+@@ -18,13 +18,13 @@
+ G = Path(r'<GPU_ROOT>')
+ Q = G / 'coordination'
+ P = G / 'worker-data/qwen-pilot/private'
+-OUT = G / 'reports/ai/qint_p/qwen48'
+-JOB = '7a7362b8-c134-4501-9e91-deef68dd0da2'
+-APP = 'f58024703bf4ec8be365bee2f8b3e1bd2248fdec'
++OUT = G / 'reports/ai/qint_p/cat54/helper-preparation'
++JOB = '1dadcac7-dbac-477c-a305-2f0c45644ab8'
++APP = 'e6541f4f129b2fec16eedf1d275db8f612387eeb'
+ ADMISSION_SHA = 'bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37'
+-MANIFEST_SHA = 'd79a0738e31f08e04de2fc41b8b825ef04e1f78732bcdaeae5ede3e58f383f0e'
+-CONFIG_SHA = '643b8b47b6eac98e27083ff4ea86e971a8e9fc4a733ef293917cd610abfcef31'
+-APPROVAL_SHA = '4a8f39f3d6a3cbe3fd822943614bded7f2b3e2c0284bcd86c93f334e0ae2968b'
++MANIFEST_SHA = '74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162'
++CONFIG_SHA = '584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d'
++APPROVAL_SHA = 'c9db71996dafbdb77c82738ae54223e114f56f18b73707f75d0db9e0e9acb926'
+ TRANSPORT_SHA = 'ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6'
+ GUARD_SHA = '47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c'
+ MODEL = 'ebb281ec70b05090aa6165b016eac8ec08e71b17'
+@@ -75,19 +75,19 @@
+ def preflight(go):
+     # Coordinator must issue the slot then standby WITHOUT a Python watcher.
+     # Every other Python/Blender process is refused; no coordinator-name exemption.
+-    auth = read(Q / 'qint-p-qwen48-phase-b-execution-ready-20261113.json')['executionAuthorization']
++    auth = read(Q / 'qint-p-qwen54-phase-b-execution-ready-20261116.json')['executionAuthorization']
+     initial_slot_bytes = (Q / 'gpu0-slot.json').read_bytes()
+     slot = json.loads(initial_slot_bytes.decode('utf-8-sig'))
+     validate_window(auth, slot, go, time.time())
+-    ap = Q / 'qint-worker-qwen48-approval.json'
+-    cp = P / 'qwen48-worker.active.json'
+-    mp = P / 'qwen48-runtime-manifest.json'
++    ap = Q / 'qint-worker-qwen54-approval.json'
++    cp = P / 'qwen54-worker.active.json'
++    mp = P / 'qwen54-runtime-manifest.json'
+     if (sha(ap), sha(cp), sha(mp)) != (APPROVAL_SHA, CONFIG_SHA, MANIFEST_SHA):
+         raise ValueError('Approval/config/manifest pin mismatch')
+     policy, config, manifest = read(ap), read(cp), read(mp)
+     if not (policy['approved_job_id'] == JOB and policy['enabled'] is False
+             and policy['app_revision'] == manifest['appRevision'] == APP
+-            and len(manifest['files']) == 98
++            and len(manifest['files']) == 111
+             and all(sha(G / row['path']) == row['sha256'] for row in manifest['files'])
+             and sha(policy['transport_path']) == TRANSPORT_SHA
+             and config['engines']['garment.analyze']['revision'] == MODEL
+@@ -96,7 +96,7 @@
+         raise ValueError('Reviewed source/job/model/bounds mismatch')
+     if read(P / 'qwen48-offline-approval.json')['enabled'] or read(Q / 'qint-test-approval.json')['enabled']:
+         raise ValueError('Offline/external guard approval must remain OFF')
+-    sys.path.insert(0, str(G / 'ai-service/qint_p_qwen48'))
++    sys.path.insert(0, str(G / 'ai-service/qint_p_qwen54'))
+     import worker_admission as admission
+     if sha(admission.__file__) != ADMISSION_SHA or sha(admission.GUARD) != GUARD_SHA:
+         raise ValueError('Admission/guard pin mismatch')
+@@ -108,7 +108,7 @@
+     guard.no_surviving_child()
+     guard.validate_slot(slot, time.time())
+     hb_name = auth['heartbeatReceipt']
+-    if Path(hb_name).name != hb_name or not hb_name.startswith('qint-p-qwen48-heartbeat-only-'):
++    if Path(hb_name).name != hb_name or not hb_name.startswith('qint-p-qwen54-heartbeat-only-'):
+         raise ValueError('Invalid heartbeat receipt reference')
+     hb = read(Q / hb_name)
+     age = time.time() - datetime.fromisoformat(hb['completedUTC']).timestamp()
+@@ -154,7 +154,7 @@
+     enabled = {**policy, 'enabled': True, 'reviews': {**policy['reviews'], 'backend_preflight': 'PASS'}}
+     admission.validate_policy(enabled)
+     # Freshly re-read GO and slot after IO/native/resource/token checks, before any activation.
+-    current_auth = read(Q / 'qint-p-qwen48-phase-b-execution-ready-20261113.json')['executionAuthorization']
++    current_auth = read(Q / 'qint-p-qwen54-phase-b-execution-ready-20261116.json')['executionAuthorization']
+     current_slot = read(Q / 'gpu0-slot.json')
+     validate_window(current_auth, current_slot, go, time.time())
+     current_slot_sha = sha(Q / 'gpu0-slot.json')
+@@ -174,11 +174,11 @@
+             'transportArgv': transport_argv, 'engineCommandTemplate': config['engines']['garment.analyze']['command'],
+             'basePythonExe': policy['transport_python_exe'], 'observerPID': os.getpid(),
+             'enabledPolicy': enabled, 'root': root, 'token': token, 'slot': slot,
+-            'configPath': cp, 'marker': P / 'qwen48-execute-once-20261113-attempt.json',
+-            'logPath': OUT / 'worker-once-20261113.private.log',
+-            'resultPath': Q / 'qint-p-qwen48-worker-result-20261113.json',
+-            'progressPath': Q / 'qint-p-qwen48-worker-progress-20261113.json',
+-            'startPath': Q / 'qint-p-qwen48-worker-start-20261113.json',
++            'configPath': cp, 'marker': P / 'qwen54-execute-once-20261116-attempt.json',
++            'logPath': OUT / 'worker-once-20261116.private.log',
++            'resultPath': Q / 'qint-p-qwen54-worker-result-20261116.json',
++            'progressPath': Q / 'qint-p-qwen54-worker-progress-20261116.json',
++            'startPath': Q / 'qint-p-qwen54-worker-start-20261116.json',
+             'RAMAvailableBytes': ram, 'VRAMFreeMiB': free, 'lockIdentity': list(identity),
+             'nativeCPULaunchers': native}
+ 
+@@ -481,7 +481,7 @@
+         env.pop('FITMATCH_WORKER_TOKEN', None)
+         plan['token'] = None
+         save(plan['startPath'], {**result, 'RAMAvailableBytes': plan['RAMAvailableBytes'],
+-             'VRAMFreeMiB': plan['VRAMFreeMiB'], 'slot': plan['slot'], 'sourcePinsVerified': 98,
++             'VRAMFreeMiB': plan['VRAMFreeMiB'], 'slot': plan['slot'], 'sourcePinsVerified': 111,
+              'canonicalLockIdentity': plan['lockIdentity'], 'nativeCPULaunchers': plan['nativeCPULaunchers'],
+              'prelaunchBinding': plan.get('prelaunchBinding'), 'slotSHA256': plan.get('slotSHA256')})
+         print(json.dumps({'state': 'WORKER_STARTED', 'pid': worker.pid,

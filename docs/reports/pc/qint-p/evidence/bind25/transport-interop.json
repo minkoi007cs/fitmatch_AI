@@ -1,0 +1,118 @@
+{
+  "session": "PC-QINT-P-20261109-09",
+  "transport_revision": "f80749a65b47441958e7c6fc485034d7efe446df",
+  "transport_source_sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "source_changed": false,
+  "scope": "actual direct CLI negative subprocesses + actual classify_exit; no HTTP/queue/worker loop",
+  "records": [
+    {
+      "test": "missing_operator_approval",
+      "exit": 75,
+      "stderr": {
+        "success": false,
+        "code": "GPU_BUSY"
+      },
+      "actual_transport_classification": "GPU_BUSY",
+      "result_created": false
+    },
+    {
+      "test": "environment_hints_alone",
+      "exit": 75,
+      "stderr": {
+        "success": false,
+        "code": "GPU_BUSY"
+      },
+      "actual_transport_classification": "GPU_BUSY",
+      "result_created": false
+    },
+    {
+      "test": "placeholder_model_revision",
+      "exit": 78,
+      "stderr": {
+        "success": false,
+        "code": "MODEL_UNAVAILABLE"
+      },
+      "actual_transport_classification": "MODEL_UNAVAILABLE",
+      "result_created": false
+    },
+    {
+      "test": "malformed_input",
+      "exit": 2,
+      "stderr": {
+        "success": false,
+        "code": "INVALID_INPUT"
+      },
+      "actual_transport_classification": "INVALID_INPUT",
+      "result_created": false
+    },
+    {
+      "test": "error_table",
+      "code": "GPU_BUSY",
+      "exit": 75,
+      "default_transport": "GPU_BUSY",
+      "with_timeout_mapping": "GPU_BUSY"
+    },
+    {
+      "test": "error_table",
+      "code": "MEMORY_PRESSURE",
+      "exit": 74,
+      "default_transport": "MEMORY_PRESSURE",
+      "with_timeout_mapping": "MEMORY_PRESSURE"
+    },
+    {
+      "test": "error_table",
+      "code": "INVALID_OUTPUT",
+      "exit": 70,
+      "default_transport": "INVALID_OUTPUT",
+      "with_timeout_mapping": "INVALID_OUTPUT"
+    },
+    {
+      "test": "error_table",
+      "code": "OOM",
+      "exit": 71,
+      "default_transport": "OOM",
+      "with_timeout_mapping": "OOM"
+    },
+    {
+      "test": "error_table",
+      "code": "MODEL_UNAVAILABLE",
+      "exit": 78,
+      "default_transport": "MODEL_UNAVAILABLE",
+      "with_timeout_mapping": "MODEL_UNAVAILABLE"
+    },
+    {
+      "test": "error_table",
+      "code": "INVALID_INPUT",
+      "exit": 2,
+      "default_transport": "INVALID_INPUT",
+      "with_timeout_mapping": "INVALID_INPUT"
+    },
+    {
+      "test": "error_table",
+      "code": "TIMEOUT",
+      "exit": 124,
+      "default_transport": "INFERENCE_FAILED",
+      "with_timeout_mapping": "TIMEOUT"
+    },
+    {
+      "test": "error_table",
+      "code": "INFERENCE_FAILED",
+      "exit": 1,
+      "default_transport": "INFERENCE_FAILED",
+      "with_timeout_mapping": "INFERENCE_FAILED"
+    },
+    {
+      "test": "CPU_positive_fixture",
+      "parent_proof": "injected",
+      "backend": "synthetic Backend",
+      "actual_transport_json_result_ok": true,
+      "exported_contract_checker_exit": 0,
+      "result_sha256": "0273b4ce41bf69038ae16bcf4c2b727e34a746035f70f8d2bbddc433458115a7",
+      "GPU_loaded": false
+    }
+  ],
+  "model_loaded": false,
+  "shared_lock_taken": false,
+  "personal_image_read": false,
+  "timeout_note": "Default transport classifies adapter exit124 as INFERENCE_FAILED; explicit operator exitCodes124=TIMEOUT required for typed logical timeout."
+}

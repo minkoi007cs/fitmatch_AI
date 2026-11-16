@@ -1,0 +1,29 @@
+{
+  "$id": "https://fitmatch.local/schemas/qwen-v1/analysis-adapter-error.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "success": {
+      "type": "boolean",
+      "const": false
+    },
+    "code": {
+      "type": "string",
+      "enum": [
+        "GPU_BUSY",
+        "MEMORY_PRESSURE",
+        "OOM",
+        "TIMEOUT",
+        "INVALID_OUTPUT",
+        "INVALID_INPUT",
+        "MODEL_UNAVAILABLE",
+        "INFERENCE_FAILED"
+      ]
+    }
+  },
+  "required": [
+    "success",
+    "code"
+  ],
+  "additionalProperties": false
+}

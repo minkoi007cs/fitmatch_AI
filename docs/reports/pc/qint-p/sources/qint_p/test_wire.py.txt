@@ -1,0 +1,59 @@
+"""Exact exported fixtures + mapper/error tests, all CPU/synthetic."""
+import copy
+import json
+from pathlib import Path
+import unittest
+from boundary import MODEL_REVISION, Refused
+from runner import GuardedChild
+from test_adapter import Backend, VALID
+import wire
+
+class WireTests(unittest.TestCase):
+    def setUp(self):
+        self.input = json.loads((wire.SNAPSHOT/'fixtures/qwen-v1/adapter-input.json').read_text())
+        self.input['modelRevision']['revision'] = MODEL_REVISION
+    def test_exported_result_fixtures(self):
+        validator = wire.validator('analysis-result')
+        good = list((wire.SNAPSHOT/'fixtures/qwen-v1/valid').glob('*.json'))
+        bad = list((wire.SNAPSHOT/'fixtures/qwen-v1/invalid').glob('*.json'))
+        self.assertEqual(len(good),4);self.assertEqual(len(bad),16)
+        for path in good:
+            with self.subTest(file=path.name):validator.validate(json.loads(path.read_text()))
+        for path in bad:
+            with self.subTest(file=path.name):self.assertFalse(validator.is_valid(json.loads(path.read_text())['value']))
+    def test_placeholder_model_is_not_silently_loaded(self):
+        value = json.loads((wire.SNAPSHOT/'fixtures/qwen-v1/adapter-input.json').read_text())
+        wire.validate_input(value,require_pinned_model=False)
+        with self.assertRaisesRegex(Refused,'MODEL_UNAVAILABLE'):wire.validate_input(value)
+    def test_producer_binding_mismatch(self):
+        for target,key in [('binding','jobId'),('assets','assetId'),('assets','sha256')]:
+            value = copy.deepcopy(self.input)
+            obj = value['assets'][0] if target=='assets' else value['binding']
+            obj[key] = 'f'*64 if key=='sha256' else '99999999-8888-4777-8666-555555555555'
+            with self.subTest(key=key),self.assertRaisesRegex(Refused,'INVALID_INPUT'):wire.validate_input(value)
+    def test_synthetic_output_accepted_by_exact_schema(self):
+        out = wire.execute(self.input,None,backend=Backend(),lease=GuardedChild(lambda:None))
+        wire.validator('analysis-result').validate(out)
+        self.assertEqual(out['binding'],self.input['binding'])
+        self.assertEqual(out['candidateLogoTexts'],['CANDIDATE']);self.assertFalse(out['approvedForAutoApply'])
+        self.assertNotIn('owner_id',out['binding']);self.assertNotIn('material_composition',out['attributes'])
+        self.assertIsNone(out['evidence']['gpuMiB'])
+    def test_error_exit_pairs_and_schema(self):
+        fixture = json.loads((wire.SNAPSHOT/'fixtures/qwen-v1/adapter-errors.json').read_text())
+        validator = wire.validator('analysis-adapter-error')
+        for case in fixture['valid']:validator.validate(case)
+        for case in fixture['invalid']:self.assertFalse(validator.is_valid(case))
+        self.assertEqual(wire.EXIT['GPU_BUSY'],75);self.assertEqual(wire.EXIT['MEMORY_PRESSURE'],74)
+    def test_invalid_generation_is_terminal_after_two(self):
+        backend = Backend(['{}','{}',VALID])
+        with self.assertRaisesRegex(Refused,'INVALID_OUTPUT'):
+            wire.execute(self.input,None,backend=backend,lease=GuardedChild(lambda:None))
+        self.assertEqual(len([row for row in backend.events if isinstance(row,tuple)]),2)
+    def test_memory_admission_is_retryable_not_inference_attempt(self):
+        backend = Backend()
+        def deny():raise Refused('host_memory_admission')
+        with self.assertRaisesRegex(Refused,'MEMORY_PRESSURE'):
+            wire.execute(self.input,None,backend=backend,lease=GuardedChild(deny))
+        self.assertEqual(backend.events,[])
+
+if __name__=='__main__':unittest.main(verbosity=2)

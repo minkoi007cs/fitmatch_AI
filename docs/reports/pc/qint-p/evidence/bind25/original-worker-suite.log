@@ -1,0 +1,90 @@
+test_3d_input_digest_unchanged_and_analysis_digest_binds_identity (scripts.worker.test_worker_unit.AnalysisTransportTests) ... ok
+test_analysis_exit_codes_only_for_analysis_jobs_and_only_with_matching_record (scripts.worker.test_worker_unit.AnalysisTransportTests) ... ok
+test_result_must_be_bounded_bound_and_never_self_approved (scripts.worker.test_worker_unit.AnalysisTransportTests) ... ok
+Capability declared but not granted by the operator: garment.analyze
+test_heartbeat_reply_must_name_the_expected_project (scripts.worker.test_worker_unit.BackendBindingTests) ... ok
+Refusing to continue: App reports a different backend than this worker is bound to (expected gohczmqykjkrgdblgbog); not claiming
+test_loop_exits_before_claim_on_backend_mismatch (scripts.worker.test_worker_unit.BackendBindingTests) ... ok
+test_refusals (scripts.worker.test_worker_unit.BackendBindingTests) ... ok
+test_valid_bindings (scripts.worker.test_worker_unit.BackendBindingTests) ... ok
+Checkpoint set aside: unreadable or unrecognized checkpoint
+test_garbage_checkpoint_is_set_aside_not_deleted (scripts.worker.test_worker_unit.CheckpointTests) ... ok
+test_job_id_must_be_uuid (scripts.worker.test_worker_unit.CheckpointTests) ... ok
+test_other_engine_revision_is_refused (scripts.worker.test_worker_unit.CheckpointTests) ... ok
+test_path_outside_job_dir_is_refused (scripts.worker.test_worker_unit.CheckpointTests) ... ok
+test_tampered_output_is_refused (scripts.worker.test_worker_unit.CheckpointTests) ... ok
+Checkpoint set aside: unreadable or unrecognized checkpoint
+test_unknown_version_is_set_aside (scripts.worker.test_worker_unit.CheckpointTests) ... ok
+test_valid_output_is_reused (scripts.worker.test_worker_unit.CheckpointTests) ... ok
+test_adapter_environment_drops_secrets (scripts.worker.test_worker_unit.ClassificationTests) ... ok
+test_exit_codes_follow_structured_adapter_contract (scripts.worker.test_worker_unit.ClassificationTests) ... ok
+test_job_failure_unknown_code_maps_to_inference_failed (scripts.worker.test_worker_unit.ClassificationTests) ... ok
+test_posix_uses_session_and_dirlock (scripts.worker.test_worker_unit.ContainmentTests) ... ok
+test_unknown_mode_is_rejected_everywhere (scripts.worker.test_worker_unit.ContainmentTests) ... ok
+test_windows_binding_failure_refuses_to_start (scripts.worker.test_worker_unit.ContainmentTests) ... ok
+test_windows_binding_success (scripts.worker.test_worker_unit.ContainmentTests) ... ok
+test_windows_explicit_disabled_mode_runs_with_warning (scripts.worker.test_worker_unit.ContainmentTests) ... ok
+WARNING: processContainment=unsafe-disabled. A worker crash can leave an adapter running on the GPU; restart only after checking Task Manager. Reason: OSError
+test_write_requires_existing_lock_and_never_creates_it (scripts.worker.test_worker_unit.CoordinatorPolicyHelperTests) ... ok
+test_write_then_verify_round_trip (scripts.worker.test_worker_unit.CoordinatorPolicyHelperTests) ... ok
+test_heartbeat_carries_only_a_boolean (scripts.worker.test_worker_unit.GpuBusyReportingTests) ... ok
+GPU is busy with another job on this machine; waiting before claiming.
+test_lock_held_elsewhere_is_reported_busy_at_once_then_cleared (scripts.worker.test_worker_unit.GpuBusyReportingTests) ... ok
+GPU admission refused, not claiming: GPU slot is assigned to another owner
+test_slot_for_the_other_owner_is_busy_without_claiming (scripts.worker.test_worker_unit.GpuBusyReportingTests) ... ok
+test_independent_process_exclusion_and_crash_release (scripts.worker.test_worker_unit.GpuLockTests) ... ok
+test_one_gpu_job_per_host_across_workers (scripts.worker.test_worker_unit.GpuLockTests) ... ok
+test_media_type_wins_and_legacy_roles_still_work (scripts.worker.test_worker_unit.InputNameTests) ... ok
+Still quarantined: owned adapter processes running; not claiming.
+Quarantined adapter processes have exited; resuming.
+test_undrained_tree_keeps_lock_and_blocks_claims_until_it_exits (scripts.worker.test_worker_unit.QuarantineLoopTests) ... ok
+test_drain_waits_for_and_stops_owned_grandchild_only (scripts.worker.test_worker_unit.QuiescenceTests) ... skipped 'POSIX process-group drain; Windows uses the per-job Job Object (native PC test)'
+test_exited_grandchild_left_as_zombie_counts_as_drained (scripts.worker.test_worker_unit.QuiescenceTests) ... skipped 'POSIX process-group drain; Windows uses the per-job Job Object (native PC test)'
+test_gpu_lock_is_held_until_the_owned_tree_is_drained (scripts.worker.test_worker_unit.QuiescenceTests) ... skipped 'POSIX process-group drain; Windows uses the per-job Job Object (native PC test)'
+test_old_launcher_poll_reports_done_while_grandchild_runs (scripts.worker.test_worker_unit.QuiescenceTests) ... skipped 'POSIX process-group drain; Windows uses the per-job Job Object (native PC test)'
+test_sigterm_ignoring_grandchild_is_killed_after_grace (scripts.worker.test_worker_unit.QuiescenceTests) ... skipped 'POSIX process-group drain; Windows uses the per-job Job Object (native PC test)'
+test_aliased_workspace_resolves_to_the_same_exclusive_lock (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... skipped 'symlinks not permitted here: OSError'
+test_analysis_engine_requires_shared_lock (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_check_rejects_a_held_lock_that_is_not_canonical (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_config_cannot_name_lock_slot_or_guard (scripts.worker.test_worker_unit.SharedGpuAdmissionTests)
+QREV-BIND-02: an existing foreign absolute lock/slot or a self-declared guard is never trusted. ... ok
+test_copied_coordination_with_identical_policy_refused_while_canonical_held (scripts.worker.test_worker_unit.SharedGpuAdmissionTests)
+QFINAL-022 case 1, fixed: another existing lock cannot be admitted even with byte-identical policy. ... ERROR
+test_forged_or_linked_slot_cannot_admit_other_owner (scripts.worker.test_worker_unit.SharedGpuAdmissionTests)
+QFINAL-022 case 2, fixed: the canonical slot alone decides; a link to a forged slot is refused. ... skipped 'symlinks not permitted here: OSError'
+test_guard_link_escaping_workspace_refused (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... skipped 'symlinks not permitted here: OSError'
+test_linked_lock_or_policy_refused (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... skipped 'symlinks not permitted here: OSError'
+Refusing to continue: Opened GPU lock is not the coordinator's canonical lock file (identity changed)
+test_lock_replaced_after_startup_refused_on_open_and_loop_exits (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+GPU admission refused, not claiming: No GPU slot file: PC3D-only bootstrap, pc-ai not admitted
+test_loop_refusal_releases_lock_and_claims_nothing (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_main_refuses_to_start_with_legacy_or_foreign_binding (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_pin_and_location_refusals (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_policy_content_refusals (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_policy_edit_after_startup_refused_before_claim (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_slot_rules_match_the_guard (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_valid_binding_derives_canonical_paths (scripts.worker.test_worker_unit.SharedGpuAdmissionTests) ... ok
+test_adapter_starts_suspended_inside_its_own_job (scripts.worker.test_worker_unit.WindowsJobPlacementTests) ... ok
+test_job_that_never_empties_is_reported_undrained (scripts.worker.test_worker_unit.WindowsJobPlacementTests) ... ok
+test_kernel_zero_is_not_enough_until_tracked_process_objects_are_signaled (scripts.worker.test_worker_unit.WindowsJobPlacementTests) ... ok
+test_placement_failure_refuses_to_run_the_adapter (scripts.worker.test_worker_unit.WindowsJobPlacementTests) ... ok
+
+======================================================================
+ERROR: test_copied_coordination_with_identical_policy_refused_while_canonical_held (scripts.worker.test_worker_unit.SharedGpuAdmissionTests)
+QFINAL-022 case 1, fixed: another existing lock cannot be admitted even with byte-identical policy.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<GPU_ROOT>\ai-service\qint_p\native_bind25\source\scripts\worker\test_worker_unit.py", line 639, in test_copied_coordination_with_identical_policy_refused_while_canonical_held
+    other = self.copy_workspace()
+  File "<GPU_ROOT>\ai-service\qint_p\native_bind25\source\scripts\worker\test_worker_unit.py", line 567, in copy_workspace
+    shutil.copytree(self.ws, other)
+  File "<GPU_ROOT>\python\cpython-3.10.22-windows-x86_64-none\lib\shutil.py", line 559, in copytree
+    return _copytree(entries=entries, src=src, dst=dst, symlinks=symlinks,
+  File "<GPU_ROOT>\python\cpython-3.10.22-windows-x86_64-none\lib\shutil.py", line 513, in _copytree
+    raise Error(errors)
+shutil.Error: [('<USER_HOME>\\AppData\\Local\\Temp\\tmpj5x7qsbu\\Fitmatch-GPU\\coordination\\gpu0.lock', '<USER_HOME>\\AppData\\Local\\Temp\\tmpj5x7qsbu\\Copied-GPU\\coordination\\gpu0.lock', '[Errno 13] Permission denied')]
+
+----------------------------------------------------------------------
+Ran 56 tests in 1.662s
+
+FAILED (errors=1, skipped=9)

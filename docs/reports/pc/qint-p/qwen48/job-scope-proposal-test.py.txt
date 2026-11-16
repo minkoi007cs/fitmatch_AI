@@ -1,0 +1,80 @@
+"""CPU proposal only. No positive injected native proof, model, image or network."""
+import importlib.util
+import os
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+GPU = Path(__file__).resolve().parents[5]
+sys.path.insert(0, str(GPU / 'ai-service/qint_p_qwen48'))
+from boundary import Refused
+from test_worker_bridge import policy as fixture_policy
+
+spec = importlib.util.spec_from_file_location('job_scope_proposal', Path(__file__).with_name('worker_admission.py'))
+proposal = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(proposal)
+TARGET = '11111111-2222-4333-8444-555555555555'
+OTHER = '99999999-8888-4777-8666-555555555555'
+
+
+class JobScopeTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.policy = fixture_policy(Path(self.tmp.name))
+        self.policy['approved_job_id'] = TARGET
+
+    def test_exact_target_accepts_as_pure_data(self):
+        proposal.validate_policy(self.policy)
+        proposal.check_job_scope(self.policy, {'jobId': TARGET})
+
+    def test_other_or_missing_job_refuses(self):
+        for value in [{'jobId': OTHER}, {}]:
+            with self.subTest(value=value), self.assertRaisesRegex(Refused, 'INVALID_INPUT'):
+                proposal.check_job_scope(self.policy, value)
+
+    def test_mismatch_refuses_before_environment_or_native_proof(self):
+        with patch.object(proposal, 'read', return_value=self.policy), \
+             patch.object(proposal, 'coordinator_binding') as binding, \
+             patch.object(proposal, 'lock_is_held') as lock, \
+             patch.object(proposal, 'in_windows_job') as job:
+            with self.assertRaisesRegex(Refused, 'INVALID_INPUT'):
+                proposal.verify('not-read.json', {'jobId': OTHER})
+            binding.assert_not_called()
+            lock.assert_not_called()
+            job.assert_not_called()
+        self.assertNotIn('torch', sys.modules)
+
+    def test_invalid_job_pin_is_not_a_wildcard(self):
+        for bad in [None, True, '', 'wrong', 'AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE']:
+            with self.subTest(bad=bad), self.assertRaises(Refused):
+                proposal.validate_policy({**self.policy, 'approved_job_id': bad})
+
+    def test_unrecognized_policy_field_still_refuses(self):
+        with self.assertRaises(Refused):
+            proposal.validate_policy({**self.policy, 'arbitrary': True})
+
+    def test_existing_unpinned_policy_shape_is_preserved(self):
+        old = {k: v for k, v in self.policy.items() if k != 'approved_job_id'}
+        proposal.validate_policy(old)
+        proposal.check_job_scope(old, {'jobId': OTHER})
+
+    def test_target_pin_does_not_bypass_existing_review_gates(self):
+        for gate in proposal.GATES:
+            value = {**self.policy, 'reviews': {**self.policy['reviews'], gate: 'PENDING'}}
+            with self.subTest(gate=gate), self.assertRaises(Refused):
+                proposal.validate_policy(value)
+
+    def test_target_pin_does_not_bypass_real_admission(self):
+        with patch.object(proposal, 'read', return_value=self.policy), \
+             patch.dict(os.environ, {'FITMATCH_GPU_LOCK_HELD_BY': ''}), \
+             patch.object(proposal, 'lock_is_held') as lock:
+            with self.assertRaisesRegex(Refused, 'GPU_BUSY'):
+                proposal.verify('not-read.json', {'jobId': TARGET})
+            lock.assert_not_called()
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

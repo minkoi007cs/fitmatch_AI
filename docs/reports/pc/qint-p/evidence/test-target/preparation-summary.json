@@ -1,0 +1,21 @@
+{
+  "session": "PC-QINT-P-20261108-07",
+  "kind": "nonsecret target/preparation summary; no environment install",
+  "backend_project_label": "smoke-supabase",
+  "owner_authorized_for_FitMatch_test": true,
+  "production": false,
+  "project_ref_and_backend_API_recorded_privately": true,
+  "backend_API_or_project_ref_emitted": false,
+  "FitMatch_application_HTTPS_endpoint": "not found in inspected sources",
+  "scoped_worker_token": "not found in inspected sources",
+  "actual_credentials_read_or_stored": false,
+  "connector_status": "Codex reported read-only inventory authentication failure28P01; not retried by PC Qwen",
+  "DB_role_or_password_modified": false,
+  "SQL_migration_or_enrollment": false,
+  "cleanup_gate": "Codex focused PASS579ece2",
+  "canonical_binding_gate": "NEEDS CHANGES; startup ACK WITHHELD",
+  "app_environment_installed": false,
+  "test_capability_granted": false,
+  "Qwen_slot_granted": false,
+  "GPU_started": false
+}

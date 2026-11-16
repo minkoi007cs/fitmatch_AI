@@ -1,0 +1,88 @@
+{
+  "session": "PC-QINT-P-20261109-11",
+  "task": "PC-NATIVE-33",
+  "sourceRevision": "499ead01e7f9274ddf310ab346fda4c2464588bd",
+  "command": "python -m unittest -v test_worker_unit",
+  "cwd": "scripts/worker in disposable exact-source review copy",
+  "exitCode": 0,
+  "python": "3.10.22",
+  "os": "nt",
+  "seconds": 1.672,
+  "sourceFiles": [
+    {
+      "path": "scripts/worker/worker.py",
+      "sha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+      "bytes": 73502
+    },
+    {
+      "path": "scripts/worker/test_worker_unit.py",
+      "sha256": "f178f7f0ff2723b8e0b5f3235c2da71a1565d9138bd04529362f4223d8a86429",
+      "bytes": 50815
+    },
+    {
+      "path": "docs/reports/claude/app-close-30/native-fixture-30.patch",
+      "sha256": "50ddd9cb14d893c4f6bdbf7c099e5e4e6c16dc54a333294c8837c2674bde5fd3",
+      "bytes": 1228
+    },
+    {
+      "path": "scripts/worker/gpu_coordinator_policy.py",
+      "sha256": "9d600e87c44e70fdaa3e7f038dc15aea6ed125aad8d1c2ba3b204966eee1f47b",
+      "bytes": 4326
+    }
+  ],
+  "realCoordinationFingerprintUnchanged": true,
+  "policySHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "realLockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "modelOrCUDAStarted": false,
+  "testsRun": 56,
+  "passed": 47,
+  "skipped": [
+    {
+      "test": "test_drain_waits_for_and_stops_owned_grandchild_only (test_worker_unit.QuiescenceTests)",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_exited_grandchild_left_as_zombie_counts_as_drained (test_worker_unit.QuiescenceTests)",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_gpu_lock_is_held_until_the_owned_tree_is_drained (test_worker_unit.QuiescenceTests)",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_old_launcher_poll_reports_done_while_grandchild_runs (test_worker_unit.QuiescenceTests)",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_sigterm_ignoring_grandchild_is_killed_after_grace (test_worker_unit.QuiescenceTests)",
+      "reason": "POSIX process-group drain; Windows uses the per-job Job Object (native PC test)"
+    },
+    {
+      "test": "test_aliased_workspace_resolves_to_the_same_exclusive_lock (test_worker_unit.SharedGpuAdmissionTests)",
+      "reason": "symlinks not permitted here: OSError"
+    },
+    {
+      "test": "QFINAL-022 case 2, fixed: the canonical slot alone decides; a link to a forged slot is refused.",
+      "reason": "symlinks not permitted here: OSError"
+    },
+    {
+      "test": "test_guard_link_escaping_workspace_refused (test_worker_unit.SharedGpuAdmissionTests)",
+      "reason": "symlinks not permitted here: OSError"
+    },
+    {
+      "test": "test_linked_lock_or_policy_refused (test_worker_unit.SharedGpuAdmissionTests)",
+      "reason": "symlinks not permitted here: OSError"
+    }
+  ],
+  "skipCount": 9,
+  "errors": 0,
+  "failures": 0,
+  "copiedLockRegression": "PASS under held synthetic canonical lock",
+  "all56Passed": false,
+  "nativeACK": "PASS for executed47;9 skipped remain explicitly unverified",
+  "workerCRLFsha256": "ec9df0b049feac6a14580da525657d25fb29f2663166a4b4c96a52a6baa33ddd"
+}

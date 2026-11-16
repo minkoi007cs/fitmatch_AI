@@ -1,0 +1,286 @@
+"""CPU bridge tests. Kernel lock tests use disposable locks; parent/Job proof positives are injected."""
+import contextlib
+from datetime import datetime,timezone
+import hashlib
+import io
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+import time
+from types import SimpleNamespace
+import unittest
+from unittest.mock import patch
+
+from PIL import Image
+from boundary import MODEL_REVISION, Refused
+import worker_admission as admission
+import worker_cli
+import wire
+from test_adapter import Backend
+from runner import SelectedBackend
+
+def value():
+    result=json.loads((wire.SNAPSHOT/'fixtures/qwen-v1/adapter-input.json').read_text())
+    result['modelRevision']['revision']=MODEL_REVISION
+    return result
+
+def policy(root):
+    return {'version':'qint-p.worker-admission.v2','enabled':True,'scope':'authorized_wardrobe_pilot',
+        'reviews':{name:'PASS' for name in admission.GATES},'app_revision':'a'*40,
+        'contract_revision':'b'*40,'transport_revision':'c'*40,
+        'transport_path':str(root/'worker.py'),'transport_sha256':'d'*64,
+        'transport_python_exe':str(Path(sys.executable).absolute()),
+        'config_path':str(root/'config.json'),'config_sha256':'e'*64,
+        'work_dir':str(root),'guard_sha256':admission.GUARD_HASH,'lock_path':str(admission.LOCK),
+        'coordinator_sha256':'f'*64,'app_origin':'https://fitmatch-pilot.net'}
+
+def ancestor(approved):
+    return {'pid':1234,'creation_time':time.time()-20,'exe':approved['transport_python_exe'],
+        'cmdline':[approved['transport_python_exe'],approved['transport_path'],'--config',approved['config_path']]}
+
+class PolicyTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name).absolute();self.policy=policy(self.root)
+    def test_unreviewed_or_disabled_refuses(self):
+        for field in ['enabled','scope','lock_path','guard_sha256','version']:
+            row=dict(self.policy);row[field]=False if field=='enabled' else 'wrong'
+            with self.subTest(field=field),self.assertRaises(Refused):admission.validate_policy(row)
+    def test_each_gate_is_required(self):
+        for gate in admission.GATES:
+            row={**self.policy,'reviews':{**self.policy['reviews'],gate:'PENDING'}}
+            with self.subTest(gate=gate),self.assertRaises(Refused):admission.validate_policy(row)
+    def test_revision_path_and_extra_refused(self):
+        for field,bad in [('transport_revision','g'*40),('config_sha256','a'),('work_dir','relative'),('unused',True)]:
+            row={**self.policy,field:bad}
+            with self.subTest(field=field),self.assertRaises(Refused):admission.validate_policy(row)
+    def test_exact_reviewed_policy_accepts_as_pure_data(self):admission.validate_policy(self.policy)
+    def test_environment_hint_cannot_supply_an_ancestor(self):
+        with self.assertRaises(Refused):admission.worker_ancestor(self.policy,[])
+    def test_exact_parent_and_optional_once(self):
+        row=ancestor(self.policy)
+        self.assertEqual(admission.worker_ancestor(self.policy,[row])['pid'],row['pid'])
+        row['cmdline'].append('--once');admission.worker_ancestor(self.policy,[row])
+    def test_script_name_in_python_c_arguments_is_not_a_parent_proof(self):
+        row=ancestor(self.policy);row['cmdline'][1:1]=['-c','pass']
+        with self.assertRaises(Refused):admission.worker_ancestor(self.policy,[row])
+    def test_parent_identity_ambiguity_and_wrong_config_refused(self):
+        row=ancestor(self.policy)
+        with self.assertRaises(Refused):admission.worker_ancestor(self.policy,[row,row])
+        row['cmdline'][-1]='other.json'
+        with self.assertRaises(Refused):admission.worker_ancestor(self.policy,[row])
+    def test_invalid_parent_creation_refused(self):
+        for stamp in [0,float('nan'),True]:
+            row=ancestor(self.policy);row['creation_time']=stamp
+            with self.subTest(stamp=stamp),self.assertRaises(Refused):admission.worker_ancestor(self.policy,[row])
+    def test_jobdir_binding_and_attempt_shape(self):
+        request=value();root=self.root/'jobs'/request['jobId']/'a1-abcd1234';root.mkdir(parents=True)
+        path=root/'input.json';path.write_text('{}')
+        self.assertEqual(admission.job_root_for(path,request,self.policy),root)
+        for wrong in [root/'other.json',root.parent/'a1-wrong'/'input.json',self.root/'input.json']:
+            with self.subTest(path=wrong.name),self.assertRaises(Refused):admission.job_root_for(wrong,request,self.policy)
+
+class NativeLockProbeTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name);self.path=self.root/'cpu-only.lock';self.path.write_bytes(b'0')
+        self.override=patch.object(admission,'LOCK',self.path);self.override.start();self.addCleanup(self.override.stop)
+    def test_unlocked_probe_refuses_and_releases_its_probe(self):
+        for _ in range(2):
+            with self.assertRaisesRegex(Refused,'GPU_BUSY'):admission.lock_is_held()
+        self.assertEqual(self.path.read_bytes(),b'0')
+    def test_held_by_owned_cpu_sentinel_is_observed_without_unlock(self):
+        code=('import msvcrt,time;from pathlib import Path;'
+              f'p=Path({str(self.path)!r});f=p.open("r+b");msvcrt.locking(f.fileno(),msvcrt.LK_NBLCK,1);'
+              f'Path({str(self.root/"READY")!r}).touch();end=time.monotonic()+10;'
+              f'flag=Path({str(self.root/"RELEASE")!r});'
+              '\nwhile not flag.exists() and time.monotonic()<end:time.sleep(.02)')
+        process=subprocess.Popen([sys.executable,'-c',code],creationflags=0x08000000)
+        try:
+            end=time.monotonic()+5
+            while not (self.root/'READY').exists() and time.monotonic()<end:time.sleep(.02)
+            self.assertTrue((self.root/'READY').exists())
+            admission.lock_is_held();self.assertIsNone(process.poll())
+            (self.root/'RELEASE').touch();self.assertEqual(process.wait(timeout=5),0)
+            with self.assertRaises(Refused):admission.lock_is_held()
+        finally:
+            if process.poll() is None:process.kill();process.wait(timeout=5)
+
+class DirectArgvTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name).absolute();self.value=value()
+        image=self.root/'input-0.jpg';Image.new('RGB',(64,64),'blue').save(image)
+        data=image.read_bytes();self.value['assets'][0].update(localPath=str(image),bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+        self.value['binding']['imageSha256']=hashlib.sha256(data).hexdigest()
+        self.value['outputPath']=str(self.root/'result.json')
+        self.input=self.root/'input.json';self.input.write_text(json.dumps(self.value))
+        self.argv=['--input',str(self.input),'--output',str(self.root/'result.json')]
+    def invoke(self,**kwargs):
+        out,err=io.StringIO(),io.StringIO()
+        with contextlib.redirect_stdout(out),contextlib.redirect_stderr(err):code=worker_cli.main(self.argv,**kwargs)
+        return code,out.getvalue(),err.getvalue()
+    def test_default_has_no_approval_no_result_no_model_import(self):
+        code,out,err=self.invoke()
+        self.assertEqual(code,75);self.assertEqual(json.loads(err),{'success':False,'code':'GPU_BUSY'})
+        self.assertFalse((self.root/'result.json').exists());self.assertNotIn('torch',sys.modules)
+    def test_environment_hints_alone_still_refuse(self):
+        with patch.dict(os.environ,{'FITMATCH_GPU_LOCK_HELD_BY':'worker','FITMATCH_GPU_LOCK_PATH':str(admission.LOCK)}):
+            self.assertEqual(self.invoke()[0],75)
+    def test_injected_CPU_parent_proof_writes_exact_schema_result(self):
+        backend=Backend()
+        code,_,err=self.invoke(verifier=lambda *args:{'scope':'injected_CPU_fixture'},backend_factory=lambda *args:backend)
+        self.assertEqual(code,0,err);wire.validator('analysis-result').validate(json.loads((self.root/'result.json').read_text()))
+        self.assertEqual(backend.events[-1],'unload')
+        self.assertEqual(self.invoke()[0],2)  # existing result is never overwritten
+    def test_memory_admission_error_keeps_contract_exit_pair(self):
+        def deny(*args):raise Refused('MEMORY_PRESSURE')
+        code,_,err=self.invoke(verifier=deny)
+        self.assertEqual(code,74);self.assertEqual(json.loads(err)['code'],'MEMORY_PRESSURE')
+    def test_unload_failure_does_not_create_a_success_result(self):
+        backend=Backend(fail_unload=True)
+        code,_,err=self.invoke(verifier=lambda *args:{'scope':'CPU fixture'},backend_factory=lambda *args:backend)
+        self.assertEqual(code,1);self.assertEqual(json.loads(err)['code'],'INFERENCE_FAILED')
+        self.assertFalse((self.root/'result.json').exists())
+    def test_wrong_output_and_wrong_input_bytes_fail_without_backend(self):
+        self.argv[-1]=str(self.root/'input-0.jpg')
+        self.assertEqual(self.invoke()[0],2)
+        self.argv[-1]=str(self.root/'result.json')
+        self.value['assets'][0]['bytes']+=1;self.input.write_text(json.dumps(self.value))
+        self.assertEqual(self.invoke(verifier=lambda *args:{'scope':'CPU fixture'})[0],2)
+    def test_png_mislabeled_as_normalized_jpeg_is_refused(self):
+        image=Path(self.value['assets'][0]['localPath']);Image.new('RGB',(64,64)).save(image,format='PNG')
+        raw=image.read_bytes();self.value['assets'][0].update(sha256=hashlib.sha256(raw).hexdigest(),bytes=len(raw))
+        self.value['binding']['imageSha256']=hashlib.sha256(raw).hexdigest();self.input.write_text(json.dumps(self.value))
+        self.assertEqual(self.invoke(verifier=lambda *args:{'scope':'CPU fixture'})[0],2)
+    def test_slot_lost_between_entry_and_load_is_busy_without_load(self):
+        calls=[];backend=Backend()
+        def check(*args):
+            calls.append(True)
+            if len(calls)>1:raise Refused('GPU_BUSY')
+            return {'scope':'injected_CPU_fixture'}
+        code,_,err=self.invoke(verifier=check,backend_factory=lambda *args:backend)
+        self.assertEqual(code,75);self.assertEqual(json.loads(err)['code'],'GPU_BUSY')
+        self.assertEqual(backend.events,[])
+    def test_missing_checkpoint_is_model_unavailable_before_torch_import(self):
+        with patch('checkpoint.verify_checkpoint',side_effect=FileNotFoundError('private path')):
+            code,_,err=self.invoke(verifier=lambda *args:{'scope':'CPU fixture'},
+                                  backend_factory=lambda checker,event:SelectedBackend(checker,event))
+        self.assertEqual(code,78);self.assertEqual(json.loads(err)['code'],'MODEL_UNAVAILABLE')
+        self.assertNotIn('torch',sys.modules);self.assertNotIn('private path',err)
+
+class VerifyCompositionTests(unittest.TestCase):
+    """Filesystem/config hashes real in temporary root; parent identity/kernel Job facts injected."""
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name).absolute()
+        self.value=value();self.policy=policy(self.root)
+        self.lock=self.root/'isolated.lock';self.lock.write_bytes(b'0')
+        self.policy['lock_path']=str(self.lock)
+        self.config={'processContainment':'required','workDir':str(self.root),'gpuSlotOwner':'pc-ai',
+            'gpuCoordinator':{'path':str(self.root/'gpu-coordinator.json'),'sha256':self.policy['coordinator_sha256']},
+            'expectedBackend':{'projectRef':admission.BACKEND_REF,'appOrigin':self.policy['app_origin']},
+            'appUrl':self.policy['app_origin']}
+        self.worker=self.root/'worker.py';self.worker.write_text('# synthetic CPU test transport; not production source')
+        self.configfile=self.root/'config.json';self.save_config()
+        self.policy['transport_sha256']=hashlib.sha256(self.worker.read_bytes()).hexdigest()
+        self.parent=ancestor(self.policy)
+        now=time.time()
+        (self.root/'gpu0-slot.json').write_text(json.dumps({'version':1,'owner':'pc-ai',
+            'issuedAtUtc':datetime.fromtimestamp(now,timezone.utc).isoformat(),'issuedAtUnix':now,'admitUntilUnix':now+120}))
+        area=self.root/'jobs'/self.value['jobId']/'a1-abcd1234';area.mkdir(parents=True)
+        self.manifest=area/'input.json';self.manifest.write_text('{}')
+        self.policyfile=self.root/'approval.json';self.save_policy()
+        parent=SimpleNamespace(pid=self.parent['pid'],create_time=lambda:self.parent['creation_time'],
+            exe=lambda:self.parent['exe'],cmdline=lambda:self.parent['cmdline'])
+        current=SimpleNamespace(parents=lambda:[parent],create_time=lambda:now)
+        self.parent_process=parent
+        self.stack=contextlib.ExitStack();self.addCleanup(self.stack.close)
+        self.stack.enter_context(patch.object(admission,'LOCK',self.lock))
+        self.stack.enter_context(patch.object(admission,'COORD',self.root))
+        original_digest=admission.digest
+        self.stack.enter_context(patch.object(admission,'digest',side_effect=lambda path:
+            admission.GUARD_HASH if Path(path)==admission.GUARD else original_digest(path)))
+        self.stack.enter_context(patch.object(admission.psutil,'Process',side_effect=lambda pid=None:current if pid is None else parent))
+        self.stack.enter_context(patch.object(admission.psutil,'virtual_memory',return_value=SimpleNamespace(available=8*1024**3)))
+        self.stack.enter_context(patch.dict(os.environ,{'FITMATCH_GPU_LOCK_HELD_BY':'worker','FITMATCH_GPU_LOCK_PATH':str(self.lock)}))
+        self.lock_probe=self.stack.enter_context(patch.object(admission,'lock_is_held'))
+        self.job_probe=self.stack.enter_context(patch.object(admission,'in_windows_job'))
+        self.coordinator_probe=self.stack.enter_context(patch.object(admission,'coordinator_binding',return_value=(1,2)))
+    def save_config(self):
+        self.configfile.write_text(json.dumps(self.config))
+        self.policy['config_sha256']=hashlib.sha256(self.configfile.read_bytes()).hexdigest()
+    def save_policy(self):self.policyfile.write_text(json.dumps(self.policy))
+    def verify(self):return admission.verify(self.manifest,self.value,self.policyfile)
+    def test_composed_proof_accepts_only_with_injected_kernel_parent_facts(self):
+        proof=self.verify();self.assertEqual(proof['placement'],'worker_owns_byte0')
+        self.lock_probe.assert_called_once();self.job_probe.assert_called_once()
+    def test_changed_transport_bytes_refused_before_lock_probe(self):
+        self.worker.write_text('# changed')
+        with self.assertRaisesRegex(Refused,'GPU_BUSY'):self.verify()
+        self.lock_probe.assert_not_called()
+    def test_reviewed_programdata_config_is_still_not_shared_fixed_lock(self):
+        self.config['gpuLock']=str(self.root/'other-default.lock');self.save_config();self.save_policy()
+        with self.assertRaisesRegex(Refused,'GPU_BUSY'):self.verify()
+        self.lock_probe.assert_not_called()
+    def test_wrong_or_expired_slot_refuses_before_lock_probe(self):
+        for row in [{'owner':'pc-3d'}, {'owner':'pc-ai','admitUntilUnix':float('nan')}]:
+            (self.root/'gpu0-slot.json').write_text(json.dumps(row))
+            with self.subTest(row=row),self.assertRaisesRegex(Refused,'GPU_BUSY'):self.verify()
+        self.lock_probe.assert_not_called()
+    def test_changed_parent_creation_identity_refused(self):
+        stamp=self.parent['creation_time'];calls=[]
+        def creation():
+            calls.append(True);return stamp if len(calls)==1 else stamp+1
+        self.parent_process.create_time=creation
+        with self.assertRaisesRegex(Refused,'GPU_BUSY'):self.verify()
+    def test_kernel_job_refusal_is_not_an_environment_bypass(self):
+        self.job_probe.side_effect=Refused('GPU_BUSY')
+        with self.assertRaisesRegex(Refused,'GPU_BUSY'):self.verify()
+    def test_qrev_slot_and_guard_fields_must_match_fixed_receipt(self):
+        original=dict(self.config)
+        for key,bad in [('gpuSlot',str(self.root/'other-slot.json')),('gpuSlotOwner','pc-3d'),
+                        ('gpuGuard',{'path':str(admission.GUARD),'sha256':admission.GUARD_HASH}),
+                        ('gpuCoordinator',{'path':str(self.root/'foreign/gpu-coordinator.json'),'sha256':self.policy['coordinator_sha256']}),
+                        ('expectedBackend',{'projectRef':'wqbwwusrhertqktwsxsl','appOrigin':self.policy['app_origin']}),
+                        ('appUrl','https://other-pilot.net')]:
+            self.config={**original,key:bad};self.save_config();self.save_policy()
+            with self.subTest(key=key),self.assertRaisesRegex(Refused,'GPU_BUSY'):self.verify()
+        self.lock_probe.assert_not_called()
+
+class CoordinatorBindingTests(unittest.TestCase):
+    """Synthetic private tree only; never writes coordinator-owned real policy/lock/slot."""
+    def setUp(self):
+        self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup)
+        self.root=Path(self.tmp.name);self.coord=self.root/'coordination';self.coord.mkdir()
+        self.lock=self.coord/'gpu0.lock';self.lock.write_bytes(b'0')
+        self.guard=self.root/'fitmatch_AI/workers/windows/gpu_guard.py';self.guard.parent.mkdir(parents=True)
+        self.guard.write_text('# synthetic guard')
+        (self.coord/'gpu0-slot.json').write_text('{}')
+        identity=self.lock.stat()
+        self.doc={'kind':'fitmatch.gpu-coordinator.v1','coordinator':'pc-3d','owners':['pc-3d','pc-ai'],
+            'lock':{'name':'gpu0.lock','volume':identity.st_dev,'fileId':identity.st_ino},
+            'slot':{'name':'gpu0-slot.json'},'guard':{'relativeToWorkspace':'fitmatch_AI/workers/windows/gpu_guard.py',
+            'sha256':admission.GUARD_HASH},'issuedAtUtc':'2026-11-09T06:00:00Z'}
+        self.pin=self.save()
+        self.stack=contextlib.ExitStack();self.addCleanup(self.stack.close)
+        for key,value in [('GPU',self.root),('COORD',self.coord),('LOCK',self.lock),('GUARD',self.guard)]:
+            self.stack.enter_context(patch.object(admission,key,value))
+    def save(self):
+        path=self.coord/'gpu-coordinator.json';path.write_text(json.dumps(self.doc))
+        return {'coordinator_sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
+    def test_stat_and_opened_handle_identity_match(self):
+        self.assertEqual(admission.coordinator_binding(self.pin),tuple(self.doc['lock'][key] for key in ['volume','fileId']))
+    def test_copied_or_replaced_lock_is_refused(self):
+        self.doc['lock']['fileId']+=1;self.pin=self.save()
+        with self.assertRaises(Refused):admission.coordinator_binding(self.pin)
+    def test_modified_policy_or_wrong_guard_relative_refused(self):
+        self.doc['note']='modified';self.save()
+        with self.assertRaises(Refused):admission.coordinator_binding(self.pin)
+        self.doc['guard']['relativeToWorkspace']='outside.py';self.pin=self.save()
+        with self.assertRaises(Refused):admission.coordinator_binding(self.pin)
+
+if __name__=='__main__':unittest.main(verbosity=2)

@@ -1,0 +1,35 @@
+{
+  "manifest": {
+    "beforeSha256": "2b558726a222980b376711eb790a7fda010e0ca4a22d9cfb2af10c4b4dd471bd",
+    "afterSha256": "74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162",
+    "onlyChangedField": "appRevision",
+    "beforeAppRevision": "1cef14d6fc866b21ade675fb425b383be3dcd6ed",
+    "afterAppRevision": "e6541f4f129b2fec16eedf1d275db8f612387eeb",
+    "oldBytesExactlyReconstructed": true,
+    "fileEntriesBefore": 111,
+    "fileEntriesAfter": 111,
+    "entriesAdded": [],
+    "entriesRemoved": [],
+    "entriesHashChanged": [],
+    "all111ActualHashesMatch": true,
+    "manifestActualBytes": 19548,
+    "sumPinnedSourceBytes": 486879
+  },
+  "admission": {
+    "path": "ai-service/qint_p_qwen54/worker_admission.py",
+    "sha256": "bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37",
+    "bytes": 10356,
+    "changed": false
+  },
+  "config": {
+    "readByHelper": "worker-data/qwen-pilot/private/qwen54-worker.active.json",
+    "sha256": "584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d",
+    "bytes": 1661,
+    "beforeSha256": "a41a9b157434886abfbd0d48de8b09bc912acc44c3af53ad023de79658455a3e",
+    "onlyChangedValue": "adapterRuntimeManifest.sha256",
+    "activeFileCreated": true,
+    "activationPlan": "Final active config exclusively copied from exact prepared bytes; both hashes remain 584ec8e7. Helpers and approval now reference active path; no further config copy/rename is planned.",
+    "hypotheticalByteExactCopySha256": "584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d",
+    "noUnreviewedPathSwitch": true
+  }
+}

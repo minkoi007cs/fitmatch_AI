@@ -1,0 +1,99 @@
+{
+  "$id": "https://fitmatch.local/schemas/qwen-v1/analysis-confirm-request.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "confirmationId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "expectedResultSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "approve",
+        "reject"
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "tshirt",
+            "jeans"
+          ]
+        },
+        "primaryColor": {
+          "type": "string",
+          "enum": [
+            "blue",
+            "white",
+            "black",
+            "gray",
+            "red",
+            "green",
+            "yellow",
+            "brown",
+            "other"
+          ]
+        },
+        "secondaryColor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "blue",
+                "white",
+                "black",
+                "gray",
+                "red",
+                "green",
+                "yellow",
+                "brown",
+                "other"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pattern": {
+          "type": "string",
+          "enum": [
+            "striped",
+            "solid",
+            "printed",
+            "checked",
+            "other"
+          ]
+        },
+        "logoText": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "confirmationId",
+    "expectedResultSha256",
+    "decision",
+    "fields"
+  ],
+  "additionalProperties": false
+}

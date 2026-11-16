@@ -1,0 +1,24 @@
+"""TEST ONLY: execute the unchanged Windows guard with isolated CPU fixture paths."""
+import argparse
+import hashlib
+import importlib.util
+from pathlib import Path
+import sys
+
+ROOT=Path(__file__).resolve().parent
+BASE=(ROOT/'test-runs').resolve()
+parser=argparse.ArgumentParser();parser.add_argument('--test-root',type=Path,required=True)
+args,rest=parser.parse_known_args();test_root=args.test_root.resolve(strict=True)
+if test_root.parent!=BASE or not test_root.name.startswith('q03-') or not (test_root/'TEST-CPU-ONLY').is_file():
+    raise RuntimeError('Only disposable quality03 CPU fixture roots are permitted')
+child=rest[rest.index('--')+1:]
+venv=ROOT.parents[1]/'envs'/'qwen-vl'/'Scripts'/'python.exe'
+if len(child)<2 or Path(child[0]).resolve()!=venv.resolve() or Path(child[1]).resolve()!=ROOT/'cpu_child.py':
+    raise RuntimeError('This test driver cannot launch arbitrary commands or GPU/model helpers')
+guard=ROOT.parents[1]/'fitmatch_AI'/'workers'/'windows'/'gpu_guard.py'
+actual=hashlib.sha256(guard.read_bytes()).hexdigest()
+if actual!='4ddf206d2cb16794f1e05eded7278d82c027dab1d277ac737b003322f8006680':raise RuntimeError('Guard changed; review before native test')
+spec=importlib.util.spec_from_file_location('q03_native_guard',guard);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+module.DIRECTORY=test_root;module.LOCK=test_root/'cpu-test.lock';module.STATE=test_root/'cpu-test-state.json';module.SLOT=test_root/'cpu-test-slot.json'
+sys.argv=[str(guard),*rest]
+raise SystemExit(module.main())

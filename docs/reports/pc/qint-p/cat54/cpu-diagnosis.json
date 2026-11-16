@@ -1,0 +1,89 @@
+{
+  "task": "QINT-P-CAT54",
+  "checkedAtUtc": "2026-11-16T09:57:14.243567+00:00",
+  "localDocs": {
+    "branch": "docs/pc-qint-p-20261107",
+    "head": "c8b33d743ec6458093e06362a8cf14e6ae3ad03c",
+    "baselineDirtyPaths": [],
+    "scope": [
+      "docs/reports/pc/qint-p/cat54/",
+      "docs/reports/pc/qint-qwen48-process.md"
+    ],
+    "remoteSynced": false
+  },
+  "diagnosis": {
+    "visualObservation": "Dominant dark quilted/puffer-style jacket, open front zip and standing collar. No sufficient visible hood evidence. No material inference.",
+    "oldRuntimeSupported": [
+      "tshirt",
+      "jeans"
+    ],
+    "nonSupportedAttributesMustBeNull": true,
+    "rawModelTextPersisted": false,
+    "exactEmittedGarmentType": "NOT_RECOVERABLE_FROM_AVAILABLE_ARTIFACTS",
+    "historicalResult": {
+      "outcome": "abstained",
+      "abstainReason": "unsupported_category",
+      "attributes": null,
+      "approvedForAutoApply": false,
+      "attempts": 1,
+      "outputTokens": 19,
+      "durationMs": 86812,
+      "bytes": 807,
+      "sha256": "d2a989905fd2d6ecb09795d8064993345727bdd8b0d50b4b35d084f26cdd9a8b"
+    },
+    "localAttemptFileNames": [
+      "adapter.err",
+      "adapter.log",
+      "input-0.jpg",
+      "input.json",
+      "qwen-events.jsonl",
+      "result.json"
+    ],
+    "backendStatus": "ROOT_REPORTED_W007_DELETED_NEW69_CANCELED_NO_RESTORE_OR_REQUEUE"
+  },
+  "preservation": {
+    "activeRuntimeManifestSha256": "d79a0738e31f08e04de2fc41b8b825ef04e1f78732bcdaeae5ede3e58f383f0e",
+    "manifestEntries": 98,
+    "allEntriesMatch": true,
+    "activeConfigSha256": "643b8b47b6eac98e27083ff4ea86e971a8e9fc4a733ef293917cd610abfcef31",
+    "disabledApprovalSha256": "4a8f39f3d6a3cbe3fd822943614bded7f2b3e2c0284bcd86c93f334e0ae2968b",
+    "workerApprovalEnabled": false,
+    "old78ConfirmedDataTouched": false,
+    "W007LocalFilesTouched": false,
+    "cudaLoaded": false,
+    "transportSha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6"
+  },
+  "baselineSourceSha256": {
+    "assessment48.py": "f070fdf106b5eac9a86a3bcaa960372a4d4b69bc1242a7fb161294730e326544",
+    "runner.py": "e666b3a367345ae22c3fb40f053b11002055ec3162b66e6424321e0c80a483f2",
+    "wire.py": "ecb5acf58eb26fdfe5ab7790796949c2bf0f65a58944af81dd874ff19e8d5caf",
+    "worker_cli.py": "32a48d2f0eb33935e34860a9cdcab5d45cd96e1ef78e4c431aedb645509a4c55",
+    "worker_admission.py": "bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37",
+    "quality02/semantic.py": "1afd3c435d4bc69052d8988445e2733a779f1cf83f81bacc44677b426f2915bb",
+    "quality02/attributes.schema.json": "769ef2ed1046dc55b474e336d88cb90b0993153e5f62400581d09151ec26ab24"
+  },
+  "proposalSourceSha256": {
+    "assessment54.py": "1814b75d2890d08ef15474d719955763c76bb28c7df5e672134c6e9554faf7f6",
+    "backend54.py": "4aecdba4dddc29bbdf253c7b521df1228e301972a2e1c4a6333171c77bcc9fe6",
+    "run_cat54_cpu.py": "40b2a966f37120e8c8360a60e3756fbf5a60777873b66e017b5dbb1e04558602",
+    "semantic54.py": "0a8465f6057170fa55f4571d30b151788773dd05364fea870feec01d44a14a80",
+    "test_cat54.py": "066d14b77accb97c1b5ecd1add523a30fed0205c2e930ef6d02678d2d6354793",
+    "test_cat54_wire.py": "c617bfc483dd9c56e6d627daf6644e21ec5f32839847a77a1bd949188053509b",
+    "wire.py": "cc22bdbc0f6b7a1c083b9f67c868252f26bfd749e1c526ab46d4c9618ea9cdf2",
+    "worker_cli.py": "a72437d6b22e2969da1d95cb5104cccbd495427e7c242fe7e2f5996635c0a56b"
+  },
+  "verification": {
+    "syntheticCpuTests": 15,
+    "passed": 15,
+    "failed": 0,
+    "modelTruthVerified": false,
+    "publicQint2WireConformance": "PASS_EXACT_1cef14d6fc866b21ade675fb425b383be3dcd6ed",
+    "gpuExecuted": false,
+    "outputTokenBudget": 192,
+    "schemaAttemptBudget": 2,
+    "additionalCandidateCpuTests": 177,
+    "additionalCandidatePassed": 176,
+    "additionalCandidateSkipped": 1
+  },
+  "nextGate": "Root exact qint.2 schema/source review, then isolated wire conformance; no heartbeat, slot or GPU before further gates."
+}

@@ -1,0 +1,104 @@
+"""One heartbeat only after an explicit row-enable permit. Default prepares only; never claims or imports models."""
+import argparse
+from datetime import datetime,timezone
+import hashlib
+import importlib.util
+import json
+import math
+from pathlib import Path
+import sys
+import time
+import urllib.request
+import urllib.error
+
+ROOT=Path(__file__).resolve().parent
+GPU=ROOT.parents[1]
+PRIVATE=GPU/'worker-data/qwen-pilot/private'
+PERMIT=GPU/'coordination/qint-p-connect45-heartbeat-permit.json'
+REPORT=GPU/'reports/ai/qint_p/connect45'
+WORKER_ID='8f1cc6bb-6446-4a7f-9d67-6144deba29be'
+ORIGIN='https://fitmatch.minkoi.org'
+REF='gohczmqykjkrgdblgbog'
+REVISION='7397b6a954dbe877e425abd09abd125398c271c4'
+WORKER_SHA='ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6'
+
+def valid_permit():
+    if not PERMIT.is_file() or PERMIT.is_symlink():return False
+    value=json.loads(PERMIT.read_text(encoding='utf-8-sig'))
+    issued=value.get('issuedAtUnix');expires=value.get('expiresAtUnix')
+    return (value.get('kind')=='connect45.heartbeat-only.v1' and value.get('workerId')==WORKER_ID
+        and value.get('rowEnabled') is True and value.get('qwenFlagOff') is True
+        and value.get('claimsAllowed') is False and value.get('GPUAllowed') is False
+        and value.get('appOrigin')==ORIGIN and value.get('projectRef')==REF
+        and value.get('servingRevision')==REVISION
+        and type(issued) in (int,float) and type(expires) in (int,float)
+        and math.isfinite(issued) and math.isfinite(expires)
+        and 0<expires-issued<=300 and issued<=time.time()<expires)
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--send',action='store_true')
+    args=parser.parse_args()
+    plan=json.loads((PRIVATE/'connect45-worker.disabled.json').read_text())
+    config=plan['workerConfig'];path=Path(plan['workerScript'])
+    if hashlib.sha256(path.read_bytes()).hexdigest()!=WORKER_SHA:raise RuntimeError('Worker source mismatch')
+    if config['appUrl']!=ORIGIN or config['expectedBackend']!={'projectRef':REF,'appOrigin':ORIGIN}:
+        raise RuntimeError('Canonical app binding mismatch')
+    if not args.send:
+        print(json.dumps({'prepared':True,'workerId':WORKER_ID,'sendPerformed':False,
+            'credentialRead':False,'rowEnablePermitPresent':PERMIT.exists(),'claimsAllowed':False,'GPUAllowed':False}))
+        return 0
+    if not valid_permit():
+        print(json.dumps({'status':'REFUSED','reason':'explicit fresh existing-row-enabled / QwenOFF heartbeat-only permit required',
+                         'credentialRead':False,'requestSent':False,'claimOrModelLoad':False}))
+        return 75
+    permit_sha=hashlib.sha256(PERMIT.read_bytes()).hexdigest()
+    attempt=PRIVATE/'connect45-heartbeat-attempt.json'
+    if attempt.exists() and json.loads(attempt.read_text()).get('permitSHA256')==permit_sha:
+        print(json.dumps({'status':'ALREADY_ATTEMPTED','requestSentThisRun':False,'claimsSent':0,
+                         'reason':'deduplicate unknown outcomes; obtain a fresh explicit permit before retry'}))
+        return 75
+    attempt.write_text(json.dumps({'workerId':WORKER_ID,'permitSHA256':permit_sha,
+                                  'startedAtUnix':time.time(),'heartbeatOnly':True})+'\n')
+    spec=importlib.util.spec_from_file_location('connect45_heartbeat_transport',path)
+    worker=importlib.util.module_from_spec(spec);spec.loader.exec_module(worker)
+    worker.backend_binding(config,required=True)
+    raw=(PRIVATE/'connect45-worker.env').read_text().strip()
+    if not raw.startswith('FITMATCH_WORKER_TOKEN='):raise RuntimeError('Invalid credential file')
+    token=raw.split('=',1)[1]
+    if hashlib.sha256(token.encode()).hexdigest()!=plan['tokenSHA256']:raise RuntimeError('Credential hash mismatch')
+    model=config['engines']['garment.analyze']
+    status=None
+    try:
+        # Exactly one request; no retry, worker loop, lock, claim, image or model import.
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self,*args,**kwargs):return None
+        payload={'capabilities':{'garment.analyze':{'model':model['model'],'revision':model['revision']}},'gpuBusy':True}
+        request=urllib.request.Request(ORIGIN+'/api/v2/worker/heartbeat',json.dumps(payload).encode(),
+            {'Authorization':'Bearer '+token,'Content-Type':'application/json'},method='POST')
+        opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),NoRedirect())
+        with opener.open(request,timeout=10) as response:
+            status=response.status;body=response.read(65537)
+        if len(body)>65536:raise ValueError('Heartbeat response too large')
+        reply=json.loads(body)
+        backend=(reply or {}).get('backend') or {}
+        grants=(reply or {}).get('grantedCapabilities',[])
+        match=backend.get('projectRef')==REF
+        flag_off='garment.analyze' not in grants
+        success=(reply or {}).get('success') is True
+        result={'workerIdExpected':WORKER_ID,'request':'one heartbeat only','HTTPsuccess':status==200,
+            'HTTPstatus':status,'appSuccess':success,'backendProjectRef':backend.get('projectRef'),
+            'grantedCapabilities':grants,'observedAtUtc':datetime.now(timezone.utc).isoformat(),
+            'backendIdentityMatch':match,'analysisCapabilityAbsentWhileFlagOff':flag_off,
+            'claimsSent':0,'modelOrGPUStarted':False,'DBlastSeenStillRequiresCodexReadback':True}
+        REPORT.mkdir(parents=True,exist_ok=True)
+        (REPORT/'heartbeat-only-result.json').write_text(json.dumps(result,indent=2)+'\n')
+        print(json.dumps(result));return 0 if status==200 and success and match and flag_off else 5
+    except (urllib.error.HTTPError,urllib.error.URLError,TimeoutError,ValueError) as error:
+        result={'status':'FAILED_CLOSED','request':'one heartbeat only','HTTPsuccess':False,
+                'HTTPstatus':getattr(error,'code',status),'observedAtUtc':datetime.now(timezone.utc).isoformat(),
+                'requestMayHaveReachedApp':True,'claimsSent':0,'modelOrGPUStarted':False}
+        (REPORT/'heartbeat-only-result.json').write_text(json.dumps(result,indent=2)+'\n')
+        print(json.dumps(result));return 5
+    finally:token=None;raw=None
+
+if __name__=='__main__':raise SystemExit(main())

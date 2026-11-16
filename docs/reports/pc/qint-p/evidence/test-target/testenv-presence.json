@@ -1,0 +1,96 @@
+{
+  "session": "PC-QINT-P-20261108-07",
+  "scope": "named own/shared worker configs and targeted process/user/machine environment only",
+  "dedicated_test_HTTPS_endpoint": "not found in inspected sources",
+  "any_unclassified_HTTPS_candidate_present": false,
+  "scoped_worker_token": "not found in inspected sources",
+  "dedicated_project_test_label": "smoke-supabase: owner-confirmed FitMatch test backend; deployment still unverified",
+  "application_endpoint_kind": "FitMatch HTTPS application; Supabase project API is not counted as worker appUrl",
+  "authorized_backend_target_metadata_present": true,
+  "sources": [
+    {
+      "source_alias": "current_process_environment",
+      "endpoint_candidate_present": false,
+      "worker_token_candidate_present": false,
+      "explicit_test_designation_present": false,
+      "test_label_classification": "missing or unverified",
+      "values_emitted": false
+    },
+    {
+      "source_alias": "user_environment",
+      "endpoint_candidate_present": false,
+      "worker_token_candidate_present": false,
+      "explicit_test_designation_present": false,
+      "test_label_classification": "missing or unverified",
+      "values_emitted": false
+    },
+    {
+      "source_alias": "machine_environment",
+      "endpoint_candidate_present": false,
+      "worker_token_candidate_present": false,
+      "explicit_test_designation_present": false,
+      "test_label_classification": "missing or unverified",
+      "values_emitted": false
+    }
+  ],
+  "named_file_states": [
+    {
+      "source_alias": "own_worker_approval",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_standalone_approval",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_local_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_worker_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_qwen_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_qwen_local_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_dotenv",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_dotenv_local",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_dotenv_test",
+      "state": "missing"
+    },
+    {
+      "source_alias": "worker_data_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "shared_worker_private_config",
+      "state": "missing"
+    }
+  ],
+  "credential_or_URL_values_emitted": false,
+  "reviewed_worker_approval_policy_present": false,
+  "worker_owner_bridge_source_present": true,
+  "reviewed_worker_owner_config_ready": false,
+  "external_secret_stores_or_other_user_folders_inspected": false,
+  "network_or_auth_probe": false,
+  "test_environment_ready": false,
+  "production_environment_assumed_authorized": false,
+  "remote_project_note": "Owner authorizes smoke-supabase for FitMatch test; read-only connector authentication failed as reported; no PC Qwen DB retry or key read",
+  "recordedAtUtc": "2026-11-09T02:42:01.511586+00:00"
+}

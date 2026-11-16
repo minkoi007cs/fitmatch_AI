@@ -1,0 +1,12 @@
+{
+  "session": "PC-QINT-P-20261109-09",
+  "testsRun": 70,
+  "passed": 70,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "seconds": 0.984,
+  "torchImported": false,
+  "GPUUsed": false,
+  "scope": "own adapter/JSON/schema/normalization/error mapping and coordinator-config bridge; parent/job positives injected except native supplemental report"
+}

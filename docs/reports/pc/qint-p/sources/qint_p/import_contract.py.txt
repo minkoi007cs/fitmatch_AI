@@ -1,0 +1,21 @@
+"""Read pinned public contract blobs from the docs checkout; never checkout/edit the app."""
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+ROOT = Path(__file__).resolve().parent
+DOCS = ROOT.parents[2]/'fitmatch-pc-ai-01-docs'
+REV = '931109906089e20738090613086b73c3677d3a40'
+names = subprocess.check_output(['git','ls-tree','-r','--name-only',REV],cwd=DOCS,text=True).splitlines()
+names = [name for name in names if name.startswith(('schemas/qwen-v1/','fixtures/qwen-v1/'))
+         or name in ['scripts/check-qwen-contract.py','docs/qwen-contract-v1.md']]
+items = []
+for name in names:
+    data = subprocess.check_output(['git','show',f'{REV}:{name}'],cwd=DOCS)
+    target = ROOT/'contract_snapshot'/name
+    if target.exists(): raise RuntimeError('Preserve contract snapshot; import only into fresh directory')
+    target.parent.mkdir(parents=True,exist_ok=True); target.write_bytes(data)
+    items.append({'path':name,'sha256':hashlib.sha256(data).hexdigest(),'bytes':len(data)})
+(ROOT/'contract_snapshot'/'pin.json').write_text(json.dumps({'source_revision':REV,'files':items},indent=2)+'\n')
+print(json.dumps({'contract_revision':REV,'files':len(items)}))

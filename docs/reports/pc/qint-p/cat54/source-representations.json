@@ -1,0 +1,53 @@
+{
+  "note": "Published runnable source uses LF. Candidate-changes.json records actual Windows file bytes; compare the appropriate representation explicitly.",
+  "files": [
+    {
+      "path": "proposal/assessment54.py",
+      "windowsFileSha256": "1814b75d2890d08ef15474d719955763c76bb28c7df5e672134c6e9554faf7f6",
+      "publishedLfSha256": "1814b75d2890d08ef15474d719955763c76bb28c7df5e672134c6e9554faf7f6",
+      "hasCRLF": false
+    },
+    {
+      "path": "proposal/backend54.py",
+      "windowsFileSha256": "4aecdba4dddc29bbdf253c7b521df1228e301972a2e1c4a6333171c77bcc9fe6",
+      "publishedLfSha256": "4aecdba4dddc29bbdf253c7b521df1228e301972a2e1c4a6333171c77bcc9fe6",
+      "hasCRLF": false
+    },
+    {
+      "path": "proposal/run_cat54_cpu.py",
+      "windowsFileSha256": "40b2a966f37120e8c8360a60e3756fbf5a60777873b66e017b5dbb1e04558602",
+      "publishedLfSha256": "40b2a966f37120e8c8360a60e3756fbf5a60777873b66e017b5dbb1e04558602",
+      "hasCRLF": false
+    },
+    {
+      "path": "proposal/semantic54.py",
+      "windowsFileSha256": "0a8465f6057170fa55f4571d30b151788773dd05364fea870feec01d44a14a80",
+      "publishedLfSha256": "0a8465f6057170fa55f4571d30b151788773dd05364fea870feec01d44a14a80",
+      "hasCRLF": false
+    },
+    {
+      "path": "proposal/test_cat54.py",
+      "windowsFileSha256": "066d14b77accb97c1b5ecd1add523a30fed0205c2e930ef6d02678d2d6354793",
+      "publishedLfSha256": "066d14b77accb97c1b5ecd1add523a30fed0205c2e930ef6d02678d2d6354793",
+      "hasCRLF": false
+    },
+    {
+      "path": "proposal/test_cat54_wire.py",
+      "windowsFileSha256": "c617bfc483dd9c56e6d627daf6644e21ec5f32839847a77a1bd949188053509b",
+      "publishedLfSha256": "c617bfc483dd9c56e6d627daf6644e21ec5f32839847a77a1bd949188053509b",
+      "hasCRLF": false
+    },
+    {
+      "path": "proposal/wire.py",
+      "windowsFileSha256": "cc22bdbc0f6b7a1c083b9f67c868252f26bfd749e1c526ab46d4c9618ea9cdf2",
+      "publishedLfSha256": "cc22bdbc0f6b7a1c083b9f67c868252f26bfd749e1c526ab46d4c9618ea9cdf2",
+      "hasCRLF": false
+    },
+    {
+      "path": "proposal/worker_cli.py",
+      "windowsFileSha256": "a72437d6b22e2969da1d95cb5104cccbd495427e7c242fe7e2f5996635c0a56b",
+      "publishedLfSha256": "a72437d6b22e2969da1d95cb5104cccbd495427e7c242fe7e2f5996635c0a56b",
+      "hasCRLF": false
+    }
+  ]
+}

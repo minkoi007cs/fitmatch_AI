@@ -1,0 +1,3 @@
+Process containment: windows-job-object
+Shared host GPU lock bound to the PC3D coordinator (single owner, never nested): <GPU_ROOT>\coordination\gpu0.lock
+Refusing to start: expectedBackend must be {projectRef, appOrigin}

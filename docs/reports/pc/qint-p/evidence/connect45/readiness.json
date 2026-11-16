@@ -1,0 +1,45 @@
+{
+  "session": "PC-QINT-P-20261110-12",
+  "task": "CONNECT-PC-AI-45",
+  "appOrigin": "https://fitmatch.minkoi.org",
+  "expectedBackendProjectRef": "gohczmqykjkrgdblgbog",
+  "servingRevisionReportedByCodex": "7397b6a954dbe877e425abd09abd125398c271c4",
+  "workerSHA256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "privateConfigPrepared": true,
+  "configEnabled": false,
+  "tokenReservedLocally": true,
+  "tokenValueOrHashPublishedHere": false,
+  "capabilities": [
+    "garment.analyze"
+  ],
+  "guardSHA256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "coordinatorSHA256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "lockIdentity": [
+    3699583840,
+    2251799814103012
+  ],
+  "existingGuardPriorTreeCheck": "no surviving prior tree detected by existing guard",
+  "slotValidNow": false,
+  "slotOwnerAdmittedNow": null,
+  "recordedSlotOwner": "pc-3d",
+  "recordedSlotExpired": true,
+  "fullQuiescenceProven": false,
+  "realLockAcquiredOrWritten": false,
+  "realPolicySlotStateGuardWritten": false,
+  "GPUOrInferenceStarted": false,
+  "authHeartbeatOrClaimSent": false,
+  "backendReady": false,
+  "operatorApprovalInstalled": false,
+  "blockers": [
+    "Codex actual PG17 restore proof/cutover/backend-ready handoff pending",
+    "scoped enrollment and live operator approval not granted",
+    "new finite pc-ai slot from PC3D absent; current slot is not a grant",
+    "app-owned authorized input/snapshot/job and final serving-binding gate pending",
+    "unreviewed GPU-capable processes prevent full quiescence assertion"
+  ],
+  "modelOrNativeSuiteRerun": false,
+  "recordedAtUtc": "2026-11-10T14:05:21.094064+00:00",
+  "processCandidateCount": 1,
+  "processCommandLineUnavailableCount": 0,
+  "publicProcessInventory": "counts only; commands/PIDs retained locally"
+}

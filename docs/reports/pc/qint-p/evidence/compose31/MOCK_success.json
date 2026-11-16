@@ -1,0 +1,110 @@
+{
+  "case": "MOCK_success",
+  "passed": true,
+  "adapter": "CPU MOCK",
+  "workerExit": 0,
+  "CLIError": null,
+  "HTTPEvents": [
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "claim",
+      "stateAfter": {
+        "state": "running",
+        "attempt": 1,
+        "deferrals": 0,
+        "errorCode": null,
+        "resultStored": false
+      }
+    },
+    {
+      "HTTP": "GET",
+      "route": "synthetic-image",
+      "bytes": 693
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "heartbeat",
+      "gpuBusy": false,
+      "authorizationMatched": true
+    },
+    {
+      "HTTP": "POST",
+      "route": "job-heartbeat",
+      "stage": "reconstructing"
+    },
+    {
+      "HTTP": "POST",
+      "route": "result",
+      "explicitlyMOCK": true,
+      "humanReviewRequired": true,
+      "resultSHA256": "d924e5b22e8dcfc976634b66ff9cc2fcfd440774aa7a6563a5844c93e16a2c86",
+      "stateAfter": {
+        "state": "succeeded",
+        "attempt": 1,
+        "deferrals": 0,
+        "errorCode": null,
+        "resultStored": true
+      },
+      "nativeProof": {
+        "adapterInterpreterCount": 1,
+        "nativeAdapterHandlesAllSignaledAtHTTPReport": true,
+        "adapterCredentialsRemoved": true,
+        "torchImportAttempted": false,
+        "syntheticLockHeldAtHTTPReport": true
+      }
+    }
+  ],
+  "syntheticFinalJobState": {
+    "state": "succeeded",
+    "attempt": 1,
+    "deferrals": 0,
+    "errorCode": null,
+    "resultStored": true
+  },
+  "syntheticStateModelOnly": true,
+  "actualWorkerCheckpointStage": "completed",
+  "resultFileCreated": true,
+  "syntheticLockReleasableAfterOwnedTreeDrain": true,
+  "outerWindowsJobDrained": true,
+  "torchImportedOrAttempted": false,
+  "seconds": 1.281
+}

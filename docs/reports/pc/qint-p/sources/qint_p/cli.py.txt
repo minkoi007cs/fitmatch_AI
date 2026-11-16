@@ -1,0 +1,59 @@
+"""Local inspect/guarded adapter entry. No network, polling, capability grant or server writes."""
+import argparse
+import json
+from pathlib import Path
+import sys
+import time
+from boundary import request, strict_json, read_image, Refused
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--request', type=Path, required=True)
+    parser.add_argument('--image', type=Path, required=True)
+    parser.add_argument('--input-root', type=Path, required=True)
+    parser.add_argument('--output-dir', type=Path, required=True)
+    parser.add_argument('--guard-label')
+    parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--local-fault', choices=['pressure_after_load', 'hold_after_load'])
+    args = parser.parse_args()
+    # Must be a fresh local private directory; never overwrite another job's diagnostics.
+    args.output_dir.mkdir(parents=True, exist_ok=False)
+    result = {'status': 'error', 'model_loaded': False, 'wire_contract': 'pending_Claude_ACK'}
+    event_path = args.output_dir / 'events.jsonl'
+    def event(value):
+        with event_path.open('a', encoding='utf-8') as stream:
+            stream.write(json.dumps({'monotonic': time.monotonic(), **value}) + '\n')
+    try:
+        if args.request.stat().st_size > 4096:
+            raise Refused('invalid_json_size')
+        value = request(strict_json(args.request.read_text(encoding='utf-8')))
+        image = read_image(args.image, args.input_root, value['binding']['image_sha256'])
+        if not args.execute:
+            result.update(status='cpu_inspection_passed', image_size=list(image.size),
+                          approved_for_auto_apply=False, gpu_execution='Not run')
+        else:
+            if not args.guard_label:
+                raise Refused('guard_label_required')
+            from admission import verify
+            # Before importing SelectedBackend or anything with model libraries.
+            proof = verify(args.guard_label)
+            event({'phase': 'admitted', **proof})
+            from runner import run, SelectedBackend, GuardedChild
+            checker = lambda: verify(args.guard_label)
+            backend = SelectedBackend(checker, event)
+            backend.fault = args.local_fault
+            result = run(value, image, backend=backend, lease=GuardedChild(checker))
+            result['model_loaded'] = 'model_loaded' in result['events']
+            result['wire_contract'] = 'pending_Claude_ACK'
+    except Refused as error:
+        result['error_code'] = error.code
+    except Exception:
+        result['error_code'] = 'local_adapter_failed'
+    finally:
+        result['torch_imported'] = 'torch' in sys.modules
+        (args.output_dir / 'result.json').write_text(json.dumps(result, indent=2) + '\n', encoding='utf-8')
+    print(json.dumps({'status': result['status'], 'error_code': result.get('error_code'), 'model_loaded': result['model_loaded']}))
+    return 0 if result['status'] in {'cpu_inspection_passed', 'requires_human_review'} else 2
+
+if __name__ == '__main__':
+    raise SystemExit(main())

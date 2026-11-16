@@ -1,0 +1,107 @@
+{
+  "session": "PC-QINT-P-20261109-08",
+  "decision": "BACKEND-024",
+  "scope": "named own/shared worker configs and targeted process/user/machine environment only",
+  "pilot_application_HTTPS_endpoint": "not found in inspected sources",
+  "any_unclassified_HTTPS_candidate_present": false,
+  "scoped_worker_token": "not found in inspected sources",
+  "canonical_backend_label": "fitmatch-ai",
+  "canonical_backend_role": "main/pilot backend; preserve existing data",
+  "canonical_registry_source": {
+    "source_revision": "7b247ba6cb0e08f3360f42a3cda56825dfbfcde1",
+    "source_path": "docs/infrastructure/backend-environments.json",
+    "sha256": "5ea746851bf4f52819953c41c0446fde92604859eed6bafbc5848a5635d13e7c",
+    "authority": "Operations environment manifest; this file is a pinned metadata copy, not a second authority"
+  },
+  "former_smoke_target": "deprecated for FitMatch, not a fallback, not deleted",
+  "application_endpoint_kind": "FitMatch HTTPS application; Supabase project API is not counted as worker appUrl",
+  "canonical_backend_target_metadata_present": true,
+  "old_smoke_key_or_worker_token_reuse_allowed": false,
+  "URL_only_credential_swap_allowed": false,
+  "sources": [
+    {
+      "source_alias": "current_process_environment",
+      "endpoint_candidate_present": false,
+      "worker_token_candidate_present": false,
+      "explicit_test_designation_present": false,
+      "test_label_classification": "missing or unverified",
+      "values_emitted": false
+    },
+    {
+      "source_alias": "user_environment",
+      "endpoint_candidate_present": false,
+      "worker_token_candidate_present": false,
+      "explicit_test_designation_present": false,
+      "test_label_classification": "missing or unverified",
+      "values_emitted": false
+    },
+    {
+      "source_alias": "machine_environment",
+      "endpoint_candidate_present": false,
+      "worker_token_candidate_present": false,
+      "explicit_test_designation_present": false,
+      "test_label_classification": "missing or unverified",
+      "values_emitted": false
+    }
+  ],
+  "named_file_states": [
+    {
+      "source_alias": "own_worker_approval",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_standalone_approval",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_local_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_worker_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_qwen_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_qwen_local_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_dotenv",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_dotenv_local",
+      "state": "missing"
+    },
+    {
+      "source_alias": "own_runtime_dotenv_test",
+      "state": "missing"
+    },
+    {
+      "source_alias": "worker_data_config",
+      "state": "missing"
+    },
+    {
+      "source_alias": "shared_worker_private_config",
+      "state": "missing"
+    }
+  ],
+  "credential_or_URL_values_emitted": false,
+  "reviewed_worker_approval_policy_present": false,
+  "worker_owner_bridge_source_present": true,
+  "reviewed_worker_owner_config_ready": false,
+  "external_secret_stores_or_other_user_folders_inspected": false,
+  "network_or_auth_probe": false,
+  "controlled_pilot_ready": false,
+  "unscoped_or_destructive_main_changes_authorized": false,
+  "remote_project_note": "Canonical fitmatch-ai connector permission denied reported; correct account/project connection flow required; no password/RLS/ACL remedy by PC Qwen",
+  "recordedAtUtc": "2026-11-09T06:18:19.944586+00:00"
+}

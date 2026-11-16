@@ -1,0 +1,101 @@
+{
+  "kind": "fitmatch.qwen54.helper-preparation.v1",
+  "checkedAtUtc": "2026-11-16T15:46:42.880210+00:00",
+  "state": "CPU_PREPARED_NEW_JOB_BOUND_ROOT_DIFF_REVIEW_PENDING",
+  "jobId": "1dadcac7-dbac-477c-a305-2f0c45644ab8",
+  "analysisId": "36ec393f-3401-44e6-94e7-9b937aff4463",
+  "goIdProposedByRoot": "PC3D-QWEN54-W008-20261116",
+  "servingAppRevision": "e6541f4f129b2fec16eedf1d275db8f612387eeb",
+  "contractSource": "1cef14d6fc866b21ade675fb425b383be3dcd6ed",
+  "manifestEntries": 111,
+  "runtimeManifest": {
+    "relativePath": "worker-data/qwen-pilot/private/qwen54-runtime-manifest.json",
+    "sha256": "74cb0422f2252612b1ecf855decbd29b8bc66191b8b128b8a90d39d8f702e162"
+  },
+  "preparedConfig": {
+    "relativePath": "worker-data/qwen-pilot/private/qwen54-worker.prepared.json",
+    "sha256": "584ec8e7775b8c603ad96d145ba6c0557e01fc496ba26a762d99ab9e2d938d4d"
+  },
+  "disabledApproval": {
+    "relativePath": "coordination/qint-worker-qwen54-approval.json",
+    "sha256": "72e26da104cd2dbcaf98ab951c68f1de95c7b763bf662abfa0d0f8be3703b921",
+    "enabled": false,
+    "reviews": "ALL_PENDING",
+    "approvedJobId": "1dadcac7-dbac-477c-a305-2f0c45644ab8"
+  },
+  "admissionSha256": "bbbee7778eb8690fbaa9b0191d4acfea7d7e03cd0c9bdd8b3004bfa86a8b7b37",
+  "transportSha256": "ef25136b10ad14ea8a9f1f000d2cdf17d5ca61b65a9a04937d6696f2af4016b6",
+  "guardSha256": "47331c56dfabb09e9eb714fdb933de6b789be6195ccfc50d3040b800ae99d61c",
+  "coordinatorPolicySha256": "789426d36e00533b1459880dfa70d713614517ccaa8807dc1d3cf965ab895039",
+  "closedSlotSha256": "07ca3504edd124b300336a42c65888a7a16b159f44b81a163223d45cfb4d1e4e",
+  "helpers": [
+    {
+      "file": "execute-once-20261116.py",
+      "baselineFile": "execute-once-20261113.py",
+      "baselineActualSha256": "4f31ff51ceb1922019b6fa308b77e5df250e362982b38e79cf25d8a6579d1b49",
+      "actualPrivateSha256": "7868dcfac0f200465076220604a0e6264c9ce03e49a28e3856dc10fa9a0427a5",
+      "actualLfSha256": "d1f0579940f52d9cb10ee52a95f9e9a01d8a3b4693bdc2b3662a85aa543d8a1d",
+      "publishedSanitizedLfSha256": "668f7c03001098672b86e6c5d83cec46dd6393a40f15c33f8cd5bc2ad7fa319c",
+      "literalReplacementOnly": true,
+      "unchangedCriticalAST": [
+        "NativeObserver",
+        "validate_window",
+        "checkpoint_view",
+        "process_role",
+        "completed_binding",
+        "admission_identity_binding",
+        "native_creation_matches",
+        "control_flow_audit",
+        "read_outcome"
+      ]
+    },
+    {
+      "file": "heartbeat-window-once.py",
+      "baselineFile": "heartbeat-window-once.py",
+      "baselineActualSha256": "58e3bc86e5a15e30865634552e83922254db1de0426302f6ca96d22f61ca93dc",
+      "actualPrivateSha256": "2315c8d91f79ff35ab86e399049bdbcbe9d3745dda00b30151aea3a853b7ce18",
+      "actualLfSha256": "2d53d70ebb572bfbfdf5be88d43b8abf9a158938a62aeb8cb1730258c48775f8",
+      "publishedSanitizedLfSha256": "9fea454af2576e31765614884ac7a198f26b0f6f69d3be938b9f8d99442237c1",
+      "literalReplacementOnly": true,
+      "unchangedCriticalAST": [
+        "parse_stamp",
+        "fresh_stamp",
+        "datetime_ns",
+        "window_gate",
+        "NoRedirect",
+        "exclusive_write"
+      ]
+    }
+  ],
+  "tests": {
+    "reusedExecuteFixtures": 17,
+    "reusedTimestampImportFixtures": 12,
+    "passed": 29,
+    "failed": 0,
+    "skipped": 0,
+    "newArchitectureTests": 0,
+    "exitCode": 0
+  },
+  "actualSafeCliRefusals": {
+    "execute": {
+      "exitCode": 75,
+      "state": "CPU_REFUSED",
+      "errorType": "FileNotFoundError",
+      "authorizationAbsent": true
+    },
+    "heartbeatWithoutSend": {
+      "exitCode": 75,
+      "state": "REFUSED_OR_STOPPED_NO_AUTOMATIC_RETRY",
+      "HTTPAttemptMarkerExists": false,
+      "READYAbsent": true
+    }
+  },
+  "original98AllMatch": true,
+  "oldHelpersUnchanged": true,
+  "heartbeatSent": false,
+  "claimMade": false,
+  "gpuStarted": false,
+  "slotWritten": false,
+  "executionAuthorizationCreated": false,
+  "next": "Root full source/diff/pin review; all reviews remain PENDING. No execution until actual bounded slot and exact new-job GO."
+}

@@ -1,0 +1,24 @@
+test_invalid_clock (__main__.Matrix) ... ok
+test_shape_finite_window_and_reader_agreement (__main__.Matrix) ... ok
+test_valid_legacy_and_v1_window (__main__.Matrix) ... ERROR
+test_cpu_child_crash_exit7 (__main__.NativeCandidate) ... ok
+test_exclusion_then_normal_unload (__main__.NativeCandidate) ... ok
+test_injected_low_ram_exit86_without_real_pressure (__main__.NativeCandidate) ... ok
+test_owned_guard_crash_kill_on_close (__main__.NativeCandidate) ... ok
+test_slot_refused_before_child_launch (__main__.NativeCandidate) ... ok
+test_timeout_drains_child_and_grandchild (__main__.NativeCandidate) ... ok
+
+======================================================================
+ERROR: test_valid_legacy_and_v1_window (__main__.Matrix)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<GPU_ROOT>\ai-service\qint_p\retest_candidate.py", line 47, in test_valid_legacy_and_v1_window
+    self.assertEqual(guard.validate_slot(row,NOW),'pc-ai'); self.assertEqual(slot(row,NOW),row['admitUntilUnix'])
+  File "<GPU_ROOT>\handoffs\pc-safe-008\staging\gpu_guard.py", line 205, in validate_slot
+    raise ValueError('Invalid or expired GPU admission window')
+ValueError: Invalid or expired GPU admission window
+
+----------------------------------------------------------------------
+Ran 9 tests in 8.339s
+
+FAILED (errors=1)
