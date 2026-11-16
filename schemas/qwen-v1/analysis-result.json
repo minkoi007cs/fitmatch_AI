@@ -62,7 +62,10 @@
     },
     "policyRevision": {
       "type": "string",
-      "const": "qint.1"
+      "enum": [
+        "qint.1",
+        "qint.2"
+      ]
     },
     "rawOutputSha256": {
       "type": "string",
@@ -100,6 +103,10 @@
               "type": "string",
               "enum": [
                 "tshirt",
+                "shirt",
+                "hoodie",
+                "jacket",
+                "sweater",
                 "jeans",
                 "unknown"
               ]
@@ -278,6 +285,38 @@
   ],
   "additionalProperties": false,
   "allOf": [
+    {
+      "if": {
+        "properties": {
+          "policyRevision": {
+            "const": "qint.1"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "attributes": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "enum": [
+                      "tshirt",
+                      "jeans",
+                      "unknown"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
     {
       "if": {
         "properties": {

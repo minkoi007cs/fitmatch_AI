@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { analysisResult, analysisAdapterInput, analysisAdapterError, analysisConfirmRequest, analysisLimits, canonicalJson, storableCapabilities } from "../src/lib/v2/qwen";
+import { analysisResult, analysisAdapterInput, analysisAdapterError, analysisConfirmRequest, analysisLimits, canonicalJson, storableCapabilities, POLICY_REVISION, supportedAnalysisCategories, wardrobeMapping } from "../src/lib/v2/qwen";
 import { qwenFixtures } from "./fixtures/qwen-v1.mjs";
 
 const q = qwenFixtures();
@@ -46,4 +46,19 @@ test("flag OFF: a heartbeat never stores garment.analyze, 3D capabilities untouc
   assert.deepEqual(Object.keys(storableCapabilities(declared, false)), ["avatar.reconstruct"]);
   assert.deepEqual(Object.keys(storableCapabilities(declared, true)).sort(), ["avatar.reconstruct", "garment.analyze"]);
   assert.ok("garment.analyze" in declared, "input not mutated");
+});
+
+test("new policy separates dedupe and preserves each top category through human confirmation", () => {
+  assert.equal(POLICY_REVISION, "qint.2");
+  assert.ok(analysisAdapterInput.safeParse({ ...q.adapterInput, policy: { ...q.adapterInput.policy, policyRevision: POLICY_REVISION } }).success);
+  const tee = q.valid["result-proposal-tee"];
+  for (const category of supportedAnalysisCategories) {
+    const proposal = { ...tee, policyRevision: POLICY_REVISION, attributes: { ...tee.attributes, category } };
+    assert.ok(analysisResult.safeParse(proposal).success, category);
+    const confirmation = { confirmationId: "55555555-6666-4777-8888-999999999999", expectedResultSha256: "c".repeat(64), decision: "approve", fields: { category } };
+    assert.ok(analysisConfirmRequest.safeParse(confirmation).success, category);
+    assert.equal(wardrobeMapping.category[category], category === "tshirt" ? "t-shirt" : category);
+  }
+  assert.notEqual(wardrobeMapping.category.hoodie, wardrobeMapping.category.tshirt);
+  assert.notEqual(wardrobeMapping.category.jacket, wardrobeMapping.category.tshirt);
 });

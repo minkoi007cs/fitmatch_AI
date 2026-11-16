@@ -78,3 +78,11 @@ Worker là **lock owner duy nhất** cho mỗi lần thực thi GPU: nó chỉ c
 - [ ] PC Qwen: adapter đọc `analysis-adapter-input`, ghi `analysis-result`, chạy `check-qwen-contract.py` trên output thật/synthetic, exit codes như bảng; gửi source+hash.
 - [ ] PC 3D: guard không nest khi `FITMATCH_GPU_LOCK_HELD_BY=worker`; tạo `gpu-coordinator.json` bằng `scripts/worker/gpu_coordinator_policy.py write`, ACK sha256 policy + danh tính lock + byte 0 + hash guard; chạy native drain + binding tests trên nhánh này.
 - [ ] Codex: review contract, migration, drain fix trước khi grant capability trên test server.
+
+## CAT54 — policy qint.2, existing top categories
+
+New analyses use `qint.2`, separating the dedupe key from historical `qint.1` results. The unchanged result envelope now supports `tshirt`, `shirt`, `hoodie`, `jacket`, `sweater`, `jeans` and `unknown`; qint.1 result validation retains its original tshirt/jeans/unknown vocabulary. The PC must ACK the regenerated schemas before running qint.2. This does not grant any new 3D engine capability.
+
+Human confirmation maps tshirt to the existing `t-shirt` wardrobe value; the other supported categories map unchanged. The confirmation RPC accepts those same six categories, retaining all owner/source/result-digest/replay checks. No category is automatically applied, no material is inferred, and ambiguous, unreadable, non-garment or genuinely unsupported images still require abstention.
+
+The wardrobe distinguishes a disabled owner worker (`workerPaused`) from an enabled worker without a fresh heartbeat. A paused analysis remains queued; changing this message does not start a worker or promise unattended GPU execution. Old abstained/decided qint.1 analyses can explicitly request the new policy through “Analyze with updated AI”; historical results and confirmed metadata are preserved.

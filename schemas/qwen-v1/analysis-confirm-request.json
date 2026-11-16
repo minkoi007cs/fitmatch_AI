@@ -25,6 +25,10 @@
           "type": "string",
           "enum": [
             "tshirt",
+            "shirt",
+            "hoodie",
+            "jacket",
+            "sweater",
             "jeans"
           ]
         },

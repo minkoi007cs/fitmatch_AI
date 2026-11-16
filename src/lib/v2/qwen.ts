@@ -16,7 +16,8 @@ import { z } from "zod";
 export const ANALYSIS_KIND = "garment.analyze" as const;
 export const ANALYSIS_CONTRACT = "fitmatch.qwen-garment-analysis.v1" as const;
 export const RESULT_VERSION = "fitmatch.garment-analysis.result.v1" as const;
-export const POLICY_REVISION = "qint.1" as const;
+export const POLICY_REVISION = "qint.2" as const;
+const policyRevision = z.enum(["qint.1", POLICY_REVISION]);
 
 /** Bounds shared by server, worker and adapter. Reused from PC quality03 where they fit. */
 export const analysisLimits = {
@@ -41,7 +42,8 @@ const uuid = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][
 const sha256 = z.string().regex(/^[0-9a-f]{64}$/);
 const shortText = z.string().min(1).max(200);
 
-export const garmentCategory = z.enum(["tshirt", "jeans", "unknown"]);
+export const supportedAnalysisCategories = ["tshirt", "shirt", "hoodie", "jacket", "sweater", "jeans"] as const;
+export const garmentCategory = z.enum([...supportedAnalysisCategories, "unknown"]);
 export const garmentColor = z.enum(["blue", "white", "black", "gray", "red", "green", "yellow", "brown", "other", "unknown"]);
 export const garmentPattern = z.enum(["striped", "solid", "printed", "checked", "other", "unknown"]);
 export const logoPresence = z.enum(["visible", "not_visible", "unknown"]);
@@ -79,7 +81,7 @@ export const analysisResult = z
     contractVersion: z.literal(RESULT_VERSION),
     binding: analysisBinding,
     modelRevision,
-    policyRevision: z.literal(POLICY_REVISION),
+    policyRevision,
     rawOutputSha256: sha256,
     outcome: z.enum(["proposal", "abstained"]),
     abstainReason: z.enum(["ambiguous_target", "unreadable_image", "not_garment", "unsupported_category"]).nullable(),
@@ -107,6 +109,8 @@ export const analysisResult = z
   .strict()
   .superRefine((r, ctx) => {
     const fail = (message: string) => ctx.addIssue({ code: "custom", message });
+    if (r.policyRevision === "qint.1" && r.attributes && !["tshirt", "jeans", "unknown"].includes(r.attributes.category))
+      fail("legacy policy does not support this category");
     if (r.outcome === "proposal" && (r.attributes === null || r.abstainReason !== null))
       fail("proposal needs attributes and no abstainReason");
     if (r.outcome === "abstained" && (r.attributes !== null || r.abstainReason === null || r.candidateLogoTexts.length))
@@ -139,7 +143,7 @@ export const analysisAdapterInput = z
     modelRevision,
     policy: z
       .object({
-        policyRevision: z.literal(POLICY_REVISION),
+        policyRevision,
         maxOutputTokens: z.literal(analysisLimits.maxOutputTokens),
         maxSchemaAttempts: z.literal(analysisLimits.maxSchemaAttempts),
         maxResultBytes: z.literal(analysisLimits.maxResultBytes),
@@ -182,7 +186,7 @@ export const analysisConfirmRequest = z
     decision: z.enum(["approve", "reject"]),
     fields: z
       .object({
-        category: z.enum(["tshirt", "jeans"]).optional(),
+        category: z.enum(supportedAnalysisCategories).optional(),
         primaryColor: garmentColor.exclude(["unknown"]).optional(),
         secondaryColor: garmentColor.exclude(["unknown"]).nullable().optional(),
         pattern: garmentPattern.exclude(["unknown"]).optional(),
@@ -210,7 +214,7 @@ export function storableCapabilities<T>(declared: Record<string, T>, enabled: bo
 
 /** Mapping of approved values onto existing wardrobe columns (only on human confirmation). */
 export const wardrobeMapping = {
-  category: { tshirt: "t-shirt", jeans: "jeans" },
+  category: { tshirt: "t-shirt", shirt: "shirt", hoodie: "hoodie", jacket: "jacket", sweater: "sweater", jeans: "jeans" },
   pattern: { solid: "plain", striped: "striped", printed: "graphic", checked: "plaid", other: "other" },
 } as const;
 
@@ -250,6 +254,10 @@ function withResultRules(schema: Record<string, unknown>) {
   };
   attrs.properties.dominantColors.uniqueItems = true;
   schema.allOf = [
+    {
+      if: { properties: { policyRevision: { const: "qint.1" } } },
+      then: { properties: { attributes: { anyOf: [{ type: "null" }, { type: "object", properties: { category: { enum: ["tshirt", "jeans", "unknown"] } } }] } } },
+    },
     {
       if: { properties: { outcome: { const: "proposal" } } },
       then: { properties: { attributes: { type: "object" }, abstainReason: { type: "null" } } },

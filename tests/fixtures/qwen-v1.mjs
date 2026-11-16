@@ -36,8 +36,20 @@ export function qwenFixtures() {
       attributes: { category: "unknown", dominantColors: ["unknown"], pattern: "unknown", logoPresence: "unknown", neckline: "unknown", sleeves: "unknown" },
       candidateLogoTexts: [], ocrStatus: "not_extracted",
     }),
+    "result-proposal-hoodie-qint2": with_({
+      policyRevision: "qint.2",
+      attributes: { category: "hoodie", dominantColors: ["gray"], pattern: "printed", logoPresence: "unknown", neckline: "other", sleeves: "long" },
+      candidateLogoTexts: [], ocrStatus: "not_extracted",
+    }),
+    "result-proposal-jacket-qint2": with_({
+      policyRevision: "qint.2",
+      attributes: { category: "jacket", dominantColors: ["black"], pattern: "solid", logoPresence: "not_visible", neckline: "other", sleeves: "long" },
+      candidateLogoTexts: [], ocrStatus: "not_extracted",
+    }),
   };
   const invalid = {
+    "legacy-policy-new-category": [with_({ attributes: { ...base.attributes, category: "hoodie" } }), "new categories require qint.2"],
+    "unsupported-category-qint2": [with_({ policyRevision: "qint.2", attributes: { ...base.attributes, category: "dress" } }), "unsupported categories must abstain"],
     "self-approved": [with_({ approvedForAutoApply: true }), "model cannot approve"],
     "unknown-contract-version": [with_({ contractVersion: "fitmatch.garment-analysis.result.v2" }), "wrong version"],
     "wrong-policy": [with_({ policyRevision: "quality03.1" }), "policy revision mismatch"],

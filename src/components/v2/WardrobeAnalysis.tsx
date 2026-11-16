@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import { api } from "@/lib/v2/client";
 
 type Attributes = {
-  category: "tshirt" | "jeans" | "unknown";
+  category: "tshirt" | "shirt" | "hoodie" | "jacket" | "sweater" | "jeans" | "unknown";
   dominantColors: string[];
   pattern: string;
   logoPresence: string;
@@ -24,6 +24,7 @@ export type AnalysisView = {
   attempts: number;
   resultSha256: string | null;
   result: {
+    policyRevision?: string;
     outcome: "proposal" | "abstained";
     abstainReason: string | null;
     attributes: Attributes | null;
@@ -39,12 +40,12 @@ const colorNames: Record<string, string> = {
   yellow: "Yellow", brown: "Brown", other: "Other color",
 };
 const patternNames: Record<string, string> = { solid: "Plain", striped: "Stripes", printed: "Graphic", checked: "Plaid", other: "Other" };
-const categoryNames: Record<string, string> = { tshirt: "T-shirt", jeans: "Jeans" };
+const categoryNames: Record<string, string> = { tshirt: "T-shirt", shirt: "Shirt", hoodie: "Hoodie", jacket: "Jacket", sweater: "Sweater", jeans: "Jeans" };
 const abstainNames: Record<string, string> = {
   ambiguous_target: "The image contains several items. AI could not determine which one to analyze.",
   unreadable_image: "The image is too blurry or dark to analyze.",
   not_garment: "AI could not find clothing in this image.",
-  unsupported_category: "This category is not supported yet (currently T-shirts and jeans only).",
+  unsupported_category: "AI does not support this clothing category yet. You can edit the item details manually.",
 };
 const failureNames: Record<string, string> = {
   GPU_UNAVAILABLE: "The PC's GPU has been busy for too long. Please try again later.",
@@ -60,13 +61,15 @@ const failureNames: Record<string, string> = {
 export function useWardrobeAnalyses() {
   const [enabled, setEnabled] = useState(false);
   const [workerOnline, setWorkerOnline] = useState(false);
+  const [workerPaused, setWorkerPaused] = useState(false);
   const [gpuBusy, setGpuBusy] = useState(false);
   const [byItem, setByItem] = useState<Record<string, AnalysisView>>({});
   const load = useCallback(async () => {
     try {
-      const data = await api<{ enabled: boolean; workerOnline: boolean; gpuBusy?: boolean; analyses: AnalysisView[] }>("analyses");
+      const data = await api<{ enabled: boolean; workerOnline: boolean; workerPaused?: boolean; gpuBusy?: boolean; analyses: AnalysisView[] }>("analyses");
       setEnabled(data.enabled);
       setWorkerOnline(data.workerOnline);
+      setWorkerPaused(data.workerPaused === true);
       setGpuBusy(data.gpuBusy === true);
       setByItem(Object.fromEntries(data.analyses.map((a) => [a.itemId, a])));
     } catch {
@@ -85,7 +88,7 @@ export function useWardrobeAnalyses() {
     return () => clearInterval(timer);
   }, [anyActive, load]);
   const put = useCallback((a: AnalysisView) => setByItem((m) => ({ ...m, [a.itemId]: a })), []);
-  return { enabled, workerOnline, gpuBusy, byItem, put, reload: load };
+  return { enabled, workerOnline, workerPaused, gpuBusy, byItem, put, reload: load };
 }
 
 export function AnalysisPanel({
@@ -94,11 +97,13 @@ export function AnalysisPanel({
   hasImage,
   analysis,
   workerOnline,
+  workerPaused = false,
   gpuBusy = false,
   onUpdate,
   onWardrobeChanged,
 }: {
   workerOnline: boolean;
+  workerPaused?: boolean;
   gpuBusy?: boolean;
   itemId: string;
   itemName: string;
@@ -160,8 +165,10 @@ export function AnalysisPanel({
         <p role="status">
           {analysis.state === "running"
             ? "AI is analyzing on your PC…"
-            : !workerOnline
-              ? "Your PC is offline. The job is saved and will run when it reconnects. You can still edit item details manually."
+            : workerPaused
+              ? "AI processing is paused. Your analysis is saved in the queue. You can still edit item details manually."
+              : !workerOnline
+              ? "The PC's AI connection is unavailable. Your analysis is saved and will run when the connection returns. You can still edit item details manually."
               : analysis.state === "queued" && gpuBusy
                 ? "Your PC's GPU is busy with another task. Your job remains queued and no attempt has been counted."
                 : analysis.state === "queued"
@@ -205,6 +212,12 @@ export function AnalysisPanel({
               (analysis.confirmedFields?.logoText ? ` (garment text: “${analysis.confirmedFields.logoText}”)` : "") +
               "."}
         </p>
+        {analysis.result?.policyRevision === "qint.1" && (
+          <button type="button" disabled={busy || !hasImage} className={button} onClick={() => void start()}>
+            Analyze with updated AI
+          </button>
+        )}
+        {error && <p role="alert" className="text-danger">{error}</p>}
       </div>
     );
 
@@ -229,6 +242,7 @@ export function AnalysisPanel({
           if (decision === "approve") onWardrobeChanged();
         })
       }
+      onAnalyzeAgain={analysis.result?.outcome === "abstained" && analysis.result.policyRevision === "qint.1" ? () => void start() : undefined}
     />
   );
 }
@@ -242,6 +256,7 @@ function Review({
   box,
   button,
   onSubmit,
+  onAnalyzeAgain,
 }: {
   groupRef: RefObject<HTMLDivElement | null>;
   analysis: AnalysisView;
@@ -251,6 +266,7 @@ function Review({
   box: string;
   button: string;
   onSubmit: (decision: "approve" | "reject", fields: Record<string, string | null>) => void;
+  onAnalyzeAgain?: () => void;
 }) {
   const attrs = analysis.result?.attributes ?? null;
   const known = (v: string | undefined) => (v && v !== "unknown" ? v : "");
@@ -267,6 +283,7 @@ function Review({
     return (
       <div ref={groupRef} tabIndex={-1} className={box} role="group" aria-label={label}>
         <p role="status">AI has no suggestion: {abstainNames[analysis.result?.abstainReason ?? ""] ?? "uncertain."}</p>
+        {onAnalyzeAgain && <button type="button" disabled={busy} className={button} onClick={onAnalyzeAgain}>Analyze with updated AI</button>}
         <button type="button" disabled={busy} className={button} onClick={() => onSubmit("reject", {})}>
           Close
         </button>

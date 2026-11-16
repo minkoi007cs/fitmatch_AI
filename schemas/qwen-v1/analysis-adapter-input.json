@@ -82,7 +82,10 @@
       "properties": {
         "policyRevision": {
           "type": "string",
-          "const": "qint.1"
+          "enum": [
+            "qint.1",
+            "qint.2"
+          ]
         },
         "maxOutputTokens": {
           "type": "number",

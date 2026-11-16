@@ -6,8 +6,8 @@ import { normalizeAnalysisImage } from "./image";
 import { bucket, digest, required, result, signedAsset } from "./server";
 import type { JobRow, WorkerRow } from "./contracts";
 import { readAnalyses, readAnalysis, type AnalysisReader, type AnalysisRow } from "./analysis-read";
+import { analysisWorkerAvailability, type AnalysisWorker } from "./analysis-worker-status";
 import {
-  ANALYSIS_KIND,
   ANALYSIS_CONTRACT,
   POLICY_REVISION,
   RESULT_VERSION,
@@ -59,21 +59,15 @@ export async function listAnalyses(owner: string) {
  * "PC busy with other GPU work" instead of pretending a queued job is about to run.
  */
 export async function analysisWorkerStatus(owner: string) {
-  const since = new Date(Date.now() - 90_000).toISOString();
   const rows = result(
     await createAdminClient()
       .from("fm_v2_workers")
-      .select("capabilities,allowed_capabilities,gpu_busy")
-      .eq("user_id", owner)
-      .eq("enabled", true)
-      .gte("last_seen", since),
-  ) as { capabilities: Record<string, unknown> | null; allowed_capabilities: string[] | null; gpu_busy: boolean | null }[];
-  const usable = rows.filter(
-    (w) => !!w.capabilities && ANALYSIS_KIND in w.capabilities && (w.allowed_capabilities ?? []).includes(ANALYSIS_KIND),
-  );
+      .select("capabilities,allowed_capabilities,gpu_busy,enabled,last_seen")
+      .eq("user_id", owner),
+  ) as AnalysisWorker[];
   // QREV-STATUS: "busy" only when every one of the owner's own online analysis workers reported the shared
   // GPU taken at its last heartbeat. It never says whose work holds the GPU.
-  return { workerOnline: usable.length > 0, gpuBusy: usable.length > 0 && usable.every((w) => w.gpu_busy === true) };
+  return analysisWorkerAvailability(rows);
 }
 
 async function analysisOf(owner: string, id: string) {

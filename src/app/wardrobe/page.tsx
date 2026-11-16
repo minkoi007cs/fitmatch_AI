@@ -541,6 +541,7 @@ export default function WardrobePage() {
                       hasImage={!!item.image_path}
                       analysis={analyses.byItem[item.id]}
                       workerOnline={analyses.workerOnline}
+                      workerPaused={analyses.workerPaused}
                       gpuBusy={analyses.gpuBusy}
                       onUpdate={analyses.put}
                       onWardrobeChanged={() => setReloadKey((k) => k + 1)}
