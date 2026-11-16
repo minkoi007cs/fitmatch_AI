@@ -1,6 +1,6 @@
 # QWEN-48 controlled app execution — 13 November 2026
 
-The PC **received the remaining owner photo**, but its pre-load resource admission stopped with MEMORY_PRESSURE. The server returned it to queued/attempt 0 with one deferral; no analysis result was produced. The existing worker is disabled again and the finite GPU window has expired. No reupload is needed. Earlier GO windows are closed and cannot be reused.
+**Latest verified outcome — 16 November:** the remaining app photo completed a real Qwen run and its result is stored for human review. The model abstained with `unsupported_category`, returned null attributes and did not authorize automatic application. This proves the online processing path; it does not provide a valid clothing-category prediction for this image. The worker is disabled and the GPU window was independently withdrawn. Earlier checkpoints below are retained as history.
 
 ## Verified readiness
 
@@ -57,3 +57,15 @@ The failed local working state was then moved into a private same-volume archive
 Edge was subsequently closed through normal UI Close after the owner explicitly requested remote handling; no unsaved-work warning, discard or force termination was used. Claude and Edge process counts were zero while the coordination apps remained running. Three samples at 09:14:23–25 UTC showed 8,482,324,480 / 8,473,722,880 / 8,472,195,072 bytes available RAM and 11,511 MiB free VRAM. This clears the planned 5.5 GiB startup-headroom target without lowering the existing admission floor.
 
 The coordinator was then authorized to invoke the exact reviewed W007 wrapper under normal PC policy. Codex reports waitingOnApproval for this new execution. No actual APPROVAL_READY, fresh heartbeat, W007 slot or new inference has been established. The server worker remains disabled pending actual readiness and independent queue verification. The remaining blocker is the PC execution approval, not a request to reupload the image or change credentials.
+
+## W007 completed — 16 November 2026
+
+The newly approved wrapper emitted actual READY at 09:31:35 UTC. Independent canonical queue inspection established one eligible owner job with no result; the reserved worker was conditionally enabled for its sole capability. A fresh atomic heartbeat returned HTTP 200 at 09:33:37 UTC, and independent database readback confirmed the new heartbeat. The coordinator issued a single ten-minute window and exited before worker launch.
+
+The worker actually started at 09:34:30.966 UTC. One model attempt took 86.812 seconds and produced 19 tokens; the observed worker duration was 93.406 seconds. Minimum sampled available RAM was 6,501,879,808 bytes, above the unchanged 4 GiB floor. The observer exited 0 with a completed checkpoint and a new 807-byte result.
+
+Independent server verification at 09:36:19 UTC established job succeeded/attempt 1, analysis review, the pinned model revision and the same result hash/length as the actual local output. The semantic result is abstained/unsupported_category, attributes null, approvedForAutoApply false. No wardrobe confirmation or confirmed-value rewrite was performed. The earlier job remains confirmed. Human review and manual correction remain necessary; this result does not solve general category recognition.
+
+The retained worker and two adapter native process objects were all signalled exited, with zero live or unknown identities. The local approval was restored to its exact disabled bytes. The independent coordinator combined the actual peer evidence with the Mac owner's independently verified server receipt and an explicit bound closeout trigger. It completed withdrawal at 09:38:13.781 UTC; the outer PowerShell session exited 0. Fresh verification found the three saved identities absent and successfully acquired/released the canonical byte-zero lock. Available RAM was 8,349,163,520 bytes and free VRAM 11,527 MiB. The slot deadline was shortened, without renewal or another job grant. No independently measured kernel counter or model unload callback is claimed.
+
+The server worker was disabled after the result. The same website deployment remains in place; no app code change, migration, extra photo submission or automatic retry was performed. This closes the remaining online execution test while leaving product classification quality and the personal 3D workflow open. The existing 55/100 full-product assessment is not automatically increased by one successful transport run.
