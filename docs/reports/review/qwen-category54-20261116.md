@@ -35,3 +35,19 @@ Root reviewed the PC helper source and complete literal diffs at `3b9138914e404c
 The coordinator and W008 PowerShell wrapper/publisher were implemented in new paths and reviewed in full. Only job/app/path/pin/count constants changed; the shared guard, transport and private audit rules remain unchanged. PowerShell parsing reported zero errors and Python nonliteral AST was unchanged. Bounds remain a 600-second slot, 240-second engine, 30-second drain and 330-second observation with at least 360 seconds remaining before launch.
 
 Codex on the PC now requires a fresh execution approval for the concrete W008 wrapper. It reports waitingOnApproval; no new READY, heartbeat, slot or model inference is established. The server worker and local execution authorization remain disabled. The earlier W007 approval is not reused. No recognition-success claim is made until the actual result is stored and reviewed.
+
+## W008 pre-admission stop
+
+The owner approval reached the PC and W008 emitted actual READY. A fresh heartbeat returned HTTP 200. The coordinator then refused source_pin_mismatch before slot allocation: the 111-entry candidate includes its exact contract Markdown document, while the older coordinator only admitted .py/.json source entries. The document's actual hash matched its expected hash; its 10,118-byte size was within the bound. The integration review missed this file-type mismatch.
+
+No allocation-attempt, applied-slot or issued receipt was created, and the previous closed slot bytes remained unchanged. No model or worker was started. The worker was disabled again and the separate jeans job's temporary eligibility delay was restored to its original value without cancellation or an attempt.
+
+The coordinator owner is preparing a focused correction for that one canonical document path and its hard-pinned hash, retaining the actual manifest hash/size/path checks. A new W009 metadata window preserves all failed W008 evidence and avoids reusing its heartbeat attempt marker. Recognition remains unverified pending the actual model run.
+
+## November 17 execution handoff
+
+The corrected coordinator and full W008-to-W009 wrapper/publisher diffs were reviewed. Only the canonical contract document with its fixed digest is admitted; path containment, source digest, size limits and native checks remain. Nine focused CPU checks passed. Existing successful packaging was reused, with zero PowerShell parse errors; tests were not repeated. Current coordinator/wrapper/publisher digests begin f956e884, cc132bbf and e4ff0c13.
+
+Fresh PC readiness reported approximately 7.9 GiB available RAM and 11.5 GiB free VRAM, no leftover model processes and matching runtime pins. The production alias still resolves to dpl_CHapZxpSRzga6oAnyRGENYjMAvGE. Both queued jobs remain attempt zero with their original eligibility.
+
+One normal W009 wrapper execution was dispatched. The PC reports waitingOnApproval in the existing 3d model chat; there is no actual W009 READY or model inference yet. Platform Allow must be completed by the owner. Backend enable and the single-image heartbeat/worker execution remain conditional on actual fresh READY. The hoodie recognition fix is deployed but has not yet been verified on the image.
